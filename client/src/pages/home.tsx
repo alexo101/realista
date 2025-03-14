@@ -18,10 +18,10 @@ export default function Home() {
       <section className="bg-primary/5 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold text-center mb-4">
-            Find Your Dream Home
+            Keep dreaming with a home
           </h1>
           <p className="text-lg text-center text-gray-600 mb-8">
-            Discover the perfect property with Realista
+            Discover your poverty with Realista
           </p>
         </div>
       </section>
