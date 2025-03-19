@@ -1,9 +1,44 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertInquirySchema, insertFavoriteSchema } from "@shared/schema";
+import { insertInquirySchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth
+  app.get("/api/users/check-email", async (req, res) => {
+    try {
+      const { email } = req.query;
+      const user = await storage.getUserByEmail(email as string);
+      res.json({ exists: !!user, name: user?.name });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check email" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const user = await storage.createUser(req.body);
+      res.status(201).json(user);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid registration data" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await storage.getUserByEmail(email);
+
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
   // Properties
   app.get("/api/properties", async (req, res) => {
     try {
@@ -48,39 +83,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(result);
     } catch (error) {
       res.status(400).json({ message: "Invalid inquiry data" });
-    }
-  });
-
-  // Favorites
-  app.get("/api/favorites", async (req, res) => {
-    try {
-      const userId = req.session.id;
-      const favorites = await storage.getFavorites(userId);
-      res.json(favorites);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch favorites" });
-    }
-  });
-
-  app.post("/api/favorites", async (req, res) => {
-    try {
-      const favorite = insertFavoriteSchema.parse({
-        ...req.body,
-        userId: req.session.id
-      });
-      const result = await storage.createFavorite(favorite);
-      res.status(201).json(result);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid favorite data" });
-    }
-  });
-
-  app.delete("/api/favorites/:id", async (req, res) => {
-    try {
-      await storage.deleteFavorite(parseInt(req.params.id));
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete favorite" });
     }
   });
 
