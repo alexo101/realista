@@ -31,6 +31,7 @@ export function SearchBar() {
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+  const [transactionType, setTransactionType] = useState<'rent' | 'buy'>('buy');
 
   const filteredNeighborhoods = BARCELONA_NEIGHBORHOODS.filter(n =>
     n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
@@ -43,7 +44,8 @@ export function SearchBar() {
     }
     if (priceRange.min) params.append("minPrice", priceRange.min);
     if (priceRange.max) params.append("maxPrice", priceRange.max);
-    
+    params.append("type", transactionType);
+
     setLocation(`/search?${params.toString()}`);
   };
 
@@ -57,6 +59,25 @@ export function SearchBar() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex rounded-md overflow-hidden">
+          <Button
+            variant={transactionType === 'rent' ? 'default' : 'ghost'}
+            className="rounded-none px-8"
+            onClick={() => setTransactionType('rent')}
+          >
+            Alquilar
+          </Button>
+          <Button
+            variant={transactionType === 'buy' ? 'default' : 'ghost'}
+            className="rounded-none px-8"
+            onClick={() => setTransactionType('buy')}
+          >
+            Comprar
+          </Button>
+        </div>
+      </div>
+
       <div className="flex items-center gap-4">
         <div className="flex-1">
           <Button

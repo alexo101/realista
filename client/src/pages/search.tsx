@@ -23,12 +23,6 @@ export default function SearchPage() {
     },
   });
 
-  const { data: favorites } = useQuery<Property[]>({
-    queryKey: ["/api/favorites"],
-  });
-
-  const favoritedIds = new Set(favorites?.map((f) => f.propertyId));
-
   return (
     <div className="min-h-screen pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -72,7 +66,6 @@ export default function SearchPage() {
                   <PropertyCard
                     key={property.id}
                     property={property}
-                    isFavorited={favoritedIds.has(property.id)}
                   />
                 ))}
               </div>

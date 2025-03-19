@@ -29,9 +29,10 @@ const formSchema = z.object({
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isAgentRegistration?: boolean;
 }
 
-export function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, isAgentRegistration = false }: LoginModalProps) {
   const { toast } = useToast();
   const [isExistingUser, setIsExistingUser] = useState<boolean | null>(null);
   const [userName, setUserName] = useState<string>("");
@@ -60,12 +61,19 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       const response = await apiRequest(
         "POST",
         isExistingUser ? "/api/auth/login" : "/api/auth/register",
-        data
+        {
+          ...data,
+          isAgent: isAgentRegistration
+        }
       );
 
       if (response.ok) {
         toast({
-          title: isExistingUser ? "¡Bienvenido de nuevo!" : "¡Cuenta creada con éxito!",
+          title: isExistingUser 
+            ? "¡Bienvenido de nuevo!" 
+            : isAgentRegistration 
+              ? "¡Agencia registrada con éxito!"
+              : "¡Cuenta creada con éxito!",
           duration: 3000,
         });
         onClose();
@@ -84,7 +92,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-2xl text-center">
-            Iniciar sesión o regístrate
+            {isAgentRegistration 
+              ? "Registro de agencia inmobiliaria" 
+              : "Iniciar sesión o regístrate"}
           </DialogTitle>
         </DialogHeader>
 

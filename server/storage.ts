@@ -5,17 +5,14 @@ import {
   properties,
   agents,
   inquiries,
-  favorites,
   type User,
   type Property,
   type Agent,
   type Inquiry,
-  type Favorite,
   type InsertUser,
   type InsertProperty,
   type InsertAgent,
   type InsertInquiry,
-  type InsertFavorite,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -38,11 +35,6 @@ export interface IStorage {
   // Inquiries
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   getInquiries(): Promise<Inquiry[]>;
-
-  // Favorites
-  getFavorites(userId: string): Promise<Favorite[]>;
-  createFavorite(favorite: InsertFavorite): Promise<Favorite>;
-  deleteFavorite(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -77,9 +69,8 @@ export class DatabaseStorage implements IStorage {
 
     if (query) {
       const lowercaseQuery = query.toLowerCase();
-      // Note: This is a simple implementation. In production, you'd want to use full-text search
       propertiesQuery = propertiesQuery.where(
-        eq(properties.title, query)
+        eq(properties.location, query)
       );
     }
 
@@ -115,20 +106,6 @@ export class DatabaseStorage implements IStorage {
 
   async getInquiries(): Promise<Inquiry[]> {
     return db.select().from(inquiries);
-  }
-
-  // Favorites
-  async getFavorites(userId: string): Promise<Favorite[]> {
-    return db.select().from(favorites).where(eq(favorites.userId, userId));
-  }
-
-  async createFavorite(favorite: InsertFavorite): Promise<Favorite> {
-    const [newFavorite] = await db.insert(favorites).values(favorite).returning();
-    return newFavorite;
-  }
-
-  async deleteFavorite(id: number): Promise<void> {
-    await db.delete(favorites).where(eq(favorites.id, id));
   }
 }
 

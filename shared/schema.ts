@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   name: text("name"),
+  isAgent: boolean("is_agent").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -43,26 +44,17 @@ export const inquiries = pgTable("inquiries", {
   createdAt: text("created_at").notNull(),
 });
 
-export const favorites = pgTable("favorites", {
-  id: serial("id").primaryKey(),
-  propertyId: integer("property_id").notNull(),
-  userId: text("user_id").notNull(),
-});
-
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPropertySchema = createInsertSchema(properties).omit({ id: true });
 export const insertAgentSchema = createInsertSchema(agents).omit({ id: true });
 export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true });
-export const insertFavoriteSchema = createInsertSchema(favorites).omit({ id: true });
 
 export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type Agent = typeof agents.$inferSelect;
 export type Inquiry = typeof inquiries.$inferSelect;
-export type Favorite = typeof favorites.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
-export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;

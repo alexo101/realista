@@ -8,12 +8,6 @@ export default function Home() {
     queryKey: ["/api/properties"],
   });
 
-  const { data: favorites } = useQuery<Property[]>({
-    queryKey: ["/api/favorites"],
-  });
-
-  const favoritedIds = new Set(favorites?.map((f) => f.propertyId));
-
   return (
     <div className="min-h-screen pt-16">
       <section className="bg-primary/5 py-16">
@@ -46,7 +40,6 @@ export default function Home() {
               <PropertyCard
                 key={property.id}
                 property={property}
-                isFavorited={favoritedIds.has(property.id)}
               />
             ))}
           </div>
