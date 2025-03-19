@@ -1,6 +1,14 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  name: text("name"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
 
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
@@ -38,19 +46,22 @@ export const inquiries = pgTable("inquiries", {
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),
   propertyId: integer("property_id").notNull(),
-  userId: text("user_id").notNull(), // Using session ID for simplicity
+  userId: text("user_id").notNull(),
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPropertySchema = createInsertSchema(properties).omit({ id: true });
 export const insertAgentSchema = createInsertSchema(agents).omit({ id: true });
 export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true });
 export const insertFavoriteSchema = createInsertSchema(favorites).omit({ id: true });
 
+export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type Agent = typeof agents.$inferSelect;
 export type Inquiry = typeof inquiries.$inferSelect;
 export type Favorite = typeof favorites.$inferSelect;
 
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;

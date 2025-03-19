@@ -13,15 +13,17 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { SiGoogle } from "react-icons/si";
+import { apiRequest } from "@/lib/queryClient";
 
 const formSchema = z.object({
   email: z.string().email("Por favor, introduce un email válido"),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
 });
 
 interface LoginModalProps {
@@ -31,29 +33,50 @@ interface LoginModalProps {
 
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const { toast } = useToast();
+  const [isExistingUser, setIsExistingUser] = useState<boolean | null>(null);
+  const [userName, setUserName] = useState<string>("");
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      password: "",
     },
   });
 
-  const handleGoogleLogin = () => {
-    // Google login implementation will go here
-    toast({
-      title: "Google login coming soon",
-      duration: 2000,
-    });
+  const checkEmail = async (email: string) => {
+    try {
+      const response = await apiRequest("GET", `/api/users/check-email?email=${email}`);
+      const data = await response.json();
+      setIsExistingUser(data.exists);
+      setUserName(data.name || email);
+    } catch (error) {
+      console.error("Error checking email:", error);
+    }
   };
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log(data);
-    toast({
-      title: "Verification email sent",
-      description: "Please check your inbox to continue",
-      duration: 3000,
-    });
-    onClose();
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    try {
+      const response = await apiRequest(
+        "POST",
+        isExistingUser ? "/api/auth/login" : "/api/auth/register",
+        data
+      );
+
+      if (response.ok) {
+        toast({
+          title: isExistingUser ? "¡Bienvenido de nuevo!" : "¡Cuenta creada con éxito!",
+          duration: 3000,
+        });
+        onClose();
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -65,51 +88,69 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <Button 
-            variant="outline" 
-            className="w-full flex items-center gap-2"
-            onClick={handleGoogleLogin}
-          >
-            <SiGoogle className="w-5 h-5" />
-            Continuar con Google
-          </Button>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input 
+                      placeholder="Correo electrónico" 
+                      type="email"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        if (e.target.value) {
+                          checkEmail(e.target.value);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                o
-              </span>
-            </div>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input 
-                        placeholder="Correo electrónico" 
-                        type="email"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+            {form.watch("email") && (
+              <>
+                {isExistingUser && (
+                  <p className="text-sm text-gray-600">
+                    Hola de nuevo {userName}
+                  </p>
                 )}
-              />
-              <Button type="submit" className="w-full">
-                Continuar con email
-              </Button>
-            </form>
-          </Form>
-        </div>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {isExistingUser ? "Contraseña" : "Crea tu contraseña"}
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          {...field}
+                        />
+                      </FormControl>
+                      {!isExistingUser && (
+                        <p className="text-sm text-gray-600">
+                          Incluye al menos 8 caracteres, mezcla números y letras
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            <Button type="submit" className="w-full">
+              {isExistingUser ? "Iniciar sesión" : "Crear cuenta"}
+            </Button>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

@@ -1,8 +1,17 @@
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import {
+  users,
+  properties,
+  agents,
+  inquiries,
+  favorites,
+  type User,
   type Property,
   type Agent,
   type Inquiry,
   type Favorite,
+  type InsertUser,
   type InsertProperty,
   type InsertAgent,
   type InsertInquiry,
@@ -10,169 +19,117 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
+  // Users
+  getUser(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+
   // Properties
   getProperties(): Promise<Property[]>;
   getProperty(id: number): Promise<Property | undefined>;
   searchProperties(query: string, filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
-  
+
   // Agents
   getAgent(id: number): Promise<Agent | undefined>;
   getAgents(): Promise<Agent[]>;
   createAgent(agent: InsertAgent): Promise<Agent>;
-  
+
   // Inquiries
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   getInquiries(): Promise<Inquiry[]>;
-  
+
   // Favorites
   getFavorites(userId: string): Promise<Favorite[]>;
   createFavorite(favorite: InsertFavorite): Promise<Favorite>;
   deleteFavorite(id: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private properties: Map<number, Property>;
-  private agents: Map<number, Agent>;
-  private inquiries: Map<number, Inquiry>;
-  private favorites: Map<number, Favorite>;
-  private currentIds: { [key: string]: number };
-
-  constructor() {
-    this.properties = new Map();
-    this.agents = new Map();
-    this.inquiries = new Map();
-    this.favorites = new Map();
-    this.currentIds = {
-      property: 1,
-      agent: 1,
-      inquiry: 1,
-      favorite: 1,
-    };
-
-    // Initialize with mock data
-    this.initializeMockData();
+export class DatabaseStorage implements IStorage {
+  // Users
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
-  private initializeMockData() {
-    // Add mock agents
-    const mockAgents: InsertAgent[] = [
-      {
-        name: "Sarah Johnson",
-        email: "sarah.j@realista.com",
-        phone: "+1 (555) 123-4567",
-        photo: "https://images.unsplash.com/photo-1484154218962-a197022b5858",
-      },
-      // Add more mock agents...
-    ];
-
-    mockAgents.forEach(agent => this.createAgent(agent));
-
-    // Add mock properties
-    const mockProperties: InsertProperty[] = [
-      {
-        title: "Modern Downtown Apartment",
-        description: "Luxurious apartment with stunning city views",
-        price: 450000,
-        bedrooms: 2,
-        bathrooms: 2,
-        squareMeters: 85,
-        location: "Downtown",
-        type: "apartment",
-        images: [
-          "https://images.unsplash.com/photo-1626127587640-88cc66a25c67",
-          "https://images.unsplash.com/photo-1625438961829-5a1c8f1dc742"
-        ],
-        features: ["Elevator", "Parking", "Air Conditioning"],
-        agentId: 1
-      },
-      // Add more mock properties...
-    ];
-
-    mockProperties.forEach(property => this.createProperty(property));
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
-  // Property methods
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  // Properties
   async getProperties(): Promise<Property[]> {
-    return Array.from(this.properties.values());
+    return db.select().from(properties);
   }
 
   async getProperty(id: number): Promise<Property | undefined> {
-    return this.properties.get(id);
+    const [property] = await db.select().from(properties).where(eq(properties.id, id));
+    return property;
   }
 
   async searchProperties(query: string, filters: any): Promise<Property[]> {
-    let properties = Array.from(this.properties.values());
-    
+    let propertiesQuery = db.select().from(properties);
+
     if (query) {
       const lowercaseQuery = query.toLowerCase();
-      properties = properties.filter(p => 
-        p.title.toLowerCase().includes(lowercaseQuery) ||
-        p.location.toLowerCase().includes(lowercaseQuery)
+      // Note: This is a simple implementation. In production, you'd want to use full-text search
+      propertiesQuery = propertiesQuery.where(
+        eq(properties.title, query)
       );
     }
 
-    if (filters) {
-      if (filters.minPrice) properties = properties.filter(p => p.price >= filters.minPrice);
-      if (filters.maxPrice) properties = properties.filter(p => p.price <= filters.maxPrice);
-      if (filters.bedrooms) properties = properties.filter(p => p.bedrooms >= filters.bedrooms);
-      if (filters.type) properties = properties.filter(p => p.type === filters.type);
-    }
-
-    return properties;
+    const results = await propertiesQuery;
+    return results;
   }
 
   async createProperty(property: InsertProperty): Promise<Property> {
-    const id = this.currentIds.property++;
-    const newProperty = { ...property, id };
-    this.properties.set(id, newProperty);
+    const [newProperty] = await db.insert(properties).values(property).returning();
     return newProperty;
   }
 
-  // Agent methods
+  // Agents
   async getAgent(id: number): Promise<Agent | undefined> {
-    return this.agents.get(id);
+    const [agent] = await db.select().from(agents).where(eq(agents.id, id));
+    return agent;
   }
 
   async getAgents(): Promise<Agent[]> {
-    return Array.from(this.agents.values());
+    return db.select().from(agents);
   }
 
   async createAgent(agent: InsertAgent): Promise<Agent> {
-    const id = this.currentIds.agent++;
-    const newAgent = { ...agent, id };
-    this.agents.set(id, newAgent);
+    const [newAgent] = await db.insert(agents).values(agent).returning();
     return newAgent;
   }
 
-  // Inquiry methods
+  // Inquiries
   async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
-    const id = this.currentIds.inquiry++;
-    const newInquiry = { ...inquiry, id };
-    this.inquiries.set(id, newInquiry);
+    const [newInquiry] = await db.insert(inquiries).values(inquiry).returning();
     return newInquiry;
   }
 
   async getInquiries(): Promise<Inquiry[]> {
-    return Array.from(this.inquiries.values());
+    return db.select().from(inquiries);
   }
 
-  // Favorite methods
+  // Favorites
   async getFavorites(userId: string): Promise<Favorite[]> {
-    return Array.from(this.favorites.values())
-      .filter(f => f.userId === userId);
+    return db.select().from(favorites).where(eq(favorites.userId, userId));
   }
 
   async createFavorite(favorite: InsertFavorite): Promise<Favorite> {
-    const id = this.currentIds.favorite++;
-    const newFavorite = { ...favorite, id };
-    this.favorites.set(id, newFavorite);
+    const [newFavorite] = await db.insert(favorites).values(favorite).returning();
     return newFavorite;
   }
 
   async deleteFavorite(id: number): Promise<void> {
-    this.favorites.delete(id);
+    await db.delete(favorites).where(eq(favorites.id, id));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
