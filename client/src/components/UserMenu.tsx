@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@/contexts/user-context";
-import { Heart, LogOut, Settings, User } from "lucide-react";
+import { Heart, LogOut, User } from "lucide-react";
 import { Link } from "wouter";
 
 export function UserMenu() {
@@ -25,16 +25,7 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {user.isAgent ? (
-          <DropdownMenuItem asChild>
-            <Link href="/manage">
-              <a className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span>Gestionar todo</span>
-              </a>
-            </Link>
-          </DropdownMenuItem>
-        ) : (
+        {!user.isAgent && (
           <DropdownMenuItem asChild>
             <Link href="/favorites">
               <a className="flex items-center gap-2">
