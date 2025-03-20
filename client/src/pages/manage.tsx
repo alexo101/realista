@@ -12,11 +12,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Building2, Users, Star } from "lucide-react";
 import { PropertyForm } from "@/components/PropertyForm";
+import { ClientForm } from "@/components/ClientForm";
 
 export default function ManagePage() {
   const { user } = useUser();
   const [section, setSection] = useState("properties");
   const [isAddingProperty, setIsAddingProperty] = useState(false);
+  const [isAddingClient, setIsAddingClient] = useState(false);
 
   // Redirect non-agent users
   if (!user?.isAgent) {
@@ -81,7 +83,24 @@ export default function ManagePage() {
             )}
           </div>
         )}
-        {section === "clients" && <h1>CRM clientes</h1>}
+        {section === "clients" && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold">CRM clientes</h1>
+              <Button onClick={() => setIsAddingClient(true)} size="lg">
+                Añadir cliente
+              </Button>
+            </div>
+
+            {isAddingClient ? (
+              <ClientForm onClose={() => setIsAddingClient(false)} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Client grid will go here */}
+              </div>
+            )}
+          </div>
+        )}
         {section === "reviews" && <h1>Gestionar reseñas</h1>}
       </main>
     </div>
