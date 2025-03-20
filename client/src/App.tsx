@@ -7,6 +7,7 @@ import { UserProvider } from "@/contexts/user-context";
 import Home from "@/pages/home";
 import Search from "@/pages/search";
 import Property from "@/pages/property";
+import Manage from "@/pages/manage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/search" component={Search} />
       <Route path="/property/:id" component={Property} />
+      <Route path="/manage" component={Manage} />
       <Route component={NotFound} />
     </Switch>
   );

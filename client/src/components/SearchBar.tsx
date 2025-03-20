@@ -179,14 +179,25 @@ export function SearchBar() {
         <div className="flex-1 flex gap-2">
           <Select
             value={priceRange.min}
-            onValueChange={(value) => setPriceRange(prev => ({ ...prev, min: value }))}
+            onValueChange={(value) => {
+              // If max is set and new min is higher, adjust max
+              if (priceRange.max && parseInt(value) > parseInt(priceRange.max)) {
+                setPriceRange({ min: value, max: value });
+              } else {
+                setPriceRange(prev => ({ ...prev, min: value }));
+              }
+            }}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Precio min" />
             </SelectTrigger>
             <SelectContent>
               {PRICE_RANGES.map(range => (
-                <SelectItem key={range.value} value={range.value}>
+                <SelectItem 
+                  key={range.value} 
+                  value={range.value}
+                  disabled={priceRange.max && parseInt(range.value) > parseInt(priceRange.max)}
+                >
                   {range.label}
                 </SelectItem>
               ))}
@@ -195,14 +206,25 @@ export function SearchBar() {
 
           <Select
             value={priceRange.max}
-            onValueChange={(value) => setPriceRange(prev => ({ ...prev, max: value }))}
+            onValueChange={(value) => {
+              // If min is set and new max is lower, adjust min
+              if (priceRange.min && parseInt(value) < parseInt(priceRange.min)) {
+                setPriceRange({ min: value, max: value });
+              } else {
+                setPriceRange(prev => ({ ...prev, max: value }));
+              }
+            }}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Precio max" />
             </SelectTrigger>
             <SelectContent>
               {PRICE_RANGES.map(range => (
-                <SelectItem key={range.value} value={range.value}>
+                <SelectItem 
+                  key={range.value} 
+                  value={range.value}
+                  disabled={priceRange.min && parseInt(range.value) < parseInt(priceRange.min)}
+                >
                   {range.label}
                 </SelectItem>
               ))}
