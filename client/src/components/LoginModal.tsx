@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useUser } from "@/contexts/user-context";
 
 const formSchema = z.object({
   email: z.string().email("Por favor, introduce un email válido"),
@@ -34,6 +35,7 @@ interface LoginModalProps {
 
 export function LoginModal({ isOpen, onClose, isAgentRegistration = false }: LoginModalProps) {
   const { toast } = useToast();
+  const { setUser } = useUser();
   const [isExistingUser, setIsExistingUser] = useState<boolean | null>(null);
   const [userName, setUserName] = useState<string>("");
 
@@ -68,6 +70,8 @@ export function LoginModal({ isOpen, onClose, isAgentRegistration = false }: Log
       );
 
       if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
         toast({
           title: isExistingUser 
             ? "¡Bienvenido de nuevo!" 

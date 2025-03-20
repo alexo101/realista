@@ -9,11 +9,14 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { Building2, Users, Star } from "lucide-react";
+import { PropertyForm } from "@/components/PropertyForm";
 
 export default function ManagePage() {
   const { user } = useUser();
   const [section, setSection] = useState("properties");
+  const [isAddingProperty, setIsAddingProperty] = useState(false);
 
   // Redirect non-agent users
   if (!user?.isAgent) {
@@ -60,7 +63,24 @@ export default function ManagePage() {
       </Sidebar>
 
       <main className="flex-1 p-6">
-        {section === "properties" && <h1>Gestionar propiedades</h1>}
+        {section === "properties" && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold">Gestionar propiedades</h1>
+              <Button onClick={() => setIsAddingProperty(true)} size="lg">
+                Añadir propiedad
+              </Button>
+            </div>
+
+            {isAddingProperty ? (
+              <PropertyForm onClose={() => setIsAddingProperty(false)} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Property grid will go here */}
+              </div>
+            )}
+          </div>
+        )}
         {section === "clients" && <h1>CRM clientes</h1>}
         {section === "reviews" && <h1>Gestionar reseñas</h1>}
       </main>
