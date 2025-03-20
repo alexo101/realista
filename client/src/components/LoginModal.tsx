@@ -77,6 +77,13 @@ export function LoginModal({ isOpen, onClose, isAgentRegistration = false }: Log
           duration: 3000,
         });
         onClose();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       toast({
