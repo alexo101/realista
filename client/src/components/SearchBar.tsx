@@ -219,13 +219,6 @@ export function SearchBar() {
         <DialogContent className="sm:max-w-[425px]">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">BARRIOS DE BARCELONA</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsNeighborhoodOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
 
           <div className="space-y-4">
@@ -242,7 +235,7 @@ export function SearchBar() {
                   {selectedNeighborhoods.map(neighborhood => (
                     <span
                       key={neighborhood}
-                      className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1"
+                      className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
                       onClick={() => toggleNeighborhood(neighborhood)}
                     >
                       {neighborhood}

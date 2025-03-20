@@ -3,10 +3,13 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
 import { LoginModal } from "./LoginModal";
+import { UserMenu } from "./UserMenu";
+import { useUser } from "@/contexts/user-context";
 
 export function Navbar() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAgentRegistration, setIsAgentRegistration] = useState(false);
+  const { user } = useUser();
 
   const openLogin = (isAgent: boolean = false) => {
     setIsAgentRegistration(isAgent);
@@ -26,19 +29,25 @@ export function Navbar() {
             </Link>
 
             <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                onClick={() => openLogin(true)}
-              >
-                Registra tu agencia
-              </Button>
+              {user ? (
+                <UserMenu />
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => openLogin(true)}
+                  >
+                    Registra tu agencia
+                  </Button>
 
-              <Button
-                variant="outline"
-                onClick={() => openLogin(false)}
-              >
-                Iniciar sesión
-              </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => openLogin(false)}
+                  >
+                    Iniciar sesión
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
