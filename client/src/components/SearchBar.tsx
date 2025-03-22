@@ -174,8 +174,8 @@ export function SearchBar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex-1 space-y-2">
-          {(searchType === 'agencies' || searchType === 'agents') && (
+        {(searchType === 'agencies' || searchType === 'agents') && (
+          <div className="flex-1">
             <Input
               type="text"
               placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'}...`}
@@ -183,8 +183,10 @@ export function SearchBar() {
               onChange={searchType === 'agencies' ? (e) => setAgencyName(e.target.value) : (e) => setAgentName(e.target.value)}
               value={searchType === 'agencies' ? agencyName : agentName}
             />
-          )}
+          </div>
+        )}
 
+        <div className="flex-1">
           <Button
             variant="outline"
             className="w-full justify-start h-auto py-2 px-3"

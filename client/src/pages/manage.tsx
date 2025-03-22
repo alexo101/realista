@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Redirect } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
 import {
   Sidebar,
@@ -23,6 +24,26 @@ export default function ManagePage() {
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
+
+  const { data: properties, isLoading: isLoadingProperties } = useQuery({
+    queryKey: ['/api/properties', user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/properties?agentId=${user?.id}`);
+      if (!response.ok) throw new Error('Failed to fetch properties');
+      return response.json();
+    },
+    enabled: section === 'properties',
+  });
+
+  const { data: clients, isLoading: isLoadingClients } = useQuery({
+    queryKey: ['/api/clients', user?.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/clients?agentId=${user?.id}`);
+      if (!response.ok) throw new Error('Failed to fetch clients');
+      return response.json();
+    },
+    enabled: section === 'clients',
+  });
 
   // Redirect non-agent users
   if (!user?.isAgent) {
@@ -104,7 +125,26 @@ export default function ManagePage() {
                 <PropertyForm onClose={() => setIsAddingProperty(false)} />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Property grid will go here */}
+                  {isLoadingProperties ? (
+                    Array(6).fill(0).map((_, i) => (
+                      <div key={i} className="bg-gray-100 animate-pulse h-48 rounded-lg" />
+                    ))
+                  ) : properties?.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <Building2 className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">Sin propiedades</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Empieza añadiendo una nueva propiedad.
+                      </p>
+                    </div>
+                  ) : (
+                    properties?.map((property) => (
+                      <div key={property.id} className="bg-white p-4 rounded-lg shadow">
+                        <p className="font-medium">{property.address}</p>
+                        <p className="text-sm text-gray-600">{property.type}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -119,7 +159,27 @@ export default function ManagePage() {
                 <ClientForm onClose={() => setIsAddingClient(false)} />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Client grid will go here */}
+                  {isLoadingClients ? (
+                    Array(6).fill(0).map((_, i) => (
+                      <div key={i} className="bg-gray-100 animate-pulse h-48 rounded-lg" />
+                    ))
+                  ) : clients?.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <Users className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-semibold text-gray-900">Sin clientes</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Empieza añadiendo un nuevo cliente.
+                      </p>
+                    </div>
+                  ) : (
+                    clients?.map((client) => (
+                      <div key={client.id} className="bg-white p-4 rounded-lg shadow">
+                        <p className="font-medium">{client.name}</p>
+                        <p className="text-sm text-gray-600">{client.email}</p>
+                        <p className="text-sm text-gray-600">{client.phone}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
