@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { SearchBar } from "@/components/SearchBar";
-import { SearchResults } from "@/components/SearchResults";
+import { PropertyResults } from "@/components/PropertyResults";
+import { AgencyResults } from "@/components/AgencyResults";
+import { AgentResults } from "@/components/AgentResults";
 
 export default function SearchPage() {
   const [location] = useLocation();
   const params = new URLSearchParams(location.split('?')[1]);
-  const searchType = params.get('type') || 'properties'; // Default to properties if type is not specified
+  const searchType = params.get('type') || 'properties';
 
   const { data: results, isLoading } = useQuery({
     queryKey: ['/api/search', location],
@@ -25,11 +27,15 @@ export default function SearchPage() {
           <SearchBar />
         </div>
 
-        <SearchResults
-          type={searchType === 'agencies' ? 'agencies' : searchType === 'agents' ? 'agents' : 'properties'}
-          results={results || []}
-          isLoading={isLoading}
-        />
+        {searchType === 'properties' && (
+          <PropertyResults results={results || []} isLoading={isLoading} />
+        )}
+        {searchType === 'agencies' && (
+          <AgencyResults results={results || []} isLoading={isLoading} />
+        )}
+        {searchType === 'agents' && (
+          <AgentResults results={results || []} isLoading={isLoading} />
+        )}
       </div>
     </div>
   );
