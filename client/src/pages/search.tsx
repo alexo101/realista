@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { SearchBar } from "@/components/SearchBar";
@@ -6,10 +6,17 @@ import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
 
+type SearchType = 'buy' | 'rent' | 'agencies' | 'agents';
+
 export default function SearchPage() {
   const [location] = useLocation();
-  const params = new URLSearchParams(location.split('?')[1]);
-  const searchType = params.get('type') || 'properties';
+  const searchType: SearchType = location.startsWith('/search/agencies')
+    ? 'agencies'
+    : location.startsWith('/search/agents')
+    ? 'agents'
+    : location.startsWith('/search/rent')
+    ? 'rent'
+    : 'buy';
 
   const { data: results, isLoading } = useQuery({
     queryKey: ['/api/search', location],
@@ -27,7 +34,7 @@ export default function SearchPage() {
           <SearchBar />
         </div>
 
-        {searchType === 'properties' && (
+        {(searchType === 'buy' || searchType === 'rent') && (
           <PropertyResults results={results || []} isLoading={isLoading} />
         )}
         {searchType === 'agencies' && (

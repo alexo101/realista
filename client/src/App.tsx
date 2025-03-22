@@ -14,7 +14,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/search" component={Search} />
+      <Route path="/search/buy" component={Search} />
+      <Route path="/search/rent" component={Search} />
+      <Route path="/search/agencies" component={Search} />
+      <Route path="/search/agents" component={Search} />
       <Route path="/property/:id" component={Property} />
       <Route path="/manage" component={Manage} />
       <Route component={NotFound} />
