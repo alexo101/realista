@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PropertyCard } from "@/components/PropertyCard";
 import { type Property } from "@shared/schema";
 import { SearchBar } from "@/components/SearchBar";
+import { NeighborhoodRating } from "@/components/NeighborhoodRating";
 
 export default function Home() {
   const { data: properties, isLoading } = useQuery<Property[]>({
@@ -23,8 +24,12 @@ export default function Home() {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-semibold mb-6">Propiedades destacadas</h2>
+        <h2 className="text-2xl font-semibold mb-6">Barrios de Barcelona</h2>
+        <NeighborhoodRating />
+      </section>
 
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl font-semibold mb-6">Propiedades destacadas</h2>
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (

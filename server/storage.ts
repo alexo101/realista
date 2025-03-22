@@ -1,18 +1,18 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql, and, gte, lte } from "drizzle-orm";
 import {
   users,
   properties,
-  agents,
-  inquiries,
+  clients,
+  neighborhoodRatings,
   type User,
   type Property,
-  type Agent,
-  type Inquiry,
+  type Client,
+  type NeighborhoodRating,
   type InsertUser,
   type InsertProperty,
-  type InsertAgent,
-  type InsertInquiry,
+  type InsertClient,
+  type InsertNeighborhoodRating,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -24,17 +24,19 @@ export interface IStorage {
   // Properties
   getProperties(): Promise<Property[]>;
   getProperty(id: number): Promise<Property | undefined>;
-  searchProperties(query: string, filters: any): Promise<Property[]>;
+  getPropertiesByAgent(agentId: number): Promise<Property[]>;
+  searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
 
-  // Agents
-  getAgent(id: number): Promise<Agent | undefined>;
-  getAgents(): Promise<Agent[]>;
-  createAgent(agent: InsertAgent): Promise<Agent>;
+  // Clients
+  getClients(): Promise<Client[]>;
+  getClient(id: number): Promise<Client | undefined>;
+  getClientsByAgent(agentId: number): Promise<Client[]>;
+  createClient(client: InsertClient): Promise<Client>;
 
-  // Inquiries
-  createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
-  getInquiries(): Promise<Inquiry[]>;
+  // Neighborhood Ratings
+  getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
+  createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -64,18 +66,35 @@ export class DatabaseStorage implements IStorage {
     return property;
   }
 
-  async searchProperties(query: string, filters: any): Promise<Property[]> {
-    let propertiesQuery = db.select().from(properties);
+  async getPropertiesByAgent(agentId: number): Promise<Property[]> {
+    return db.select().from(properties).where(eq(properties.agentId, agentId));
+  }
 
-    if (query) {
-      const lowercaseQuery = query.toLowerCase();
-      propertiesQuery = propertiesQuery.where(
-        eq(properties.location, query)
-      );
+  async searchProperties(filters: any): Promise<Property[]> {
+    let conditions = [] as any[];
+
+    if (filters.neighborhood) {
+      conditions.push(eq(properties.neighborhood, filters.neighborhood));
+    }
+    if (filters.type) {
+      conditions.push(eq(properties.type, filters.type));
+    }
+    if (filters.minPrice) {
+      if (filters.minPrice === 'less-than-60000') {
+        conditions.push(sql`${properties.price} < 60000`);
+      } else {
+        conditions.push(gte(properties.price, parseInt(filters.minPrice)));
+      }
+    }
+    if (filters.maxPrice && filters.maxPrice !== 'no-limit') {
+      conditions.push(lte(properties.price, parseInt(filters.maxPrice)));
     }
 
-    const results = await propertiesQuery;
-    return results;
+    const query = conditions.length > 0
+      ? db.select().from(properties).where(and(...conditions))
+      : db.select().from(properties);
+
+    return query;
   }
 
   async createProperty(property: InsertProperty): Promise<Property> {
@@ -83,29 +102,35 @@ export class DatabaseStorage implements IStorage {
     return newProperty;
   }
 
-  // Agents
-  async getAgent(id: number): Promise<Agent | undefined> {
-    const [agent] = await db.select().from(agents).where(eq(agents.id, id));
-    return agent;
+  // Clients
+  async getClients(): Promise<Client[]> {
+    return db.select().from(clients);
   }
 
-  async getAgents(): Promise<Agent[]> {
-    return db.select().from(agents);
+  async getClient(id: number): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
   }
 
-  async createAgent(agent: InsertAgent): Promise<Agent> {
-    const [newAgent] = await db.insert(agents).values(agent).returning();
-    return newAgent;
+  async getClientsByAgent(agentId: number): Promise<Client[]> {
+    return db.select().from(clients).where(eq(clients.agentId, agentId));
   }
 
-  // Inquiries
-  async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
-    const [newInquiry] = await db.insert(inquiries).values(inquiry).returning();
-    return newInquiry;
+  async createClient(client: InsertClient): Promise<Client> {
+    const [newClient] = await db.insert(clients).values(client).returning();
+    return newClient;
   }
 
-  async getInquiries(): Promise<Inquiry[]> {
-    return db.select().from(inquiries);
+  // Neighborhood Ratings
+  async getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]> {
+    return db.select()
+      .from(neighborhoodRatings)
+      .where(eq(neighborhoodRatings.neighborhood, neighborhood));
+  }
+
+  async createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating> {
+    const [newRating] = await db.insert(neighborhoodRatings).values(rating).returning();
+    return newRating;
   }
 }
 

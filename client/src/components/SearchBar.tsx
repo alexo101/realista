@@ -92,14 +92,24 @@ type SearchType = 'rent' | 'buy' | 'agencies' | 'agents';
 
 export function SearchBar() {
   const [, setLocation] = useLocation();
+  const [currentLocation] = useLocation();
   const { toast } = useToast();
   const [isNeighborhoodOpen, setIsNeighborhoodOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
-  const [searchType, setSearchType] = useState<SearchType>('buy');
   const [agencyName, setAgencyName] = useState('');
   const [agentName, setAgentName] = useState('');
+
+  // Determine initial search type based on current location
+  const getInitialSearchType = (): SearchType => {
+    if (currentLocation.startsWith('/search/agencies')) return 'agencies';
+    if (currentLocation.startsWith('/search/agents')) return 'agents';
+    if (currentLocation.startsWith('/search/rent')) return 'rent';
+    return 'buy';
+  };
+
+  const [searchType, setSearchType] = useState<SearchType>(getInitialSearchType());
 
   const filteredNeighborhoods = BARCELONA_NEIGHBORHOODS.filter(n =>
     n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
@@ -155,12 +165,13 @@ export function SearchBar() {
     setLocation(`${baseUrl}${queryString ? '?' + queryString : ''}`);
   };
 
-  const toggleNeighborhood = (neighborhood: string) => {
-    setSelectedNeighborhoods(prev =>
-      prev.includes(neighborhood)
-        ? prev.filter(n => n !== neighborhood)
-        : [...prev, neighborhood]
-    );
+  // Reset state when search type changes
+  const handleSearchTypeChange = (newType: SearchType) => {
+    setSearchType(newType);
+    setSelectedNeighborhoods([]);
+    setPriceRange({ min: "", max: "" });
+    setAgencyName('');
+    setAgentName('');
   };
 
   return (
@@ -170,28 +181,28 @@ export function SearchBar() {
           <Button
             variant={searchType === 'rent' ? 'default' : 'ghost'}
             className="rounded-none px-8"
-            onClick={() => setSearchType('rent')}
+            onClick={() => handleSearchTypeChange('rent')}
           >
             Alquilar
           </Button>
           <Button
             variant={searchType === 'buy' ? 'default' : 'ghost'}
             className="rounded-none px-8"
-            onClick={() => setSearchType('buy')}
+            onClick={() => handleSearchTypeChange('buy')}
           >
             Comprar
           </Button>
           <Button
             variant={searchType === 'agencies' ? 'default' : 'ghost'}
             className="rounded-none px-8"
-            onClick={() => setSearchType('agencies')}
+            onClick={() => handleSearchTypeChange('agencies')}
           >
             Agencias
           </Button>
           <Button
             variant={searchType === 'agents' ? 'default' : 'ghost'}
             className="rounded-none px-8"
-            onClick={() => setSearchType('agents')}
+            onClick={() => handleSearchTypeChange('agents')}
           >
             Agentes
           </Button>

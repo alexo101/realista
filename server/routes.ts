@@ -1,7 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertInquirySchema } from "@shared/schema";
+import { 
+  insertPropertySchema,
+  insertClientSchema,
+  insertNeighborhoodRatingSchema,
+  insertInquirySchema
+} from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
@@ -40,10 +45,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Properties
+  app.post("/api/properties", async (req, res) => {
+    try {
+      const property = insertPropertySchema.parse(req.body);
+      const result = await storage.createProperty(property);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid property data" });
+    }
+  });
+
   app.get("/api/properties", async (req, res) => {
     try {
-      const { query, ...filters } = req.query;
-      const properties = await storage.searchProperties(query as string, filters);
+      const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
+      const properties = agentId 
+        ? await storage.getPropertiesByAgent(agentId)
+        : await storage.searchProperties(req.query);
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch properties" });
@@ -72,6 +89,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(agent);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch agent" });
+    }
+  });
+
+  // Clients
+  app.post("/api/clients", async (req, res) => {
+    try {
+      const client = insertClientSchema.parse(req.body);
+      const result = await storage.createClient(client);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid client data" });
+    }
+  });
+
+  app.get("/api/clients", async (req, res) => {
+    try {
+      const agentId = parseInt(req.query.agentId as string);
+      const clients = await storage.getClientsByAgent(agentId);
+      res.json(clients);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch clients" });
+    }
+  });
+
+
+  // Neighborhood Ratings
+  app.post("/api/neighborhoods/ratings", async (req, res) => {
+    try {
+      const rating = insertNeighborhoodRatingSchema.parse(req.body);
+      const result = await storage.createNeighborhoodRating(rating);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid rating data" });
+    }
+  });
+
+  app.get("/api/neighborhoods/ratings", async (req, res) => {
+    try {
+      const neighborhood = req.query.neighborhood as string;
+      const ratings = await storage.getNeighborhoodRatings(neighborhood);
+      res.json(ratings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch neighborhood ratings" });
     }
   });
 

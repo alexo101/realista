@@ -6,11 +6,9 @@ import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
 
-type SearchType = 'buy' | 'rent' | 'agencies' | 'agents';
-
 export default function SearchPage() {
   const [location] = useLocation();
-  const searchType: SearchType = location.startsWith('/search/agencies')
+  const searchType = location.startsWith('/search/agencies')
     ? 'agencies'
     : location.startsWith('/search/agents')
     ? 'agents'

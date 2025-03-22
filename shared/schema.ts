@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -13,48 +13,45 @@ export const users = pgTable("users", {
 
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
-  title: text("title").notNull(),
+  address: text("address").notNull(),
+  type: text("type").notNull(),
   description: text("description").notNull(),
   price: integer("price").notNull(),
-  bedrooms: integer("bedrooms").notNull(),
-  bathrooms: integer("bathrooms").notNull(),
-  squareMeters: integer("square_meters").notNull(),
-  location: text("location").notNull(),
-  type: text("type").notNull(), // apartment, house, etc
-  images: text("images").array().notNull(),
-  features: text("features").array().notNull(),
+  neighborhood: text("neighborhood").notNull(),
   agentId: integer("agent_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const agents = pgTable("agents", {
+export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
-  photo: text("photo").notNull(),
+  agentId: integer("agent_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const inquiries = pgTable("inquiries", {
+export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   id: serial("id").primaryKey(),
-  propertyId: integer("property_id").notNull(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone").notNull(),
-  message: text("message").notNull(),
-  createdAt: text("created_at").notNull(),
+  neighborhood: text("neighborhood").notNull(),
+  security: decimal("security").notNull(),
+  parking: decimal("parking").notNull(),
+  familyFriendly: decimal("family_friendly").notNull(),
+  userId: integer("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertPropertySchema = createInsertSchema(properties).omit({ id: true });
-export const insertAgentSchema = createInsertSchema(agents).omit({ id: true });
-export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true });
+export const insertPropertySchema = createInsertSchema(properties).omit({ id: true, createdAt: true });
+export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
+export const insertNeighborhoodRatingSchema = createInsertSchema(neighborhoodRatings).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
-export type Agent = typeof agents.$inferSelect;
-export type Inquiry = typeof inquiries.$inferSelect;
+export type Client = typeof clients.$inferSelect;
+export type NeighborhoodRating = typeof neighborhoodRatings.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
-export type InsertAgent = z.infer<typeof insertAgentSchema>;
-export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+export type InsertClient = z.infer<typeof insertClientSchema>;
+export type InsertNeighborhoodRating = z.infer<typeof insertNeighborhoodRatingSchema>;
