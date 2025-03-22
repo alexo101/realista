@@ -33,6 +33,7 @@ const BARCELONA_NEIGHBORHOODS = [
 ];
 
 const PRICE_RANGES = [
+  { value: "less-than-60000", label: "<60.000 €" },
   { value: "60000", label: "60.000 €" },
   { value: "80000", label: "80.000 €" },
   { value: "100000", label: "100.000 €" },
@@ -95,6 +96,8 @@ export function SearchBar() {
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
   const [searchType, setSearchType] = useState<SearchType>('buy');
+  const [agencyName, setAgencyName] = useState('');
+  const [agentName, setAgentName] = useState('');
 
   const filteredNeighborhoods = BARCELONA_NEIGHBORHOODS.filter(n =>
     n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
@@ -108,7 +111,8 @@ export function SearchBar() {
     if (priceRange.min) params.append("minPrice", priceRange.min);
     if (priceRange.max) params.append("maxPrice", priceRange.max);
     params.append("type", searchType);
-
+    if (searchType === 'agencies' && agencyName) params.append('agencyName', agencyName);
+    if (searchType === 'agents' && agentName) params.append('agentName', agentName);
     setLocation(`/search?${params.toString()}`);
   };
 
@@ -123,114 +127,122 @@ export function SearchBar() {
   return (
     <div className="bg-white rounded-lg shadow-lg p-4">
       <div className="flex items-center gap-4 mb-4">
-        <div className="flex rounded-md overflow-hidden">
-          <Button
-            variant={searchType === 'rent' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => setSearchType('rent')}
-          >
-            Alquilar
-          </Button>
-          <Button
-            variant={searchType === 'buy' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => setSearchType('buy')}
-          >
-            Comprar
-          </Button>
-          <Button
-            variant={searchType === 'agencies' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => setSearchType('agencies')}
-          >
-            Agencias
-          </Button>
-          <Button
-            variant={searchType === 'agents' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => setSearchType('agents')}
-          >
-            Agentes
-          </Button>
-        </div>
+        <Button
+          variant={searchType === 'rent' ? 'default' : 'ghost'}
+          className="rounded-none px-8"
+          onClick={() => setSearchType('rent')}
+        >
+          Alquilar
+        </Button>
+        <Button
+          variant={searchType === 'buy' ? 'default' : 'ghost'}
+          className="rounded-none px-8"
+          onClick={() => setSearchType('buy')}
+        >
+          Comprar
+        </Button>
+        <Button
+          variant={searchType === 'agencies' ? 'default' : 'ghost'}
+          className="rounded-none px-8"
+          onClick={() => setSearchType('agencies')}
+        >
+          Agencias
+        </Button>
+        <Button
+          variant={searchType === 'agents' ? 'default' : 'ghost'}
+          className="rounded-none px-8"
+          onClick={() => setSearchType('agents')}
+        >
+          Agentes
+        </Button>
       </div>
 
       <div className="flex items-center gap-4">
         <div className="flex-1">
-          <Button
-            variant="outline"
-            className="w-full justify-start h-auto py-2 px-3"
-            onClick={() => setIsNeighborhoodOpen(true)}
-          >
-            {selectedNeighborhoods.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {selectedNeighborhoods.map(n => (
-                  <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
-                    {n}
-                  </span>
+          {(searchType === 'agencies' || searchType === 'agents') ? (
+            <Input
+              type="text"
+              placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'}...`}
+              className="w-full"
+              onChange={searchType === 'agencies' ? (e) => setAgencyName(e.target.value) : (e) => setAgentName(e.target.value)}
+              value={searchType === 'agencies' ? agencyName : agentName}
+            />
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-2 px-3"
+              onClick={() => setIsNeighborhoodOpen(true)}
+            >
+              {selectedNeighborhoods.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedNeighborhoods.map(n => (
+                    <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
+                      {n}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                "Selecciona barrios"
+              )}
+            </Button>
+          )}
+        </div>
+
+        {(searchType !== 'agencies' && searchType !== 'agents') && (
+          <div className="flex-1 flex gap-2">
+            <Select
+              value={priceRange.min}
+              onValueChange={(value) => {
+                if (priceRange.max && parseInt(value) > parseInt(priceRange.max)) {
+                  setPriceRange({ min: value, max: value });
+                } else {
+                  setPriceRange(prev => ({ ...prev, min: value }));
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Precio min" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRICE_RANGES.map(range => (
+                  <SelectItem
+                    key={range.value}
+                    value={range.value}
+                    disabled={priceRange.max && parseInt(range.value) > parseInt(priceRange.max)}
+                  >
+                    {range.label}
+                  </SelectItem>
                 ))}
-              </div>
-            ) : (
-              "Selecciona barrios"
-            )}
-          </Button>
-        </div>
+              </SelectContent>
+            </Select>
 
-        <div className="flex-1 flex gap-2">
-          <Select
-            value={priceRange.min}
-            onValueChange={(value) => {
-              // If max is set and new min is higher, adjust max
-              if (priceRange.max && parseInt(value) > parseInt(priceRange.max)) {
-                setPriceRange({ min: value, max: value });
-              } else {
-                setPriceRange(prev => ({ ...prev, min: value }));
-              }
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Precio min" />
-            </SelectTrigger>
-            <SelectContent>
-              {PRICE_RANGES.map(range => (
-                <SelectItem 
-                  key={range.value} 
-                  value={range.value}
-                  disabled={priceRange.max && parseInt(range.value) > parseInt(priceRange.max)}
-                >
-                  {range.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={priceRange.max}
-            onValueChange={(value) => {
-              // If min is set and new max is lower, adjust min
-              if (priceRange.min && parseInt(value) < parseInt(priceRange.min)) {
-                setPriceRange({ min: value, max: value });
-              } else {
-                setPriceRange(prev => ({ ...prev, max: value }));
-              }
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Precio max" />
-            </SelectTrigger>
-            <SelectContent>
-              {PRICE_RANGES.map(range => (
-                <SelectItem 
-                  key={range.value} 
-                  value={range.value}
-                  disabled={priceRange.min && parseInt(range.value) < parseInt(priceRange.min)}
-                >
-                  {range.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <Select
+              value={priceRange.max}
+              onValueChange={(value) => {
+                if (priceRange.min && parseInt(value) < parseInt(priceRange.min)) {
+                  setPriceRange({ min: value, max: value });
+                } else {
+                  setPriceRange(prev => ({ ...prev, max: value }));
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Precio max" />
+              </SelectTrigger>
+              <SelectContent>
+                {PRICE_RANGES.map(range => (
+                  <SelectItem
+                    key={range.value}
+                    value={range.value}
+                    disabled={priceRange.min && parseInt(range.value) < parseInt(priceRange.min)}
+                  >
+                    {range.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <Button onClick={handleSearch} className="px-8">
           <Search className="h-4 w-4" />
@@ -290,10 +302,10 @@ export function SearchBar() {
                 variant="outline"
                 onClick={() => setSelectedNeighborhoods([])}
               >
-                Reset
+                Limpiar
               </Button>
               <Button onClick={() => setIsNeighborhoodOpen(false)}>
-                Done
+                Hecho
               </Button>
             </div>
           </div>

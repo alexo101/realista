@@ -4,7 +4,6 @@ import { useUser } from "@/contexts/user-context";
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -31,10 +30,7 @@ export default function ManagePage() {
   return (
     <div className="min-h-screen flex pt-16">
       <SidebarProvider>
-        <Sidebar>
-          <SidebarHeader>
-            <h2 className="text-lg font-semibold px-4">Panel de gestión</h2>
-          </SidebarHeader>
+        <Sidebar className="pt-4">
           <SidebarContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -71,12 +67,9 @@ export default function ManagePage() {
         <main className="flex-1 p-6">
           {section === "properties" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Gestionar propiedades</h1>
-                <Button onClick={() => setIsAddingProperty(true)} size="lg">
-                  Añadir propiedad
-                </Button>
-              </div>
+              <Button onClick={() => setIsAddingProperty(true)} size="lg">
+                Añadir propiedad
+              </Button>
 
               {isAddingProperty ? (
                 <PropertyForm onClose={() => setIsAddingProperty(false)} />
@@ -89,12 +82,9 @@ export default function ManagePage() {
           )}
           {section === "clients" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">CRM clientes</h1>
-                <Button onClick={() => setIsAddingClient(true)} size="lg">
-                  Añadir cliente
-                </Button>
-              </div>
+              <Button onClick={() => setIsAddingClient(true)} size="lg">
+                Añadir cliente
+              </Button>
 
               {isAddingClient ? (
                 <ClientForm onClose={() => setIsAddingClient(false)} />
@@ -107,12 +97,9 @@ export default function ManagePage() {
           )}
           {section === "reviews" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Gestionar reseñas</h1>
-                <Button onClick={() => setIsRequestingReview(true)} size="lg">
-                  Solicitar reseña
-                </Button>
-              </div>
+              <Button onClick={() => setIsRequestingReview(true)} size="lg">
+                Solicitar reseña
+              </Button>
 
               {isRequestingReview ? (
                 <ReviewRequestForm onClose={() => setIsRequestingReview(false)} />
