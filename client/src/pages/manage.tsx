@@ -10,10 +10,12 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Star } from "lucide-react";
+import { Building2, Users, Star, UserCircle } from "lucide-react";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function ManagePage() {
   const { user } = useUser();
@@ -28,10 +30,37 @@ export default function ManagePage() {
   }
 
   return (
-    <div className="min-h-screen flex pt-16">
+    <div className="min-h-screen flex">
       <SidebarProvider>
-        <Sidebar className="pt-4">
+        <Sidebar className="pt-16 w-64 border-r">
           <SidebarContent>
+            <div className="p-4 border-b">
+              <h2 className="font-semibold mb-4">Mi perfil</h2>
+              <div className="space-y-4">
+                <div className="flex flex-col items-center">
+                  <div className="w-24 h-24 rounded-full bg-gray-100 mb-2 flex items-center justify-center">
+                    <UserCircle className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <Label htmlFor="picture" className="cursor-pointer text-sm text-primary">
+                    Cambiar foto
+                  </Label>
+                  <Input
+                    id="picture"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      // Handle profile picture upload
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // TODO: Implement profile picture upload
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -64,7 +93,7 @@ export default function ManagePage() {
           </SidebarContent>
         </Sidebar>
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 pt-20">
           {section === "properties" && (
             <div className="space-y-4">
               <Button onClick={() => setIsAddingProperty(true)} size="lg">

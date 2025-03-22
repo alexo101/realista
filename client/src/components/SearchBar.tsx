@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const BARCELONA_NEIGHBORHOODS = [
   "Barceloneta",
@@ -91,6 +92,7 @@ type SearchType = 'rent' | 'buy' | 'agencies' | 'agents';
 
 export function SearchBar() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [isNeighborhoodOpen, setIsNeighborhoodOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
@@ -104,12 +106,26 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
+    if ((searchType === 'agencies' || searchType === 'agents')) {
+      const searchTerm = searchType === 'agencies' ? agencyName : agentName;
+      if (!searchTerm && !selectedNeighborhoods.length) {
+        toast({
+          title: "Error",
+          description: `Por favor, introduce un nombre de ${searchType === 'agencies' ? 'agencia' : 'agente'} o selecciona un barrio.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const params = new URLSearchParams();
     if (selectedNeighborhoods.length > 0) {
       params.append("neighborhoods", selectedNeighborhoods.join(","));
     }
-    if (priceRange.min) params.append("minPrice", priceRange.min);
-    if (priceRange.max) params.append("maxPrice", priceRange.max);
+    if (searchType === 'buy' || searchType === 'rent') {
+      if (priceRange.min) params.append("minPrice", priceRange.min);
+      if (priceRange.max) params.append("maxPrice", priceRange.max);
+    }
     params.append("type", searchType);
     if (searchType === 'agencies' && agencyName) params.append('agencyName', agencyName);
     if (searchType === 'agents' && agentName) params.append('agentName', agentName);
@@ -158,8 +174,8 @@ export function SearchBar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex-1">
-          {(searchType === 'agencies' || searchType === 'agents') ? (
+        <div className="flex-1 space-y-2">
+          {(searchType === 'agencies' || searchType === 'agents') && (
             <Input
               type="text"
               placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'}...`}
@@ -167,25 +183,25 @@ export function SearchBar() {
               onChange={searchType === 'agencies' ? (e) => setAgencyName(e.target.value) : (e) => setAgentName(e.target.value)}
               value={searchType === 'agencies' ? agencyName : agentName}
             />
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-2 px-3"
-              onClick={() => setIsNeighborhoodOpen(true)}
-            >
-              {selectedNeighborhoods.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {selectedNeighborhoods.map(n => (
-                    <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
-                      {n}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                "Selecciona barrios"
-              )}
-            </Button>
           )}
+
+          <Button
+            variant="outline"
+            className="w-full justify-start h-auto py-2 px-3"
+            onClick={() => setIsNeighborhoodOpen(true)}
+          >
+            {selectedNeighborhoods.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {selectedNeighborhoods.map(n => (
+                  <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
+                    {n}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              "Selecciona barrios"
+            )}
+          </Button>
         </div>
 
         {(searchType !== 'agencies' && searchType !== 'agents') && (
