@@ -174,6 +174,14 @@ export function SearchBar() {
     setAgentName('');
   };
 
+  const toggleNeighborhood = (neighborhood: string) => {
+    setSelectedNeighborhoods(prev =>
+      prev.includes(neighborhood)
+        ? prev.filter(n => n !== neighborhood)
+        : [...prev, neighborhood]
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-lg p-4">
@@ -245,13 +253,11 @@ export function SearchBar() {
             <div className="flex-1 flex gap-2">
               <Select
                 value={priceRange.min}
-                onValueChange={(value) => {
-                  if (priceRange.max && parseInt(value) > parseInt(priceRange.max)) {
-                    setPriceRange({ min: value, max: value });
-                  } else {
-                    setPriceRange(prev => ({ ...prev, min: value }));
-                  }
-                }}
+                onValueChange={(value) => setPriceRange(prev => ({
+                  ...prev,
+                  min: value,
+                  max: value > prev.max ? value : prev.max
+                }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Precio min" />
@@ -271,13 +277,11 @@ export function SearchBar() {
 
               <Select
                 value={priceRange.max}
-                onValueChange={(value) => {
-                  if (priceRange.min && parseInt(value) < parseInt(priceRange.min)) {
-                    setPriceRange({ min: value, max: value });
-                  } else {
-                    setPriceRange(prev => ({ ...prev, max: value }));
-                  }
-                }}
+                onValueChange={(value) => setPriceRange(prev => ({
+                  ...prev,
+                  max: value,
+                  min: value < prev.min ? value : prev.min
+                }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Precio max" />
@@ -340,7 +344,7 @@ export function SearchBar() {
                     <span
                       key={neighborhood}
                       className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
-                      onClick={() => toggleNeighborhood(neighborhood)}
+                      onClick={() => setSelectedNeighborhoods(prev => prev.filter(n => n !== neighborhood))}
                     >
                       {neighborhood}
                       <X className="h-3 w-3" />
@@ -360,7 +364,11 @@ export function SearchBar() {
                       ? "bg-primary/10"
                       : ""
                   }`}
-                  onClick={() => toggleNeighborhood(neighborhood)}
+                  onClick={() => setSelectedNeighborhoods(prev =>
+                    prev.includes(neighborhood)
+                      ? prev.filter(n => n !== neighborhood)
+                      : [...prev, neighborhood]
+                  )}
                 >
                   {neighborhood}
                 </Button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Redirect } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
 import {
   Sidebar,
@@ -17,32 +17,71 @@ import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apiRequest } from "@/lib/queryClient";
+import { type Property, type Client } from "@shared/schema";
 
 export default function ManagePage() {
   const { user } = useUser();
+  const queryClient = useQueryClient();
   const [section, setSection] = useState("properties");
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
 
-  const { data: properties, isLoading: isLoadingProperties } = useQuery({
+  const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: ['/api/properties', user?.id],
     queryFn: async () => {
       const response = await fetch(`/api/properties?agentId=${user?.id}`);
       if (!response.ok) throw new Error('Failed to fetch properties');
       return response.json();
     },
-    enabled: section === 'properties',
+    enabled: section === 'properties' && Boolean(user?.id),
   });
 
-  const { data: clients, isLoading: isLoadingClients } = useQuery({
+  const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: ['/api/clients', user?.id],
     queryFn: async () => {
       const response = await fetch(`/api/clients?agentId=${user?.id}`);
       if (!response.ok) throw new Error('Failed to fetch clients');
       return response.json();
     },
-    enabled: section === 'clients',
+    enabled: section === 'clients' && Boolean(user?.id),
+  });
+
+  const createPropertyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('POST', '/api/properties', {
+        ...data,
+        agentId: user!.id,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create property');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.id] });
+      setIsAddingProperty(false);
+    },
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('POST', '/api/clients', {
+        ...data,
+        agentId: user!.id,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create client');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
+      setIsAddingClient(false);
+    },
   });
 
   // Redirect non-agent users
@@ -122,7 +161,12 @@ export default function ManagePage() {
               </Button>
 
               {isAddingProperty ? (
-                <PropertyForm onClose={() => setIsAddingProperty(false)} />
+                <PropertyForm 
+                  onSubmit={async (data) => {
+                    await createPropertyMutation.mutateAsync(data);
+                  }}
+                  onClose={() => setIsAddingProperty(false)} 
+                />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {isLoadingProperties ? (
@@ -142,6 +186,7 @@ export default function ManagePage() {
                       <div key={property.id} className="bg-white p-4 rounded-lg shadow">
                         <p className="font-medium">{property.address}</p>
                         <p className="text-sm text-gray-600">{property.type}</p>
+                        <p className="text-primary font-semibold mt-2">{property.price}€</p>
                       </div>
                     ))
                   )}
@@ -156,7 +201,12 @@ export default function ManagePage() {
               </Button>
 
               {isAddingClient ? (
-                <ClientForm onClose={() => setIsAddingClient(false)} />
+                <ClientForm 
+                  onSubmit={async (data) => {
+                    await createClientMutation.mutateAsync(data);
+                  }}
+                  onClose={() => setIsAddingClient(false)} 
+                />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {isLoadingClients ? (
