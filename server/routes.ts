@@ -4,8 +4,7 @@ import { storage } from "./storage";
 import { 
   insertPropertySchema,
   insertClientSchema,
-  insertNeighborhoodRatingSchema,
-  insertInquirySchema
+  insertNeighborhoodRatingSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -16,6 +15,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUserByEmail(email as string);
       res.json({ exists: !!user, name: user?.name });
     } catch (error) {
+      console.error('Error checking email:', error);
       res.status(500).json({ message: "Failed to check email" });
     }
   });
@@ -25,6 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser(req.body);
       res.status(201).json(user);
     } catch (error) {
+      console.error('Error registering user:', error);
       res.status(400).json({ message: "Invalid registration data" });
     }
   });
@@ -40,6 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(user);
     } catch (error) {
+      console.error('Error during login:', error);
       res.status(500).json({ message: "Login failed" });
     }
   });
@@ -47,10 +49,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Properties
   app.post("/api/properties", async (req, res) => {
     try {
+      console.log('Attempting to create property with data:', req.body);
       const property = insertPropertySchema.parse(req.body);
       const result = await storage.createProperty(property);
+      console.log('Property created successfully:', result);
       res.status(201).json(result);
     } catch (error) {
+      console.error('Error creating property:', error);
       res.status(400).json({ message: "Invalid property data" });
     }
   });
@@ -63,6 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : await storage.searchProperties(req.query);
       res.json(properties);
     } catch (error) {
+      console.error('Error fetching properties:', error);
       res.status(500).json({ message: "Failed to fetch properties" });
     }
   });
@@ -75,30 +81,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(property);
     } catch (error) {
+      console.error('Error fetching property:', error);
       res.status(500).json({ message: "Failed to fetch property" });
-    }
-  });
-
-  // Agents
-  app.get("/api/agents/:id", async (req, res) => {
-    try {
-      const agent = await storage.getAgent(parseInt(req.params.id));
-      if (!agent) {
-        return res.status(404).json({ message: "Agent not found" });
-      }
-      res.json(agent);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch agent" });
     }
   });
 
   // Clients
   app.post("/api/clients", async (req, res) => {
     try {
+      console.log('Attempting to create client with data:', req.body);
       const client = insertClientSchema.parse(req.body);
       const result = await storage.createClient(client);
+      console.log('Client created successfully:', result);
       res.status(201).json(result);
     } catch (error) {
+      console.error('Error creating client:', error);
       res.status(400).json({ message: "Invalid client data" });
     }
   });
@@ -109,10 +106,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = await storage.getClientsByAgent(agentId);
       res.json(clients);
     } catch (error) {
+      console.error('Error fetching clients:', error);
       res.status(500).json({ message: "Failed to fetch clients" });
     }
   });
-
 
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
@@ -121,6 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.createNeighborhoodRating(rating);
       res.status(201).json(result);
     } catch (error) {
+      console.error('Error creating neighborhood rating:', error);
       res.status(400).json({ message: "Invalid rating data" });
     }
   });
@@ -131,18 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ratings = await storage.getNeighborhoodRatings(neighborhood);
       res.json(ratings);
     } catch (error) {
+      console.error('Error fetching neighborhood ratings:', error);
       res.status(500).json({ message: "Failed to fetch neighborhood ratings" });
-    }
-  });
-
-  // Inquiries
-  app.post("/api/inquiries", async (req, res) => {
-    try {
-      const inquiry = insertInquirySchema.parse(req.body);
-      const result = await storage.createInquiry(inquiry);
-      res.status(201).json(result);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid inquiry data" });
     }
   });
 

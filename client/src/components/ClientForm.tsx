@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
@@ -23,10 +22,11 @@ const formSchema = z.object({
 });
 
 interface ClientFormProps {
+  onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>;
   onClose: () => void;
 }
 
-export function ClientForm({ onClose }: ClientFormProps) {
+export function ClientForm({ onSubmit, onClose }: ClientFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,25 +39,14 @@ export function ClientForm({ onClose }: ClientFormProps) {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       setIsSubmitting(true);
-      const response = await apiRequest("POST", "/api/clients", data);
-
-      if (response.ok) {
-        toast({
-          title: "El cliente ha sido creado",
-          duration: 3000,
-        });
-        onClose();
-      } else {
-        const error = await response.json();
-        toast({
-          title: "Error",
-          description: error.message || "Ha ocurrido un error al crear el cliente.",
-          variant: "destructive",
-        });
-      }
+      await onSubmit(data);
+      toast({
+        title: "El cliente ha sido creado",
+        duration: 3000,
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -69,13 +58,11 @@ export function ClientForm({ onClose }: ClientFormProps) {
     }
   };
 
-  const isFormValid = form.formState.isValid;
-
   return (
     <Card>
       <CardContent className="pt-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -128,7 +115,7 @@ export function ClientForm({ onClose }: ClientFormProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={!isFormValid || isSubmitting}
+                disabled={!form.formState.isValid || isSubmitting}
               >
                 Crear cliente
               </Button>
