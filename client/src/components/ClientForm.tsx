@@ -88,7 +88,16 @@ export function ClientForm({ onSubmit, onClose, initialData, isEditing = false }
                 <FormItem>
                   <FormLabel>Número de teléfono</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Introduce el número de teléfono" type="tel" />
+                    <Input 
+                      {...field} 
+                      placeholder="Introduce el número de teléfono" 
+                      type="tel"
+                      onKeyPress={(e) => {
+                        if (!/[0-9]/.test(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

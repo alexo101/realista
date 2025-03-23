@@ -63,15 +63,17 @@ const formSchema = z.object({
 interface PropertyFormProps {
   onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>;
   onClose: () => void;
+  initialData?: z.infer<typeof formSchema>;
+  isEditing?: boolean;
 }
 
-export function PropertyForm({ onSubmit, onClose }: PropertyFormProps) {
+export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false }: PropertyFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       address: "",
       type: undefined,
       operationType: undefined,
@@ -86,13 +88,13 @@ export function PropertyForm({ onSubmit, onClose }: PropertyFormProps) {
       setIsSubmitting(true);
       await onSubmit(data);
       toast({
-        title: "La propiedad ha sido creada",
+        title: `La propiedad ha sido ${isEditing ? 'actualizada' : 'creada'}`,
         duration: 3000,
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Ha ocurrido un error al crear la propiedad.",
+        description: "Ha ocurrido un error al guardar la propiedad.",
         variant: "destructive",
       });
     } finally {
@@ -192,7 +194,18 @@ export function PropertyForm({ onSubmit, onClose }: PropertyFormProps) {
                 <FormItem>
                   <FormLabel>Precio (€)</FormLabel>
                   <FormControl>
-                    <Input {...field} type="number" placeholder="Introduce el precio" />
+                    <Input 
+                      {...field} 
+                      type="number" 
+                      min="0"
+                      placeholder="Introduce el precio" 
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (!value || Number(value) > 0) {
+                          field.onChange(value);
+                        }
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -239,7 +252,7 @@ export function PropertyForm({ onSubmit, onClose }: PropertyFormProps) {
                 type="submit"
                 disabled={!form.formState.isValid || isSubmitting}
               >
-                Crear propiedad
+                {isEditing ? 'Actualizar' : 'Crear'} propiedad
               </Button>
             </div>
           </form>

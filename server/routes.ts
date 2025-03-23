@@ -60,6 +60,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/properties/:id", async (req, res) => {
+    try {
+      console.log('Attempting to update property:', req.params.id, req.body);
+      const property = insertPropertySchema.parse(req.body);
+      const result = await storage.updateProperty(parseInt(req.params.id), property);
+      console.log('Property updated successfully:', result);
+      res.json(result);
+    } catch (error) {
+      console.error('Error updating property:', error);
+      res.status(400).json({ message: "Invalid property data" });
+    }
+  });
+
   app.get("/api/properties", async (req, res) => {
     try {
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
@@ -96,6 +109,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error creating client:', error);
+      res.status(400).json({ message: "Invalid client data" });
+    }
+  });
+
+  app.patch("/api/clients/:id", async (req, res) => {
+    try {
+      console.log('Attempting to update client:', req.params.id, req.body);
+      const client = insertClientSchema.parse(req.body);
+      const result = await storage.updateClient(parseInt(req.params.id), client);
+      console.log('Client updated successfully:', result);
+      res.json(result);
+    } catch (error) {
+      console.error('Error updating client:', error);
       res.status(400).json({ message: "Invalid client data" });
     }
   });

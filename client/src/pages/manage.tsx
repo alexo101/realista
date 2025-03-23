@@ -27,6 +27,8 @@ export default function ManagePage() {
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: ['/api/properties', user?.id],
@@ -63,6 +65,25 @@ export default function ManagePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.id] });
       setIsAddingProperty(false);
+      setEditingProperty(null);
+    },
+  });
+
+  const updatePropertyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('PATCH', `/api/properties/${editingProperty?.id}`, {
+        ...data,
+        agentId: user!.id,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update property');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.id] });
+      setEditingProperty(null);
     },
   });
 
@@ -81,6 +102,25 @@ export default function ManagePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
       setIsAddingClient(false);
+      setEditingClient(null);
+    },
+  });
+
+  const updateClientMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('PATCH', `/api/clients/${editingClient?.id}`, {
+        ...data,
+        agentId: user!.id,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update client');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
+      setEditingClient(null);
     },
   });
 
@@ -156,16 +196,31 @@ export default function ManagePage() {
         <main className="flex-1 p-6 pt-20">
           {section === "properties" && (
             <div className="space-y-4">
-              <Button onClick={() => setIsAddingProperty(true)} size="lg">
+              <Button 
+                onClick={() => {
+                  setIsAddingProperty(true);
+                  setEditingProperty(null);
+                }} 
+                size="lg"
+              >
                 Añadir propiedad
               </Button>
 
-              {isAddingProperty ? (
+              {(isAddingProperty || editingProperty) ? (
                 <PropertyForm 
                   onSubmit={async (data) => {
-                    await createPropertyMutation.mutateAsync(data);
+                    if (editingProperty) {
+                      await updatePropertyMutation.mutateAsync(data);
+                    } else {
+                      await createPropertyMutation.mutateAsync(data);
+                    }
                   }}
-                  onClose={() => setIsAddingProperty(false)} 
+                  onClose={() => {
+                    setIsAddingProperty(false);
+                    setEditingProperty(null);
+                  }}
+                  initialData={editingProperty || undefined}
+                  isEditing={!!editingProperty}
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -183,10 +238,15 @@ export default function ManagePage() {
                     </div>
                   ) : (
                     properties?.map((property) => (
-                      <div key={property.id} className="bg-white p-4 rounded-lg shadow">
+                      <div 
+                        key={property.id} 
+                        className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => setEditingProperty(property)}
+                      >
                         <p className="font-medium">{property.address}</p>
                         <p className="text-sm text-gray-600">{property.type}</p>
                         <p className="text-primary font-semibold mt-2">{property.price}€</p>
+                        <p className="text-sm text-gray-500 mt-1">{property.neighborhood}</p>
                       </div>
                     ))
                   )}
@@ -196,16 +256,31 @@ export default function ManagePage() {
           )}
           {section === "clients" && (
             <div className="space-y-4">
-              <Button onClick={() => setIsAddingClient(true)} size="lg">
+              <Button 
+                onClick={() => {
+                  setIsAddingClient(true);
+                  setEditingClient(null);
+                }} 
+                size="lg"
+              >
                 Añadir cliente
               </Button>
 
-              {isAddingClient ? (
+              {(isAddingClient || editingClient) ? (
                 <ClientForm 
                   onSubmit={async (data) => {
-                    await createClientMutation.mutateAsync(data);
+                    if (editingClient) {
+                      await updateClientMutation.mutateAsync(data);
+                    } else {
+                      await createClientMutation.mutateAsync(data);
+                    }
                   }}
-                  onClose={() => setIsAddingClient(false)} 
+                  onClose={() => {
+                    setIsAddingClient(false);
+                    setEditingClient(null);
+                  }}
+                  initialData={editingClient || undefined}
+                  isEditing={!!editingClient}
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -223,7 +298,11 @@ export default function ManagePage() {
                     </div>
                   ) : (
                     clients?.map((client) => (
-                      <div key={client.id} className="bg-white p-4 rounded-lg shadow">
+                      <div 
+                        key={client.id} 
+                        className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => setEditingClient(client)}
+                      >
                         <p className="font-medium">{client.name}</p>
                         <p className="text-sm text-gray-600">{client.email}</p>
                         <p className="text-sm text-gray-600">{client.phone}</p>
