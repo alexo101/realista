@@ -49,7 +49,12 @@ const formSchema = z.object({
     required_error: "Selecciona el tipo de operación",
   }),
   description: z.string().min(1, "La descripción es obligatoria"),
-  price: z.string().min(1, "El precio es obligatorio").transform(Number),
+  price: z.string()
+    .min(1, "El precio es obligatorio")
+    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+      message: "El precio debe ser un número positivo",
+    })
+    .transform(Number),
   neighborhood: z.enum(BARCELONA_NEIGHBORHOODS as [string, ...string[]], {
     required_error: "Selecciona un barrio",
   }),

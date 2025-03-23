@@ -55,7 +55,7 @@ export function NeighborhoodRating() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<NeighborhoodRating>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       security: 0,
@@ -64,7 +64,7 @@ export function NeighborhoodRating() {
     },
   });
 
-  const onSubmit = async (data: NeighborhoodRating) => {
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
     if (!selectedNeighborhood || !user) return;
 
     try {
@@ -102,12 +102,10 @@ export function NeighborhoodRating() {
     }
   };
 
-  const isFormValid = form.formState.isValid && selectedNeighborhood;
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Conoce los barrios</h2>
+      <div className="flex items-center">
+        <h2 className="text-2xl font-semibold flex-1">Conoce los barrios</h2>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
@@ -150,7 +148,7 @@ export function NeighborhoodRating() {
                             <TooltipTrigger asChild>
                               <FormControl>
                                 <Slider
-                                  min={0}
+                                  min={1}
                                   max={10}
                                   step={1}
                                   value={[field.value]}
@@ -179,7 +177,7 @@ export function NeighborhoodRating() {
                             <TooltipTrigger asChild>
                               <FormControl>
                                 <Slider
-                                  min={0}
+                                  min={1}
                                   max={10}
                                   step={1}
                                   value={[field.value]}
@@ -208,7 +206,7 @@ export function NeighborhoodRating() {
                             <TooltipTrigger asChild>
                               <FormControl>
                                 <Slider
-                                  min={0}
+                                  min={1}
                                   max={10}
                                   step={1}
                                   value={[field.value]}
@@ -230,7 +228,7 @@ export function NeighborhoodRating() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={!isFormValid || isSubmitting}
+                  disabled={!form.formState.isValid || isSubmitting}
                 >
                   Enviar
                 </Button>
