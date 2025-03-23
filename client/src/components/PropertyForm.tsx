@@ -58,6 +58,8 @@ const formSchema = z.object({
   neighborhood: z.enum(BARCELONA_NEIGHBORHOODS as [string, ...string[]], {
     required_error: "Selecciona un barrio",
   }),
+  title: z.string().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 interface PropertyFormProps {
@@ -80,6 +82,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       description: "",
       price: "",
       neighborhood: undefined,
+      title: "",
+      images: [],
     },
   });
 
@@ -194,11 +198,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 <FormItem>
                   <FormLabel>Precio (€)</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
-                      type="number" 
+                    <Input
+                      {...field}
+                      type="number"
                       min="0"
-                      placeholder="Introduce el precio" 
+                      placeholder="Introduce el precio"
                       onChange={(e) => {
                         const value = e.target.value;
                         if (!value || Number(value) > 0) {
@@ -239,6 +243,35 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Title" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="images"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Images</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="text" placeholder="Image URLs (comma-separated)" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
 
             <div className="flex justify-end gap-3">
               <Button
