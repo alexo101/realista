@@ -24,7 +24,6 @@ export default function Home() {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-semibold mb-6">Barrios de Barcelona</h2>
         <NeighborhoodRating />
       </section>
 
