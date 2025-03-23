@@ -45,6 +45,9 @@ const formSchema = z.object({
   type: z.enum(["Piso", "Casa"], {
     required_error: "Selecciona el tipo de inmueble",
   }),
+  operationType: z.enum(["Venta", "Alquiler"], {
+    required_error: "Selecciona el tipo de operación",
+  }),
   description: z.string().min(1, "La descripción es obligatoria"),
   price: z.string().min(1, "El precio es obligatorio").transform(Number),
   neighborhood: z.enum(BARCELONA_NEIGHBORHOODS as [string, ...string[]], {
@@ -66,6 +69,7 @@ export function PropertyForm({ onSubmit, onClose }: PropertyFormProps) {
     defaultValues: {
       address: "",
       type: undefined,
+      operationType: undefined,
       description: "",
       price: "",
       neighborhood: undefined,
@@ -110,30 +114,57 @@ export function PropertyForm({ onSubmit, onClose }: PropertyFormProps) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo de inmueble</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona el tipo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Piso">Piso</SelectItem>
-                      <SelectItem value="Casa">Casa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de inmueble</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona el tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Piso">Piso</SelectItem>
+                        <SelectItem value="Casa">Casa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="operationType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de operación</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona la operación" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Venta">Venta</SelectItem>
+                        <SelectItem value="Alquiler">Alquiler</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

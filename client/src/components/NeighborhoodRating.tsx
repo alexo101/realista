@@ -13,9 +13,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
+import { Info } from "lucide-react";
 
 const BARCELONA_NEIGHBORHOODS = [
   "Barceloneta",
@@ -99,19 +106,26 @@ export function NeighborhoodRating() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Barrios de Barcelona</h2>
-        <p className="text-gray-600">
-          Selecciona un barrio y valora diferentes aspectos.
-        </p>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Conoce los barrios</h2>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Info className="h-4 w-4 text-gray-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-sm">Tu grano de arena para ayudar a quienes no conocen los barrios</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {BARCELONA_NEIGHBORHOODS.map((neighborhood) => (
           <Button
             key={neighborhood}
             variant={selectedNeighborhood === neighborhood ? "default" : "outline"}
-            className="w-full"
+            className="w-full text-sm py-1"
             onClick={() => setSelectedNeighborhood(neighborhood)}
           >
             {neighborhood}
@@ -124,65 +138,94 @@ export function NeighborhoodRating() {
           <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="security"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Seguridad</FormLabel>
-                      <FormControl>
-                        <Slider
-                          min={0}
-                          max={10}
-                          step={1}
-                          value={[field.value]}
-                          onValueChange={([value]) => field.onChange(value)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="flex gap-4 items-end">
+                  <FormField
+                    control={form.control}
+                    name="security"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>Seguridad</FormLabel>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <FormControl>
+                                <Slider
+                                  min={0}
+                                  max={10}
+                                  step={1}
+                                  value={[field.value]}
+                                  onValueChange={([value]) => field.onChange(value)}
+                                />
+                              </FormControl>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Valor: {field.value}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="parking"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fácil de aparcar</FormLabel>
-                      <FormControl>
-                        <Slider
-                          min={0}
-                          max={10}
-                          step={1}
-                          value={[field.value]}
-                          onValueChange={([value]) => field.onChange(value)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="parking"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>Fácil de aparcar</FormLabel>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <FormControl>
+                                <Slider
+                                  min={0}
+                                  max={10}
+                                  step={1}
+                                  value={[field.value]}
+                                  onValueChange={([value]) => field.onChange(value)}
+                                />
+                              </FormControl>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Valor: {field.value}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="familyFriendly"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amigable para niños</FormLabel>
-                      <FormControl>
-                        <Slider
-                          min={0}
-                          max={10}
-                          step={1}
-                          value={[field.value]}
-                          onValueChange={([value]) => field.onChange(value)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="familyFriendly"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>Amigable para niños</FormLabel>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <FormControl>
+                                <Slider
+                                  min={0}
+                                  max={10}
+                                  step={1}
+                                  value={[field.value]}
+                                  onValueChange={([value]) => field.onChange(value)}
+                                />
+                              </FormControl>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Valor: {field.value}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <Button
                   type="submit"

@@ -15,6 +15,7 @@ export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   address: text("address").notNull(),
   type: text("type").notNull(),
+  operationType: text("operation_type").notNull(), // "Venta" or "Alquiler"
   description: text("description").notNull(),
   price: integer("price").notNull(),
   neighborhood: text("neighborhood").notNull(),
