@@ -104,16 +104,19 @@ export function NeighborhoodRating() {
 
   return (
     <div className="space-y-6">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger className="flex-1 text-left">
-            <h2 className="text-2xl font-semibold">Conoce los barrios</h2>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="text-sm">Tu grano de arena para ayudar a quienes no conocen los barrios</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <div className="flex items-center">
+        <h2 className="text-2xl font-semibold flex-1">Conoce los barrios</h2>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Info className="h-4 w-4 text-gray-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-sm">Tu grano de arena para ayudar a quienes no conocen los barrios</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
 
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {BARCELONA_NEIGHBORHOODS.map((neighborhood) => (
