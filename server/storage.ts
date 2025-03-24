@@ -20,6 +20,10 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Agents
+  searchAgents(query: string): Promise<User[]>;
+  createAgentReview(review: any): Promise<any>;
 
   // Properties
   getProperties(): Promise<Property[]>;
@@ -27,12 +31,14 @@ export interface IStorage {
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
+  updateProperty(id: number, property: InsertProperty): Promise<Property>;
 
   // Clients
   getClients(): Promise<Client[]>;
   getClient(id: number): Promise<Client | undefined>;
   getClientsByAgent(agentId: number): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
+  updateClient(id: number, client: InsertClient): Promise<Client>;
 
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
@@ -54,6 +60,25 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
+  }
+
+  // Agents
+  async searchAgents(query: string): Promise<User[]> {
+    return db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.isAgent, true),
+          sql`(${users.name} ILIKE ${'%' + query + '%'} OR ${users.email} ILIKE ${'%' + query + '%'})`
+        )
+      );
+  }
+
+  async createAgentReview(review: any): Promise<any> {
+    // This is a placeholder implementation since we don't have an agent_reviews table defined yet
+    // In a real implementation, we would insert into an agent_reviews table
+    console.log('Agent review submission:', review);
+    return { ...review, id: Date.now(), createdAt: new Date() };
   }
 
   // Properties
@@ -102,6 +127,15 @@ export class DatabaseStorage implements IStorage {
     return newProperty;
   }
 
+  async updateProperty(id: number, property: InsertProperty): Promise<Property> {
+    const [updatedProperty] = await db
+      .update(properties)
+      .set(property)
+      .where(eq(properties.id, id))
+      .returning();
+    return updatedProperty;
+  }
+
   // Clients
   async getClients(): Promise<Client[]> {
     return db.select().from(clients);
@@ -119,6 +153,15 @@ export class DatabaseStorage implements IStorage {
   async createClient(client: InsertClient): Promise<Client> {
     const [newClient] = await db.insert(clients).values(client).returning();
     return newClient;
+  }
+
+  async updateClient(id: number, client: InsertClient): Promise<Client> {
+    const [updatedClient] = await db
+      .update(clients)
+      .set(client)
+      .where(eq(clients.id, id))
+      .returning();
+    return updatedClient;
   }
 
   // Neighborhood Ratings
