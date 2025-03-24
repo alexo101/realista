@@ -226,15 +226,14 @@ export default function ManagePage() {
 
         <main className="flex-1 p-6 pt-20">
           {section === "agent-profile" && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Mi perfil de agente</h2>
-              {/* Agent profile content will go here */}
+            <div className="flex flex-col items-center space-y-4">
+              <AgentPictureUpload currentUser={user} />
+              {/* Additional agent profile content will go here */}
             </div>
           )}
 
           {section === "agency-profile" && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Perfil agencia</h2>
               {/* Agency profile content will go here */}
             </div>
           )}
@@ -375,7 +374,6 @@ export default function ManagePage() {
           )}
           {section === "messages" && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Mensajes de clientes</h2>
               {/* Messages content will go here */}
             </div>
           )}
