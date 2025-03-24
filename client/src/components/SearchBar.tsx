@@ -13,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, X } from "lucide-react";
+import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AgentReview } from "./AgentReview";
 
 const BARCELONA_NEIGHBORHOODS = [
   "Barceloneta",
@@ -95,6 +96,7 @@ export function SearchBar() {
   const [currentLocation] = useLocation();
   const { toast } = useToast();
   const [isNeighborhoodOpen, setIsNeighborhoodOpen] = useState(false);
+  const [isAgentReviewOpen, setIsAgentReviewOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
@@ -309,7 +311,12 @@ export function SearchBar() {
 
       {searchType === 'agencies' && (
         <div className="text-center">
-          <Button variant="outline" size="lg">
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={(e) => e.preventDefault()}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
             Deja una reseña a tu agencia
           </Button>
         </div>
@@ -317,10 +324,19 @@ export function SearchBar() {
 
       {searchType === 'agents' && (
         <div className="text-center">
-          <Button variant="outline" size="lg">
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={() => setIsAgentReviewOpen(true)}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
             Deja una reseña a tu agente
           </Button>
         </div>
+      )}
+
+      {isAgentReviewOpen && (
+        <AgentReview onClose={() => setIsAgentReviewOpen(false)} />
       )}
 
       <Dialog open={isNeighborhoodOpen} onOpenChange={setIsNeighborhoodOpen}>
