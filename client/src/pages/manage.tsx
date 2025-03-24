@@ -11,7 +11,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Star, UserCircle } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare } from "lucide-react";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
@@ -23,7 +23,7 @@ import { type Property, type Client } from "@shared/schema";
 export default function ManagePage() {
   const { user } = useUser();
   const queryClient = useQueryClient();
-  const [section, setSection] = useState("properties");
+  const [section, setSection] = useState("agent-profile");
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
@@ -135,7 +135,7 @@ export default function ManagePage() {
         <Sidebar className="pt-16 w-64 border-r">
           <SidebarContent>
             <div className="p-4 border-b">
-              <h2 className="font-semibold mb-4">Mi perfil</h2>
+              <h2 className="font-semibold mb-4">Gestión</h2>
               <div className="space-y-4">
                 <div className="flex flex-col items-center">
                   <div className="w-24 h-24 rounded-full bg-gray-100 mb-2 flex items-center justify-center">
@@ -150,7 +150,6 @@ export default function ManagePage() {
                     accept="image/*"
                     className="hidden"
                     onChange={(e) => {
-                      // Handle profile picture upload
                       const file = e.target.files?.[0];
                       if (file) {
                         // TODO: Implement profile picture upload
@@ -164,6 +163,26 @@ export default function ManagePage() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
+                  isActive={section === "agent-profile"}
+                  onClick={() => setSection("agent-profile")}
+                >
+                  <UserCircle className="h-4 w-4" />
+                  <span>Mi perfil de agente</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={section === "agency-profile"}
+                  onClick={() => setSection("agency-profile")}
+                >
+                  <Building className="h-4 w-4" />
+                  <span>Perfil agencia</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
                   isActive={section === "properties"}
                   onClick={() => setSection("properties")}
                 >
@@ -171,6 +190,7 @@ export default function ManagePage() {
                   <span>Gestionar propiedades</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={section === "clients"}
@@ -180,6 +200,7 @@ export default function ManagePage() {
                   <span>CRM clientes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={section === "reviews"}
@@ -189,11 +210,35 @@ export default function ManagePage() {
                   <span>Gestionar reseñas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={section === "messages"}
+                  onClick={() => setSection("messages")}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Mensajes</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
 
         <main className="flex-1 p-6 pt-20">
+          {section === "agent-profile" && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold">Mi perfil de agente</h2>
+              {/* Agent profile content will go here */}
+            </div>
+          )}
+
+          {section === "agency-profile" && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold">Perfil agencia</h2>
+              {/* Agency profile content will go here */}
+            </div>
+          )}
+
           {section === "properties" && (
             <div className="space-y-4">
               <Button 
@@ -326,6 +371,12 @@ export default function ManagePage() {
                   {/* Reviews grid will go here */}
                 </div>
               )}
+            </div>
+          )}
+          {section === "messages" && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold">Mensajes de clientes</h2>
+              {/* Messages content will go here */}
             </div>
           )}
         </main>

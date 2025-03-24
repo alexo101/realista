@@ -19,7 +19,7 @@ const formSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
   phone: z.string()
     .min(1, "El número de teléfono es obligatorio")
-    .regex(/^\d+$/, "El número de teléfono solo puede contener números"),
+    .regex(/^[67|89][0-9]{8}$/, "Introduce un número de teléfono español válido (fijo o móvil)"),
   email: z.string().email("Por favor, introduce un email válido"),
 });
 
