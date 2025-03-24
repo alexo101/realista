@@ -17,6 +17,7 @@ import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { type Property, type Client } from "@shared/schema";
 
@@ -134,32 +135,6 @@ export default function ManagePage() {
       <SidebarProvider>
         <Sidebar className="pt-16 w-64 border-r">
           <SidebarContent>
-            <div className="p-4 border-b">
-              <h2 className="font-semibold mb-4">Gestión</h2>
-              <div className="space-y-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-24 h-24 rounded-full bg-gray-100 mb-2 flex items-center justify-center">
-                    <UserCircle className="w-12 h-12 text-gray-400" />
-                  </div>
-                  <Label htmlFor="picture" className="cursor-pointer text-sm text-primary">
-                    Cambiar foto
-                  </Label>
-                  <Input
-                    id="picture"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        // TODO: Implement profile picture upload
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -226,15 +201,51 @@ export default function ManagePage() {
 
         <main className="flex-1 p-6 pt-20">
           {section === "agent-profile" && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Mi perfil de agente</h2>
-              {/* Agent profile content will go here */}
+            <div className="max-w-2xl mx-auto space-y-8">
+              <div className="flex flex-col items-center">
+                <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center">
+                  <UserCircle className="w-16 h-16 text-gray-400" />
+                </div>
+                <Label htmlFor="picture" className="cursor-pointer text-sm text-primary">
+                  Cambiar foto
+                </Label>
+                <Input
+                  id="picture"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // TODO: Implement profile picture upload
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Nombre</Label>
+                  <Input id="name" placeholder="Tu nombre" />
+                </div>
+                <div>
+                  <Label htmlFor="surname">Apellidos</Label>
+                  <Input id="surname" placeholder="Tus apellidos" />
+                </div>
+                <div>
+                  <Label htmlFor="description">Descripción pública</Label>
+                  <Textarea 
+                    id="description" 
+                    placeholder="Escribe una breve descripción sobre ti que verán tus clientes"
+                    className="min-h-[100px]"
+                  />
+                </div>
+              </div>
             </div>
           )}
 
           {section === "agency-profile" && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Perfil agencia</h2>
+            <div className="max-w-2xl mx-auto">
               {/* Agency profile content will go here */}
             </div>
           )}
@@ -374,8 +385,7 @@ export default function ManagePage() {
             </div>
           )}
           {section === "messages" && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Mensajes de clientes</h2>
+            <div className="max-w-4xl mx-auto">
               {/* Messages content will go here */}
             </div>
           )}
