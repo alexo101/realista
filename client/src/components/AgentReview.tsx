@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -73,7 +73,7 @@ export function AgentReview({ onClose }: AgentReviewProps) {
 
   const handleSubmit = async () => {
     if (!selectedAgent) return;
-    
+
     try {
       const response = await fetch('/api/agent-reviews', {
         method: 'POST',
@@ -81,6 +81,7 @@ export function AgentReview({ onClose }: AgentReviewProps) {
         body: JSON.stringify({
           agentId: selectedAgent.id,
           rating: calculateAverageRating(),
+          hasDealt,
           ...ratings,
         }),
       });
@@ -156,7 +157,7 @@ export function AgentReview({ onClose }: AgentReviewProps) {
             </div>
           )}
 
-          {step === 1 && (
+          {step === 1 && hasDealt === null && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg text-center">
@@ -175,6 +176,21 @@ export function AgentReview({ onClose }: AgentReviewProps) {
                   onClick={() => setHasDealt(false)}
                 >
                   No
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
+
+          {step === 1 && hasDealt === false && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg text-center">
+                  Puedes añadir una reseña pero no contará para la puntuación del agente
+                </CardTitle>
+              </CardHeader>
+              <CardFooter className="flex justify-center">
+                <Button onClick={() => setStep(step + 1)}>
+                  Continuar
                 </Button>
               </CardFooter>
             </Card>

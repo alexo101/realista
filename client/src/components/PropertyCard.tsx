@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { type Property } from "@shared/schema";
 import { Link } from "wouter";
 import { Building2 } from "lucide-react";
+import { ReviewButtons } from "./ReviewButtons";
 
 interface PropertyCardProps {
   property: Property;
@@ -36,6 +37,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
               <span>{property.neighborhood}</span>
             </div>
             <p className="mt-2 text-sm text-gray-600">{property.address}</p>
+            <ReviewButtons />
           </CardContent>
         </a>
       </Link>
