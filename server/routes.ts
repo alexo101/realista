@@ -160,6 +160,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add after the existing agent routes
+  app.get("/api/agents/search", async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      const agents = await storage.searchAgents(query);
+      res.json(agents);
+    } catch (error) {
+      console.error('Error searching agents:', error);
+      res.status(500).json({ message: "Failed to search agents" });
+    }
+  });
+
+  app.post("/api/agent-reviews", async (req, res) => {
+    try {
+      const review = await storage.createAgentReview(req.body);
+      res.status(201).json(review);
+    } catch (error) {
+      console.error('Error creating agent review:', error);
+      res.status(400).json({ message: "Invalid review data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
