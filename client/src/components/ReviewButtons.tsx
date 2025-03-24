@@ -11,12 +11,23 @@ export function ReviewButtons() {
       <Button
         variant="outline"
         className="w-full"
-        onClick={() => setIsAgentReviewOpen(true)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsAgentReviewOpen(true);
+        }}
       >
         <Pencil className="h-4 w-4 mr-2" />
         Deja una reseña a tu agente
       </Button>
-      <Button variant="outline" className="w-full">
+      <Button 
+        variant="outline" 
+        className="w-full"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
         <Pencil className="h-4 w-4 mr-2" />
         Deja una reseña a tu agencia
       </Button>

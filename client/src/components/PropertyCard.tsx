@@ -37,10 +37,12 @@ export function PropertyCard({ property }: PropertyCardProps) {
               <span>{property.neighborhood}</span>
             </div>
             <p className="mt-2 text-sm text-gray-600">{property.address}</p>
-            <ReviewButtons />
           </CardContent>
         </a>
       </Link>
+      <CardContent className="border-t pt-4">
+        <ReviewButtons />
+      </CardContent>
     </Card>
   );
 }
