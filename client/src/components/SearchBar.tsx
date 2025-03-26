@@ -16,6 +16,7 @@ import {
 import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AgentReview } from "./AgentReview";
+import { AgencyReview } from "./AgencyReview";
 
 const BARCELONA_NEIGHBORHOODS = [
   "Barceloneta",
@@ -97,6 +98,7 @@ export function SearchBar() {
   const { toast } = useToast();
   const [isNeighborhoodOpen, setIsNeighborhoodOpen] = useState(false);
   const [isAgentReviewOpen, setIsAgentReviewOpen] = useState(false);
+  const [isAgencyReviewOpen, setIsAgencyReviewOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
@@ -314,7 +316,7 @@ export function SearchBar() {
           <Button 
             variant="outline" 
             size="lg"
-            onClick={(e) => e.preventDefault()}
+            onClick={() => setIsAgencyReviewOpen(true)}
           >
             <Pencil className="h-4 w-4 mr-2" />
             Deja una reseña a tu agencia
@@ -337,6 +339,10 @@ export function SearchBar() {
 
       {isAgentReviewOpen && (
         <AgentReview onClose={() => setIsAgentReviewOpen(false)} />
+      )}
+      
+      {isAgencyReviewOpen && (
+        <AgencyReview onClose={() => setIsAgencyReviewOpen(false)} />
       )}
 
       <Dialog open={isNeighborhoodOpen} onOpenChange={setIsNeighborhoodOpen}>

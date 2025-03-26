@@ -207,7 +207,7 @@ export default function ManagePage() {
                   <UserCircle className="w-16 h-16 text-gray-400" />
                 </div>
                 <Label htmlFor="picture" className="cursor-pointer text-sm text-primary">
-                  Cambiar foto
+                  Gestionar foto
                 </Label>
                 <Input
                   id="picture"
@@ -275,7 +275,16 @@ export default function ManagePage() {
                     setIsAddingProperty(false);
                     setEditingProperty(null);
                   }}
-                  initialData={editingProperty || undefined}
+                  initialData={editingProperty ? {
+                    address: editingProperty.address,
+                    type: editingProperty.type as "Piso" | "Casa",
+                    operationType: editingProperty.operationType as "Venta" | "Alquiler",
+                    description: editingProperty.description,
+                    price: editingProperty.price,
+                    neighborhood: editingProperty.neighborhood,
+                    title: editingProperty.title || "",
+                    images: editingProperty.images || [],
+                  } : undefined}
                   isEditing={!!editingProperty}
                 />
               ) : (
