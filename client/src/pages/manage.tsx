@@ -245,8 +245,104 @@ export default function ManagePage() {
           )}
 
           {section === "agency-profile" && (
-            <div className="max-w-2xl mx-auto">
-              {/* Agency profile content will go here */}
+            <div className="max-w-2xl mx-auto space-y-8">
+              <div className="flex flex-col items-center">
+                <div className="w-48 h-48 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden">
+                  {/* Aquí se mostraría el logo si existiera */}
+                  <Building className="w-24 h-24 text-gray-400" />
+                </div>
+                <Label htmlFor="agency-logo" className="cursor-pointer text-sm text-primary">
+                  Gestionar foto
+                </Label>
+                <Input
+                  id="agency-logo"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // TODO: Implementar carga de logo
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="agency-name">Nombre de la agencia</Label>
+                  <Input id="agency-name" placeholder="Nombre de tu agencia inmobiliaria" />
+                </div>
+                <div>
+                  <Label htmlFor="agency-address">Dirección completa de la agencia</Label>
+                  <Input id="agency-address" placeholder="Dirección física completa" />
+                </div>
+                <div>
+                  <Label htmlFor="agency-description">Descripción pública</Label>
+                  <Textarea 
+                    id="agency-description" 
+                    placeholder="Describe tu agencia inmobiliaria a clientes potenciales"
+                    className="min-h-[120px]"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="agency-phone">Número de teléfono</Label>
+                  <Input id="agency-phone" placeholder="Teléfono de contacto" />
+                </div>
+                <div>
+                  <Label htmlFor="agency-website">Sitio web</Label>
+                  <Input id="agency-website" placeholder="URL de tu sitio web (con https://)" />
+                </div>
+                
+                <div>
+                  <Label>Enlaces a redes sociales</Label>
+                  <div className="space-y-3 mt-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                        </svg>
+                      </div>
+                      <Input placeholder="URL de Facebook" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                        </svg>
+                      </div>
+                      <Input placeholder="URL de Instagram" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+                        </svg>
+                      </div>
+                      <Input placeholder="URL de Twitter" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                          <rect x="2" y="9" width="4" height="12"></rect>
+                          <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                      </div>
+                      <Input placeholder="URL de LinkedIn" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end mt-4">
+                <Button type="button">Guardar cambios</Button>
+              </div>
             </div>
           )}
 
