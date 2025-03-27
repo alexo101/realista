@@ -252,7 +252,7 @@ export default function ManagePage() {
                   <Building className="w-24 h-24 text-gray-400" />
                 </div>
                 <Label htmlFor="agency-logo" className="cursor-pointer text-sm text-primary">
-                  Gestionar foto
+                  Gestionar logo
                 </Label>
                 <Input
                   id="agency-logo"
