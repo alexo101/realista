@@ -24,21 +24,28 @@ import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
 import { Info } from "lucide-react";
 
-const BARCELONA_NEIGHBORHOODS = [
-  "Barceloneta",
-  "Born",
-  "Eixample",
-  "El Raval",
-  "Gràcia",
-  "Les Corts",
-  "Poble Sec",
-  "Poblenou",
-  "Sagrada Familia",
-  "Sant Andreu",
-  "Sant Antoni",
-  "Sant Martí",
-  "Sants",
-  "Sarrià-Sant Gervasi"
+// Base de datos simplificada de provincias, municipios y barrios de España
+const SPAIN_LOCATIONS = [
+  // Provincias
+  "Barcelona", "Madrid", "Valencia", "Sevilla", "Bilbao", "Málaga", "Alicante", "Murcia", "Zaragoza", "Granada", 
+  
+  // Municipios de Barcelona
+  "Barcelona (ciudad)", "Badalona", "Hospitalet de Llobregat", "Terrassa", "Sabadell", "Mataró", "Santa Coloma de Gramenet",
+  
+  // Municipios de Madrid
+  "Madrid (ciudad)", "Móstoles", "Alcalá de Henares", "Fuenlabrada", "Leganés", "Getafe", "Alcorcón",
+  
+  // Barrios de Barcelona
+  "Barceloneta", "Born", "Eixample", "El Raval", "Gràcia", "Les Corts", "Poble Sec", "Poblenou",
+  "Sagrada Familia", "Sant Andreu", "Sant Antoni", "Sant Martí", "Sants", "Sarrià-Sant Gervasi",
+  
+  // Barrios de Madrid
+  "Sol", "Salamanca", "Chamberí", "Retiro", "Chamartín", "Moncloa", "Tetuán", "Arganzuela",
+  "Carabanchel", "Usera", "Latina", "Moratalaz", "Hortaleza", "Villaverde",
+  
+  // Barrios de Valencia
+  "Ciutat Vella", "Eixample (Valencia)", "Extramurs", "Campanar", "La Saïdia", "El Pla del Real",
+  "L'Olivereta", "Patraix", "Jesús", "Quatre Carreres", "Poblats Marítims", "Camins al Grau"
 ];
 
 const formSchema = z.object({
@@ -102,23 +109,59 @@ export function NeighborhoodRating() {
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filtramos las ubicaciones según el término de búsqueda
+  const filteredLocations = searchQuery 
+    ? SPAIN_LOCATIONS.filter(n => 
+        n.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : SPAIN_LOCATIONS;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center">
         <h2 className="text-2xl font-semibold flex-1">Conoce los barrios</h2>
       </div>
+      
+      <div className="w-full">
+        <div className="relative mb-4">
+          <input 
+            type="text"
+            className="w-full rounded-lg border-gray-300 border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Busca tu barrio, municipio ..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button 
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={() => setSearchQuery("")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {BARCELONA_NEIGHBORHOODS.map((neighborhood) => (
+        {filteredLocations.map((location) => (
           <Button
-            key={neighborhood}
-            variant={selectedNeighborhood === neighborhood ? "default" : "outline"}
+            key={location}
+            variant={selectedNeighborhood === location ? "default" : "outline"}
             className="w-full text-sm py-1"
-            onClick={() => setSelectedNeighborhood(neighborhood)}
+            onClick={() => setSelectedNeighborhood(location)}
           >
-            {neighborhood}
+            {location}
           </Button>
         ))}
+        {filteredLocations.length === 0 && (
+          <div className="col-span-full text-center py-4 text-gray-500">
+            No se encontraron resultados para "{searchQuery}"
+          </div>
+        )}
       </div>
 
       {selectedNeighborhood && (
