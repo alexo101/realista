@@ -182,6 +182,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User profile update
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userData = req.body;
+      const updatedUser = await storage.updateUser(id, userData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

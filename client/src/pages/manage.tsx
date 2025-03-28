@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Redirect } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
@@ -11,7 +11,8 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
@@ -22,14 +23,57 @@ import { apiRequest } from "@/lib/queryClient";
 import { type Property, type Client } from "@shared/schema";
 
 export default function ManagePage() {
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [section, setSection] = useState("agent-profile");
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  
+  // Estados para los campos de perfil de agente
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [description, setDescription] = useState("");
+  
+  // Estados para los campos de perfil de agencia
+  const [agencyName, setAgencyName] = useState("");
+  const [agencyAddress, setAgencyAddress] = useState("");
+  const [agencyDescription, setAgencyDescription] = useState("");
+  const [agencyPhone, setAgencyPhone] = useState("");
+  const [agencyWebsite, setAgencyWebsite] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  
+  // Estado para mostrar indicador de guardado exitoso
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  
+  // Cargar valores iniciales cuando el usuario cambia
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setSurname(user.surname || "");
+      setDescription(user.description || "");
+      setAgencyName(user.agencyName || "");
+      setAgencyAddress(user.agencyAddress || "");
+      setAgencyDescription(user.agencyDescription || "");
+      setAgencyPhone(user.agencyPhone || "");
+      setAgencyWebsite(user.agencyWebsite || "");
+      
+      // Cargar redes sociales si existen
+      const socialMedia = user.agencySocialMedia as Record<string, string> | undefined;
+      if (socialMedia) {
+        setFacebookUrl(socialMedia.facebook || "");
+        setInstagramUrl(socialMedia.instagram || "");
+        setTwitterUrl(socialMedia.twitter || "");
+        setLinkedinUrl(socialMedia.linkedin || "");
+      }
+    }
+  }, [user]);
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: ['/api/properties', user?.id],
@@ -123,6 +167,40 @@ export default function ManagePage() {
       queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
       setEditingClient(null);
     },
+  });
+  
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (!user) return null;
+      
+      const response = await apiRequest('PATCH', `/api/users/${user.id}`, data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al actualizar el perfil');
+      }
+      return response.json();
+    },
+    onSuccess: (updatedUser) => {
+      if (updatedUser) {
+        setUser(updatedUser);
+        setShowSavedIndicator(true);
+        toast({
+          title: "Perfil actualizado",
+          description: "Los cambios se han guardado correctamente",
+        });
+        
+        setTimeout(() => {
+          setShowSavedIndicator(false);
+        }, 3000);
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "No se pudo actualizar el perfil",
+        variant: "destructive",
+      });
+    }
   });
 
   // Redirect non-agent users
@@ -226,11 +304,21 @@ export default function ManagePage() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Nombre</Label>
-                  <Input id="name" placeholder="Tu nombre" />
+                  <Input 
+                    id="name" 
+                    placeholder="Tu nombre" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="surname">Apellidos</Label>
-                  <Input id="surname" placeholder="Tus apellidos" />
+                  <Input 
+                    id="surname" 
+                    placeholder="Tus apellidos" 
+                    value={surname}
+                    onChange={(e) => setSurname(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="description">Descripción pública</Label>
@@ -238,8 +326,28 @@ export default function ManagePage() {
                     id="description" 
                     placeholder="Escribe una breve descripción sobre ti que verán tus clientes"
                     className="min-h-[100px]"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="flex justify-end mt-4">
+                <Button
+                  type="button"
+                  className="relative"
+                  onClick={() => updateProfileMutation.mutate({
+                    name,
+                    surname,
+                    description
+                  })}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {showSavedIndicator && (
+                    <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
+                  )}
+                  Guardar cambios
+                </Button>
               </div>
             </div>
           )}
@@ -271,11 +379,21 @@ export default function ManagePage() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="agency-name">Nombre de la agencia</Label>
-                  <Input id="agency-name" placeholder="Nombre de tu agencia inmobiliaria" />
+                  <Input 
+                    id="agency-name" 
+                    placeholder="Nombre de tu agencia inmobiliaria" 
+                    value={agencyName}
+                    onChange={(e) => setAgencyName(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="agency-address">Dirección completa de la agencia</Label>
-                  <Input id="agency-address" placeholder="Dirección física completa" />
+                  <Input 
+                    id="agency-address" 
+                    placeholder="Dirección física completa" 
+                    value={agencyAddress}
+                    onChange={(e) => setAgencyAddress(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="agency-description">Descripción pública</Label>
@@ -283,15 +401,27 @@ export default function ManagePage() {
                     id="agency-description" 
                     placeholder="Describe tu agencia inmobiliaria a clientes potenciales"
                     className="min-h-[120px]"
+                    value={agencyDescription}
+                    onChange={(e) => setAgencyDescription(e.target.value)}
                   />
                 </div>
                 <div>
                   <Label htmlFor="agency-phone">Número de teléfono</Label>
-                  <Input id="agency-phone" placeholder="Teléfono de contacto" />
+                  <Input 
+                    id="agency-phone" 
+                    placeholder="Teléfono de contacto" 
+                    value={agencyPhone}
+                    onChange={(e) => setAgencyPhone(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="agency-website">Sitio web</Label>
-                  <Input id="agency-website" placeholder="URL de tu sitio web (con https://)" />
+                  <Input 
+                    id="agency-website" 
+                    placeholder="URL de tu sitio web (con https://)" 
+                    value={agencyWebsite}
+                    onChange={(e) => setAgencyWebsite(e.target.value)}
+                  />
                 </div>
                 
                 <div>
@@ -303,7 +433,11 @@ export default function ManagePage() {
                           <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                         </svg>
                       </div>
-                      <Input placeholder="URL de Facebook" />
+                      <Input 
+                        placeholder="URL de Facebook" 
+                        value={facebookUrl}
+                        onChange={(e) => setFacebookUrl(e.target.value)}
+                      />
                     </div>
                     
                     <div className="flex items-center gap-3">
@@ -314,7 +448,11 @@ export default function ManagePage() {
                           <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                         </svg>
                       </div>
-                      <Input placeholder="URL de Instagram" />
+                      <Input 
+                        placeholder="URL de Instagram" 
+                        value={instagramUrl}
+                        onChange={(e) => setInstagramUrl(e.target.value)}
+                      />
                     </div>
                     
                     <div className="flex items-center gap-3">
@@ -323,7 +461,11 @@ export default function ManagePage() {
                           <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
                         </svg>
                       </div>
-                      <Input placeholder="URL de Twitter" />
+                      <Input 
+                        placeholder="URL de Twitter" 
+                        value={twitterUrl}
+                        onChange={(e) => setTwitterUrl(e.target.value)}
+                      />
                     </div>
                     
                     <div className="flex items-center gap-3">
@@ -334,14 +476,40 @@ export default function ManagePage() {
                           <circle cx="4" cy="4" r="2"></circle>
                         </svg>
                       </div>
-                      <Input placeholder="URL de LinkedIn" />
+                      <Input 
+                        placeholder="URL de LinkedIn" 
+                        value={linkedinUrl}
+                        onChange={(e) => setLinkedinUrl(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
               </div>
               
               <div className="flex justify-end mt-4">
-                <Button type="button">Guardar cambios</Button>
+                <Button
+                  type="button"
+                  className="relative"
+                  onClick={() => updateProfileMutation.mutate({
+                    agencyName,
+                    agencyAddress,
+                    agencyDescription,
+                    agencyPhone,
+                    agencyWebsite,
+                    agencySocialMedia: {
+                      facebook: facebookUrl,
+                      instagram: instagramUrl,
+                      twitter: twitterUrl,
+                      linkedin: linkedinUrl
+                    }
+                  })}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {showSavedIndicator && (
+                    <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
+                  )}
+                  Guardar cambios
+                </Button>
               </div>
             </div>
           )}

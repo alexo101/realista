@@ -6,6 +6,25 @@ interface User {
   email: string;
   name: string | null;
   isAgent: boolean;
+  
+  // Campos para perfil de agente
+  surname?: string;
+  description?: string;
+  avatar?: string;
+  
+  // Campos para perfil de agencia
+  agencyName?: string;
+  agencyAddress?: string;
+  agencyDescription?: string;
+  agencyPhone?: string;
+  agencyWebsite?: string;
+  agencyLogo?: string;
+  agencySocialMedia?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+  };
 }
 
 interface UserContextType {
