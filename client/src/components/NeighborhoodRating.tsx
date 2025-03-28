@@ -146,19 +146,21 @@ export function NeighborhoodRating() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {filteredLocations.map((location) => (
-          <Button
-            key={location}
-            variant={selectedNeighborhood === location ? "default" : "outline"}
-            className="w-full text-sm py-1"
-            onClick={() => setSelectedNeighborhood(location)}
-          >
-            {location}
-          </Button>
-        ))}
+      <div className="w-full">
+        <select
+          className="w-full rounded-lg border-gray-300 border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+          value={selectedNeighborhood || ""}
+          onChange={(e) => setSelectedNeighborhood(e.target.value)}
+        >
+          <option value="">Selecciona una ubicación</option>
+          {filteredLocations.map((location) => (
+            <option key={location} value={location}>
+              {location}
+            </option>
+          ))}
+        </select>
         {filteredLocations.length === 0 && (
-          <div className="col-span-full text-center py-4 text-gray-500">
+          <div className="text-center py-4 text-gray-500">
             No se encontraron resultados para "{searchQuery}"
           </div>
         )}
