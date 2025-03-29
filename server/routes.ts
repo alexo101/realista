@@ -182,6 +182,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to search agencies" });
     }
   });
+  
+  // Añadir rutas para búsqueda desde la página de búsqueda
+  app.get("/api/search/agencies", async (req, res) => {
+    try {
+      const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+      const agencies = await storage.searchAgencies(queryString);
+      res.json(agencies);
+    } catch (error) {
+      console.error('Error searching agencies:', error);
+      res.status(500).json({ message: "Failed to search agencies" });
+    }
+  });
+  
+  app.get("/api/search/agents", async (req, res) => {
+    try {
+      const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+      const agents = await storage.searchAgents(queryString);
+      res.json(agents);
+    } catch (error) {
+      console.error('Error searching agents:', error);
+      res.status(500).json({ message: "Failed to search agents" });
+    }
+  });
+  
+  app.get("/api/search/buy", async (req, res) => {
+    try {
+      const filters = req.query;
+      const properties = await storage.searchProperties(filters);
+      res.json(properties);
+    } catch (error) {
+      console.error('Error searching properties for buying:', error);
+      res.status(500).json({ message: "Failed to search properties" });
+    }
+  });
+  
+  app.get("/api/search/rent", async (req, res) => {
+    try {
+      // Añadimos el filtro de tipo de operación (alquiler)
+      const filters = { ...req.query, operation: 'rent' };
+      const properties = await storage.searchProperties(filters);
+      res.json(properties);
+    } catch (error) {
+      console.error('Error searching properties for renting:', error);
+      res.status(500).json({ message: "Failed to search properties" });
+    }
+  });
 
   app.post("/api/agent-reviews", async (req, res) => {
     try {
