@@ -112,6 +112,9 @@ export class DatabaseStorage implements IStorage {
     const neighborhoodsStr = params.get('neighborhoods');
     const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
 
+    console.log('SearchAgencies - searchTerm:', searchTerm);
+    console.log('SearchAgencies - neighborhoods:', neighborhoods);
+    
     // Importante: Buscar solo los usuarios que son agencias (no agentes)
     // Una agencia es un usuario que tiene agencyName no nulo y no es un agente
     let conditions = [
@@ -128,14 +131,24 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
+      // Debug agencia con barrios de influencia
+      console.log('Buscando agencias con barrios:', neighborhoods);
+      
+      // Modificamos para manejar valores nulos - si agencyInfluenceNeighborhoods es null, 
+      // asegurarnos de que se siga evaluando correctamente
       conditions.push(
-        arrayOverlaps(users.agencyInfluenceNeighborhoods, neighborhoods)
+        sql`${users.agencyInfluenceNeighborhoods} && ${neighborhoods}`
       );
     }
     
-    return db.select()
+    const result = await db.select()
       .from(users)
       .where(and(...conditions));
+      
+    console.log('SearchAgencies - query conditions:', conditions);
+    console.log('SearchAgencies - result count:', result.length);
+    
+    return result;
   }
 
   async createAgentReview(review: any): Promise<any> {

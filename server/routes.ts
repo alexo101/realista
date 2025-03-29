@@ -186,8 +186,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Añadir rutas para búsqueda desde la página de búsqueda
   app.get("/api/search/agencies", async (req, res) => {
     try {
+      console.log('Search agencies params:', req.query);
       const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+      console.log('Search agencies queryString:', queryString);
       const agencies = await storage.searchAgencies(queryString);
+      console.log('Search agencies results:', agencies);
       res.json(agencies);
     } catch (error) {
       console.error('Error searching agencies:', error);
