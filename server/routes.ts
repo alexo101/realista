@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { 
   insertPropertySchema,
   insertClientSchema,
-  insertNeighborhoodRatingSchema
+  insertNeighborhoodRatingSchema,
+  insertAgencyAgentSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -252,6 +253,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating user:', error);
       res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+  
+  // Agency Agents routes
+  app.get("/api/agency-agents/:agencyId", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.params.agencyId);
+      const agents = await storage.getAgencyAgents(agencyId);
+      res.json(agents);
+    } catch (error) {
+      console.error('Error fetching agency agents:', error);
+      res.status(500).json({ message: "Failed to fetch agency agents" });
+    }
+  });
+  
+  app.post("/api/agency-agents", async (req, res) => {
+    try {
+      const agentData = insertAgencyAgentSchema.parse(req.body);
+      const result = await storage.createAgencyAgent(agentData);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Error creating agency agent:', error);
+      res.status(400).json({ message: "Invalid agent data" });
+    }
+  });
+  
+  app.delete("/api/agency-agents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAgencyAgent(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting agency agent:', error);
+      res.status(500).json({ message: "Failed to delete agency agent" });
     }
   });
 

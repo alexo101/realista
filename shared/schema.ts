@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, decimal, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -59,17 +59,30 @@ export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Tabla para gestionar la relación entre agentes y agencias
+export const agencyAgents = pgTable("agency_agents", {
+  id: serial("id").primaryKey(),
+  agencyId: integer("agency_id").notNull(), // ID del usuario que representa la agencia
+  agentName: text("agent_name").notNull(),
+  agentSurname: text("agent_surname").notNull(),
+  agentEmail: text("agent_email").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPropertySchema = createInsertSchema(properties).omit({ id: true, createdAt: true });
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
 export const insertNeighborhoodRatingSchema = createInsertSchema(neighborhoodRatings).omit({ id: true, createdAt: true });
+export const insertAgencyAgentSchema = createInsertSchema(agencyAgents).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type NeighborhoodRating = typeof neighborhoodRatings.$inferSelect;
+export type AgencyAgent = typeof agencyAgents.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertNeighborhoodRating = z.infer<typeof insertNeighborhoodRatingSchema>;
+export type InsertAgencyAgent = z.infer<typeof insertAgencyAgentSchema>;

@@ -25,7 +25,7 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {!user.isAgent && (
+        {!user.isAgent && !user.agencyName && (
           <DropdownMenuItem asChild>
             <Link href="/favorites">
               <a className="flex items-center gap-2">

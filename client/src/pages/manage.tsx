@@ -17,6 +17,7 @@ import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
+import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -546,6 +547,9 @@ export default function ManagePage() {
                   Guardar cambios
                 </Button>
               </div>
+              
+              {/* Componente de gestión de agentes para agencias */}
+              {!user?.isAgent && <AgencyAgentsList />}
             </div>
           )}
 

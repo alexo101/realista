@@ -5,14 +5,17 @@ import {
   properties,
   clients,
   neighborhoodRatings,
+  agencyAgents,
   type User,
   type Property,
   type Client,
   type NeighborhoodRating,
+  type AgencyAgent,
   type InsertUser,
   type InsertProperty,
   type InsertClient,
   type InsertNeighborhoodRating,
+  type InsertAgencyAgent,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -26,6 +29,11 @@ export interface IStorage {
   searchAgents(query: string): Promise<User[]>;
   searchAgencies(query: string): Promise<User[]>;
   createAgentReview(review: any): Promise<any>;
+  
+  // Agency Agents
+  getAgencyAgents(agencyId: number): Promise<AgencyAgent[]>;
+  createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent>;
+  deleteAgencyAgent(id: number): Promise<void>;
 
   // Properties
   getProperties(): Promise<Property[]>;
@@ -156,6 +164,22 @@ export class DatabaseStorage implements IStorage {
     // In a real implementation, we would insert into an agent_reviews table
     console.log('Agent review submission:', review);
     return { ...review, id: Date.now(), createdAt: new Date() };
+  }
+  
+  // Agency Agents
+  async getAgencyAgents(agencyId: number): Promise<AgencyAgent[]> {
+    return db.select()
+      .from(agencyAgents)
+      .where(eq(agencyAgents.agencyId, agencyId));
+  }
+
+  async createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent> {
+    const [newAgent] = await db.insert(agencyAgents).values(agentData).returning();
+    return newAgent;
+  }
+
+  async deleteAgencyAgent(id: number): Promise<void> {
+    await db.delete(agencyAgents).where(eq(agencyAgents.id, id));
   }
 
   // Properties
