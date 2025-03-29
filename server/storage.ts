@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, sql, and, gte, lte } from "drizzle-orm";
+import { eq, sql, and, gte, lte, arrayOverlaps } from "drizzle-orm";
 import {
   users,
   properties,
@@ -24,6 +24,7 @@ export interface IStorage {
   
   // Agents
   searchAgents(query: string): Promise<User[]>;
+  searchAgencies(query: string): Promise<User[]>;
   createAgentReview(review: any): Promise<any>;
 
   // Properties
@@ -74,14 +75,63 @@ export class DatabaseStorage implements IStorage {
 
   // Agents
   async searchAgents(query: string): Promise<User[]> {
+    // Parsear los parámetros si query es una URL query string
+    const params = new URLSearchParams(query);
+    const searchTerm = params.get('agentName') || '';
+    const neighborhoodsStr = params.get('neighborhoods');
+    const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
+
+    let conditions = [eq(users.isAgent, true)];
+    
+    // Añadir condición de búsqueda por nombre si existe
+    if (searchTerm) {
+      conditions.push(
+        sql`(${users.name} ILIKE ${'%' + searchTerm + '%'} OR 
+             ${users.surname} ILIKE ${'%' + searchTerm + '%'} OR 
+             ${users.email} ILIKE ${'%' + searchTerm + '%'})`
+      );
+    }
+    
+    // Añadir condición de búsqueda por barrios si existen
+    if (neighborhoods.length > 0) {
+      conditions.push(
+        arrayOverlaps(users.influenceNeighborhoods, neighborhoods)
+      );
+    }
+    
     return db.select()
       .from(users)
-      .where(
-        and(
-          eq(users.isAgent, true),
-          sql`(${users.name} ILIKE ${'%' + query + '%'} OR ${users.email} ILIKE ${'%' + query + '%'})`
-        )
+      .where(and(...conditions));
+  }
+
+  async searchAgencies(query: string): Promise<User[]> {
+    // Parsear los parámetros si query es una URL query string
+    const params = new URLSearchParams(query);
+    const searchTerm = params.get('agencyName') || '';
+    const neighborhoodsStr = params.get('neighborhoods');
+    const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
+
+    let conditions = [
+      sql`${users.agencyName} IS NOT NULL`
+    ];
+    
+    // Añadir condición de búsqueda por nombre si existe
+    if (searchTerm) {
+      conditions.push(
+        sql`${users.agencyName} ILIKE ${'%' + searchTerm + '%'}`
       );
+    }
+    
+    // Añadir condición de búsqueda por barrios si existen
+    if (neighborhoods.length > 0) {
+      conditions.push(
+        arrayOverlaps(users.agencyInfluenceNeighborhoods, neighborhoods)
+      );
+    }
+    
+    return db.select()
+      .from(users)
+      .where(and(...conditions));
   }
 
   async createAgentReview(review: any): Promise<any> {

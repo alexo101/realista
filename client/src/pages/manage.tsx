@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
+import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +38,7 @@ export default function ManagePage() {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [description, setDescription] = useState("");
+  const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   
   // Estados para los campos de perfil de agencia
   const [agencyName, setAgencyName] = useState("");
@@ -44,6 +46,7 @@ export default function ManagePage() {
   const [agencyDescription, setAgencyDescription] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
   const [agencyWebsite, setAgencyWebsite] = useState("");
+  const [agencyInfluenceNeighborhoods, setAgencyInfluenceNeighborhoods] = useState<string[]>([]);
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -58,11 +61,13 @@ export default function ManagePage() {
       setName(user.name || "");
       setSurname(user.surname || "");
       setDescription(user.description || "");
+      setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
       setAgencyName(user.agencyName || "");
       setAgencyAddress(user.agencyAddress || "");
       setAgencyDescription(user.agencyDescription || "");
       setAgencyPhone(user.agencyPhone || "");
       setAgencyWebsite(user.agencyWebsite || "");
+      setAgencyInfluenceNeighborhoods(user.agencyInfluenceNeighborhoods || []);
       
       // Cargar redes sociales si existen
       const socialMedia = user.agencySocialMedia as Record<string, string> | undefined;
@@ -330,6 +335,19 @@ export default function ManagePage() {
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="influence-neighborhoods">Barrios de influencia</Label>
+                  <div className="mt-1">
+                    <NeighborhoodSelector
+                      selectedNeighborhoods={influenceNeighborhoods}
+                      onChange={setInfluenceNeighborhoods}
+                      buttonText="Selecciona los barrios donde trabajas habitualmente"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Estos barrios se utilizarán para relacionar tu perfil con las búsquedas de los clientes.
+                  </p>
+                </div>
               </div>
 
               <div className="flex justify-end mt-4">
@@ -339,7 +357,8 @@ export default function ManagePage() {
                   onClick={() => updateProfileMutation.mutate({
                     name,
                     surname,
-                    description
+                    description,
+                    influenceNeighborhoods
                   })}
                   disabled={updateProfileMutation.isPending}
                 >
@@ -425,6 +444,21 @@ export default function ManagePage() {
                 </div>
                 
                 <div>
+                  <Label htmlFor="agency-influence-neighborhoods">Barrios de influencia</Label>
+                  <div className="mt-1">
+                    <NeighborhoodSelector
+                      selectedNeighborhoods={agencyInfluenceNeighborhoods}
+                      onChange={setAgencyInfluenceNeighborhoods}
+                      buttonText="Selecciona los barrios donde opera tu agencia"
+                      title="ZONAS DE OPERACIÓN DE LA AGENCIA"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Estos barrios se utilizarán para relacionar tu agencia con las búsquedas de los clientes.
+                  </p>
+                </div>
+                
+                <div>
                   <Label>Enlaces a redes sociales</Label>
                   <div className="space-y-3 mt-2">
                     <div className="flex items-center gap-3">
@@ -496,6 +530,7 @@ export default function ManagePage() {
                     agencyDescription,
                     agencyPhone,
                     agencyWebsite,
+                    agencyInfluenceNeighborhoods,
                     agencySocialMedia: {
                       facebook: facebookUrl,
                       instagram: instagramUrl,

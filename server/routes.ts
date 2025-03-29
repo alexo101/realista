@@ -163,12 +163,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add after the existing agent routes
   app.get("/api/agents/search", async (req, res) => {
     try {
-      const query = req.query.q as string;
-      const agents = await storage.searchAgents(query);
+      const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+      const agents = await storage.searchAgents(queryString);
       res.json(agents);
     } catch (error) {
       console.error('Error searching agents:', error);
       res.status(500).json({ message: "Failed to search agents" });
+    }
+  });
+  
+  app.get("/api/agencies/search", async (req, res) => {
+    try {
+      const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+      const agencies = await storage.searchAgencies(queryString);
+      res.json(agencies);
+    } catch (error) {
+      console.error('Error searching agencies:', error);
+      res.status(500).json({ message: "Failed to search agencies" });
     }
   });
 

@@ -11,6 +11,8 @@ export const users = pgTable("users", {
   description: text("description"),
   avatar: text("avatar"),
   isAgent: boolean("is_agent").notNull().default(false),
+  // Barrios de influencia para agentes
+  influenceNeighborhoods: text("influence_neighborhoods").array(),
   // Agency details
   agencyName: text("agency_name"),
   agencyAddress: text("agency_address"),
@@ -19,6 +21,8 @@ export const users = pgTable("users", {
   agencyWebsite: text("agency_website"),
   agencySocialMedia: jsonb("agency_social_media"),
   agencyLogo: text("agency_logo"),
+  // Barrios de influencia para agencias
+  agencyInfluenceNeighborhoods: text("agency_influence_neighborhoods").array(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

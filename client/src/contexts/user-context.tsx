@@ -11,6 +11,7 @@ interface User {
   surname?: string;
   description?: string;
   avatar?: string;
+  influenceNeighborhoods?: string[];
   
   // Campos para perfil de agencia
   agencyName?: string;
@@ -19,6 +20,7 @@ interface User {
   agencyPhone?: string;
   agencyWebsite?: string;
   agencyLogo?: string;
+  agencyInfluenceNeighborhoods?: string[];
   agencySocialMedia?: {
     facebook?: string;
     instagram?: string;
