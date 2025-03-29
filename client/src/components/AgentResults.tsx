@@ -1,11 +1,15 @@
 import { UserCircle } from "lucide-react";
 
+// Actualizamos la interfaz para que coincida con la respuesta real del servidor
 interface Agent {
   id: number;
-  name: string;
-  agency: string;
-  location: string;
-  avatar?: string;
+  name: string | null;
+  surname: string | null;
+  email: string;
+  description: string | null;
+  avatar?: string | null;
+  influenceNeighborhoods: string[] | null;
+  isAgent: boolean;
 }
 
 interface AgentResultsProps {
@@ -44,8 +48,8 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
             <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
               {agent.avatar ? (
                 <img
-                  src={agent.avatar}
-                  alt={agent.name}
+                  src={agent.avatar || ''}
+                  alt={`${agent.name || ''} ${agent.surname || ''}`}
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
@@ -53,11 +57,23 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
               )}
             </div>
             <div>
-              <h3 className="font-semibold">{agent.name}</h3>
-              <p className="text-gray-600">{agent.agency}</p>
-              <p className="text-sm text-gray-500">{agent.location}</p>
+              <h3 className="font-semibold">
+                {agent.name || ''} {agent.surname || ''}
+              </h3>
+              <p className="text-gray-600">{agent.email}</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {agent.influenceNeighborhoods ? (
+                  <>
+                    <span className="font-medium">Barrios de influencia:</span>{' '}
+                    {agent.influenceNeighborhoods.join(', ')}
+                  </>
+                ) : 'Sin barrios de influencia asignados'}
+              </p>
             </div>
           </div>
+          {agent.description && (
+            <p className="mt-3 text-gray-700">{agent.description}</p>
+          )}
         </div>
       ))}
     </div>

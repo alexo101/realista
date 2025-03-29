@@ -23,7 +23,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const user = await storage.createUser(req.body);
+      console.log('Registro - Datos recibidos:', req.body);
+      
+      // Asegurar que isAgent sea un booleano
+      const userData = {
+        ...req.body,
+        isAgent: req.body.isAgent === true
+      };
+      
+      console.log('Registro - Datos procesados:', userData);
+      
+      const user = await storage.createUser(userData);
+      console.log('Usuario creado:', user);
+      
       res.status(201).json(user);
     } catch (error) {
       console.error('Error registering user:', error);
@@ -33,12 +45,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
+      console.log('Login - Datos recibidos:', req.body);
       const { email, password } = req.body;
       const user = await storage.getUserByEmail(email);
+      
+      console.log('Login - Usuario encontrado:', user);
 
       if (!user || user.password !== password) {
+        console.log('Login - Credenciales inválidas');
         return res.status(401).json({ message: "Invalid credentials" });
       }
+
+      console.log('Login - Éxito, devolviendo usuario:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isAgent: user.isAgent
+      });
 
       res.json(user);
     } catch (error) {

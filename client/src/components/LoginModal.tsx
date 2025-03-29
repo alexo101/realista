@@ -60,17 +60,23 @@ export function LoginModal({ isOpen, onClose, isAgentRegistration = false }: Log
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
+      // Asegurarnos de que isAgent se establece correctamente
+      const payload = {
+        ...data,
+        isAgent: isAgentRegistration
+      };
+      
+      console.log("Enviando datos de login/registro:", payload);
+      
       const response = await apiRequest(
         "POST",
         isExistingUser ? "/api/auth/login" : "/api/auth/register",
-        {
-          ...data,
-          isAgent: isAgentRegistration
-        }
+        payload
       );
 
       if (response.ok) {
         const userData = await response.json();
+        console.log("Datos de usuario recibidos:", userData);
         setUser(userData);
         toast({
           title: isExistingUser 
