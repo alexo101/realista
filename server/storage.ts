@@ -81,6 +81,7 @@ export class DatabaseStorage implements IStorage {
     const neighborhoodsStr = params.get('neighborhoods');
     const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
 
+    // Buscar solo usuarios que son agentes
     let conditions = [eq(users.isAgent, true)];
     
     // Añadir condición de búsqueda por nombre si existe
@@ -111,8 +112,11 @@ export class DatabaseStorage implements IStorage {
     const neighborhoodsStr = params.get('neighborhoods');
     const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
 
+    // Importante: Buscar solo los usuarios que son agencias (no agentes)
+    // Una agencia es un usuario que tiene agencyName no nulo y no es un agente
     let conditions = [
-      sql`${users.agencyName} IS NOT NULL`
+      sql`${users.agencyName} IS NOT NULL`,
+      eq(users.isAgent, false)
     ];
     
     // Añadir condición de búsqueda por nombre si existe
