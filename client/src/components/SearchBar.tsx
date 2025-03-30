@@ -225,7 +225,7 @@ export function SearchBar() {
             <div className="flex-1">
               <Input
                 type="text"
-                placeholder="Buscar agencias por nombre..."
+                placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
                 className="w-full"
                 onChange={searchType === 'agencies' ? (e) => setAgencyName(e.target.value) : (e) => setAgentName(e.target.value)}
                 value={searchType === 'agencies' ? agencyName : agentName}
