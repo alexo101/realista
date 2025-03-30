@@ -209,8 +209,13 @@ export default function ManagePage() {
     }
   });
 
+  // Redirect if not logged in or not an agent
+  if (!user) {
+    return <Redirect to="/" />;
+  }
+  
   // Redirect non-agent users
-  if (!user?.isAgent) {
+  if (!user.isAgent) {
     return <Redirect to="/" />;
   }
 
