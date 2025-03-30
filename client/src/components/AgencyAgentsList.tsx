@@ -72,7 +72,6 @@ export function AgencyAgentsList() {
   return (
     <div className="mt-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold">Agentes de la Agencia</h3>
         <Button 
           onClick={() => setIsFormOpen(true)}
           size="sm"
@@ -80,9 +79,9 @@ export function AgencyAgentsList() {
           <Plus className="mr-2 h-4 w-4" /> Añadir Agente
         </Button>
       </div>
-      
+
       <Separator className="my-4" />
-      
+
       {isLoading ? (
         <p>Cargando agentes...</p>
       ) : isError ? (
@@ -101,11 +100,11 @@ export function AgencyAgentsList() {
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="flex items-center">
+                    <CardTitle className="flex items-center text-sm"> {/* Reduced font size */}
                       <UserCircle className="mr-2 h-5 w-5" />
                       {agent.agentName} {agent.agentSurname}
                     </CardTitle>
-                    <CardDescription className="flex items-center mt-1">
+                    <CardDescription className="flex items-center mt-1 text-sm"> {/* Reduced font size */}
                       <Mail className="mr-2 h-4 w-4" />
                       {agent.agentEmail}
                     </CardDescription>
@@ -123,7 +122,7 @@ export function AgencyAgentsList() {
           ))}
         </div>
       )}
-      
+
       <AgencyAgentForm 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
