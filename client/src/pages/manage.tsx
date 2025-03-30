@@ -441,16 +441,6 @@ export default function ManagePage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="agency-website">Sitio web</Label>
-                  <Input 
-                    id="agency-website" 
-                    placeholder="URL de tu sitio web (con https://)" 
-                    value={agencyWebsite}
-                    onChange={(e) => setAgencyWebsite(e.target.value)}
-                  />
-                </div>
-                
-                <div>
                   <Label htmlFor="agency-influence-neighborhoods">Barrios de influencia</Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
@@ -472,6 +462,16 @@ export default function ManagePage() {
                     <AgencyAgentsList />
                   </div>
                 )}
+
+                <div>
+                  <Label htmlFor="agency-website">Sitio web</Label>
+                  <Input 
+                    id="agency-website" 
+                    placeholder="URL de tu sitio web (con https://)" 
+                    value={agencyWebsite}
+                    onChange={(e) => setAgencyWebsite(e.target.value)}
+                  />
+                </div>
                 
                 <div>
                   <Label>Enlaces a redes sociales</Label>
