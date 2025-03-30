@@ -17,12 +17,13 @@ export default function SearchPage() {
     : 'buy';
 
   const { data: results, isLoading } = useQuery({
-    queryKey: ['/api/search', location],
+    queryKey: ['/api/search', searchType, location],
     queryFn: async () => {
       const response = await fetch(`/api${location}`);
       if (!response.ok) throw new Error('Failed to fetch results');
       return response.json();
     },
+    staleTime: 0, // No cache entre cambios de tipo de búsqueda
   });
 
   return (

@@ -29,6 +29,21 @@ export default function ManagePage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [section, setSection] = useState("agent-profile");
+  
+  // Redireccionar si el usuario no está autenticado o no es un agente/agencia
+  if (!user) {
+    return <Redirect to="/" />;
+  }
+  
+  if (!user.isAgent && !user.agencyName) {
+    // Si el usuario no es agente ni agencia, redirigir a inicio
+    toast({
+      title: "Acceso restringido",
+      description: "Esta sección es solo para agentes inmobiliarios y agencias",
+      variant: "destructive",
+    });
+    return <Redirect to="/" />;
+  }
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
@@ -209,15 +224,8 @@ export default function ManagePage() {
     }
   });
 
-  // Redirect if not logged in or not an agent
-  if (!user) {
-    return <Redirect to="/" />;
-  }
-  
-  // Redirect non-agent users
-  if (!user.isAgent) {
-    return <Redirect to="/" />;
-  }
+  // Las redirecciones ya están manejadas al inicio de la función, 
+  // así que no necesitamos duplicar estas comprobaciones
 
   return (
     <div className="min-h-screen flex">

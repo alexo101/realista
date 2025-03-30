@@ -30,9 +30,11 @@ export function Navbar() {
               {user ? (
                 <>
                   {(user.isAgent || user.agencyName) && (
-                    <Button variant="outline" onClick={() => window.location.href="/manage"}>
-                      Gestionar todo
-                    </Button>
+                    <Link href="/manage">
+                      <Button variant="outline">
+                        Gestionar todo
+                      </Button>
+                    </Link>
                   )}
                   <UserMenu />
                 </>
