@@ -30,20 +30,13 @@ export default function ManagePage() {
   const { toast } = useToast();
   const [section, setSection] = useState("agent-profile");
   
-  // Redireccionar si el usuario no está autenticado o no es un agente/agencia
+  // Redireccionar si el usuario no está autenticado
   if (!user) {
     return <Redirect to="/" />;
   }
   
-  if (!user.isAgent && !user.agencyName) {
-    // Si el usuario no es agente ni agencia, redirigir a inicio
-    toast({
-      title: "Acceso restringido",
-      description: "Esta sección es solo para agentes inmobiliarios y agencias",
-      variant: "destructive",
-    });
-    return <Redirect to="/" />;
-  }
+  // Permitir acceso a usuarios con cuenta de agencia (isAgent=false con agencyName)
+  // o usuarios con cuenta de agente (isAgent=true)
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
@@ -472,6 +465,14 @@ export default function ManagePage() {
                   </p>
                 </div>
                 
+                {/* Componente de gestión de agentes para agencias */}
+                {user && !user.isAgent && (
+                  <div className="pt-4 pb-2 border-t border-gray-200">
+                    <h3 className="text-lg font-medium mb-4">Agentes de la agencia</h3>
+                    <AgencyAgentsList />
+                  </div>
+                )}
+                
                 <div>
                   <Label>Enlaces a redes sociales</Label>
                   <div className="space-y-3 mt-2">
@@ -561,8 +562,7 @@ export default function ManagePage() {
                 </Button>
               </div>
               
-              {/* Componente de gestión de agentes para agencias */}
-              {!user?.isAgent && <AgencyAgentsList />}
+              {/* Este componente ahora está más arriba en el formulario */}
             </div>
           )}
 
