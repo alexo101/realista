@@ -293,8 +293,16 @@ export default function ManagePage() {
           {section === "agent-profile" && (
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center">
-                <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center">
-                  <UserCircle className="w-16 h-16 text-gray-400" />
+                <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={`${user.name || ''} ${user.surname || ''}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserCircle className="w-16 h-16 text-gray-400" />
+                  )}
                 </div>
                 <Label htmlFor="picture" className="cursor-pointer text-sm text-primary">
                   Gestionar foto
@@ -307,7 +315,16 @@ export default function ManagePage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // TODO: Implement profile picture upload
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        if (event.target?.result) {
+                          const base64String = event.target.result.toString();
+                          updateProfileMutation.mutate({
+                            avatar: base64String
+                          });
+                        }
+                      };
+                      reader.readAsDataURL(file);
                     }
                   }}
                 />
@@ -381,9 +398,16 @@ export default function ManagePage() {
           {section === "agency-profile" && (
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center">
-                <div className="w-48 h-48 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden">
-                  {/* Aquí se mostraría el logo si existiera */}
-                  <Building className="w-24 h-24 text-gray-400" />
+                <div className="w-48 h-48 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+                  {user?.agencyLogo ? (
+                    <img
+                      src={user.agencyLogo}
+                      alt={user.agencyName || 'Logo de agencia'}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <Building className="w-24 h-24 text-gray-400" />
+                  )}
                 </div>
                 <Label htmlFor="agency-logo" className="cursor-pointer text-sm text-primary">
                   Gestionar logo
@@ -396,7 +420,16 @@ export default function ManagePage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // TODO: Implementar carga de logo
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        if (event.target?.result) {
+                          const base64String = event.target.result.toString();
+                          updateProfileMutation.mutate({
+                            agencyLogo: base64String
+                          });
+                        }
+                      };
+                      reader.readAsDataURL(file);
                     }
                   }}
                 />
@@ -600,6 +633,8 @@ export default function ManagePage() {
                     neighborhood: editingProperty.neighborhood,
                     title: editingProperty.title || "",
                     images: editingProperty.images || [],
+                    mainImageIndex: editingProperty.mainImageIndex || 0,
+                    reference: editingProperty.reference
                   } : undefined}
                   isEditing={!!editingProperty}
                 />
