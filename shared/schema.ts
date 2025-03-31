@@ -28,6 +28,7 @@ export const users = pgTable("users", {
 
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
+  reference: text("reference"), // Nuevo campo de referencia para identificación interna
   address: text("address").notNull(),
   type: text("type").notNull(),
   operationType: text("operation_type").notNull(), // "Venta" or "Alquiler"

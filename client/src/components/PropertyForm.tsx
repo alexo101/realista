@@ -41,6 +41,7 @@ const BARCELONA_NEIGHBORHOODS = [
 ];
 
 const formSchema = z.object({
+  reference: z.string().optional(), // Campo de referencia para identificación interna
   address: z.string().min(1, "La dirección es obligatoria"),
   type: z.enum(["Piso", "Casa"], {
     required_error: "Selecciona el tipo de inmueble",
@@ -76,6 +77,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
+      reference: "", // Nueva referencia interna
       address: "",
       type: undefined as any,
       operationType: undefined as any,
@@ -111,6 +113,20 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="reference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Referencia</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Referencia interna para identificar la propiedad" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="address"
