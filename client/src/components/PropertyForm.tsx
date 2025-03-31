@@ -56,6 +56,12 @@ const formSchema = z.object({
   neighborhood: z.enum(BARCELONA_NEIGHBORHOODS as [string, ...string[]], {
     required_error: "Selecciona un barrio",
   }),
+  bedrooms: z.coerce.number()
+    .int()
+    .min(1, "Debe tener al menos 1 habitación"),
+  bathrooms: z.coerce.number()
+    .int()
+    .min(1, "Debe tener al menos 1 baño"),
   title: z.string().optional(),
   images: z.array(z.string()).optional(),
   mainImageIndex: z.number().default(0),
@@ -81,6 +87,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       operationType: undefined as any,
       description: "",
       price: "" as any, // Se convertirá a número en el validador
+      bedrooms: 1 as any, // Default to 1 bedroom
+      bathrooms: 1 as any, // Default to 1 bathroom
       neighborhood: undefined as any,
       title: "",
       images: [],
@@ -236,6 +244,58 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="bedrooms"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Habitaciones</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min="1"
+                        placeholder="Número de habitaciones"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!value || (Number(value) > 0 && Number.isInteger(Number(value)))) {
+                            field.onChange(value);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bathrooms"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Baños</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min="1"
+                        placeholder="Número de baños"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!value || (Number(value) > 0 && Number.isInteger(Number(value)))) {
+                            field.onChange(value);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

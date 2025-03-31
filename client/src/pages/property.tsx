@@ -1,18 +1,34 @@
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { type Property, type Agent } from "@shared/schema";
+import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ContactForm } from "@/components/ContactForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Bed, Bath, Square, MapPin, Phone, Mail } from "lucide-react";
+import { Bed, Bath, MapPin, Phone, Mail } from "lucide-react";
+
+// Extended Property type with additional fields for features
+interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms'> {
+  bedrooms: number | null;
+  bathrooms: number | null;
+  features?: string[];
+}
+
+// Agent interface
+interface Agent {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  photo?: string;
+}
 
 export default function PropertyPage() {
   const { id } = useParams<{ id: string }>();
   const propertyId = parseInt(id);
 
-  const { data: property, isLoading: propertyLoading } = useQuery<Property>({
+  const { data: property, isLoading: propertyLoading } = useQuery<ExtendedProperty>({
     queryKey: [`/api/properties/${propertyId}`],
   });
 
@@ -49,7 +65,10 @@ export default function PropertyPage() {
   return (
     <div className="min-h-screen pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <ImageGallery images={property.images} mainImageIndex={property.mainImageIndex} />
+        <ImageGallery 
+          images={property.images || []} 
+          mainImageIndex={property.mainImageIndex !== null ? property.mainImageIndex : 0} 
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-6">
@@ -60,23 +79,23 @@ export default function PropertyPage() {
               </p>
               <div className="flex items-center gap-2 mt-2 text-gray-600">
                 <MapPin className="h-4 w-4" />
-                <span>{property.location}</span>
+                <span>{property.address} - {property.neighborhood}</span>
               </div>
             </div>
 
             <div className="flex gap-6">
-              <div className="flex items-center gap-2">
-                <Bed className="h-5 w-5 text-gray-600" />
-                <span>{property.bedrooms} Bedrooms</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Bath className="h-5 w-5 text-gray-600" />
-                <span>{property.bathrooms} Bathrooms</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Square className="h-5 w-5 text-gray-600" />
-                <span>{property.squareMeters}m²</span>
-              </div>
+              {property.bedrooms && (
+                <div className="flex items-center gap-2">
+                  <Bed className="h-5 w-5 text-gray-600" />
+                  <span>{property.bedrooms} {property.bedrooms === 1 ? 'Habitación' : 'Habitaciones'}</span>
+                </div>
+              )}
+              {property.bathrooms && (
+                <div className="flex items-center gap-2">
+                  <Bath className="h-5 w-5 text-gray-600" />
+                  <span>{property.bathrooms} {property.bathrooms === 1 ? 'Baño' : 'Baños'}</span>
+                </div>
+              )}
             </div>
 
             <Separator />
@@ -86,14 +105,16 @@ export default function PropertyPage() {
               <p className="text-gray-600 whitespace-pre-line">{property.description}</p>
             </div>
 
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Features</h2>
-              <div className="flex flex-wrap gap-2">
-                {property.features.map((feature, index) => (
-                  <Badge key={index} variant="secondary">{feature}</Badge>
-                ))}
+            {property.features && property.features.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Features</h2>
+                <div className="flex flex-wrap gap-2">
+                  {property.features.map((feature, index) => (
+                    <Badge key={index} variant="secondary">{feature}</Badge>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-6">
