@@ -355,12 +355,17 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           id="imageUpload" 
                           className="hidden"
                           onChange={(e) => {
-                            // En un caso real, aquí subiríamos la imagen a un servicio
                             const files = Array.from(e.target.files || []);
                             if (files.length > 0) {
-                              // Crear URLs locales para vista previa
-                              const localUrls = files.map(file => URL.createObjectURL(file));
-                              field.onChange([...(field.value || []), ...localUrls]);
+                              // Convert each file to base64
+                              files.forEach(file => {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                  const base64String = e.target?.result as string;
+                                  field.onChange([...(field.value || []), base64String]);
+                                };
+                                reader.readAsDataURL(file);
+                              });
                             }
                           }}
                         />

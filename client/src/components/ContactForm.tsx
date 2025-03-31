@@ -17,10 +17,10 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(6, "Phone number is required"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  name: z.string().min(2, "El nombre es obligatorio"),
+  email: z.string().email("Dirección de correo electrónico inválida"),
+  phone: z.string().min(6, "El número de teléfono es obligatorio"),
+  message: z.string().min(10, "El mensaje debe tener al menos 10 caracteres"),
 });
 
 interface ContactFormProps {
@@ -50,8 +50,8 @@ export function ContactForm({ propertyId }: ContactFormProps) {
     },
     onSuccess: () => {
       toast({
-        title: "Inquiry sent successfully",
-        description: "We'll get back to you soon!",
+        title: "Consulta enviada con éxito",
+        description: "¡Nos pondremos en contacto contigo pronto!",
       });
       form.reset();
     },
@@ -68,7 +68,7 @@ export function ContactForm({ propertyId }: ContactFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Nombre</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -82,7 +82,7 @@ export function ContactForm({ propertyId }: ContactFormProps) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Correo electrónico</FormLabel>
               <FormControl>
                 <Input type="email" {...field} />
               </FormControl>
@@ -96,7 +96,7 @@ export function ContactForm({ propertyId }: ContactFormProps) {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Phone</FormLabel>
+              <FormLabel>Teléfono</FormLabel>
               <FormControl>
                 <Input type="tel" {...field} />
               </FormControl>
@@ -110,7 +110,7 @@ export function ContactForm({ propertyId }: ContactFormProps) {
           name="message"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Message</FormLabel>
+              <FormLabel>Mensaje</FormLabel>
               <FormControl>
                 <Textarea {...field} />
               </FormControl>
@@ -124,7 +124,7 @@ export function ContactForm({ propertyId }: ContactFormProps) {
           className="w-full"
           disabled={inquiry.isPending}
         >
-          Send Inquiry
+          Enviar consulta
         </Button>
       </form>
     </Form>

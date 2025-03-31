@@ -57,7 +57,7 @@ export default function PropertyPage() {
   if (!property) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <h1 className="text-2xl font-bold text-gray-900">Property not found</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Propiedad no encontrada</h1>
       </div>
     );
   }
@@ -101,13 +101,13 @@ export default function PropertyPage() {
             <Separator />
 
             <div>
-              <h2 className="text-xl font-semibold mb-4">Description</h2>
+              <h2 className="text-xl font-semibold mb-4">Descripción</h2>
               <p className="text-gray-600 whitespace-pre-line">{property.description}</p>
             </div>
 
             {property.features && property.features.length > 0 && (
               <div>
-                <h2 className="text-xl font-semibold mb-4">Features</h2>
+                <h2 className="text-xl font-semibold mb-4">Características</h2>
                 <div className="flex flex-wrap gap-2">
                   {property.features.map((feature, index) => (
                     <Badge key={index} variant="secondary">{feature}</Badge>
@@ -147,7 +147,7 @@ export default function PropertyPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <h3 className="font-semibold text-lg mb-4">Interested in this property?</h3>
+                <h3 className="font-semibold text-lg mb-4">¿Interesado en esta propiedad?</h3>
                 <ContactForm propertyId={property.id} />
               </CardContent>
             </Card>
