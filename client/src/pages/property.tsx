@@ -6,7 +6,7 @@ import { ContactForm } from "@/components/ContactForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Bed, Bath, MapPin, Phone, Mail } from "lucide-react";
+import { Bed, Bath, MapPin, Phone, Mail, Maximize } from "lucide-react";
 
 // Extended Property type with additional fields for features
 interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms'> {
@@ -94,6 +94,12 @@ export default function PropertyPage() {
                 <div className="flex items-center gap-2">
                   <Bath className="h-5 w-5 text-gray-600" />
                   <span>{property.bathrooms} {property.bathrooms === 1 ? 'Baño' : 'Baños'}</span>
+                </div>
+              )}
+              {property.superficie && (
+                <div className="flex items-center gap-2">
+                  <Maximize className="h-5 w-5 text-gray-600" />
+                  <span>{property.superficie} m²</span>
                 </div>
               )}
             </div>

@@ -57,11 +57,19 @@ const formSchema = z.object({
     required_error: "Selecciona un barrio",
   }),
   bedrooms: z.coerce.number()
-    .int()
-    .min(1, "Debe tener al menos 1 habitación"),
+    .int("El número de habitaciones debe ser un número entero")
+    .min(1, "Debe tener al menos 1 habitación")
+    .optional()
+    .nullable(),
   bathrooms: z.coerce.number()
-    .int()
-    .min(1, "Debe tener al menos 1 baño"),
+    .int("El número de baños debe ser un número entero")
+    .min(1, "Debe tener al menos 1 baño")
+    .optional()
+    .nullable(),
+  superficie: z.coerce.number()
+    .min(1, "La superficie debe ser mayor que 0")
+    .optional()
+    .nullable(),
   title: z.string().optional(),
   images: z.array(z.string()).optional(),
   mainImageIndex: z.number().default(0),
@@ -89,6 +97,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       price: "" as any, // Se convertirá a número en el validador
       bedrooms: 1 as any, // Default to 1 bedroom
       bathrooms: 1 as any, // Default to 1 bathroom
+      superficie: "" as any, // Nuevo campo para superficie en m²
       neighborhood: undefined as any,
       title: "",
       images: [],
@@ -245,7 +254,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="bedrooms"
@@ -254,16 +263,21 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     <FormLabel>Habitaciones</FormLabel>
                     <FormControl>
                       <Input
-                        {...field}
                         type="number"
                         min="1"
                         placeholder="Número de habitaciones"
+                        value={field.value === null || field.value === undefined ? "" : field.value}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (!value || (Number(value) > 0 && Number.isInteger(Number(value)))) {
-                            field.onChange(value);
+                          if (!value) {
+                            field.onChange("");
+                          } else if (Number(value) > 0 && Number.isInteger(Number(value))) {
+                            field.onChange(Number(value));
                           }
                         }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />
@@ -279,16 +293,51 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     <FormLabel>Baños</FormLabel>
                     <FormControl>
                       <Input
-                        {...field}
                         type="number"
                         min="1"
                         placeholder="Número de baños"
+                        value={field.value === null || field.value === undefined ? "" : field.value}
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (!value || (Number(value) > 0 && Number.isInteger(Number(value)))) {
-                            field.onChange(value);
+                          if (!value) {
+                            field.onChange("");
+                          } else if (Number(value) > 0 && Number.isInteger(Number(value))) {
+                            field.onChange(Number(value));
                           }
                         }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="superficie"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Superficie (m²)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="Superficie en m²"
+                        value={field.value === null || field.value === undefined ? "" : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (!value) {
+                            field.onChange("");
+                          } else if (Number(value) > 0) {
+                            field.onChange(Number(value));
+                          }
+                        }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />

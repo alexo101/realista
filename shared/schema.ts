@@ -37,6 +37,7 @@ export const properties = pgTable("properties", {
   neighborhood: text("neighborhood").notNull(),
   bedrooms: integer("bedrooms"), // Number of bedrooms
   bathrooms: integer("bathrooms"), // Number of bathrooms
+  superficie: integer("superficie"), // Area in square meters
   images: text("images").array(),
   mainImageIndex: integer("main_image_index").default(0),
   title: text("title"),
