@@ -19,7 +19,29 @@ const formSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
   phone: z.string()
     .min(1, "El número de teléfono es obligatorio")
-    .regex(/^[67|89][0-9]{8}$/, "Introduce un número de teléfono español válido (fijo o móvil)"),
+    .superRefine((val, ctx) => {
+      if (!/^[0-9]*$/.test(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "El teléfono solo debe contener números",
+        });
+      } else if (val.length > 0 && val.length < 9) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Faltan ${9 - val.length} dígitos para completar el número`,
+        });
+      } else if (val.length > 9) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "El número tiene demasiados dígitos",
+        });
+      } else if (val.length === 9 && !/^[67|89][0-9]{8}$/.test(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Los teléfonos españoles deben empezar por 6, 7, 8 o 9",
+        });
+      }
+    }),
   email: z.string().email("Por favor, introduce un email válido"),
 });
 
@@ -88,16 +110,24 @@ export function ClientForm({ onSubmit, onClose, initialData, isEditing = false }
                 <FormItem>
                   <FormLabel>Número de teléfono</FormLabel>
                   <FormControl>
-                    <Input 
-                      {...field} 
-                      placeholder="Introduce el número de teléfono" 
-                      type="tel"
-                      onKeyPress={(e) => {
-                        if (!/[0-9]/.test(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                    />
+                    <div className="relative">
+                      <Input 
+                        {...field} 
+                        placeholder="Introduce el número de teléfono" 
+                        type="tel"
+                        className={`${field.value && field.value.length > 0 ? 'pr-16' : ''}`}
+                        onKeyPress={(e) => {
+                          if (!/[0-9]/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                      />
+                      {field.value && field.value.length > 0 && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-500">
+                          {field.value.length}/9
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

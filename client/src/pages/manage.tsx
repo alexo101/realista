@@ -634,7 +634,10 @@ export default function ManagePage() {
                     title: editingProperty.title || "",
                     images: editingProperty.images || [],
                     mainImageIndex: editingProperty.mainImageIndex || 0,
-                    reference: editingProperty.reference
+                    reference: editingProperty.reference === null ? undefined : editingProperty.reference,
+                    bedrooms: editingProperty.bedrooms || undefined,
+                    bathrooms: editingProperty.bathrooms || undefined,
+                    superficie: editingProperty.superficie || undefined
                   } : undefined}
                   isEditing={!!editingProperty}
                 />
@@ -699,13 +702,18 @@ export default function ManagePage() {
                   isEditing={!!editingClient}
                 />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-white rounded-md shadow overflow-hidden">
                   {isLoadingClients ? (
-                    Array(6).fill(0).map((_, i) => (
-                      <div key={i} className="bg-gray-100 animate-pulse h-48 rounded-lg" />
-                    ))
+                    <div className="p-6">
+                      <div className="h-8 bg-gray-100 animate-pulse rounded-md mb-4 w-1/4" />
+                      <div className="space-y-3">
+                        {Array(6).fill(0).map((_, i) => (
+                          <div key={i} className="h-12 bg-gray-100 animate-pulse rounded-md" />
+                        ))}
+                      </div>
+                    </div>
                   ) : clients?.length === 0 ? (
-                    <div className="col-span-full text-center py-12">
+                    <div className="text-center py-12">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
                       <h3 className="mt-2 text-sm font-semibold text-gray-900">Sin clientes</h3>
                       <p className="mt-1 text-sm text-gray-500">
@@ -713,17 +721,53 @@ export default function ManagePage() {
                       </p>
                     </div>
                   ) : (
-                    clients?.map((client) => (
-                      <div 
-                        key={client.id} 
-                        className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => setEditingClient(client)}
-                      >
-                        <p className="font-medium">{client.name}</p>
-                        <p className="text-sm text-gray-600">{client.email}</p>
-                        <p className="text-sm text-gray-600">{client.phone}</p>
-                      </div>
-                    ))
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 text-xs uppercase text-gray-700">
+                          <tr>
+                            <th className="px-6 py-3 text-left">ID</th>
+                            <th className="px-6 py-3 text-left">Nombre</th>
+                            <th className="px-6 py-3 text-left">Email</th>
+                            <th className="px-6 py-3 text-left">Teléfono</th>
+                            <th className="px-6 py-3 text-left">Fecha de registro</th>
+                            <th className="px-6 py-3 text-center">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {clients?.map((client) => (
+                            <tr 
+                              key={client.id}
+                              className="hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                #{client.id}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {client.name}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {client.email}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {client.phone}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {client.createdAt ? new Date(client.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => setEditingClient(client)}
+                                >
+                                  Editar
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               )}
