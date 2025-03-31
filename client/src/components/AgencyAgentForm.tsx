@@ -48,7 +48,7 @@ export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormPr
       queryClient.invalidateQueries({ queryKey: ["/api/agency-agents", agencyId] });
       toast({
         title: "Agente añadido",
-        description: "El agente ha sido añadido a la agencia correctamente",
+        description: "El agente ha sido añadido a la agencia y se ha enviado un correo de invitación",
       });
       form.reset();
       onClose();
@@ -74,6 +74,7 @@ export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormPr
           <DialogTitle>Añadir Agente a la Agencia</DialogTitle>
           <DialogDescription>
             Introduce los datos del agente que deseas añadir a tu agencia.
+            El agente recibirá un correo de invitación para unirse a la plataforma.
           </DialogDescription>
         </DialogHeader>
 

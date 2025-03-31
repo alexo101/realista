@@ -291,13 +291,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           className="hidden"
                           onChange={(e) => {
                             // En un caso real, aquí subiríamos la imagen a un servicio
-                            // Por ahora, solo actualizamos el campo con URLs ficticias basadas en nombres de archivos
                             const files = Array.from(e.target.files || []);
                             if (files.length > 0) {
-                              const fileNames = files.map((file, index) => 
-                                `https://example.com/images/${file.name}`
-                              );
-                              field.onChange([...(field.value || []), ...fileNames]);
+                              // Crear URLs locales para vista previa
+                              const localUrls = files.map(file => URL.createObjectURL(file));
+                              field.onChange([...(field.value || []), ...localUrls]);
                             }
                           }}
                         />
@@ -355,7 +353,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               </Button>
               <Button
                 type="submit"
-                disabled={!form.formState.isValid || isSubmitting}
+                disabled={isSubmitting}
               >
                 {isEditing ? 'Actualizar' : 'Crear'} propiedad
               </Button>

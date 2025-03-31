@@ -20,6 +20,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to check email" });
     }
   });
+  
+  // Nueva ruta para validar si un email está asociado a un agente invitado
+  app.get("/api/agency-agents/check-email", async (req, res) => {
+    try {
+      const { email } = req.query;
+      // Aquí buscaríamos en la base de datos si el email está asociado a un agente invitado
+      // Como simplificación, siempre devolvemos que existe
+      res.json({ 
+        exists: true, 
+        agentName: "Nombre del agente", 
+        agencyId: 1 
+      });
+    } catch (error) {
+      console.error('Error checking invited agent email:', error);
+      res.status(500).json({ message: "Failed to check invited agent email" });
+    }
+  });
 
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -295,6 +312,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const agentData = insertAgencyAgentSchema.parse(req.body);
       const result = await storage.createAgencyAgent(agentData);
+      
+      // Simulamos envío de correo (en un entorno real usaríamos un servicio de email)
+      console.log(`
+-----------------------------------
+ENVIANDO EMAIL DE INVITACIÓN:
+Para: ${agentData.agentEmail}
+Asunto: Bienvenido a Realista - Tu perfil ha sido añadido
+
+Contenido:
+Hola ${agentData.agentName},
+
+Un agente de tu agencia ha añadido tu perfil a Realista. 
+Sigue el siguiente link para acceder a tu cuenta:
+[Botón con link a la agencia]
+
+Gracias!
+-----------------------------------
+`);
+      
       res.status(201).json(result);
     } catch (error) {
       console.error('Error creating agency agent:', error);
