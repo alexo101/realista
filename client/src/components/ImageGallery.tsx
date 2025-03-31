@@ -15,6 +15,15 @@ interface ImageGalleryProps {
 export function ImageGallery({ images, mainImageIndex = 0 }: ImageGalleryProps) {
   const [currentImage, setCurrentImage] = useState(mainImageIndex || 0);
 
+  // If no images, display a placeholder
+  if (!images || images.length === 0) {
+    return (
+      <div className="aspect-video bg-gray-100 flex items-center justify-center rounded-lg">
+        <p className="text-gray-500">No hay imágenes disponibles</p>
+      </div>
+    );
+  }
+
   const nextImage = () => {
     setCurrentImage((prev) => (prev + 1) % images.length);
   };
@@ -44,38 +53,46 @@ export function ImageGallery({ images, mainImageIndex = 0 }: ImageGalleryProps) 
               className="object-contain w-full h-full"
             />
             
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-2 top-1/2 -translate-y-1/2"
-              onClick={previousImage}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2"
-              onClick={nextImage}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </Button>
+            {images.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white"
+                  onClick={previousImage}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white"
+                  onClick={nextImage}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
-      <div className="grid grid-cols-4 gap-2">
-        {images.map((image, index) => (
-          <img
-            key={index}
-            src={image}
-            alt={`Property ${index + 1}`}
-            className="aspect-video object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => setCurrentImage(index)}
-          />
-        ))}
-      </div>
+      {images.length > 1 && (
+        <div className="grid grid-cols-4 gap-2">
+          {images.map((image, index) => (
+            <img
+              key={index}
+              src={image}
+              alt={`Property ${index + 1}`}
+              className={`aspect-video object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity ${
+                index === currentImage ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => setCurrentImage(index)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

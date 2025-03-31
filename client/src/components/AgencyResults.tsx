@@ -44,15 +44,17 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
       {results.map((agency) => (
         <div key={agency.id} className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+            <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
               {agency.agencyLogo ? (
                 <img
                   src={agency.agencyLogo}
                   alt={agency.agencyName}
-                  className="w-full h-full rounded-full object-cover"
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <Building className="w-8 h-8 text-gray-400" />
+                <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                  <Building className="w-10 h-10 text-primary" />
+                </div>
               )}
             </div>
             <div>

@@ -47,40 +47,49 @@ const DraggableImage = ({ url, index, isMain, moveImage, onDelete, onSetMain }: 
     <div 
       ref={ref} 
       className={cn(
-        "relative group", 
-        isDragging ? "opacity-50" : "opacity-100",
-        isMain ? "border-2 border-primary" : ""
+        "relative group cursor-move", 
+        isDragging ? "opacity-50" : "opacity-100"
       )}
     >
-      <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+      <div className={cn(
+        "aspect-video bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden",
+        isMain ? "ring-2 ring-primary" : "hover:ring-2 hover:ring-primary/50",
+        isDragging ? "shadow-lg" : ""
+      )}>
         <img 
           src={url} 
           alt={`Property ${index}`} 
           className="object-cover w-full h-full" 
           onError={(e) => {
-            e.currentTarget.src = 'https://via.placeholder.com/150';
+            e.currentTarget.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150" fill="none"%3E%3Crect width="150" height="150" fill="%23EEEEEE"/%3E%3Cpath d="M75 90L60 70L45 90" stroke="%23CCCCCC" stroke-width="2"/%3E%3Ccircle cx="85" cy="60" r="5" stroke="%23CCCCCC" stroke-width="2"/%3E%3C/svg%3E';
           }} 
         />
+
+        {isMain && (
+          <div className="absolute top-0 left-0 bg-primary text-white py-1 px-2 text-xs font-medium rounded-br-md">
+            Imagen principal
+          </div>
+        )}
       </div>
-      <div className="absolute top-1 left-1 flex gap-1">
+
+      <div className="absolute bottom-2 left-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button 
           type="button"
-          className={cn(
-            "bg-green-500 text-white rounded-full p-1",
-            isMain ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity"
-          )}
+          className="bg-primary text-white rounded-md p-1.5 shadow-md hover:bg-primary/90"
           onClick={() => onSetMain(index)}
-          title={isMain ? "Main image" : "Set as main image"}
+          title={isMain ? "Imagen principal" : "Establecer como imagen principal"}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </button>
       </div>
+
       <button 
         type="button"
-        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute bottom-2 right-2 bg-red-500 text-white rounded-md p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
         onClick={() => onDelete(index)}
+        title="Eliminar imagen"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -159,25 +168,36 @@ export function DraggableImageGallery({ images, onChange }: DraggableImageGaller
     onChange(imageList, index);
   };
 
-  if (!images || images.length === 0) {
-    return null;
-  }
-
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="grid grid-cols-3 gap-2 mt-2">
-        {imageList.map((url, index) => (
-          <DraggableImage
-            key={index}
-            url={url}
-            index={index}
-            isMain={index === mainImageIndex}
-            moveImage={moveImage}
-            onDelete={handleDelete}
-            onSetMain={handleSetMain}
-          />
-        ))}
-      </div>
+      {!imageList || imageList.length === 0 ? (
+        <div className="bg-gray-50 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center">
+          <p className="text-gray-500">No hay imágenes para mostrar. Por favor, añade imágenes usando el campo arriba.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="text-sm text-gray-600 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            </svg>
+            <span>Arrastra para reordenar las imágenes</span>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {imageList.map((url, index) => (
+              <DraggableImage
+                key={index}
+                url={url}
+                index={index}
+                isMain={index === mainImageIndex}
+                moveImage={moveImage}
+                onDelete={handleDelete}
+                onSetMain={handleSetMain}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </DndProvider>
   );
 }

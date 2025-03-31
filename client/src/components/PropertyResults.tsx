@@ -1,12 +1,15 @@
 import { Building2 } from "lucide-react";
-import { Link } from "wouter";
 
 interface PropertyResult {
   id: number;
   address: string;
   type: string;
+  operationType: string;
   price: number;
-  image?: string;
+  neighborhood: string;
+  title?: string;
+  images?: string[] | null;
+  mainImageIndex?: number | null;
 }
 
 interface PropertyResultsProps {
@@ -40,26 +43,37 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((property) => (
-        <Link href={`/property/${property.id}`} key={property.id}>
-          <div className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-            <div className="aspect-video bg-gray-200 relative">
-              {property.image ? (
-                <img
-                  src={property.image}
-                  alt={property.address}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Building2 className="w-12 h-12 text-gray-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-              )}
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold mb-2">{property.address}</h3>
-              <p className="text-gray-600">{property.type}</p>
-              <p className="text-primary font-semibold mt-2">{property.price.toLocaleString()}€</p>
+        <div 
+          key={property.id} 
+          className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
+          onClick={() => window.location.href = `/property/${property.id}`}
+        >
+          <div className="aspect-video bg-gray-200 relative overflow-hidden">
+            {property.images && property.images.length > 0 ? (
+              <img
+                src={property.images[property.mainImageIndex || 0] || property.images[0]}
+                alt={property.title || property.address}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <Building2 className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
+            <div className="absolute top-2 right-2 bg-primary text-white text-xs font-medium px-2 py-1 rounded-md">
+              {property.operationType === 'Alquiler' ? 'Alquiler' : 'Venta'}
             </div>
           </div>
-        </Link>
+          <div className="p-4">
+            <h3 className="font-semibold text-lg line-clamp-1">{property.title || property.address}</h3>
+            <p className="text-2xl font-bold text-primary mt-2">€{property.price.toLocaleString()}</p>
+            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+              <span>{property.type}</span>
+              <span>{property.neighborhood}</span>
+            </div>
+            <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
+          </div>
+        </div>
       ))}
     </div>
   );

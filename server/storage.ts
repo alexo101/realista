@@ -89,11 +89,14 @@ export class DatabaseStorage implements IStorage {
     const neighborhoodsStr = params.get('neighborhoods');
     const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
 
+    console.log('SearchAgents - searchTerm:', searchTerm);
+    console.log('SearchAgents - neighborhoods:', neighborhoods);
+
     // Buscar solo usuarios que son agentes
     let conditions = [eq(users.isAgent, true)];
     
-    // Añadir condición de búsqueda por nombre si existe
-    if (searchTerm) {
+    // Añadir condición de búsqueda por nombre si existe y no está vacío
+    if (searchTerm && searchTerm.trim() !== '') {
       conditions.push(
         sql`(${users.name} ILIKE ${'%' + searchTerm + '%'} OR 
              ${users.surname} ILIKE ${'%' + searchTerm + '%'} OR 
@@ -130,8 +133,8 @@ export class DatabaseStorage implements IStorage {
       eq(users.isAgent, false)
     ];
     
-    // Añadir condición de búsqueda por nombre si existe
-    if (searchTerm) {
+    // Añadir condición de búsqueda por nombre si existe y no está vacío
+    if (searchTerm && searchTerm.trim() !== '') {
       conditions.push(
         sql`${users.agencyName} ILIKE ${'%' + searchTerm + '%'}`
       );
