@@ -14,9 +14,9 @@ export function PropertyCard({ property }: PropertyCardProps) {
       <Link href={`/property/${property.id}`}>
         <a className="block">
           <div className="aspect-video relative overflow-hidden">
-            {property.images?.[0] ? (
+            {property.images?.length ? (
               <img
-                src={property.images[0]}
+                src={property.images[property.mainImageIndex || 0] || property.images[0]}
                 alt={property.title || property.address}
                 className="object-cover w-full h-full hover:scale-105 transition-transform"
               />

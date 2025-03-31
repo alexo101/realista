@@ -36,6 +36,7 @@ export const properties = pgTable("properties", {
   price: integer("price").notNull(),
   neighborhood: text("neighborhood").notNull(),
   images: text("images").array(),
+  mainImageIndex: integer("main_image_index").default(0),
   title: text("title"),
   agentId: integer("agent_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),

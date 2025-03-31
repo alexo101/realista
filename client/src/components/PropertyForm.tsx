@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { DraggableImageGallery } from "./DraggableImageGallery";
 
 const BARCELONA_NEIGHBORHOODS = [
   "Barceloneta",
@@ -50,17 +51,14 @@ const formSchema = z.object({
     required_error: "Selecciona el tipo de operación",
   }),
   description: z.string().min(1, "La descripción es obligatoria"),
-  price: z.string()
-    .min(1, "El precio es obligatorio")
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-      message: "El precio debe ser un número positivo",
-    })
-    .transform(Number),
+  price: z.coerce.number()
+    .min(1, "El precio es obligatorio"),
   neighborhood: z.enum(BARCELONA_NEIGHBORHOODS as [string, ...string[]], {
     required_error: "Selecciona un barrio",
   }),
   title: z.string().optional(),
   images: z.array(z.string()).optional(),
+  mainImageIndex: z.number().default(0),
 });
 
 interface PropertyFormProps {
@@ -86,8 +84,15 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       neighborhood: undefined as any,
       title: "",
       images: [],
+      mainImageIndex: 0,
     },
   });
+  
+  // Handler for image changes with main image index
+  const handleImageChange = (newImages: string[], mainImageIndex: number) => {
+    form.setValue("images", newImages);
+    form.setValue("mainImageIndex", mainImageIndex);
+  };
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
@@ -308,31 +313,12 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         </label>
                       </div>
                       {field.value && field.value.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                          {field.value.map((url, index) => (
-                            <div key={index} className="relative group">
-                              <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
-                                <img src={url} alt={`Property ${index}`} className="object-cover w-full h-full" onError={(e) => {
-                                  e.currentTarget.src = 'https://via.placeholder.com/150';
-                                }} />
-                              </div>
-                              <button 
-                                type="button"
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => {
-                                  if (field.value) {
-                                    const newImages = [...field.value];
-                                    newImages.splice(index, 1);
-                                    field.onChange(newImages);
-                                  }
-                                }}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium mb-2">Organiza las imágenes (arrastra para reordenar, haz clic en ✓ para establecer como imagen principal)</h4>
+                          <DraggableImageGallery 
+                            images={field.value} 
+                            onChange={handleImageChange} 
+                          />
                         </div>
                       )}
                     </div>

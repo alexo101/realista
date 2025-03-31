@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 
 interface ImageGalleryProps {
   images: string[];
+  mainImageIndex?: number;
 }
 
-export function ImageGallery({ images }: ImageGalleryProps) {
-  const [currentImage, setCurrentImage] = useState(0);
+export function ImageGallery({ images, mainImageIndex = 0 }: ImageGalleryProps) {
+  const [currentImage, setCurrentImage] = useState(mainImageIndex || 0);
 
   const nextImage = () => {
     setCurrentImage((prev) => (prev + 1) % images.length);
@@ -28,7 +29,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
         <DialogTrigger asChild>
           <div className="aspect-video relative overflow-hidden rounded-lg cursor-pointer">
             <img
-              src={images[0]}
+              src={images[mainImageIndex] || images[0]}
               alt="Property main"
               className="object-cover w-full h-full hover:scale-105 transition-transform"
             />
