@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, KeyboardEvent } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -185,6 +186,30 @@ export function SearchBar() {
         : [...prev, neighborhood]
     );
   };
+  
+  // Handler for Enter key press in search inputs
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  // Handler for Enter key press in neighborhood search
+  const handleNeighborhoodKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && filteredNeighborhoods.length > 0) {
+      // If there's only one filtered neighborhood, select it
+      if (filteredNeighborhoods.length === 1) {
+        toggleNeighborhood(filteredNeighborhoods[0]);
+      }
+      // If the exact search term matches a neighborhood, select it
+      else if (filteredNeighborhoods.some(n => n.toLowerCase() === neighborhoodSearch.toLowerCase())) {
+        const exactMatch = filteredNeighborhoods.find(n => 
+          n.toLowerCase() === neighborhoodSearch.toLowerCase()
+        );
+        if (exactMatch) toggleNeighborhood(exactMatch);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -229,6 +254,7 @@ export function SearchBar() {
                 className="w-full"
                 onChange={searchType === 'agencies' ? (e) => setAgencyName(e.target.value) : (e) => setAgentName(e.target.value)}
                 value={searchType === 'agencies' ? agencyName : agentName}
+                onKeyDown={handleKeyDown}
               />
             </div>
           )}
@@ -271,7 +297,7 @@ export function SearchBar() {
                     <SelectItem
                       key={range.value}
                       value={range.value}
-                      disabled={priceRange.max && parseInt(range.value) > parseInt(priceRange.max)}
+                      disabled={!!priceRange.max && parseInt(range.value) > parseInt(priceRange.max)}
                     >
                       {range.label}
                     </SelectItem>
@@ -295,7 +321,7 @@ export function SearchBar() {
                     <SelectItem
                       key={range.value}
                       value={range.value}
-                      disabled={priceRange.min && parseInt(range.value) < parseInt(priceRange.min)}
+                      disabled={!!priceRange.min && parseInt(range.value) < parseInt(priceRange.min)}
                     >
                       {range.label}
                     </SelectItem>
@@ -347,15 +373,14 @@ export function SearchBar() {
 
       <Dialog open={isNeighborhoodOpen} onOpenChange={setIsNeighborhoodOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">BARRIOS DE BARCELONA</h2>
-          </div>
+          <DialogTitle className="text-lg font-semibold">BARRIOS DE BARCELONA</DialogTitle>
 
           <div className="space-y-4">
             <Input
               placeholder="Buscar barrio..."
               value={neighborhoodSearch}
               onChange={(e) => setNeighborhoodSearch(e.target.value)}
+              onKeyDown={handleNeighborhoodKeyDown}
             />
 
             {selectedNeighborhoods.length > 0 && (

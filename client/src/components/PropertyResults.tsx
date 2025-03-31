@@ -1,4 +1,5 @@
 import { Building2 } from "lucide-react";
+import { Link } from "wouter";
 
 interface PropertyResult {
   id: number;
@@ -39,24 +40,26 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((property) => (
-        <div key={property.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="aspect-video bg-gray-200 relative">
-            {property.image ? (
-              <img
-                src={property.image}
-                alt={property.address}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Building2 className="w-12 h-12 text-gray-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-            )}
+        <Link href={`/property/${property.id}`} key={property.id}>
+          <div className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+            <div className="aspect-video bg-gray-200 relative">
+              {property.image ? (
+                <img
+                  src={property.image}
+                  alt={property.address}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Building2 className="w-12 h-12 text-gray-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              )}
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold mb-2">{property.address}</h3>
+              <p className="text-gray-600">{property.type}</p>
+              <p className="text-primary font-semibold mt-2">{property.price.toLocaleString()}€</p>
+            </div>
           </div>
-          <div className="p-4">
-            <h3 className="font-semibold mb-2">{property.address}</h3>
-            <p className="text-gray-600">{property.type}</p>
-            <p className="text-primary font-semibold mt-2">{property.price}€</p>
-          </div>
-        </div>
+        </Link>
       ))}
     </div>
   );
