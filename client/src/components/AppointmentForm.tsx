@@ -19,12 +19,7 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
-import { 
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger 
-} from "@/components/ui/accordion";
+
 import { Textarea } from "@/components/ui/textarea";
 import { 
   Card,
@@ -374,9 +369,8 @@ export function AppointmentList({ clientId, onEdit, onDelete }: AppointmentListP
   });
 
   // Formatear la fecha para mostrar
-  const formatAppointmentDate = (date: Date, time: string) => {
-    const formattedDate = format(new Date(date), "d 'de' MMMM 'de' yyyy", { locale: es });
-    return `${formattedDate} a las ${time}`;
+  const formatDate = (date: Date) => {
+    return format(new Date(date), "dd/MM/yyyy", { locale: es });
   };
 
   if (isLoading) {
@@ -388,61 +382,75 @@ export function AppointmentList({ clientId, onEdit, onDelete }: AppointmentListP
   }
 
   return (
-    <div className="space-y-4">
-      {appointments.map((appointment) => (
-        <Card key={appointment.id} className="overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="font-medium text-lg">
-                  {appointment.type === "visita" ? "Visita" : "Llamada"}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {formatAppointmentDate(appointment.date, appointment.time)}
-                </div>
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-gray-50 text-xs uppercase text-gray-700">
+          <tr>
+            <th className="px-6 py-3 text-left">Tipo de cita</th>
+            <th className="px-6 py-3 text-left">Fecha</th>
+            <th className="px-6 py-3 text-left">Hora</th>
+            <th className="px-6 py-3 text-left">Comentarios</th>
+            <th className="px-6 py-3 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {appointments.map((appointment) => (
+            <tr 
+              key={appointment.id}
+              className="hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {appointment.type === "visita" ? "Visita" : "Llamada"}
                 {appointment.type === "visita" && appointment.propertyId && (
-                  <div className="text-sm mt-1">
-                    <span className="font-medium">Propiedad: </span>
+                  <div className="text-xs mt-1 text-gray-500">
                     {appointment.property?.title || appointment.property?.address || "N/A"}
                   </div>
                 )}
-                <div className="mt-2 text-sm">
-                  {appointment.comments}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => onEdit(appointment)}
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {formatDate(new Date(appointment.date))}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {appointment.time}
+              </td>
+              <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                {appointment.comments}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <div className="flex justify-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onEdit(appointment)}
                   >
-                    <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                    <path d="m15 5 4 4"></path>
-                  </svg>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => onDelete(appointment.id!)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                      <path d="m15 5 4 4"></path>
+                    </svg>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onDelete(appointment.id!)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -549,37 +557,37 @@ export function AppointmentsManager({ clientId }: AppointmentsManagerProps) {
   };
 
   return (
-    <div className="mt-4">
-      <Accordion type="single" collapsible className="w-full">
-        <AccordionItem value="appointments">
-          <AccordionTrigger className="text-lg font-medium">
-            Citas
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4">
-            {showForm ? (
-              <AppointmentForm
-                clientId={clientId}
-                appointment={editingAppointment}
-                onSave={handleSaveAppointment}
-                onCancel={handleCancel}
-              />
-            ) : (
-              <div className="text-right mb-4">
-                <Button onClick={() => setShowForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nueva Cita
-                </Button>
-              </div>
-            )}
-            
-            <AppointmentList
-              clientId={clientId}
-              onEdit={handleEditAppointment}
-              onDelete={handleDeleteAppointment}
-            />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+    <div className="mt-8">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-medium">Citas</h3>
+        {!showForm && (
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Cita
+          </Button>
+        )}
+      </div>
+      
+      {showForm ? (
+        <div className="mb-6">
+          <AppointmentForm
+            clientId={clientId}
+            appointment={editingAppointment}
+            onSave={handleSaveAppointment}
+            onCancel={handleCancel}
+          />
+        </div>
+      ) : null}
+      
+      <Card>
+        <CardContent className="p-4">
+          <AppointmentList
+            clientId={clientId}
+            onEdit={handleEditAppointment}
+            onDelete={handleDeleteAppointment}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
