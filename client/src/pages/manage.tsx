@@ -698,7 +698,12 @@ export default function ManagePage() {
                     setIsAddingClient(false);
                     setEditingClient(null);
                   }}
-                  initialData={editingClient || undefined}
+                  initialData={editingClient ? {
+                    id: editingClient.id,
+                    name: editingClient.name,
+                    email: editingClient.email,
+                    phone: editingClient.phone
+                  } : undefined}
                   isEditing={!!editingClient}
                 />
               ) : (

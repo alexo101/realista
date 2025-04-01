@@ -5,7 +5,8 @@ import {
   insertPropertySchema,
   insertClientSchema,
   insertNeighborhoodRatingSchema,
-  insertAgencyAgentSchema
+  insertAgencyAgentSchema,
+  insertAppointmentSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -346,6 +347,65 @@ Gracias!
     } catch (error) {
       console.error('Error deleting agency agent:', error);
       res.status(500).json({ message: "Failed to delete agency agent" });
+    }
+  });
+
+  // Appointments routes
+  app.get("/api/appointments/client/:clientId", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const appointments = await storage.getAppointmentsByClient(clientId);
+      res.json(appointments);
+    } catch (error) {
+      console.error('Error fetching client appointments:', error);
+      res.status(500).json({ message: "Failed to fetch appointments" });
+    }
+  });
+
+  app.get("/api/appointments/agent/:agentId", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const appointments = await storage.getAppointmentsByAgent(agentId);
+      res.json(appointments);
+    } catch (error) {
+      console.error('Error fetching agent appointments:', error);
+      res.status(500).json({ message: "Failed to fetch appointments" });
+    }
+  });
+
+  app.post("/api/appointments", async (req, res) => {
+    try {
+      console.log('Attempting to create appointment with data:', req.body);
+      const appointment = insertAppointmentSchema.parse(req.body);
+      const result = await storage.createAppointment(appointment);
+      console.log('Appointment created successfully:', result);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      res.status(400).json({ message: "Invalid appointment data" });
+    }
+  });
+
+  app.patch("/api/appointments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const appointmentData = req.body;
+      const updatedAppointment = await storage.updateAppointment(id, appointmentData);
+      res.json(updatedAppointment);
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      res.status(500).json({ message: "Failed to update appointment" });
+    }
+  });
+
+  app.delete("/api/appointments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAppointment(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      res.status(500).json({ message: "Failed to delete appointment" });
     }
   });
 

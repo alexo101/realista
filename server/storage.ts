@@ -6,16 +6,19 @@ import {
   clients,
   neighborhoodRatings,
   agencyAgents,
+  appointments,
   type User,
   type Property,
   type Client,
   type NeighborhoodRating,
   type AgencyAgent,
+  type Appointment,
   type InsertUser,
   type InsertProperty,
   type InsertClient,
   type InsertNeighborhoodRating,
   type InsertAgencyAgent,
+  type InsertAppointment,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -53,6 +56,13 @@ export interface IStorage {
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
   createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating>;
+  
+  // Appointments
+  getAppointmentsByClient(clientId: number): Promise<Appointment[]>;
+  getAppointmentsByAgent(agentId: number): Promise<Appointment[]>;
+  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointment(id: number, appointment: Partial<InsertAppointment>): Promise<Appointment>;
+  deleteAppointment(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -278,6 +288,37 @@ export class DatabaseStorage implements IStorage {
   async createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating> {
     const [newRating] = await db.insert(neighborhoodRatings).values(rating).returning();
     return newRating;
+  }
+
+  // Appointments
+  async getAppointmentsByClient(clientId: number): Promise<Appointment[]> {
+    return db.select()
+      .from(appointments)
+      .where(eq(appointments.clientId, clientId));
+  }
+
+  async getAppointmentsByAgent(agentId: number): Promise<Appointment[]> {
+    return db.select()
+      .from(appointments)
+      .where(eq(appointments.agentId, agentId));
+  }
+
+  async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
+    const [newAppointment] = await db.insert(appointments).values(appointment).returning();
+    return newAppointment;
+  }
+
+  async updateAppointment(id: number, appointment: Partial<InsertAppointment>): Promise<Appointment> {
+    const [updatedAppointment] = await db
+      .update(appointments)
+      .set(appointment)
+      .where(eq(appointments.id, id))
+      .returning();
+    return updatedAppointment;
+  }
+
+  async deleteAppointment(id: number): Promise<void> {
+    await db.delete(appointments).where(eq(appointments.id, id));
   }
 }
 

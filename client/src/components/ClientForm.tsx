@@ -14,8 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { AppointmentsManager } from "./AppointmentForm";
 
 const formSchema = z.object({
+  id: z.number().optional(),
   name: z.string().min(1, "El nombre es obligatorio"),
   phone: z.string()
     .min(1, "El número de teléfono es obligatorio")
@@ -59,6 +61,7 @@ export function ClientForm({ onSubmit, onClose, initialData, isEditing = false }
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
+      id: undefined,
       name: "",
       phone: "",
       email: "",
@@ -85,87 +88,94 @@ export function ClientForm({ onSubmit, onClose, initialData, isEditing = false }
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Introduce el nombre" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Introduce el nombre" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Número de teléfono</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input 
-                        {...field} 
-                        placeholder="Introduce el número de teléfono" 
-                        type="tel"
-                        className={`${field.value && field.value.length > 0 ? 'pr-16' : ''}`}
-                        onKeyPress={(e) => {
-                          if (!/[0-9]/.test(e.key)) {
-                            e.preventDefault();
-                          }
-                        }}
-                      />
-                      {field.value && field.value.length > 0 && (
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-500">
-                          {field.value.length}/9
-                        </div>
-                      )}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de teléfono</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          {...field} 
+                          placeholder="Introduce el número de teléfono" 
+                          type="tel"
+                          className={`${field.value && field.value.length > 0 ? 'pr-16' : ''}`}
+                          onKeyPress={(e) => {
+                            if (!/[0-9]/.test(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
+                        {field.value && field.value.length > 0 && (
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-500">
+                            {field.value.length}/9
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Introduce el email" type="email" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Introduce el email" type="email" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                type="button"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={!form.formState.isValid || isSubmitting}
-              >
-                {isEditing ? 'Actualizar' : 'Crear'} cliente
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  type="button"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!form.formState.isValid || isSubmitting}
+                >
+                  {isEditing ? 'Actualizar' : 'Crear'} cliente
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+      
+      {/* El componente de Citas solo se muestra cuando estamos editando un cliente existente */}
+      {isEditing && initialData?.id && (
+        <AppointmentsManager clientId={initialData.id} />
+      )}
+    </div>
   );
 }

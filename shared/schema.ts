@@ -74,20 +74,35 @@ export const agencyAgents = pgTable("agency_agents", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const appointments = pgTable("appointments", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull(),
+  agentId: integer("agent_id").notNull(),
+  type: text("type").notNull(), // "Visita" o "Llamada"
+  date: timestamp("date").notNull(),
+  time: text("time").notNull(),
+  propertyId: integer("property_id"), // Solo se requiere para visitas
+  comments: text("comments").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPropertySchema = createInsertSchema(properties).omit({ id: true, createdAt: true });
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
 export const insertNeighborhoodRatingSchema = createInsertSchema(neighborhoodRatings).omit({ id: true, createdAt: true });
 export const insertAgencyAgentSchema = createInsertSchema(agencyAgents).omit({ id: true, createdAt: true });
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type NeighborhoodRating = typeof neighborhoodRatings.$inferSelect;
 export type AgencyAgent = typeof agencyAgents.$inferSelect;
+export type Appointment = typeof appointments.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertNeighborhoodRating = z.infer<typeof insertNeighborhoodRatingSchema>;
 export type InsertAgencyAgent = z.infer<typeof insertAgencyAgentSchema>;
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
