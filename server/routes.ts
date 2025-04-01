@@ -376,7 +376,17 @@ Gracias!
   app.post("/api/appointments", async (req, res) => {
     try {
       console.log('Attempting to create appointment with data:', req.body);
-      const appointment = insertAppointmentSchema.parse(req.body);
+      
+      // Primero preparamos los datos para asegurarnos de que la fecha es un objeto Date
+      const data = {
+        ...req.body,
+        date: req.body.date ? new Date(req.body.date) : null
+      };
+      
+      console.log('Parsed appointment data:', data);
+      
+      // Validamos con el esquema
+      const appointment = insertAppointmentSchema.parse(data);
       const result = await storage.createAppointment(appointment);
       console.log('Appointment created successfully:', result);
       res.status(201).json(result);
@@ -389,7 +399,14 @@ Gracias!
   app.patch("/api/appointments/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const appointmentData = req.body;
+      
+      // Preparamos los datos con el formato correcto de fecha
+      const appointmentData = {
+        ...req.body,
+        date: req.body.date ? new Date(req.body.date) : undefined
+      };
+      
+      console.log('Updating appointment with data:', appointmentData);
       const updatedAppointment = await storage.updateAppointment(id, appointmentData);
       res.json(updatedAppointment);
     } catch (error) {
