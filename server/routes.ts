@@ -478,6 +478,69 @@ Gracias!
     }
   });
 
+  // Rutas para consultas de propiedades (Inquiries)
+  app.get("/api/inquiries/agent/:agentId", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const inquiries = await storage.getInquiriesByAgent(agentId);
+      res.json(inquiries);
+    } catch (error) {
+      console.error('Error getting inquiries:', error);
+      res.status(500).json({ message: "Error al obtener consultas" });
+    }
+  });
+
+  app.get("/api/inquiries/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const inquiry = await storage.getInquiryById(id);
+      
+      if (!inquiry) {
+        return res.status(404).json({ message: "Consulta no encontrada" });
+      }
+      
+      res.json(inquiry);
+    } catch (error) {
+      console.error('Error getting inquiry:', error);
+      res.status(500).json({ message: "Error al obtener la consulta" });
+    }
+  });
+
+  app.post("/api/inquiries", async (req, res) => {
+    try {
+      // Datos de la consulta con fecha actual
+      const inquiryData = {
+        ...req.body,
+        status: req.body.status || "pendiente", // Estado por defecto
+        createdAt: new Date()
+      };
+      
+      console.log('Creating inquiry with data:', inquiryData);
+      const newInquiry = await storage.createInquiry(inquiryData);
+      res.status(201).json(newInquiry);
+    } catch (error) {
+      console.error('Error creating inquiry:', error);
+      res.status(500).json({ message: "Error al crear la consulta" });
+    }
+  });
+
+  app.patch("/api/inquiries/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ message: "El estado es requerido" });
+      }
+      
+      const updatedInquiry = await storage.updateInquiryStatus(id, status);
+      res.json(updatedInquiry);
+    } catch (error) {
+      console.error('Error updating inquiry status:', error);
+      res.status(500).json({ message: "Error al actualizar el estado de la consulta" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

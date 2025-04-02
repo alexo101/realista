@@ -18,6 +18,7 @@ import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
+import { InquiriesList } from "@/components/InquiriesList";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -795,7 +796,8 @@ export default function ManagePage() {
           )}
           {section === "messages" && (
             <div className="max-w-4xl mx-auto">
-              {/* Messages content will go here */}
+              <h2 className="text-2xl font-bold mb-6">Consultas de propiedades</h2>
+              <InquiriesList />
             </div>
           )}
         </main>

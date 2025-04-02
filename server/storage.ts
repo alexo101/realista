@@ -7,18 +7,21 @@ import {
   neighborhoodRatings,
   agencyAgents,
   appointments,
+  inquiries,
   type User,
   type Property,
   type Client,
   type NeighborhoodRating,
   type AgencyAgent,
   type Appointment,
+  type Inquiry,
   type InsertUser,
   type InsertProperty,
   type InsertClient,
   type InsertNeighborhoodRating,
   type InsertAgencyAgent,
   type InsertAppointment,
+  type InsertInquiry,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -63,6 +66,12 @@ export interface IStorage {
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
   updateAppointment(id: number, appointment: Partial<InsertAppointment>): Promise<Appointment>;
   deleteAppointment(id: number): Promise<void>;
+  
+  // Inquiries (Consultas de propiedad)
+  getInquiriesByAgent(agentId: number): Promise<Inquiry[]>;
+  getInquiryById(id: number): Promise<Inquiry | undefined>;
+  createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
+  updateInquiryStatus(id: number, status: string): Promise<Inquiry>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -379,6 +388,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAppointment(id: number): Promise<void> {
     await db.delete(appointments).where(eq(appointments.id, id));
+  }
+  
+  // Inquiries (Consultas de propiedad)
+  async getInquiriesByAgent(agentId: number): Promise<Inquiry[]> {
+    return db.select()
+      .from(inquiries)
+      .where(eq(inquiries.agentId, agentId))
+      .orderBy(sql`${inquiries.createdAt} DESC`);
+  }
+  
+  async getInquiryById(id: number): Promise<Inquiry | undefined> {
+    const [inquiry] = await db.select()
+      .from(inquiries)
+      .where(eq(inquiries.id, id));
+    return inquiry;
+  }
+  
+  async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
+    const [newInquiry] = await db.insert(inquiries)
+      .values(inquiry)
+      .returning();
+    return newInquiry;
+  }
+  
+  async updateInquiryStatus(id: number, status: string): Promise<Inquiry> {
+    const [updatedInquiry] = await db.update(inquiries)
+      .set({ status })
+      .where(eq(inquiries.id, id))
+      .returning();
+    return updatedInquiry;
   }
 }
 
