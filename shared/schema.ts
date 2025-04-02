@@ -82,7 +82,7 @@ export const appointments = pgTable("appointments", {
   date: timestamp("date").notNull(),
   time: text("time").notNull(),
   propertyId: integer("property_id"), // Solo se requiere para visitas
-  comments: text("comments").notNull(),
+  comments: text("comments"), // Ya no es obligatorio
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

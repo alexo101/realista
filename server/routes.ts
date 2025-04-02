@@ -8,6 +8,7 @@ import {
   insertAgencyAgentSchema,
   insertAppointmentSchema
 } from "@shared/schema";
+import { sendWelcomeEmail } from "./emailService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
@@ -53,6 +54,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.createUser(userData);
       console.log('Usuario creado:', user);
+      
+      // Enviar email de bienvenida
+      const userName = user.name || user.agencyName || 'Usuario';
+      const isAgentOrAgency = user.isAgent || !!user.agencyName;
+      
+      try {
+        await sendWelcomeEmail(user.email, userName, isAgentOrAgency);
+        console.log('Email de bienvenida enviado a:', user.email);
+      } catch (emailError) {
+        console.error('Error al enviar email de bienvenida:', emailError);
+        // No interrumpimos el flujo si falla el envío de email
+      }
       
       res.status(201).json(user);
     } catch (error) {

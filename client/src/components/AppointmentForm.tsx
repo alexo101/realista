@@ -27,6 +27,16 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -64,7 +74,7 @@ const appointmentSchema = z.object({
     required_error: "La hora es obligatoria",
   }),
   propertyId: z.number().optional(),
-  comments: z.string().min(1, "Los comentarios son obligatorios"),
+  comments: z.string().optional(),
 });
 
 // Tipo para las propiedades
@@ -148,7 +158,7 @@ export function AppointmentForm({ clientId, appointment, onSave, onCancel }: App
         date: data.date,
         time: data.time,
         propertyId: data.type === "visita" ? data.propertyId : null,
-        comments: data.comments,
+        comments: data.comments || "",
       };
       
       // Si estamos editando, incluir el ID
@@ -527,12 +537,25 @@ export function AppointmentsManager({ clientId }: AppointmentsManagerProps) {
     setShowForm(true);
   };
 
+  // Variables para el diálogo de confirmación
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<number | null>(null);
+
   // Eliminar una cita
-  const handleDeleteAppointment = async (appointmentId: number) => {
+  const handleDeleteAppointment = (appointmentId: number) => {
+    // Mostrar el diálogo de confirmación
+    setAppointmentToDelete(appointmentId);
+    setShowDeleteDialog(true);
+  };
+
+  // Confirmar la eliminación de cita
+  const confirmDeleteAppointment = async () => {
+    if (!appointmentToDelete) return;
+    
     try {
       await apiRequest(
         'DELETE',
-        `/api/appointments/${appointmentId}`
+        `/api/appointments/${appointmentToDelete}`
       );
       
       toast({
@@ -541,6 +564,8 @@ export function AppointmentsManager({ clientId }: AppointmentsManagerProps) {
       });
       
       refetch();
+      setShowDeleteDialog(false);
+      setAppointmentToDelete(null);
     } catch (error) {
       toast({
         title: "Error",
@@ -588,6 +613,24 @@ export function AppointmentsManager({ clientId }: AppointmentsManagerProps) {
           />
         </CardContent>
       </Card>
+
+      {/* Diálogo de confirmación para eliminar cita */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro de eliminar esta cita?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esta cita será eliminada permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAppointment}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

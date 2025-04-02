@@ -127,6 +127,11 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
+    // Si no hay término de búsqueda ni barrios, retornar array vacío para evitar mostrar todos los agentes
+    if (searchTerm.trim() === '' && neighborhoods.length === 0) {
+      return [];
+    }
+    
     // Consulta para obtener agentes regulares
     const regularAgentsQuery = db.select()
       .from(users)
