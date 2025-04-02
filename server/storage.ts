@@ -44,10 +44,12 @@ export interface IStorage {
   // Properties
   getProperties(): Promise<Property[]>;
   getProperty(id: number): Promise<Property | undefined>;
+  getMostViewedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(id: number, property: InsertProperty): Promise<Property>;
+  incrementPropertyViewCount(id: number): Promise<void>;
 
   // Clients
   getClients(): Promise<Client[]>;
@@ -271,7 +273,30 @@ export class DatabaseStorage implements IStorage {
 
   async getProperty(id: number): Promise<Property | undefined> {
     const [property] = await db.select().from(properties).where(eq(properties.id, id));
+    
+    // Incrementar el contador de visualizaciones de forma asíncrona, sin esperar el resultado
+    if (property) {
+      this.incrementPropertyViewCount(id).catch(err => {
+        console.error(`Error incrementando contador de visualizaciones para propiedad ${id}:`, err);
+      });
+    }
+    
     return property;
+  }
+  
+  async getMostViewedProperties(limit: number = 6): Promise<Property[]> {
+    return db.select()
+      .from(properties)
+      .orderBy(sql`${properties.viewCount} DESC`)
+      .limit(limit);
+  }
+
+  async incrementPropertyViewCount(id: number): Promise<void> {
+    await db.update(properties)
+      .set({
+        viewCount: sql`${properties.viewCount} + 1`
+      })
+      .where(eq(properties.id, id));
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {

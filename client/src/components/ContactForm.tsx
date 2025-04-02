@@ -73,9 +73,11 @@ export function ContactForm({ propertyId, agentId }: ContactFormProps) {
           ...data,
           propertyId,
           agentId: targetAgentId,
-          status: "pendiente"
+          status: "pendiente" // El servidor transformará esto a "pending" si es necesario
         }),
       });
+      
+      console.log("Respuesta al enviar consulta:", await response.clone().text());
       
       if (!response.ok) {
         const errorData = await response.json();

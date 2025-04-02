@@ -12,6 +12,7 @@ import { Bed, Bath, MapPin, Phone, Mail, Maximize } from "lucide-react";
 interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms'> {
   bedrooms: number | null;
   bathrooms: number | null;
+  viewCount: number;
   features?: string[];
 }
 
@@ -81,6 +82,11 @@ export default function PropertyPage() {
                 <MapPin className="h-4 w-4" />
                 <span>{property.address} - {property.neighborhood}</span>
               </div>
+              {property.viewCount !== undefined && property.viewCount > 0 && (
+                <div className="mt-2 text-sm text-gray-500">
+                  <span>Vistas: {property.viewCount}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-6">

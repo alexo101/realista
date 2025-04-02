@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { type Property } from "@shared/schema";
-import { Building2 } from "lucide-react";
+import { Building2, Eye } from "lucide-react";
 import { ReviewButtons } from "./ReviewButtons";
 
 interface PropertyCardProps {
@@ -38,6 +38,12 @@ export function PropertyCard({ property }: PropertyCardProps) {
             <span>{property.neighborhood}</span>
           </div>
           <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
+          {property.viewCount !== undefined && property.viewCount > 0 && (
+            <div className="flex items-center mt-2 text-xs text-gray-500">
+              <Eye className="h-3 w-3 mr-1" />
+              <span>{property.viewCount} {property.viewCount === 1 ? 'vista' : 'vistas'}</span>
+            </div>
+          )}
         </CardContent>
       </div>
       <CardContent className="border-t pt-4 mt-auto">

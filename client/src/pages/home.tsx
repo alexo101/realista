@@ -5,8 +5,16 @@ import { SearchBar } from "@/components/SearchBar";
 import { NeighborhoodRating } from "@/components/NeighborhoodRating";
 
 export default function Home() {
-  const { data: properties, isLoading } = useQuery<Property[]>({
-    queryKey: ["/api/properties"],
+  // Consulta para obtener las propiedades más vistas
+  const { data: mostViewedProperties, isLoading } = useQuery<Property[]>({
+    queryKey: ["/api/properties", { mostViewed: true }],
+    queryFn: async () => {
+      const response = await fetch("/api/properties?mostViewed=true");
+      if (!response.ok) {
+        throw new Error("Error al cargar las propiedades más vistas");
+      }
+      return response.json();
+    }
   });
 
   return (
@@ -40,12 +48,18 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {properties?.map((property) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-              />
-            ))}
+            {mostViewedProperties && mostViewedProperties.length > 0 ? (
+              mostViewedProperties.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                />
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                Todavía no hay propiedades visitadas. ¡Explora nuestro catálogo!
+              </div>
+            )}
           </div>
         )}
       </section>

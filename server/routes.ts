@@ -131,9 +131,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties", async (req, res) => {
     try {
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
-      const properties = agentId 
-        ? await storage.getPropertiesByAgent(agentId)
-        : await storage.searchProperties(req.query);
+      const mostViewed = req.query.mostViewed === 'true';
+      
+      let properties;
+      if (mostViewed) {
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
+        properties = await storage.getMostViewedProperties(limit);
+      } else if (agentId) {
+        properties = await storage.getPropertiesByAgent(agentId);
+      } else {
+        properties = await storage.searchProperties(req.query);
+      }
       res.json(properties);
     } catch (error) {
       console.error('Error fetching properties:', error);

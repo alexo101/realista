@@ -41,6 +41,7 @@ export const properties = pgTable("properties", {
   images: text("images").array(),
   mainImageIndex: integer("main_image_index").default(0),
   title: text("title"),
+  viewCount: integer("view_count").default(0).notNull(), // Contador de visualizaciones
   agentId: integer("agent_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -94,7 +95,7 @@ export const inquiries = pgTable("inquiries", {
   message: text("message").notNull(),
   propertyId: integer("property_id").notNull(),
   agentId: integer("agent_id").notNull(), // ID del agente asociado a la propiedad
-  status: text("status").notNull().default("pending"), // "pending", "read", "replied"
+  status: text("status").notNull().default("pendiente"), // "pendiente", "contactado", "finalizado"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
