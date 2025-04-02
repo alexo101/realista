@@ -121,18 +121,6 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
-    if ((searchType === 'agencies' || searchType === 'agents')) {
-      const searchTerm = searchType === 'agencies' ? agencyName : agentName;
-      if (!searchTerm && !selectedNeighborhoods.length) {
-        toast({
-          title: "Error",
-          description: `Por favor, introduce un nombre de ${searchType === 'agencies' ? 'agencia' : 'agente'} o selecciona un barrio.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     let baseUrl = '';
     switch (searchType) {
       case 'agencies':
@@ -150,6 +138,14 @@ export function SearchBar() {
     }
 
     const params = new URLSearchParams();
+    
+    // Permitimos búsquedas vacías para mostrar autocomplete
+    if ((searchType === 'agencies' || searchType === 'agents')) {
+      const searchTerm = searchType === 'agencies' ? agencyName : agentName;
+      if (!searchTerm && !selectedNeighborhoods.length) {
+        params.append('showAll', 'true');
+      }
+    }
     if (selectedNeighborhoods.length > 0) {
       params.append("neighborhoods", selectedNeighborhoods.join(","));
     }

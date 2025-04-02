@@ -127,8 +127,9 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    // Si no hay término de búsqueda ni barrios, retornar array vacío para evitar mostrar todos los agentes
-    if (searchTerm.trim() === '' && neighborhoods.length === 0) {
+    // Si no hay término de búsqueda ni barrios, mostrar todos los agentes solo si explícitamente
+    // se ha solicitado (para autocompletado)
+    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !params.get('showAll')) {
       return [];
     }
     
@@ -191,6 +192,12 @@ export class DatabaseStorage implements IStorage {
       conditions.push(
         sql`${users.agencyInfluenceNeighborhoods} && ${neighborhoods}`
       );
+    }
+    
+    // Si no hay término de búsqueda ni barrios, mostrar todas las agencias solo si explícitamente
+    // se ha solicitado (para autocompletado)
+    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !params.get('showAll')) {
+      return [];
     }
     
     const result = await db.select()
