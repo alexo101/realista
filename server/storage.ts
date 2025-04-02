@@ -98,9 +98,11 @@ export class DatabaseStorage implements IStorage {
     const searchTerm = params.get('agentName') || '';
     const neighborhoodsStr = params.get('neighborhoods');
     const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
+    const showAll = params.get('showAll') === 'true';
 
     console.log('SearchAgents - searchTerm:', searchTerm);
     console.log('SearchAgents - neighborhoods:', neighborhoods);
+    console.log('SearchAgents - showAll:', showAll);
 
     // Buscar tanto agentes regulares como agentes administrativos
     // Los agentes administrativos son aquellos que tienen agencyName
@@ -129,33 +131,40 @@ export class DatabaseStorage implements IStorage {
     
     // Si no hay término de búsqueda ni barrios, mostrar todos los agentes solo si explícitamente
     // se ha solicitado (para autocompletado)
-    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !params.get('showAll')) {
+    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
+      console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
       return [];
     }
     
-    // Consulta para obtener agentes regulares
-    const regularAgentsQuery = db.select()
-      .from(users)
-      .where(and(...conditionsRegularAgents));
+    try {
+      // Consulta para obtener agentes regulares
+      const regularAgentsQuery = db.select()
+        .from(users)
+        .where(and(...conditionsRegularAgents));
+        
+      // Consulta para obtener agentes administrativos
+      const adminAgentsQuery = db.select()
+        .from(users)
+        .where(and(...conditionsAdminAgents));
+        
+      // Ejecutar ambas consultas y combinar resultados
+      const [regularAgents, adminAgents] = await Promise.all([
+        regularAgentsQuery,
+        adminAgentsQuery
+      ]);
       
-    // Consulta para obtener agentes administrativos
-    const adminAgentsQuery = db.select()
-      .from(users)
-      .where(and(...conditionsAdminAgents));
+      // Combinar y eliminar duplicados (un agente puede ser tanto regular como administrativo)
+      const allAgents = [...regularAgents, ...adminAgents];
+      const uniqueAgents = allAgents.filter((agent, index, self) =>
+        index === self.findIndex((t) => t.id === agent.id)
+      );
       
-    // Ejecutar ambas consultas y combinar resultados
-    const [regularAgents, adminAgents] = await Promise.all([
-      regularAgentsQuery,
-      adminAgentsQuery
-    ]);
-    
-    // Combinar y eliminar duplicados (un agente puede ser tanto regular como administrativo)
-    const allAgents = [...regularAgents, ...adminAgents];
-    const uniqueAgents = allAgents.filter((agent, index, self) =>
-      index === self.findIndex((t) => t.id === agent.id)
-    );
-    
-    return uniqueAgents;
+      console.log('SearchAgents - result count:', uniqueAgents.length);
+      return uniqueAgents;
+    } catch (error) {
+      console.error('Error en searchAgents:', error);
+      return [];
+    }
   }
 
   async searchAgencies(query: string): Promise<User[]> {
@@ -164,9 +173,11 @@ export class DatabaseStorage implements IStorage {
     const searchTerm = params.get('agencyName') || '';
     const neighborhoodsStr = params.get('neighborhoods');
     const neighborhoods = neighborhoodsStr ? neighborhoodsStr.split(',') : [];
+    const showAll = params.get('showAll') === 'true';
 
     console.log('SearchAgencies - searchTerm:', searchTerm);
     console.log('SearchAgencies - neighborhoods:', neighborhoods);
+    console.log('SearchAgencies - showAll:', showAll);
     
     // Importante: Buscar solo los usuarios que son agencias (no agentes)
     // Una agencia es un usuario que tiene agencyName no nulo y no es un agente
@@ -196,18 +207,23 @@ export class DatabaseStorage implements IStorage {
     
     // Si no hay término de búsqueda ni barrios, mostrar todas las agencias solo si explícitamente
     // se ha solicitado (para autocompletado)
-    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !params.get('showAll')) {
+    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
+      console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
       return [];
     }
     
-    const result = await db.select()
-      .from(users)
-      .where(and(...conditions));
-      
-    console.log('SearchAgencies - query conditions:', conditions);
-    console.log('SearchAgencies - result count:', result.length);
-    
-    return result;
+    try {
+      const result = await db.select()
+        .from(users)
+        .where(and(...conditions));
+        
+      console.log('SearchAgencies - query conditions:', conditions);
+      console.log('SearchAgencies - result count:', result.length);
+      return result;
+    } catch (error) {
+      console.error('Error en searchAgencies:', error);
+      return [];
+    }
   }
 
   async createAgentReview(review: any): Promise<any> {

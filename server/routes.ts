@@ -242,10 +242,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/search/agencies", async (req, res) => {
     try {
       console.log('Search agencies params:', req.query);
-      const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+      // Agregar explícitamente showAll=true si no hay otros parámetros de búsqueda
+      let updatedQuery = { ...req.query };
+      if (!updatedQuery.agencyName && 
+          !updatedQuery.neighborhoods && 
+          !updatedQuery.showAll) {
+        updatedQuery.showAll = 'true';
+      }
+      
+      const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
       console.log('Search agencies queryString:', queryString);
       const agencies = await storage.searchAgencies(queryString);
-      console.log('Search agencies results:', agencies);
+      console.log('Search agencies results:', agencies.length);
       res.json(agencies);
     } catch (error) {
       console.error('Error searching agencies:', error);
@@ -255,8 +263,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/search/agents", async (req, res) => {
     try {
-      const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
+      console.log('Search agents params:', req.query);
+      // Agregar explícitamente showAll=true si no hay otros parámetros de búsqueda
+      let updatedQuery = { ...req.query };
+      if (!updatedQuery.agentName && 
+          !updatedQuery.neighborhoods && 
+          !updatedQuery.showAll) {
+        updatedQuery.showAll = 'true';
+      }
+      
+      const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
+      console.log('Search agents queryString:', queryString);
       const agents = await storage.searchAgents(queryString);
+      console.log('Search agents results:', agents.length);
       res.json(agents);
     } catch (error) {
       console.error('Error searching agents:', error);
