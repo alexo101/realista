@@ -196,18 +196,24 @@ export function SearchBar() {
 
   // Handler for Enter key press in neighborhood search
   const handleNeighborhoodKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && filteredNeighborhoods.length > 0) {
-      // If there's only one filtered neighborhood, select it
-      if (filteredNeighborhoods.length === 1) {
-        toggleNeighborhood(filteredNeighborhoods[0]);
+    if (e.key === 'Enter') {
+      if (filteredNeighborhoods.length > 0) {
+        // If there's only one filtered neighborhood, select it
+        if (filteredNeighborhoods.length === 1) {
+          toggleNeighborhood(filteredNeighborhoods[0]);
+        }
+        // If the exact search term matches a neighborhood, select it
+        else if (filteredNeighborhoods.some(n => n.toLowerCase() === neighborhoodSearch.toLowerCase())) {
+          const exactMatch = filteredNeighborhoods.find(n => 
+            n.toLowerCase() === neighborhoodSearch.toLowerCase()
+          );
+          if (exactMatch) toggleNeighborhood(exactMatch);
+        }
       }
-      // If the exact search term matches a neighborhood, select it
-      else if (filteredNeighborhoods.some(n => n.toLowerCase() === neighborhoodSearch.toLowerCase())) {
-        const exactMatch = filteredNeighborhoods.find(n => 
-          n.toLowerCase() === neighborhoodSearch.toLowerCase()
-        );
-        if (exactMatch) toggleNeighborhood(exactMatch);
-      }
+      
+      // Cerrar el diálogo de barrios y ejecutar la búsqueda
+      setIsNeighborhoodOpen(false);
+      handleSearch();
     }
   };
 

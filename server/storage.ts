@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, sql, and, gte, lte, arrayOverlaps } from "drizzle-orm";
+import { eq, sql, and, gte, lte, arrayOverlaps, not, isNull } from "drizzle-orm";
 import {
   users,
   properties,
@@ -102,28 +102,54 @@ export class DatabaseStorage implements IStorage {
     console.log('SearchAgents - searchTerm:', searchTerm);
     console.log('SearchAgents - neighborhoods:', neighborhoods);
 
-    // Buscar solo usuarios que son agentes
-    let conditions = [eq(users.isAgent, true)];
+    // Buscar tanto agentes regulares como agentes administrativos
+    // Los agentes administrativos son aquellos que tienen agencyName
+    let conditionsRegularAgents = [eq(users.isAgent, true)];
+    let conditionsAdminAgents = [not(isNull(users.agencyName))];
     
     // Añadir condición de búsqueda por nombre si existe y no está vacío
     if (searchTerm && searchTerm.trim() !== '') {
-      conditions.push(
-        sql`(${users.name} ILIKE ${'%' + searchTerm + '%'} OR 
-             ${users.surname} ILIKE ${'%' + searchTerm + '%'} OR 
-             ${users.email} ILIKE ${'%' + searchTerm + '%'})`
-      );
+      const nameCondition = sql`(${users.name} ILIKE ${'%' + searchTerm + '%'} OR 
+          ${users.surname} ILIKE ${'%' + searchTerm + '%'} OR 
+          ${users.email} ILIKE ${'%' + searchTerm + '%'})`;
+      
+      conditionsRegularAgents.push(nameCondition);
+      conditionsAdminAgents.push(nameCondition);
     }
     
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
-      conditions.push(
+      conditionsRegularAgents.push(
         arrayOverlaps(users.influenceNeighborhoods, neighborhoods)
+      );
+      conditionsAdminAgents.push(
+        arrayOverlaps(users.agencyInfluenceNeighborhoods, neighborhoods)
       );
     }
     
-    return db.select()
+    // Consulta para obtener agentes regulares
+    const regularAgentsQuery = db.select()
       .from(users)
-      .where(and(...conditions));
+      .where(and(...conditionsRegularAgents));
+      
+    // Consulta para obtener agentes administrativos
+    const adminAgentsQuery = db.select()
+      .from(users)
+      .where(and(...conditionsAdminAgents));
+      
+    // Ejecutar ambas consultas y combinar resultados
+    const [regularAgents, adminAgents] = await Promise.all([
+      regularAgentsQuery,
+      adminAgentsQuery
+    ]);
+    
+    // Combinar y eliminar duplicados (un agente puede ser tanto regular como administrativo)
+    const allAgents = [...regularAgents, ...adminAgents];
+    const uniqueAgents = allAgents.filter((agent, index, self) =>
+      index === self.findIndex((t) => t.id === agent.id)
+    );
+    
+    return uniqueAgents;
   }
 
   async searchAgencies(query: string): Promise<User[]> {
