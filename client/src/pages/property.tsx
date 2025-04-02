@@ -153,7 +153,7 @@ export default function PropertyPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <h3 className="font-semibold text-lg mb-4">¿Interesado en esta propiedad?</h3>
+                <h3 className="font-semibold text-lg mb-4">Aplica por esta propiedad</h3>
                 <ContactForm propertyId={property.id} />
               </CardContent>
             </Card>
