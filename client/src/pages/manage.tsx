@@ -31,13 +31,7 @@ export default function ManagePage() {
   const { toast } = useToast();
   const [section, setSection] = useState("agent-profile");
   
-  // Redireccionar si el usuario no está autenticado
-  if (!user) {
-    return <Redirect to="/" />;
-  }
-  
-  // Permitir acceso a usuarios con cuenta de agencia (isAgent=false con agencyName)
-  // o usuarios con cuenta de agente (isAgent=true)
+  // Estados para la gestión de propiedades y clientes
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
@@ -64,6 +58,11 @@ export default function ManagePage() {
   
   // Estado para mostrar indicador de guardado exitoso
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  
+  // Redireccionar si el usuario no está autenticado
+  if (!user) {
+    return <Redirect to="/" />;
+  }
   
   // Cargar valores iniciales cuando el usuario cambia
   useEffect(() => {
