@@ -139,27 +139,39 @@ export function SearchBar() {
 
     const params = new URLSearchParams();
     
-    // Permitimos búsquedas vacías para mostrar autocomplete
-    if ((searchType === 'agencies' || searchType === 'agents')) {
-      const searchTerm = searchType === 'agencies' ? agencyName : agentName;
-      if (!searchTerm && !selectedNeighborhoods.length) {
-        params.append('showAll', 'true');
-      }
-    }
+    // Añadir parámetros según el tipo de búsqueda
     if (selectedNeighborhoods.length > 0) {
       params.append("neighborhoods", selectedNeighborhoods.join(","));
     }
+    
+    // Parámetros específicos para propiedades
     if ((searchType === 'buy' || searchType === 'rent') && priceRange.min) {
       params.append("minPrice", priceRange.min);
     }
     if ((searchType === 'buy' || searchType === 'rent') && priceRange.max) {
       params.append("maxPrice", priceRange.max);
     }
-    if (searchType === 'agencies' && agencyName) {
-      params.append('agencyName', agencyName);
+    
+    // Parámetros para búsqueda de agencias
+    if (searchType === 'agencies') {
+      if (agencyName && agencyName.trim() !== '') {
+        params.append('agencyName', agencyName.trim());
+      }
+      // Solo añadir showAll si hay un término de búsqueda
+      if (!agencyName.trim() && !selectedNeighborhoods.length) {
+        params.append('showAll', 'false');
+      }
     }
-    if (searchType === 'agents' && agentName) {
-      params.append('agentName', agentName);
+    
+    // Parámetros para búsqueda de agentes
+    if (searchType === 'agents') {
+      if (agentName && agentName.trim() !== '') {
+        params.append('agentName', agentName.trim());
+      }
+      // Solo añadir showAll si hay un término de búsqueda
+      if (!agentName.trim() && !selectedNeighborhoods.length) {
+        params.append('showAll', 'false');
+      }
     }
 
     const queryString = params.toString();

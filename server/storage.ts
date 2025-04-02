@@ -104,6 +104,13 @@ export class DatabaseStorage implements IStorage {
     console.log('SearchAgents - neighborhoods:', neighborhoods);
     console.log('SearchAgents - showAll:', showAll);
 
+    // Si no hay término de búsqueda ni barrios, y no se ha solicitado explícitamente
+    // mostrar todos (showAll), entonces retornar un array vacío
+    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
+      console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
+      return [];
+    }
+
     // Buscar tanto agentes regulares como agentes administrativos
     // Los agentes administrativos son aquellos que tienen agencyName
     let conditionsRegularAgents = [eq(users.isAgent, true)];
@@ -111,9 +118,11 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por nombre si existe y no está vacío
     if (searchTerm && searchTerm.trim() !== '') {
-      const nameCondition = sql`(${users.name} ILIKE ${'%' + searchTerm + '%'} OR 
-          ${users.surname} ILIKE ${'%' + searchTerm + '%'} OR 
-          ${users.email} ILIKE ${'%' + searchTerm + '%'})`;
+      const nameCondition = sql`(
+        LOWER(${users.name}::text) LIKE LOWER(${'%' + searchTerm + '%'}) OR 
+        LOWER(${users.surname}::text) LIKE LOWER(${'%' + searchTerm + '%'}) OR 
+        LOWER(${users.email}::text) LIKE LOWER(${'%' + searchTerm + '%'})
+      )`;
       
       conditionsRegularAgents.push(nameCondition);
       conditionsAdminAgents.push(nameCondition);
@@ -121,6 +130,7 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
+      // Usar arrayContains para asegurar que los barrios seleccionados estén dentro de los barrios de influencia
       conditionsRegularAgents.push(
         arrayOverlaps(users.influenceNeighborhoods, neighborhoods)
       );
@@ -129,23 +139,18 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    // Si no hay término de búsqueda ni barrios, mostrar todos los agentes solo si explícitamente
-    // se ha solicitado (para autocompletado)
-    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
-      console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
-      return [];
-    }
-    
     try {
       // Consulta para obtener agentes regulares
       const regularAgentsQuery = db.select()
         .from(users)
-        .where(and(...conditionsRegularAgents));
+        .where(and(...conditionsRegularAgents))
+        .orderBy(users.name);
         
       // Consulta para obtener agentes administrativos
       const adminAgentsQuery = db.select()
         .from(users)
-        .where(and(...conditionsAdminAgents));
+        .where(and(...conditionsAdminAgents))
+        .orderBy(users.name);
         
       // Ejecutar ambas consultas y combinar resultados
       const [regularAgents, adminAgents] = await Promise.all([
@@ -179,6 +184,13 @@ export class DatabaseStorage implements IStorage {
     console.log('SearchAgencies - neighborhoods:', neighborhoods);
     console.log('SearchAgencies - showAll:', showAll);
     
+    // Si no hay término de búsqueda ni barrios, y no se ha solicitado explícitamente
+    // mostrar todos (showAll), entonces retornar un array vacío
+    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
+      console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
+      return [];
+    }
+    
     // Importante: Buscar solo los usuarios que son agencias (no agentes)
     // Una agencia es un usuario que tiene agencyName no nulo y no es un agente
     let conditions = [
@@ -189,7 +201,7 @@ export class DatabaseStorage implements IStorage {
     // Añadir condición de búsqueda por nombre si existe y no está vacío
     if (searchTerm && searchTerm.trim() !== '') {
       conditions.push(
-        sql`${users.agencyName} ILIKE ${'%' + searchTerm + '%'}`
+        sql`LOWER(${users.agencyName}::text) LIKE LOWER(${'%' + searchTerm.trim() + '%'})`
       );
     }
     
@@ -198,24 +210,18 @@ export class DatabaseStorage implements IStorage {
       // Debug agencia con barrios de influencia
       console.log('Buscando agencias con barrios:', neighborhoods);
       
-      // Modificamos para manejar valores nulos - si agencyInfluenceNeighborhoods es null, 
-      // asegurarnos de que se siga evaluando correctamente
+      // Modificamos para manejar valores nulos y usar arrayOverlaps para comprobar
+      // si hay algún barrio en común entre los seleccionados y los de la agencia
       conditions.push(
-        sql`${users.agencyInfluenceNeighborhoods} && ${neighborhoods}`
+        arrayOverlaps(users.agencyInfluenceNeighborhoods, neighborhoods)
       );
-    }
-    
-    // Si no hay término de búsqueda ni barrios, mostrar todas las agencias solo si explícitamente
-    // se ha solicitado (para autocompletado)
-    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
-      console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
-      return [];
     }
     
     try {
       const result = await db.select()
         .from(users)
-        .where(and(...conditions));
+        .where(and(...conditions))
+        .orderBy(users.agencyName);
         
       console.log('SearchAgencies - query conditions:', conditions);
       console.log('SearchAgencies - result count:', result.length);
