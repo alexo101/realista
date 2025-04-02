@@ -287,7 +287,35 @@ export function SearchBar() {
                 type="text"
                 placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
                 className="w-full"
-                onChange={searchType === 'agencies' ? (e) => setAgencyName(e.target.value) : (e) => setAgentName(e.target.value)}
+                onChange={(e) => {
+                  if (searchType === 'agencies') {
+                    setAgencyName(e.target.value);
+                    // Realizar búsqueda con pequeño retraso para evitar muchas solicitudes
+                    setTimeout(() => {
+                      const params = new URLSearchParams();
+                      const searchValue = e.target.value.trim();
+                      if (searchValue) {
+                        params.append('agencyName', searchValue);
+                      } else {
+                        params.append('showAll', 'true');
+                      }
+                      setLocation(`/search/agencies?${params}`);
+                    }, 300);
+                  } else {
+                    setAgentName(e.target.value);
+                    // Realizar búsqueda con pequeño retraso para evitar muchas solicitudes
+                    setTimeout(() => {
+                      const params = new URLSearchParams();
+                      const searchValue = e.target.value.trim();
+                      if (searchValue) {
+                        params.append('agentName', searchValue);
+                      } else {
+                        params.append('showAll', 'true');
+                      }
+                      setLocation(`/search/agents?${params}`);
+                    }, 300);
+                  }
+                }}
                 value={searchType === 'agencies' ? agencyName : agentName}
                 onKeyDown={handleKeyDown}
               />

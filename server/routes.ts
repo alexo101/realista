@@ -247,19 +247,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agencyName && updatedQuery.agencyName.toString().trim() !== '';
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
-      
-      // Si showAll=false (búsquedas vacías) o hay términos de búsqueda, mostrar resultados
       const showAll = updatedQuery.showAll === 'true';
       
-      // Si no hay términos de búsqueda y no se indica explícitamente showAll=true, retornar lista vacía
+      // Siempre traer resultados si hay showAll=true o si hay términos de búsqueda
       if (!hasSearchTerm && !hasNeighborhoods && !showAll) {
-        console.log('No hay términos de búsqueda y showAll=false, retornando array vacío');
-        return res.json([]);
+        console.log('No hay términos de búsqueda explícitos y showAll=false, usando showAll=true por defecto');
+        updatedQuery.showAll = 'true';
       }
       
-      // Si hay términos de búsqueda, eliminar showAll para que no interfiera
+      // Si hay términos de búsqueda, usarlos para filtrar
       if (hasSearchTerm || hasNeighborhoods) {
-        delete updatedQuery.showAll;
+        delete updatedQuery.showAll; // No es necesario con términos de búsqueda
       }
       
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
@@ -281,19 +279,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agentName && updatedQuery.agentName.toString().trim() !== '';
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
-      
-      // Si showAll=false (búsquedas vacías) o hay términos de búsqueda, mostrar resultados
       const showAll = updatedQuery.showAll === 'true';
       
-      // Si no hay términos de búsqueda y no se indica explícitamente showAll=true, retornar lista vacía
+      // Siempre traer resultados si hay showAll=true o si hay términos de búsqueda
       if (!hasSearchTerm && !hasNeighborhoods && !showAll) {
-        console.log('No hay términos de búsqueda y showAll=false, retornando array vacío');
-        return res.json([]);
+        console.log('No hay términos de búsqueda explícitos y showAll=false, usando showAll=true por defecto');
+        updatedQuery.showAll = 'true';
       }
       
-      // Si hay términos de búsqueda, eliminar showAll para que no interfiera
+      // Si hay términos de búsqueda, usarlos para filtrar
       if (hasSearchTerm || hasNeighborhoods) {
-        delete updatedQuery.showAll;
+        delete updatedQuery.showAll; // No es necesario con términos de búsqueda
       }
       
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
