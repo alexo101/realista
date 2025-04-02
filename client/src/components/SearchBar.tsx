@@ -157,9 +157,9 @@ export function SearchBar() {
       if (agencyName && agencyName.trim() !== '') {
         params.append('agencyName', agencyName.trim());
       }
-      // Solo añadir showAll si hay un término de búsqueda
+      // Mostrar todas las agencias cuando no hay criterios de búsqueda
       if (!agencyName.trim() && !selectedNeighborhoods.length) {
-        params.append('showAll', 'false');
+        params.append('showAll', 'true');
       }
     }
     
@@ -168,9 +168,9 @@ export function SearchBar() {
       if (agentName && agentName.trim() !== '') {
         params.append('agentName', agentName.trim());
       }
-      // Solo añadir showAll si hay un término de búsqueda
+      // Mostrar todos los agentes cuando no hay criterios de búsqueda
       if (!agentName.trim() && !selectedNeighborhoods.length) {
-        params.append('showAll', 'false');
+        params.append('showAll', 'true');
       }
     }
 
@@ -178,13 +178,34 @@ export function SearchBar() {
     setLocation(`${baseUrl}${queryString ? '?' + queryString : ''}`);
   };
 
-  // Reset state when search type changes
+  // Reset state when search type changes and trigger search
   const handleSearchTypeChange = (newType: SearchType) => {
     setSearchType(newType);
     setSelectedNeighborhoods([]);
     setPriceRange({ min: "", max: "" });
     setAgencyName('');
     setAgentName('');
+    
+    // Ejecutar búsqueda después de actualizar el estado
+    setTimeout(() => {
+      // Construir la URL base según el nuevo tipo de búsqueda
+      let baseUrl = '';
+      switch (newType) {
+        case 'agencies':
+          baseUrl = '/search/agencies?showAll=true';
+          break;
+        case 'agents':
+          baseUrl = '/search/agents?showAll=true';
+          break;
+        case 'rent':
+          baseUrl = '/search/rent';
+          break;
+        case 'buy':
+          baseUrl = '/search/buy';
+          break;
+      }
+      setLocation(baseUrl);
+    }, 0);
   };
 
   const toggleNeighborhood = (neighborhood: string) => {
