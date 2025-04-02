@@ -136,7 +136,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let properties;
       if (mostViewed) {
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
-        properties = await storage.getMostViewedProperties(limit);
+        const operationType = req.query.operationType as string | undefined;
+        properties = await storage.getMostViewedProperties(limit, operationType);
       } else if (agentId) {
         properties = await storage.getPropertiesByAgent(agentId);
       } else {
@@ -313,7 +314,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/search/buy", async (req, res) => {
     try {
-      const filters = req.query;
+      // Añadimos el filtro de tipo de operación (venta)
+      const filters = { ...req.query, operationType: 'Venta' };
       const properties = await storage.searchProperties(filters);
       res.json(properties);
     } catch (error) {
@@ -325,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/search/rent", async (req, res) => {
     try {
       // Añadimos el filtro de tipo de operación (alquiler)
-      const filters = { ...req.query, operation: 'rent' };
+      const filters = { ...req.query, operationType: 'Alquiler' };
       const properties = await storage.searchProperties(filters);
       res.json(properties);
     } catch (error) {

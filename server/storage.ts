@@ -284,11 +284,20 @@ export class DatabaseStorage implements IStorage {
     return property;
   }
   
-  async getMostViewedProperties(limit: number = 6): Promise<Property[]> {
-    return db.select()
-      .from(properties)
-      .orderBy(sql`${properties.viewCount} DESC`)
-      .limit(limit);
+  async getMostViewedProperties(limit: number = 6, operationType?: string): Promise<Property[]> {
+    let baseQuery = db.select().from(properties);
+    
+    // Si se especifica un tipo de operación (Venta o Alquiler), filtramos por él
+    if (operationType) {
+      return baseQuery
+        .where(eq(properties.operationType, operationType))
+        .orderBy(sql`${properties.viewCount} DESC`)
+        .limit(limit);
+    } else {
+      return baseQuery
+        .orderBy(sql`${properties.viewCount} DESC`)
+        .limit(limit);
+    }
   }
 
   async incrementPropertyViewCount(id: number): Promise<void> {
@@ -311,6 +320,9 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters.type) {
       conditions.push(eq(properties.type, filters.type));
+    }
+    if (filters.operationType) {
+      conditions.push(eq(properties.operationType, filters.operationType));
     }
     if (filters.minPrice) {
       if (filters.minPrice === 'less-than-60000') {
