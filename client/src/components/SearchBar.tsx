@@ -178,7 +178,7 @@ export function SearchBar() {
     setLocation(`${baseUrl}${queryString ? '?' + queryString : ''}`);
   };
 
-  // Reset state when search type changes and trigger search
+  // Reset state when search type changes
   const handleSearchTypeChange = (newType: SearchType) => {
     setSearchType(newType);
     setSelectedNeighborhoods([]);
@@ -192,10 +192,12 @@ export function SearchBar() {
       let baseUrl = '';
       switch (newType) {
         case 'agencies':
-          baseUrl = '/search/agencies?showAll=true';
+          // Para agencias, no mostrar resultados inicialmente
+          baseUrl = '/search/agencies?showAll=false';
           break;
         case 'agents':
-          baseUrl = '/search/agents?showAll=true';
+          // Para agentes, no mostrar resultados inicialmente
+          baseUrl = '/search/agents?showAll=false';
           break;
         case 'rent':
           baseUrl = '/search/rent';
@@ -295,9 +297,11 @@ export function SearchBar() {
                       const params = new URLSearchParams();
                       const searchValue = e.target.value.trim();
                       if (searchValue) {
+                        // Solo enviar el parámetro si hay texto escrito
                         params.append('agencyName', searchValue);
                       } else {
-                        params.append('showAll', 'true');
+                        // Si no hay texto, no mostrar ningún resultado
+                        params.append('showAll', 'false');
                       }
                       setLocation(`/search/agencies?${params}`);
                     }, 300);
@@ -308,9 +312,11 @@ export function SearchBar() {
                       const params = new URLSearchParams();
                       const searchValue = e.target.value.trim();
                       if (searchValue) {
+                        // Solo enviar el parámetro si hay texto escrito
                         params.append('agentName', searchValue);
                       } else {
-                        params.append('showAll', 'true');
+                        // Si no hay texto, no mostrar ningún resultado
+                        params.append('showAll', 'false');
                       }
                       setLocation(`/search/agents?${params}`);
                     }, 300);

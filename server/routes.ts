@@ -249,10 +249,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
-      // Siempre traer resultados si hay showAll=true o si hay términos de búsqueda
-      if (!hasSearchTerm && !hasNeighborhoods && !showAll) {
-        console.log('No hay términos de búsqueda explícitos y showAll=false, usando showAll=true por defecto');
-        updatedQuery.showAll = 'true';
+      // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
+      if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+        console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
+        return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
@@ -281,10 +281,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
-      // Siempre traer resultados si hay showAll=true o si hay términos de búsqueda
-      if (!hasSearchTerm && !hasNeighborhoods && !showAll) {
-        console.log('No hay términos de búsqueda explícitos y showAll=false, usando showAll=true por defecto');
-        updatedQuery.showAll = 'true';
+      // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
+      if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+        console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
+        return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
