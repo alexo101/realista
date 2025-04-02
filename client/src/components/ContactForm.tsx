@@ -167,7 +167,7 @@ export function ContactForm({ propertyId, agentId }: ContactFormProps) {
           className="w-full"
           disabled={isSubmitting}
         >
-          Enviar consulta
+          Enviar mensaje
         </Button>
       </form>
     </Form>
