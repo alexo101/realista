@@ -7,23 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
-
-const BARCELONA_NEIGHBORHOODS = [
-  "Barceloneta",
-  "Born",
-  "Eixample",
-  "El Raval",
-  "Gràcia",
-  "Les Corts",
-  "Poble Sec",
-  "Poblenou",
-  "Sagrada Familia",
-  "Sant Andreu",
-  "Sant Antoni",
-  "Sant Martí",
-  "Sants",
-  "Sarrià-Sant Gervasi"
-];
+import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];

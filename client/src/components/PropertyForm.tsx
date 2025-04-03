@@ -23,23 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
-
-const BARCELONA_NEIGHBORHOODS = [
-  "Barceloneta",
-  "Born",
-  "Eixample",
-  "El Raval",
-  "Gràcia",
-  "Les Corts",
-  "Poble Sec",
-  "Poblenou",
-  "Sagrada Familia",
-  "Sant Andreu",
-  "Sant Antoni",
-  "Sant Martí",
-  "Sants",
-  "Sarrià-Sant Gervasi"
-];
+import { BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const formSchema = z.object({
   reference: z.string().optional(), // Campo de referencia para identificación interna

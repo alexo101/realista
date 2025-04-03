@@ -23,12 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
 import { Info } from "lucide-react";
-
-// Lista de barrios de Barcelona
-const BARCELONA_NEIGHBORHOODS = [
-  "Barceloneta", "Born", "Eixample", "El Raval", "Gràcia", "Les Corts", "Poble Sec", "Poblenou",
-  "Sagrada Familia", "Sant Andreu", "Sant Antoni", "Sant Martí", "Sants", "Sarrià-Sant Gervasi"
-];
+import { BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const formSchema = z.object({
   security: z.number().min(1).max(10),
