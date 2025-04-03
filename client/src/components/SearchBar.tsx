@@ -151,6 +151,13 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
+    // Si hay un solo barrio seleccionado para agencias o agentes, redirigir a la página de resultados de barrio
+    if ((searchType === 'agencies' || searchType === 'agents') && selectedNeighborhoods.length === 1) {
+      const encodedNeighborhood = encodeURIComponent(selectedNeighborhoods[0]);
+      setLocation(`/neighborhood/${searchType}/${encodedNeighborhood}`);
+      return;
+    }
+    
     let baseUrl = '';
     switch (searchType) {
       case 'agencies':

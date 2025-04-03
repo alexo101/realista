@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import Search from "@/pages/search";
 import Property from "@/pages/property";
 import Manage from "@/pages/manage";
+import NeighborhoodResults from "@/pages/neighborhood-results";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/search/rent" component={Search} />
       <Route path="/search/agencies" component={Search} />
       <Route path="/search/agents" component={Search} />
+      <Route path="/neighborhood/:type/:neighborhood" component={NeighborhoodResults} />
       <Route path="/property/:id" component={Property} />
       <Route path="/manage" component={Manage} />
       <Route component={NotFound} />
