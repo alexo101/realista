@@ -256,11 +256,13 @@ export function SearchBar() {
   };
 
   const toggleNeighborhood = (neighborhood: string) => {
-    setSelectedNeighborhoods(prev =>
-      prev.includes(neighborhood)
-        ? prev.filter(n => n !== neighborhood)
-        : [...prev, neighborhood]
-    );
+    // Si el barrio ya está seleccionado, lo quitamos
+    if (selectedNeighborhoods.includes(neighborhood)) {
+      setSelectedNeighborhoods([]);
+    } else {
+      // Solo permitimos un barrio a la vez
+      setSelectedNeighborhoods([neighborhood]);
+    }
   };
   
   // Handler for Enter key press in search inputs
@@ -388,7 +390,7 @@ export function SearchBar() {
                   ))}
                 </div>
               ) : (
-                "Selecciona barrios"
+                "Selecciona un barrio"
               )}
             </Button>
           </div>
@@ -499,7 +501,7 @@ export function SearchBar() {
 
             {selectedNeighborhoods.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 mb-2">SELECCIONADOS</p>
+                <p className="text-sm text-gray-500 mb-2">BARRIO SELECCIONADO</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedNeighborhoods.map(neighborhood => (
                     <span
@@ -546,11 +548,7 @@ export function SearchBar() {
                               ? "bg-primary/10"
                               : ""
                           }`}
-                          onClick={() => setSelectedNeighborhoods(prev =>
-                            prev.includes(neighborhood)
-                              ? prev.filter(n => n !== neighborhood)
-                              : [...prev, neighborhood]
-                          )}
+                          onClick={() => toggleNeighborhood(neighborhood)}
                         >
                           {neighborhood}
                         </Button>
