@@ -59,11 +59,6 @@ export default function ManagePage() {
   // Estado para mostrar indicador de guardado exitoso
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   
-  // Redireccionar si el usuario no está autenticado
-  if (!user) {
-    return <Redirect to="/" />;
-  }
-  
   // Cargar valores iniciales cuando el usuario cambia
   useEffect(() => {
     if (user) {
@@ -217,9 +212,13 @@ export default function ManagePage() {
     }
   });
 
-  // Las redirecciones ya están manejadas al inicio de la función, 
-  // así que no necesitamos duplicar estas comprobaciones
 
+
+  // Redireccionar si el usuario no está autenticado
+  if (!user) {
+    return <Redirect to="/" />;
+  }
+  
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
