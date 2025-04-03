@@ -18,53 +18,8 @@ import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AgentReview } from "./AgentReview";
 import { AgencyReview } from "./AgencyReview";
-
-// Estructura de distritos y barrios de Barcelona
-const BARCELONA_DISTRICTS_AND_NEIGHBORHOODS = [
-  {
-    district: "Ciutat Vella",
-    neighborhoods: ["El Raval", "El Gòtic", "La Barceloneta", "Sant Pere, Santa Caterina i la Ribera"]
-  },
-  {
-    district: "Eixample",
-    neighborhoods: ["El Fort Pienc", "La Sagrada Família", "La Dreta de l'Eixample", "L'Antiga Esquerra de l'Eixample", "La Nova Esquerra de l'Eixample", "Sant Antoni"]
-  },
-  {
-    district: "Sants-Montjuïc",
-    neighborhoods: ["El Poble-sec", "La Marina del Prat Vermell", "La Marina de Port", "La Font de la Guatlla", "Hostafrancs", "La Bordeta", "Sants-Badal", "Sants"]
-  },
-  {
-    district: "Les Corts",
-    neighborhoods: ["Les Corts", "La Maternitat i Sant Ramon", "Pedralbes"]
-  },
-  {
-    district: "Sarrià-Sant Gervasi",
-    neighborhoods: ["Vallvidrera, el Tibidabo i les Planes", "Sarrià", "Les Tres Torres", "Sant Gervasi - la Bonanova", "Sant Gervasi - Galvany", "El Putxet i el Farró"]
-  },
-  {
-    district: "Gràcia",
-    neighborhoods: ["Vallcarca i els Penitents", "El Coll", "La Salut", "Vila de Gràcia", "Camp d'en Grassot i Gràcia Nova"]
-  },
-  {
-    district: "Horta-Guinardó",
-    neighborhoods: ["El Baix Guinardó", "Can Baró", "El Guinardó", "La Font d'en Fargues", "El Carmel", "La Teixonera", "Sant Genís dels Agudells", "Montbau", "La Vall d'Hebron", "La Clota", "Horta"]
-  },
-  {
-    district: "Nou Barris",
-    neighborhoods: ["Vilapicina i la Torre Llobeta", "Porta", "El Turó de la Peira", "Can Peguera", "La Guineueta", "Canyelles", "Les Roquetes", "Verdun", "La Prosperitat", "La Trinitat Nova", "Torre Baró", "Ciutat Meridiana", "Vallbona"]
-  },
-  {
-    district: "Sant Andreu",
-    neighborhoods: ["La Trinitat Vella", "Baró de Viver", "El Bon Pastor", "Sant Andreu", "La Sagrera", "El Congrés i els Indians", "Navas"]
-  },
-  {
-    district: "Sant Martí",
-    neighborhoods: ["El Clot", "El Camp de l'Arpa del Clot", "La Verneda i la Pau", "Sant Martí de Provençals", "El Besòs i el Maresme", "Provençals del Poblenou", "Diagonal Mar i el Front Marítim del Poblenou", "El Poblenou", "El Parc i la Llacuna del Poblenou", "La Vila Olímpica del Poblenou"]
-  }
-];
-
-// Lista plana de todos los barrios para manipulación fácil
-const BARCELONA_NEIGHBORHOODS = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.flatMap(district => district.neighborhoods);
+import { NeighborhoodSelector } from "./NeighborhoodSelector";
+import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const PRICE_RANGES = [
   { value: "less-than-60000", label: "<60.000 €" },
@@ -131,7 +86,6 @@ export function SearchBar() {
   const [isAgentReviewOpen, setIsAgentReviewOpen] = useState(false);
   const [isAgencyReviewOpen, setIsAgencyReviewOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
-  const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
   const [agencyName, setAgencyName] = useState('');
   const [agentName, setAgentName] = useState('');
@@ -145,10 +99,6 @@ export function SearchBar() {
   };
 
   const [searchType, setSearchType] = useState<SearchType>(getInitialSearchType());
-
-  const filteredNeighborhoods = BARCELONA_NEIGHBORHOODS.filter(n =>
-    n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-  );
 
   const handleSearch = () => {
     // Si hay un solo barrio seleccionado, redirigir a la página de resultados de barrio
@@ -255,15 +205,8 @@ export function SearchBar() {
     }, 0);
   };
 
-  const toggleNeighborhood = (neighborhood: string) => {
-    // Si el barrio ya está seleccionado, lo quitamos
-    if (selectedNeighborhoods.includes(neighborhood)) {
-      setSelectedNeighborhoods([]);
-    } else {
-      // Solo permitimos un barrio a la vez
-      setSelectedNeighborhoods([neighborhood]);
-    }
-  };
+  // Esta función ya no es necesaria porque estamos utilizando NeighborhoodSelector
+  // que maneja sus propias operaciones de selección
   
   // Handler for Enter key press in search inputs
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -272,28 +215,8 @@ export function SearchBar() {
     }
   };
 
-  // Handler for Enter key press in neighborhood search
-  const handleNeighborhoodKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      if (filteredNeighborhoods.length > 0) {
-        // If there's only one filtered neighborhood, select it
-        if (filteredNeighborhoods.length === 1) {
-          toggleNeighborhood(filteredNeighborhoods[0]);
-        }
-        // If the exact search term matches a neighborhood, select it
-        else if (filteredNeighborhoods.some(n => n.toLowerCase() === neighborhoodSearch.toLowerCase())) {
-          const exactMatch = filteredNeighborhoods.find(n => 
-            n.toLowerCase() === neighborhoodSearch.toLowerCase()
-          );
-          if (exactMatch) toggleNeighborhood(exactMatch);
-        }
-      }
-      
-      // Cerrar el diálogo de barrios y ejecutar la búsqueda
-      setIsNeighborhoodOpen(false);
-      handleSearch();
-    }
-  };
+  // Esta función ya no es necesaria porque estamos utilizando NeighborhoodSelector
+  // que maneja su propia lógica de búsqueda y selección
 
   return (
     <div className="space-y-6">
@@ -490,86 +413,14 @@ export function SearchBar() {
       <Dialog open={isNeighborhoodOpen} onOpenChange={setIsNeighborhoodOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogTitle className="text-lg font-semibold">BARRIOS DE BARCELONA</DialogTitle>
-
-          <div className="space-y-4">
-            <Input
-              placeholder="Buscar barrio..."
-              value={neighborhoodSearch}
-              onChange={(e) => setNeighborhoodSearch(e.target.value)}
-              onKeyDown={handleNeighborhoodKeyDown}
+          <div className="pt-2">
+            <NeighborhoodSelector
+              selectedNeighborhoods={selectedNeighborhoods}
+              onChange={setSelectedNeighborhoods}
+              title="BARRIOS DE BARCELONA"
+              buttonText="Selecciona un barrio"
+              singleSelect={true}
             />
-
-            {selectedNeighborhoods.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500 mb-2">BARRIO SELECCIONADO</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedNeighborhoods.map(neighborhood => (
-                    <span
-                      key={neighborhood}
-                      className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
-                      onClick={() => setSelectedNeighborhoods(prev => prev.filter(n => n !== neighborhood))}
-                    >
-                      {neighborhood}
-                      <X className="h-3 w-3" />
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="max-h-[300px] overflow-auto space-y-1">
-              {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map(district => {
-                // Si hay una búsqueda activa, filtrar los barrios de este distrito
-                const filteredDistrictNeighborhoods = district.neighborhoods.filter(
-                  n => n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-                );
-                
-                // Si no hay barrios que coincidan con la búsqueda en este distrito, no mostrar el distrito
-                if (neighborhoodSearch && filteredDistrictNeighborhoods.length === 0) {
-                  return null;
-                }
-                
-                return (
-                  <div key={district.district} className="mb-2">
-                    {/* Nombre del distrito (en negrita y no seleccionable) */}
-                    <div className="font-bold text-sm px-3 py-1 text-gray-700">
-                      {district.district}
-                    </div>
-                    
-                    {/* Barrios del distrito */}
-                    <div className="ml-2">
-                      {/* Si hay búsqueda activa, mostrar solo los barrios filtrados */}
-                      {(neighborhoodSearch ? filteredDistrictNeighborhoods : district.neighborhoods).map(neighborhood => (
-                        <Button
-                          key={neighborhood}
-                          variant="ghost"
-                          className={`w-full justify-start text-sm ${
-                            selectedNeighborhoods.includes(neighborhood)
-                              ? "bg-primary/10"
-                              : ""
-                          }`}
-                          onClick={() => toggleNeighborhood(neighborhood)}
-                        >
-                          {neighborhood}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedNeighborhoods([])}
-              >
-                Limpiar
-              </Button>
-              <Button onClick={() => setIsNeighborhoodOpen(false)}>
-                Hecho
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>

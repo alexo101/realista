@@ -7,54 +7,63 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
-
-const BARCELONA_NEIGHBORHOODS = [
-  "Barceloneta",
-  "Born",
-  "Eixample",
-  "El Raval",
-  "Gràcia",
-  "Les Corts",
-  "Poble Sec",
-  "Poblenou",
-  "Sagrada Familia",
-  "Sant Andreu",
-  "Sant Antoni",
-  "Sant Martí",
-  "Sants",
-  "Sarrià-Sant Gervasi"
-];
+import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
   onChange: (neighborhoods: string[]) => void;
   title?: string;
   buttonText?: string;
+  singleSelect?: boolean;
 }
 
 export function NeighborhoodSelector({
   selectedNeighborhoods,
   onChange,
   title = "BARRIOS DE BARCELONA",
-  buttonText = "Selecciona barrios"
+  buttonText = "Selecciona barrios",
+  singleSelect = false
 }: NeighborhoodSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const filteredNeighborhoods = BARCELONA_NEIGHBORHOODS.filter(n =>
+  // Filter districts and neighborhoods based on the search term
+  const filteredDistricts = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS
+    .map(district => {
+      const filteredNeighborhoods = district.neighborhoods.filter(neighborhood =>
+        neighborhood.toLowerCase().includes(search.toLowerCase())
+      );
+      return {
+        district: district.district,
+        neighborhoods: filteredNeighborhoods
+      };
+    })
+    .filter(district => district.neighborhoods.length > 0);
+
+  const toggleNeighborhood = (neighborhood: string) => {
+    if (singleSelect) {
+      // In single-select mode, replace the selection and close dialog
+      onChange([neighborhood]);
+      setIsOpen(false);
+    } else {
+      // In multi-select mode, toggle the selection
+      onChange(
+        selectedNeighborhoods.includes(neighborhood)
+          ? selectedNeighborhoods.filter(n => n !== neighborhood)
+          : [...selectedNeighborhoods, neighborhood]
+      );
+    }
+  };
+  
+  // For rendering the selected neighborhoods section
+  const filteredSelectedNeighborhoods = selectedNeighborhoods.filter(n => 
     n.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleNeighborhood = (neighborhood: string) => {
-    onChange(
-      selectedNeighborhoods.includes(neighborhood)
-        ? selectedNeighborhoods.filter(n => n !== neighborhood)
-        : [...selectedNeighborhoods, neighborhood]
-    );
-  };
-
   const selectAll = () => {
-    onChange([...BARCELONA_NEIGHBORHOODS]);
+    if (!singleSelect) {
+      onChange([...BARCELONA_NEIGHBORHOODS]);
+    }
   };
 
   return (
@@ -91,7 +100,7 @@ export function NeighborhoodSelector({
               <div>
                 <p className="text-sm text-gray-500 mb-2">SELECCIONADOS</p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedNeighborhoods.map(neighborhood => (
+                  {filteredSelectedNeighborhoods.map(neighborhood => (
                     <span
                       key={neighborhood}
                       className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
@@ -106,19 +115,26 @@ export function NeighborhoodSelector({
             )}
 
             <div className="max-h-[300px] overflow-auto">
-              {filteredNeighborhoods.map(neighborhood => (
-                <Button
-                  key={neighborhood}
-                  variant="ghost"
-                  className={`w-full justify-start ${
-                    selectedNeighborhoods.includes(neighborhood)
-                      ? "bg-primary/10"
-                      : ""
-                  }`}
-                  onClick={() => toggleNeighborhood(neighborhood)}
-                >
-                  {neighborhood}
-                </Button>
+              {filteredDistricts.map(district => (
+                <div key={district.district} className="mb-4">
+                  <p className="font-bold text-sm mb-2">{district.district}</p>
+                  <div className="pl-2">
+                    {district.neighborhoods.map(neighborhood => (
+                      <Button
+                        key={neighborhood}
+                        variant="ghost"
+                        className={`w-full justify-start ${
+                          selectedNeighborhoods.includes(neighborhood)
+                            ? "bg-primary/10"
+                            : ""
+                        }`}
+                        onClick={() => toggleNeighborhood(neighborhood)}
+                      >
+                        {neighborhood}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -131,12 +147,14 @@ export function NeighborhoodSelector({
                 >
                   Limpiar
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={selectAll}
-                >
-                  Seleccionar todos
-                </Button>
+                {!singleSelect && (
+                  <Button
+                    variant="outline"
+                    onClick={selectAll}
+                  >
+                    Seleccionar todos
+                  </Button>
+                )}
               </div>
               <Button onClick={() => setIsOpen(false)}>
                 Hecho

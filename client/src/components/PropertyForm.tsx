@@ -23,23 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
-
-const BARCELONA_NEIGHBORHOODS = [
-  "Barceloneta",
-  "Born",
-  "Eixample",
-  "El Raval",
-  "Gràcia",
-  "Les Corts",
-  "Poble Sec",
-  "Poblenou",
-  "Sagrada Familia",
-  "Sant Andreu",
-  "Sant Antoni",
-  "Sant Martí",
-  "Sants",
-  "Sarrià-Sant Gervasi"
-];
+import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const formSchema = z.object({
   reference: z.string().optional(), // Campo de referencia para identificación interna
@@ -362,10 +346,17 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {BARCELONA_NEIGHBORHOODS.map((neighborhood) => (
-                        <SelectItem key={neighborhood} value={neighborhood}>
-                          {neighborhood}
-                        </SelectItem>
+                      {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => (
+                        <div key={district.district}>
+                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                            {district.district}
+                          </div>
+                          {district.neighborhoods.map((neighborhood) => (
+                            <SelectItem key={neighborhood} value={neighborhood}>
+                              {neighborhood}
+                            </SelectItem>
+                          ))}
+                        </div>
                       ))}
                     </SelectContent>
                   </Select>
