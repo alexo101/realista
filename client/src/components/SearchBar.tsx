@@ -19,22 +19,52 @@ import { useToast } from "@/hooks/use-toast";
 import { AgentReview } from "./AgentReview";
 import { AgencyReview } from "./AgencyReview";
 
-const BARCELONA_NEIGHBORHOODS = [
-  "Barceloneta",
-  "Born",
-  "Eixample",
-  "El Raval",
-  "Gràcia",
-  "Les Corts",
-  "Poble Sec",
-  "Poblenou",
-  "Sagrada Familia",
-  "Sant Andreu",
-  "Sant Antoni",
-  "Sant Martí",
-  "Sants",
-  "Sarrià-Sant Gervasi"
+// Estructura de distritos y barrios de Barcelona
+const BARCELONA_DISTRICTS_AND_NEIGHBORHOODS = [
+  {
+    district: "Ciutat Vella",
+    neighborhoods: ["El Raval", "El Gòtic", "La Barceloneta", "Sant Pere, Santa Caterina i la Ribera"]
+  },
+  {
+    district: "Eixample",
+    neighborhoods: ["El Fort Pienc", "La Sagrada Família", "La Dreta de l'Eixample", "L'Antiga Esquerra de l'Eixample", "La Nova Esquerra de l'Eixample", "Sant Antoni"]
+  },
+  {
+    district: "Sants-Montjuïc",
+    neighborhoods: ["El Poble-sec", "La Marina del Prat Vermell", "La Marina de Port", "La Font de la Guatlla", "Hostafrancs", "La Bordeta", "Sants-Badal", "Sants"]
+  },
+  {
+    district: "Les Corts",
+    neighborhoods: ["Les Corts", "La Maternitat i Sant Ramon", "Pedralbes"]
+  },
+  {
+    district: "Sarrià-Sant Gervasi",
+    neighborhoods: ["Vallvidrera, el Tibidabo i les Planes", "Sarrià", "Les Tres Torres", "Sant Gervasi - la Bonanova", "Sant Gervasi - Galvany", "El Putxet i el Farró"]
+  },
+  {
+    district: "Gràcia",
+    neighborhoods: ["Vallcarca i els Penitents", "El Coll", "La Salut", "Vila de Gràcia", "Camp d'en Grassot i Gràcia Nova"]
+  },
+  {
+    district: "Horta-Guinardó",
+    neighborhoods: ["El Baix Guinardó", "Can Baró", "El Guinardó", "La Font d'en Fargues", "El Carmel", "La Teixonera", "Sant Genís dels Agudells", "Montbau", "La Vall d'Hebron", "La Clota", "Horta"]
+  },
+  {
+    district: "Nou Barris",
+    neighborhoods: ["Vilapicina i la Torre Llobeta", "Porta", "El Turó de la Peira", "Can Peguera", "La Guineueta", "Canyelles", "Les Roquetes", "Verdun", "La Prosperitat", "La Trinitat Nova", "Torre Baró", "Ciutat Meridiana", "Vallbona"]
+  },
+  {
+    district: "Sant Andreu",
+    neighborhoods: ["La Trinitat Vella", "Baró de Viver", "El Bon Pastor", "Sant Andreu", "La Sagrera", "El Congrés i els Indians", "Navas"]
+  },
+  {
+    district: "Sant Martí",
+    neighborhoods: ["El Clot", "El Camp de l'Arpa del Clot", "La Verneda i la Pau", "Sant Martí de Provençals", "El Besòs i el Maresme", "Provençals del Poblenou", "Diagonal Mar i el Front Marítim del Poblenou", "El Poblenou", "El Parc i la Llacuna del Poblenou", "La Vila Olímpica del Poblenou"]
+  }
 ];
+
+// Lista plana de todos los barrios para manipulación fácil
+const BARCELONA_NEIGHBORHOODS = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.flatMap(district => district.neighborhoods);
 
 const PRICE_RANGES = [
   { value: "less-than-60000", label: "<60.000 €" },
@@ -471,25 +501,50 @@ export function SearchBar() {
               </div>
             )}
 
-            <div className="max-h-[300px] overflow-auto">
-              {filteredNeighborhoods.map(neighborhood => (
-                <Button
-                  key={neighborhood}
-                  variant="ghost"
-                  className={`w-full justify-start ${
-                    selectedNeighborhoods.includes(neighborhood)
-                      ? "bg-primary/10"
-                      : ""
-                  }`}
-                  onClick={() => setSelectedNeighborhoods(prev =>
-                    prev.includes(neighborhood)
-                      ? prev.filter(n => n !== neighborhood)
-                      : [...prev, neighborhood]
-                  )}
-                >
-                  {neighborhood}
-                </Button>
-              ))}
+            <div className="max-h-[300px] overflow-auto space-y-1">
+              {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map(district => {
+                // Si hay una búsqueda activa, filtrar los barrios de este distrito
+                const filteredDistrictNeighborhoods = district.neighborhoods.filter(
+                  n => n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
+                );
+                
+                // Si no hay barrios que coincidan con la búsqueda en este distrito, no mostrar el distrito
+                if (neighborhoodSearch && filteredDistrictNeighborhoods.length === 0) {
+                  return null;
+                }
+                
+                return (
+                  <div key={district.district} className="mb-2">
+                    {/* Nombre del distrito (en negrita y no seleccionable) */}
+                    <div className="font-bold text-sm px-3 py-1 text-gray-700">
+                      {district.district}
+                    </div>
+                    
+                    {/* Barrios del distrito */}
+                    <div className="ml-2">
+                      {/* Si hay búsqueda activa, mostrar solo los barrios filtrados */}
+                      {(neighborhoodSearch ? filteredDistrictNeighborhoods : district.neighborhoods).map(neighborhood => (
+                        <Button
+                          key={neighborhood}
+                          variant="ghost"
+                          className={`w-full justify-start text-sm ${
+                            selectedNeighborhoods.includes(neighborhood)
+                              ? "bg-primary/10"
+                              : ""
+                          }`}
+                          onClick={() => setSelectedNeighborhoods(prev =>
+                            prev.includes(neighborhood)
+                              ? prev.filter(n => n !== neighborhood)
+                              : [...prev, neighborhood]
+                          )}
+                        >
+                          {neighborhood}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex justify-between">

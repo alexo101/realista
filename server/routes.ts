@@ -341,12 +341,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Añadimos el filtro de tipo de operación (alquiler)
-      const filters = { ...req.query, operationType: 'Alquiler' };
+      const filters: Record<string, any> = { ...req.query, operationType: 'Alquiler' };
       // Eliminamos el parámetro initialLoad si existe
-      delete filters.initialLoad;
+      if ('initialLoad' in filters) {
+        delete filters.initialLoad;
+      }
       
       // Solo buscar si hay al menos un barrio seleccionado
-      if (filters.neighborhoods) {
+      if ('neighborhoods' in filters) {
         const properties = await storage.searchProperties(filters);
         res.json(properties);
       } else {

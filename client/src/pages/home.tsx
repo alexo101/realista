@@ -71,18 +71,12 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mostViewedSaleProperties && mostViewedSaleProperties.length > 0 ? (
-                  mostViewedSaleProperties.map((property) => (
-                    <PropertyCard
-                      key={property.id}
-                      property={property}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-3 text-center py-8 text-gray-500">
-                    Todavía no hay propiedades en venta visitadas. ¡Explora nuestro catálogo!
-                  </div>
-                )}
+                {mostViewedSaleProperties && mostViewedSaleProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                  />
+                ))}
               </div>
             )}
           </TabsContent>
@@ -99,18 +93,12 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mostViewedRentProperties && mostViewedRentProperties.length > 0 ? (
-                  mostViewedRentProperties.map((property) => (
-                    <PropertyCard
-                      key={property.id}
-                      property={property}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-3 text-center py-8 text-gray-500">
-                    Todavía no hay propiedades en alquiler visitadas. ¡Explora nuestro catálogo!
-                  </div>
-                )}
+                {mostViewedRentProperties && mostViewedRentProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                  />
+                ))}
               </div>
             )}
           </TabsContent>
