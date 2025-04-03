@@ -23,7 +23,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
 import { Info } from "lucide-react";
-import { BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { NeighborhoodSelector } from "./NeighborhoodSelector";
 
 const formSchema = z.object({
   security: z.number().min(1).max(10),
@@ -36,26 +37,26 @@ type NeighborhoodRating = z.infer<typeof formSchema>;
 export function NeighborhoodRating() {
   const { user } = useUser();
   const { toast } = useToast();
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string | null>(null);
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      security: 0,
-      parking: 0,
-      familyFriendly: 0,
+      security: 5,
+      parking: 5,
+      familyFriendly: 5,
     },
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    if (!selectedNeighborhood || !user) return;
+    if (!selectedNeighborhoods.length || !user) return;
 
     try {
       setIsSubmitting(true);
       const response = await apiRequest("POST", "/api/neighborhoods/ratings", {
         ...data,
-        neighborhood: selectedNeighborhood,
+        neighborhood: selectedNeighborhoods[0],
         userId: user.id,
       });
 
@@ -66,7 +67,7 @@ export function NeighborhoodRating() {
           duration: 3000,
         });
         form.reset();
-        setSelectedNeighborhood(null);
+        setSelectedNeighborhoods([]);
       } else {
         const error = await response.json();
         toast({
@@ -86,7 +87,16 @@ export function NeighborhoodRating() {
     }
   };
 
-  // No necesitamos filtrado ya que solo mostramos los barrios de Barcelona
+  // Configuración para el selector de barrios (solo permite seleccionar uno)
+  const handleNeighborhoodChange = (neighborhoods: string[]) => {
+    // Si se intenta seleccionar más de un barrio, mantener solo el último seleccionado
+    if (neighborhoods.length > 1) {
+      const lastSelected = neighborhoods[neighborhoods.length - 1];
+      setSelectedNeighborhoods([lastSelected]);
+    } else {
+      setSelectedNeighborhoods(neighborhoods);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -94,22 +104,20 @@ export function NeighborhoodRating() {
         <h2 className="text-2xl font-semibold flex-1">Conoce los barrios</h2>
       </div>
       
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {BARCELONA_NEIGHBORHOODS.map((neighborhood) => (
-          <Button
-            key={neighborhood}
-            variant={selectedNeighborhood === neighborhood ? "default" : "outline"}
-            className="w-full text-sm py-1"
-            onClick={() => setSelectedNeighborhood(neighborhood)}
-          >
-            {neighborhood}
-          </Button>
-        ))}
+      {/* Selector de barrios utilizando el componente NeighborhoodSelector */}
+      <div className="mb-4">
+        <NeighborhoodSelector 
+          selectedNeighborhoods={selectedNeighborhoods}
+          onChange={handleNeighborhoodChange}
+          title="SELECCIONA UN BARRIO PARA VALORAR"
+          buttonText="Selecciona un barrio"
+        />
       </div>
 
-      {selectedNeighborhood && (
+      {selectedNeighborhoods.length > 0 && (
         <Card>
           <CardContent className="pt-6">
+            <h3 className="text-lg font-medium mb-4">Valoración para: {selectedNeighborhoods[0]}</h3>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="flex gap-4 items-end">

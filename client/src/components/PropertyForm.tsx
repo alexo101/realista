@@ -23,6 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
+import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const formSchema = z.object({
@@ -336,23 +337,20 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Barrio</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona el barrio" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {BARCELONA_NEIGHBORHOODS.map((neighborhood) => (
-                        <SelectItem key={neighborhood} value={neighborhood}>
-                          {neighborhood}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <div>
+                      <NeighborhoodSelector
+                        selectedNeighborhoods={field.value ? [field.value] : []}
+                        onChange={(neighborhoods) => {
+                          // Tomamos solo el primer barrio seleccionado (o ninguno)
+                          const selectedNeighborhood = neighborhoods.length > 0 ? neighborhoods[0] : undefined;
+                          field.onChange(selectedNeighborhood);
+                        }}
+                        title="SELECCIONA UN BARRIO"
+                        buttonText="Selecciona el barrio"
+                      />
+                    </div>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
