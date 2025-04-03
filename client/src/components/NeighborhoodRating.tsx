@@ -111,6 +111,7 @@ export function NeighborhoodRating() {
           onChange={handleNeighborhoodChange}
           title="SELECCIONA UN BARRIO PARA VALORAR"
           buttonText="Selecciona un barrio"
+          singleSelection={true}
         />
       </div>
 

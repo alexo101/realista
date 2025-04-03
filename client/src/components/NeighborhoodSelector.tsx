@@ -14,13 +14,15 @@ interface NeighborhoodSelectorProps {
   onChange: (neighborhoods: string[]) => void;
   title?: string;
   buttonText?: string;
+  singleSelection?: boolean;
 }
 
 export function NeighborhoodSelector({
   selectedNeighborhoods,
   onChange,
   title = "BARRIOS DE BARCELONA",
-  buttonText = "Selecciona barrios"
+  buttonText = "Selecciona barrios",
+  singleSelection = false
 }: NeighborhoodSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -30,11 +32,17 @@ export function NeighborhoodSelector({
   );
 
   const toggleNeighborhood = (neighborhood: string) => {
-    onChange(
-      selectedNeighborhoods.includes(neighborhood)
-        ? selectedNeighborhoods.filter(n => n !== neighborhood)
-        : [...selectedNeighborhoods, neighborhood]
-    );
+    if (singleSelection) {
+      // En modo de selección única, simplemente reemplazar la selección actual
+      onChange(selectedNeighborhoods.includes(neighborhood) ? [] : [neighborhood]);
+    } else {
+      // En modo multi-selección, mantener el comportamiento original
+      onChange(
+        selectedNeighborhoods.includes(neighborhood)
+          ? selectedNeighborhoods.filter(n => n !== neighborhood)
+          : [...selectedNeighborhoods, neighborhood]
+      );
+    }
   };
 
   const selectAll = () => {
@@ -73,7 +81,7 @@ export function NeighborhoodSelector({
 
             {selectedNeighborhoods.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 mb-2">SELECCIONADOS</p>
+                <p className="text-sm text-gray-500 mb-2">{singleSelection ? "BARRIO SELECCIONADO" : "SELECCIONADOS"}</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedNeighborhoods.map(neighborhood => (
                     <span
@@ -107,23 +115,28 @@ export function NeighborhoodSelector({
             </div>
 
             <div className="flex justify-between">
-              <div>
-                <Button
-                  variant="outline"
-                  onClick={() => onChange([])}
-                  className="mr-2"
-                >
-                  Limpiar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={selectAll}
-                >
-                  Seleccionar todos
-                </Button>
-              </div>
-              <Button onClick={() => setIsOpen(false)}>
-                Hecho
+              {!singleSelection && (
+                <div>
+                  <Button
+                    variant="outline"
+                    onClick={() => onChange([])}
+                    className="mr-2"
+                  >
+                    Limpiar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={selectAll}
+                  >
+                    Seleccionar todos
+                  </Button>
+                </div>
+              )}
+              <Button 
+                onClick={() => setIsOpen(false)}
+                className={singleSelection ? "ml-auto" : ""}
+              >
+                {singleSelection ? "Seleccionar" : "Hecho"}
               </Button>
             </div>
           </div>

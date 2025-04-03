@@ -348,6 +348,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         }}
                         title="SELECCIONA UN BARRIO"
                         buttonText="Selecciona el barrio"
+                        singleSelection={true}
                       />
                     </div>
                   </FormControl>

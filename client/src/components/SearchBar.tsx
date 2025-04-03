@@ -495,17 +495,14 @@ export function SearchBar() {
             </div>
 
             <div className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedNeighborhoods([])}
+              <Button 
+                onClick={() => {
+                  setIsNeighborhoodOpen(false);
+                  handleSearch();
+                }}
+                className="ml-auto"
               >
-                Limpiar
-              </Button>
-              <Button onClick={() => {
-                setIsNeighborhoodOpen(false);
-                handleSearch();
-              }}>
-                Buscar
+                Seleccionar
               </Button>
             </div>
           </div>
