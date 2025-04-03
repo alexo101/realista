@@ -19,7 +19,11 @@ function Router() {
       <Route path="/search/rent" component={Search} />
       <Route path="/search/agencies" component={Search} />
       <Route path="/search/agents" component={Search} />
-      <Route path="/neighborhood/:type/:neighborhood" component={NeighborhoodResults} />
+      <Route path="/neighborhood/:neighborhood" component={NeighborhoodResults} />
+      <Route path="/neighborhood/:neighborhood/properties" component={NeighborhoodResults} />
+      <Route path="/neighborhood/:neighborhood/agencies" component={NeighborhoodResults} />
+      <Route path="/neighborhood/:neighborhood/agents" component={NeighborhoodResults} />
+      <Route path="/neighborhood/:neighborhood/overview" component={NeighborhoodResults} />
       <Route path="/property/:id" component={Property} />
       <Route path="/manage" component={Manage} />
       <Route component={NotFound} />

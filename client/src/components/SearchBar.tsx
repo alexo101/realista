@@ -151,10 +151,17 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
-    // Si hay un solo barrio seleccionado para agencias o agentes, redirigir a la página de resultados de barrio
-    if ((searchType === 'agencies' || searchType === 'agents') && selectedNeighborhoods.length === 1) {
+    // Si hay un solo barrio seleccionado, redirigir a la página de resultados de barrio
+    if (selectedNeighborhoods.length === 1) {
       const encodedNeighborhood = encodeURIComponent(selectedNeighborhoods[0]);
-      setLocation(`/neighborhood/${searchType}/${encodedNeighborhood}`);
+      // Dirigir a la pestaña correspondiente según el tipo de búsqueda
+      if (searchType === 'agencies') {
+        setLocation(`/neighborhood/${encodedNeighborhood}/agencies`);
+      } else if (searchType === 'agents') {
+        setLocation(`/neighborhood/${encodedNeighborhood}/agents`);
+      } else {
+        setLocation(`/neighborhood/${encodedNeighborhood}/properties`);
+      }
       return;
     }
     
