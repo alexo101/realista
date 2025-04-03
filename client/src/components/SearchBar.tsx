@@ -200,7 +200,8 @@ export function SearchBar() {
           baseUrl = '/search/agents?showAll=false';
           break;
         case 'rent':
-          baseUrl = '/search/rent';
+          // Para alquiler, no mostrar resultados inicialmente hasta que se busque explícitamente
+          baseUrl = '/search/rent?initialLoad=true';
           break;
         case 'buy':
           baseUrl = '/search/buy';

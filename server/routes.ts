@@ -152,11 +152,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/:id", async (req, res) => {
     try {
-      const property = await storage.getProperty(parseInt(req.params.id));
+      const id = parseInt(req.params.id);
+      const property = await storage.getProperty(id);
+      
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
-      res.json(property);
+      
+      // Incrementar el contador de vistas
+      await storage.incrementPropertyViewCount(id);
+      
+      // Retornar la propiedad con la vista ya incrementada
+      const updatedProperty = await storage.getProperty(id);
+      res.json(updatedProperty);
     } catch (error) {
       console.error('Error fetching property:', error);
       res.status(500).json({ message: "Failed to fetch property" });
@@ -326,10 +334,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/search/rent", async (req, res) => {
     try {
+      // Si es carga inicial, devolver lista vacía 
+      // (el usuario debe seleccionar al menos un barrio para ver resultados)
+      if (req.query.initialLoad === 'true') {
+        return res.json([]);
+      }
+      
       // Añadimos el filtro de tipo de operación (alquiler)
       const filters = { ...req.query, operationType: 'Alquiler' };
-      const properties = await storage.searchProperties(filters);
-      res.json(properties);
+      // Eliminamos el parámetro initialLoad si existe
+      delete filters.initialLoad;
+      
+      // Solo buscar si hay al menos un barrio seleccionado
+      if (filters.neighborhoods) {
+        const properties = await storage.searchProperties(filters);
+        res.json(properties);
+      } else {
+        // Si no hay barrios seleccionados, devolver array vacío
+        res.json([]);
+      }
     } catch (error) {
       console.error('Error searching properties for renting:', error);
       res.status(500).json({ message: "Failed to search properties" });

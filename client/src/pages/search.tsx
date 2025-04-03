@@ -34,8 +34,36 @@ export default function SearchPage() {
           <SearchBar />
         </div>
 
-        {(searchType === 'buy' || searchType === 'rent') && (
+        {/* Propiedades en venta */}
+        {searchType === 'buy' && (
           <PropertyResults results={results || []} isLoading={isLoading} />
+        )}
+        
+        {/* Propiedades en alquiler con estado vacío inicial personalizado */}
+        {searchType === 'rent' && (
+          <>
+            {!isLoading && results?.length === 0 && location.includes('initialLoad=true') && (
+              <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
+                <Building2 className="h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Busca propiedades en alquiler</h3>
+                <p className="text-gray-600 max-w-md">
+                  Selecciona al menos un barrio y haz clic en el botón de búsqueda para ver propiedades disponibles para alquiler.
+                </p>
+              </div>
+            )}
+            {!isLoading && results?.length === 0 && !location.includes('initialLoad=true') && (
+              <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
+                <Building2 className="h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No se encontraron propiedades en alquiler</h3>
+                <p className="text-gray-600 max-w-md">
+                  Prueba a seleccionar otros barrios o ajustar los filtros de precio para encontrar propiedades disponibles.
+                </p>
+              </div>
+            )}
+            {(results && results.length > 0) && (
+              <PropertyResults results={results} isLoading={isLoading} />
+            )}
+          </>
         )}
         {searchType === 'agencies' && (
           <>
