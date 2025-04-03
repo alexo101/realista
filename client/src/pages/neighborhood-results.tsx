@@ -97,9 +97,7 @@ export default function NeighborhoodResultsPage() {
             <span className="font-medium">{decodedNeighborhood}</span>
           </div>
           
-          <h1 className="text-3xl font-bold mb-6">
-            {decodedNeighborhood}
-          </h1>
+          
           
           {/* Tabs para diferentes tipos de resultados */}
           <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
