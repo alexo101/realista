@@ -244,9 +244,9 @@ export function SearchBar() {
         }
       }
       
-      // Cerrar el diálogo de barrios y ejecutar la búsqueda
+      // Solo cerrar el diálogo de barrios, pero NO ejecutar búsqueda automática
       setIsNeighborhoodOpen(false);
-      handleSearch();
+      // No se hace la búsqueda automática, el usuario debe presionar el botón "Buscar"
     }
   };
 

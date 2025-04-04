@@ -24,7 +24,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
-import { BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const formSchema = z.object({
   reference: z.string().optional(), // Campo de referencia para identificación interna
