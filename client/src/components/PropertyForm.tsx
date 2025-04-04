@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -354,16 +354,28 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         onChange={(neighborhoods) => {
                           // Tomamos solo el primer barrio seleccionado (o ninguno)
                           const selectedNeighborhood = neighborhoods.length > 0 ? neighborhoods[0] : undefined;
+                          
+                          // Actualizar estado local primero
                           setLocalNeighborhood(selectedNeighborhood);
                           
-                          // Actualizar el campo con las opciones que marcan el formulario como modificado
+                          // Actualizar el formulario solo si hay un barrio seleccionado
                           if (selectedNeighborhood) {
+                            // Limpiar errores primero
                             form.clearErrors("neighborhood");
-                            form.setValue("neighborhood", selectedNeighborhood as any, {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true
-                            });
+                            
+                            // Actualizar el valor del campo con el nuevo barrio
+                            setTimeout(() => {
+                              form.setValue("neighborhood", selectedNeighborhood as any, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true
+                              });
+                              
+                              // Forzar la activación del botón de submit si es una edición
+                              if (isEditing) {
+                                form.trigger();
+                              }
+                            }, 0);
                           }
                         }}
                         title="SELECCIONA UN BARRIO"

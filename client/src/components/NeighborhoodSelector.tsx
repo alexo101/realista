@@ -27,14 +27,24 @@ export function NeighborhoodSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const filteredNeighborhoods = BARCELONA_NEIGHBORHOODS.filter(n =>
-    n.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filtramos los barrios o distritos que coincidan con la búsqueda
+  const filteredDistricts = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.filter(district => {
+    // Si el distrito coincide con la búsqueda
+    if (district.district.toLowerCase().includes(search.toLowerCase())) {
+      return true;
+    }
+    // Si algún barrio del distrito coincide con la búsqueda
+    return district.neighborhoods.some(n => 
+      n.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   const toggleNeighborhood = (neighborhood: string) => {
     if (singleSelection) {
       // En modo de selección única, simplemente reemplazar la selección actual
-      onChange(selectedNeighborhoods.includes(neighborhood) ? [] : [neighborhood]);
+      // No cerrar el diálogo automáticamente después de seleccionar un barrio
+      const newNeighborhoods = selectedNeighborhoods.includes(neighborhood) ? [] : [neighborhood];
+      onChange(newNeighborhoods);
     } else {
       // En modo multi-selección, mantener el comportamiento original
       onChange(
@@ -69,7 +79,15 @@ export function NeighborhoodSelector({
         )}
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog 
+        open={isOpen} 
+        onOpenChange={(open) => {
+          // Solo permitir cerrar el diálogo mediante el botón "Seleccionar" o "Hecho"
+          // Esto evita que el formulario se cierre al hacer clic fuera o presionar ESC
+          if (!open) {
+            setIsOpen(false);
+          }
+        }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
           <div className="space-y-4">
@@ -98,19 +116,31 @@ export function NeighborhoodSelector({
             )}
 
             <div className="max-h-[300px] overflow-auto">
-              {filteredNeighborhoods.map(neighborhood => (
-                <Button
-                  key={neighborhood}
-                  variant="ghost"
-                  className={`w-full justify-start ${
-                    selectedNeighborhoods.includes(neighborhood)
-                      ? "bg-primary/10"
-                      : ""
-                  }`}
-                  onClick={() => toggleNeighborhood(neighborhood)}
-                >
-                  {neighborhood}
-                </Button>
+              {filteredDistricts.map((district) => (
+                <div key={district.district}>
+                  {/* El distrito en negrita y no seleccionable */}
+                  <div className="font-bold text-gray-800 py-2 px-4">
+                    {district.district}
+                  </div>
+
+                  {/* Los barrios de ese distrito */}
+                  {district.neighborhoods
+                    .filter(n => n.toLowerCase().includes(search.toLowerCase()))
+                    .map(neighborhood => (
+                      <Button
+                        key={neighborhood}
+                        variant="ghost"
+                        className={`w-full justify-start pl-8 ${
+                          selectedNeighborhoods.includes(neighborhood)
+                            ? "bg-primary/10"
+                            : ""
+                        }`}
+                        onClick={() => toggleNeighborhood(neighborhood)}
+                      >
+                        {neighborhood}
+                      </Button>
+                    ))}
+                </div>
               ))}
             </div>
 
