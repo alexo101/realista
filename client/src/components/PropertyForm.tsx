@@ -70,6 +70,16 @@ interface PropertyFormProps {
 export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false }: PropertyFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
+    initialData?.neighborhood
+  );
+  
+  // Actualizar el barrio local cuando cambia el initialData
+  useEffect(() => {
+    if (initialData?.neighborhood) {
+      setLocalNeighborhood(initialData.neighborhood);
+    }
+  }, [initialData]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -95,13 +105,6 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     form.setValue("images", newImages);
     form.setValue("mainImageIndex", mainImageIndex);
   };
-
-  // Este efecto evita que el formulario se cierre automáticamente cuando cambia el barrio
-  useEffect(() => {
-    if (form.formState.isSubmitSuccessful) {
-      // No hacemos nada, permitimos que el componente padre maneje el cierre
-    }
-  }, [form.formState.isSubmitSuccessful]);
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
@@ -347,13 +350,14 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   <FormControl>
                     <div>
                       <NeighborhoodSelector
-                        selectedNeighborhoods={field.value ? [field.value] : []}
+                        selectedNeighborhoods={localNeighborhood ? [localNeighborhood] : []}
                         onChange={(neighborhoods) => {
                           // Tomamos solo el primer barrio seleccionado (o ninguno)
                           const selectedNeighborhood = neighborhoods.length > 0 ? neighborhoods[0] : undefined;
+                          setLocalNeighborhood(selectedNeighborhood);
                           field.onChange(selectedNeighborhood);
-                          // Forzar el estado de validación del formulario
-                          form.trigger();
+                          // Marcar el formulario como "dirty" para activar el botón de guardar
+                          form.formState.isDirty = true;
                         }}
                         title="SELECCIONA UN BARRIO"
                         buttonText="Selecciona el barrio"

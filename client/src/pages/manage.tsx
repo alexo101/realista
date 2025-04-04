@@ -617,6 +617,7 @@ export default function ManagePage() {
                       await updatePropertyMutation.mutateAsync(data);
                     } else {
                       await createPropertyMutation.mutateAsync(data);
+                      setIsAddingProperty(false); // Solo cerramos automáticamente al crear, no al editar
                     }
                   }}
                   onClose={() => {
