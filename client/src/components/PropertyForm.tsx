@@ -355,9 +355,16 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           // Tomamos solo el primer barrio seleccionado (o ninguno)
                           const selectedNeighborhood = neighborhoods.length > 0 ? neighborhoods[0] : undefined;
                           setLocalNeighborhood(selectedNeighborhood);
-                          field.onChange(selectedNeighborhood);
-                          // Marcar el formulario como "dirty" para activar el botón de guardar
-                          form.formState.isDirty = true;
+                          
+                          // Actualizar el campo con las opciones que marcan el formulario como modificado
+                          if (selectedNeighborhood) {
+                            form.clearErrors("neighborhood");
+                            form.setValue("neighborhood", selectedNeighborhood as any, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true
+                            });
+                          }
                         }}
                         title="SELECCIONA UN BARRIO"
                         buttonText="Selecciona el barrio"
