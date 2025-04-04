@@ -348,39 +348,36 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 <FormItem>
                   <FormLabel>Barrio</FormLabel>
                   <FormControl>
-                    <div>
-                      <NeighborhoodSelector
-                        selectedNeighborhoods={localNeighborhood ? [localNeighborhood] : []}
-                        onChange={(neighborhoods) => {
-                          // Tomamos solo el primer barrio seleccionado (o ninguno)
-                          const selectedNeighborhood = neighborhoods.length > 0 ? neighborhoods[0] : undefined;
-                          
-                          // Actualizar estado local primero
-                          setLocalNeighborhood(selectedNeighborhood);
-                          
-                          // Actualizar el formulario solo si hay un barrio seleccionado
-                          if (selectedNeighborhood) {
-                            // Limpiar errores primero
-                            form.clearErrors("neighborhood");
+                    <Select
+                      onValueChange={(value) => {
+                        // Actualizar el formulario con el valor seleccionado
+                        field.onChange(value);
+                        // Actualizar el estado local
+                        setLocalNeighborhood(value);
+                      }}
+                      value={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un barrio" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => (
+                          <div key={district.district}>
+                            {/* Encabezado del distrito (no seleccionable) */}
+                            <div className="font-bold px-2 py-1 text-sm text-gray-500">
+                              {district.district}
+                            </div>
                             
-                            // Actualizar el valor del campo con el nuevo barrio
-                            form.setValue("neighborhood", selectedNeighborhood as any, {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true
-                            });
-                            
-                            // Forzar la activación del botón de submit si es una edición
-                            if (isEditing) {
-                              form.trigger();
-                            }
-                          }
-                        }}
-                        title="SELECCIONA UN BARRIO"
-                        buttonText="Selecciona el barrio"
-                        singleSelection={true}
-                      />
-                    </div>
+                            {/* Barrios del distrito */}
+                            {district.neighborhoods.map((neighborhood) => (
+                              <SelectItem key={neighborhood} value={neighborhood}>
+                                {neighborhood}
+                              </SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
