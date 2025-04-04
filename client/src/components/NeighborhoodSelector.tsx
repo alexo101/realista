@@ -1,13 +1,19 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
+
+export interface NeighborhoodSelectorRef {
+  open: () => void;
+  close: () => void;
+}
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
@@ -17,16 +23,28 @@ interface NeighborhoodSelectorProps {
   singleSelection?: boolean;
 }
 
-export function NeighborhoodSelector({
+export const NeighborhoodSelector = forwardRef<NeighborhoodSelectorRef, NeighborhoodSelectorProps>(({
   selectedNeighborhoods,
   onChange,
   title = "BARRIOS DE BARCELONA",
   buttonText = "Selecciona barrios",
   singleSelection = false
-}: NeighborhoodSelectorProps) {
+}, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [localNeighborhoods, setLocalNeighborhoods] = useState<string[]>(selectedNeighborhoods);
+  
+  // Exponer métodos para abrir/cerrar el diálogo desde fuera
+  useImperativeHandle(ref, () => ({
+    open: () => setIsOpen(true),
+    close: () => setIsOpen(false)
+  }));
 
+  // Actualizar estado local cuando cambian las props
+  useEffect(() => {
+    setLocalNeighborhoods(selectedNeighborhoods);
+  }, [selectedNeighborhoods]);
+  
   // Filtramos los barrios o distritos que coincidan con la búsqueda
   const filteredDistricts = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.filter(district => {
     // Si el distrito coincide con la búsqueda
@@ -42,21 +60,27 @@ export function NeighborhoodSelector({
   const toggleNeighborhood = (neighborhood: string) => {
     if (singleSelection) {
       // En modo de selección única, simplemente reemplazar la selección actual
-      // No cerrar el diálogo automáticamente después de seleccionar un barrio
-      const newNeighborhoods = selectedNeighborhoods.includes(neighborhood) ? [] : [neighborhood];
-      onChange(newNeighborhoods);
+      setLocalNeighborhoods(
+        localNeighborhoods.includes(neighborhood) ? [] : [neighborhood]
+      );
     } else {
       // En modo multi-selección, mantener el comportamiento original
-      onChange(
-        selectedNeighborhoods.includes(neighborhood)
-          ? selectedNeighborhoods.filter(n => n !== neighborhood)
-          : [...selectedNeighborhoods, neighborhood]
+      setLocalNeighborhoods(
+        localNeighborhoods.includes(neighborhood)
+          ? localNeighborhoods.filter(n => n !== neighborhood)
+          : [...localNeighborhoods, neighborhood]
       );
     }
   };
 
   const selectAll = () => {
-    onChange([...BARCELONA_NEIGHBORHOODS]);
+    setLocalNeighborhoods([...BARCELONA_NEIGHBORHOODS]);
+  };
+  
+  // Este método se llama cuando el usuario confirma su selección
+  const handleConfirm = () => {
+    onChange(localNeighborhoods);
+    setIsOpen(false);
   };
 
   return (
@@ -64,7 +88,11 @@ export function NeighborhoodSelector({
       <Button
         variant="outline"
         className="w-full justify-start h-auto py-2 px-3"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          // Restablecer selección local al abrir
+          setLocalNeighborhoods(selectedNeighborhoods);
+          setIsOpen(true);
+        }}
       >
         {selectedNeighborhoods.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -82,14 +110,15 @@ export function NeighborhoodSelector({
       <Dialog 
         open={isOpen} 
         onOpenChange={(open) => {
-          // Solo permitir cerrar el diálogo mediante el botón "Seleccionar" o "Hecho"
-          // Esto evita que el formulario se cierre al hacer clic fuera o presionar ESC
           if (!open) {
-            setIsOpen(false);
+            // Al cerrar sin confirmar, descartar cambios
+            setLocalNeighborhoods(selectedNeighborhoods);
           }
+          setIsOpen(open);
         }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
+          <DialogDescription className="sr-only">Seleccione barrios de Barcelona</DialogDescription>
           <div className="space-y-4">
             <Input
               placeholder="Buscar barrio..."
@@ -97,11 +126,11 @@ export function NeighborhoodSelector({
               onChange={(e) => setSearch(e.target.value)}
             />
 
-            {selectedNeighborhoods.length > 0 && (
+            {localNeighborhoods.length > 0 && (
               <div>
                 <p className="text-sm text-gray-500 mb-2">{singleSelection ? "BARRIO SELECCIONADO" : "SELECCIONADOS"}</p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedNeighborhoods.map(neighborhood => (
+                  {localNeighborhoods.map(neighborhood => (
                     <span
                       key={neighborhood}
                       className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
@@ -131,11 +160,12 @@ export function NeighborhoodSelector({
                         key={neighborhood}
                         variant="ghost"
                         className={`w-full justify-start pl-8 ${
-                          selectedNeighborhoods.includes(neighborhood)
+                          localNeighborhoods.includes(neighborhood)
                             ? "bg-primary/10"
                             : ""
                         }`}
                         onClick={() => toggleNeighborhood(neighborhood)}
+                        type="button"
                       >
                         {neighborhood}
                       </Button>
@@ -149,22 +179,25 @@ export function NeighborhoodSelector({
                 <div>
                   <Button
                     variant="outline"
-                    onClick={() => onChange([])}
+                    onClick={() => setLocalNeighborhoods([])}
                     className="mr-2"
+                    type="button"
                   >
                     Limpiar
                   </Button>
                   <Button
                     variant="outline"
                     onClick={selectAll}
+                    type="button"
                   >
                     Seleccionar todos
                   </Button>
                 </div>
               )}
               <Button 
-                onClick={() => setIsOpen(false)}
+                onClick={handleConfirm}
                 className={singleSelection ? "ml-auto" : ""}
+                type="button"
               >
                 {singleSelection ? "Seleccionar" : "Hecho"}
               </Button>
@@ -174,4 +207,4 @@ export function NeighborhoodSelector({
       </Dialog>
     </>
   );
-}
+});

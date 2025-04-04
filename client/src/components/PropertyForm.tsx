@@ -23,7 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
-import { NeighborhoodSelector } from "./NeighborhoodSelector";
+import { NeighborhoodSelector, NeighborhoodSelectorRef } from "./NeighborhoodSelector";
 import { BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const formSchema = z.object({
@@ -73,6 +73,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
     initialData?.neighborhood
   );
+  const neighborhoodSelectorRef = useRef<NeighborhoodSelectorRef>(null);
   
   // Actualizar el barrio local cuando cambia el initialData
   useEffect(() => {
@@ -350,6 +351,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   <FormControl>
                     <div>
                       <NeighborhoodSelector
+                        ref={neighborhoodSelectorRef}
                         selectedNeighborhoods={localNeighborhood ? [localNeighborhood] : []}
                         onChange={(neighborhoods) => {
                           // Tomamos solo el primer barrio seleccionado (o ninguno)
@@ -364,18 +366,16 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                             form.clearErrors("neighborhood");
                             
                             // Actualizar el valor del campo con el nuevo barrio
-                            setTimeout(() => {
-                              form.setValue("neighborhood", selectedNeighborhood as any, {
-                                shouldDirty: true,
-                                shouldTouch: true,
-                                shouldValidate: true
-                              });
-                              
-                              // Forzar la activación del botón de submit si es una edición
-                              if (isEditing) {
-                                form.trigger();
-                              }
-                            }, 0);
+                            form.setValue("neighborhood", selectedNeighborhood as any, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true
+                            });
+                            
+                            // Forzar la activación del botón de submit si es una edición
+                            if (isEditing) {
+                              form.trigger();
+                            }
                           }
                         }}
                         title="SELECCIONA UN BARRIO"
