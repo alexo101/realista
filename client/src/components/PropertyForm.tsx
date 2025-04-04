@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,7 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
-import { NeighborhoodSelector, NeighborhoodSelectorRef } from "./NeighborhoodSelector";
+import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 const formSchema = z.object({
@@ -73,7 +73,6 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
     initialData?.neighborhood
   );
-  const neighborhoodSelectorRef = useRef<NeighborhoodSelectorRef>(null);
   
   // Actualizar el barrio local cuando cambia el initialData
   useEffect(() => {
@@ -351,7 +350,6 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   <FormControl>
                     <div>
                       <NeighborhoodSelector
-                        ref={neighborhoodSelectorRef}
                         selectedNeighborhoods={localNeighborhood ? [localNeighborhood] : []}
                         onChange={(neighborhoods) => {
                           // Tomamos solo el primer barrio seleccionado (o ninguno)

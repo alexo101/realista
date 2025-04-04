@@ -1,19 +1,13 @@
-import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription
-} from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
-
-export interface NeighborhoodSelectorRef {
-  open: () => void;
-  close: () => void;
-}
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
@@ -23,27 +17,16 @@ interface NeighborhoodSelectorProps {
   singleSelection?: boolean;
 }
 
-export const NeighborhoodSelector = forwardRef<NeighborhoodSelectorRef, NeighborhoodSelectorProps>(({
+export function NeighborhoodSelector({
   selectedNeighborhoods,
   onChange,
   title = "BARRIOS DE BARCELONA",
   buttonText = "Selecciona barrios",
   singleSelection = false
-}, ref) => {
+}: NeighborhoodSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [localNeighborhoods, setLocalNeighborhoods] = useState<string[]>(selectedNeighborhoods);
-  
-  // Exponer métodos para abrir/cerrar el diálogo desde fuera
-  useImperativeHandle(ref, () => ({
-    open: () => setIsOpen(true),
-    close: () => setIsOpen(false)
-  }));
-
-  // Actualizar estado local cuando cambian las props
-  useEffect(() => {
-    setLocalNeighborhoods(selectedNeighborhoods);
-  }, [selectedNeighborhoods]);
   
   // Filtramos los barrios o distritos que coincidan con la búsqueda
   const filteredDistricts = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.filter(district => {
@@ -60,9 +43,16 @@ export const NeighborhoodSelector = forwardRef<NeighborhoodSelectorRef, Neighbor
   const toggleNeighborhood = (neighborhood: string) => {
     if (singleSelection) {
       // En modo de selección única, simplemente reemplazar la selección actual
-      setLocalNeighborhoods(
-        localNeighborhoods.includes(neighborhood) ? [] : [neighborhood]
-      );
+      const newNeighborhoods = localNeighborhoods.includes(neighborhood) ? [] : [neighborhood];
+      setLocalNeighborhoods(newNeighborhoods);
+      
+      // Si está en modo de selección única, aplicar cambios inmediatamente
+      onChange(newNeighborhoods);
+      
+      // Y cerrar el popover
+      if (neighborhood && !localNeighborhoods.includes(neighborhood)) {
+        setIsOpen(false);
+      }
     } else {
       // En modo multi-selección, mantener el comportamiento original
       setLocalNeighborhoods(
@@ -74,7 +64,8 @@ export const NeighborhoodSelector = forwardRef<NeighborhoodSelectorRef, Neighbor
   };
 
   const selectAll = () => {
-    setLocalNeighborhoods([...BARCELONA_NEIGHBORHOODS]);
+    const newNeighborhoods = [...BARCELONA_NEIGHBORHOODS];
+    setLocalNeighborhoods(newNeighborhoods);
   };
   
   // Este método se llama cuando el usuario confirma su selección
@@ -84,127 +75,124 @@ export const NeighborhoodSelector = forwardRef<NeighborhoodSelectorRef, Neighbor
   };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        className="w-full justify-start h-auto py-2 px-3"
-        onClick={() => {
-          // Restablecer selección local al abrir
-          setLocalNeighborhoods(selectedNeighborhoods);
-          setIsOpen(true);
-        }}
-      >
-        {selectedNeighborhoods.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {selectedNeighborhoods.map(n => (
-              <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
-                {n}
-              </span>
-            ))}
-          </div>
-        ) : (
-          buttonText
-        )}
-      </Button>
-
-      <Dialog 
-        open={isOpen} 
-        onOpenChange={(open) => {
-          if (!open) {
-            // Al cerrar sin confirmar, descartar cambios
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full justify-start h-auto py-2 px-3"
+          onClick={() => {
+            // Restablecer selección local al abrir
             setLocalNeighborhoods(selectedNeighborhoods);
-          }
-          setIsOpen(open);
-        }}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogTitle className="text-lg font-semibold">{title}</DialogTitle>
-          <DialogDescription className="sr-only">Seleccione barrios de Barcelona</DialogDescription>
-          <div className="space-y-4">
-            <Input
-              placeholder="Buscar barrio..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            {localNeighborhoods.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500 mb-2">{singleSelection ? "BARRIO SELECCIONADO" : "SELECCIONADOS"}</p>
-                <div className="flex flex-wrap gap-2">
-                  {localNeighborhoods.map(neighborhood => (
-                    <span
-                      key={neighborhood}
-                      className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
-                      onClick={() => toggleNeighborhood(neighborhood)}
-                    >
-                      {neighborhood}
-                      <X className="h-3 w-3" />
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="max-h-[300px] overflow-auto">
-              {filteredDistricts.map((district) => (
-                <div key={district.district}>
-                  {/* El distrito en negrita y no seleccionable */}
-                  <div className="font-bold text-gray-800 py-2 px-4">
-                    {district.district}
-                  </div>
-
-                  {/* Los barrios de ese distrito */}
-                  {district.neighborhoods
-                    .filter(n => n.toLowerCase().includes(search.toLowerCase()))
-                    .map(neighborhood => (
-                      <Button
-                        key={neighborhood}
-                        variant="ghost"
-                        className={`w-full justify-start pl-8 ${
-                          localNeighborhoods.includes(neighborhood)
-                            ? "bg-primary/10"
-                            : ""
-                        }`}
-                        onClick={() => toggleNeighborhood(neighborhood)}
-                        type="button"
-                      >
-                        {neighborhood}
-                      </Button>
-                    ))}
-                </div>
+            setIsOpen(true);
+          }}
+        >
+          {selectedNeighborhoods.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedNeighborhoods.map(n => (
+                <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
+                  {n}
+                </span>
               ))}
             </div>
+          ) : (
+            buttonText
+          )}
+        </Button>
+      </PopoverTrigger>
+      
+      <PopoverContent className="w-[425px] max-h-[500px] overflow-y-auto p-4" align="start">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          
+          <Input
+            placeholder="Buscar barrio..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-            <div className="flex justify-between">
-              {!singleSelection && (
-                <div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setLocalNeighborhoods([])}
-                    className="mr-2"
-                    type="button"
+          {localNeighborhoods.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-500 mb-2">{singleSelection ? "BARRIO SELECCIONADO" : "SELECCIONADOS"}</p>
+              <div className="flex flex-wrap gap-2">
+                {localNeighborhoods.map(neighborhood => (
+                  <span
+                    key={neighborhood}
+                    className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
+                    onClick={() => toggleNeighborhood(neighborhood)}
                   >
-                    Limpiar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={selectAll}
-                    type="button"
-                  >
-                    Seleccionar todos
-                  </Button>
+                    {neighborhood}
+                    <X className="h-3 w-3" />
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-[300px] overflow-auto">
+            {filteredDistricts.map((district) => (
+              <div key={district.district}>
+                {/* El distrito en negrita y no seleccionable */}
+                <div className="font-bold text-gray-800 py-2 px-4">
+                  {district.district}
                 </div>
-              )}
+
+                {/* Los barrios de ese distrito */}
+                {district.neighborhoods
+                  .filter(n => n.toLowerCase().includes(search.toLowerCase()))
+                  .map(neighborhood => (
+                    <Button
+                      key={neighborhood}
+                      variant="ghost"
+                      className={`w-full justify-start pl-8 ${
+                        localNeighborhoods.includes(neighborhood)
+                          ? "bg-primary/10"
+                          : ""
+                      }`}
+                      onClick={() => toggleNeighborhood(neighborhood)}
+                      type="button"
+                    >
+                      {neighborhood}
+                    </Button>
+                  ))}
+              </div>
+            ))}
+          </div>
+
+          {!singleSelection && (
+            <div className="flex justify-between">
+              <div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setLocalNeighborhoods([]);
+                    onChange([]);
+                  }}
+                  className="mr-2"
+                  type="button"
+                >
+                  Limpiar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    selectAll();
+                    onChange([...BARCELONA_NEIGHBORHOODS]);
+                  }}
+                  type="button"
+                >
+                  Seleccionar todos
+                </Button>
+              </div>
               <Button 
                 onClick={handleConfirm}
-                className={singleSelection ? "ml-auto" : ""}
                 type="button"
               >
-                {singleSelection ? "Seleccionar" : "Hecho"}
+                Hecho
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
-});
+}
