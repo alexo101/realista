@@ -434,7 +434,7 @@ export function SearchBar() {
       {/* Dialog for neighborhood selection */}
       <Dialog open={isNeighborhoodOpen} onOpenChange={setIsNeighborhoodOpen}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogTitle className="text-lg font-semibold">BARRIO SELECCIONADO</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">SELECCIONA UN BARRIO</DialogTitle>
           <div className="space-y-4">
             <Input
               placeholder="Buscar barrio..."
@@ -445,7 +445,7 @@ export function SearchBar() {
 
             {selectedNeighborhoods.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 mb-2">SELECCIONADOS</p>
+                <p className="text-sm text-gray-500 mb-2">BARRIO SELECCIONADO</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedNeighborhoods.map(neighborhood => (
                     <span

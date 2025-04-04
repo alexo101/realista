@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -95,6 +95,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     form.setValue("images", newImages);
     form.setValue("mainImageIndex", mainImageIndex);
   };
+
+  // Este efecto evita que el formulario se cierre automáticamente cuando cambia el barrio
+  useEffect(() => {
+    if (form.formState.isSubmitSuccessful) {
+      // No hacemos nada, permitimos que el componente padre maneje el cierre
+    }
+  }, [form.formState.isSubmitSuccessful]);
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
@@ -345,6 +352,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           // Tomamos solo el primer barrio seleccionado (o ninguno)
                           const selectedNeighborhood = neighborhoods.length > 0 ? neighborhoods[0] : undefined;
                           field.onChange(selectedNeighborhood);
+                          // Forzar el estado de validación del formulario
+                          form.trigger();
                         }}
                         title="SELECCIONA UN BARRIO"
                         buttonText="Selecciona el barrio"
