@@ -7,7 +7,7 @@ import { AgentResults } from "@/components/AgentResults";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { findDistrictByNeighborhood } from "@/utils/neighborhoods";
+import { findDistrictByNeighborhood, isDistrict, BARCELONA_DISTRICTS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 export default function NeighborhoodResultsPage() {
   const { neighborhood } = useParams<{ neighborhood: string }>();
@@ -15,8 +15,14 @@ export default function NeighborhoodResultsPage() {
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
   
-  // Determinar el distrito correspondiente al barrio
-  const district = findDistrictByNeighborhood(decodedNeighborhood);
+  // Verificar si estamos en Barcelona general
+  const isBarcelonaPage = decodedNeighborhood === 'Barcelona';
+  
+  // Verificar si el valor seleccionado es un distrito
+  const isDistrictPage = isDistrict(decodedNeighborhood);
+  
+  // Determinar el distrito correspondiente al barrio (solo si no es un distrito o Barcelona)
+  const district = !isDistrictPage && !isBarcelonaPage ? findDistrictByNeighborhood(decodedNeighborhood) : null;
   
   // Determinar la pestaña activa según la ruta
   const getActiveTab = () => {
@@ -88,13 +94,39 @@ export default function NeighborhoodResultsPage() {
           
           {/* Breadcrumb */}
           <div className="flex items-center text-sm text-gray-500 mb-4">
-            {district && (
+            {/* Barcelona siempre está en el nivel superior */}
+            <span 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => setLocation('/neighborhood/Barcelona/properties')}
+            >
+              Barcelona
+            </span>
+            
+            {/* Si es un distrito o tiene distrito, mostrar el siguiente nivel */}
+            {(isDistrictPage || district) && (
               <>
-                <span>{district}</span>
                 <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+                {isDistrictPage ? (
+                  <span className="font-medium">{decodedNeighborhood}</span>
+                ) : (
+                  <>
+                    <span 
+                      className="cursor-pointer hover:text-primary"
+                      onClick={() => setLocation(`/neighborhood/${encodeURIComponent(district || '')}/properties`)}
+                    >
+                      {district}
+                    </span>
+                    <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+                    <span className="font-medium">{decodedNeighborhood}</span>
+                  </>
+                )}
               </>
             )}
-            <span className="font-medium">{decodedNeighborhood}</span>
+            
+            {/* Si es Barcelona general, no mostrar más niveles */}
+            {isBarcelonaPage && (
+              <span className="font-medium ml-0">Todos los barrios</span>
+            )}
           </div>
           
           
@@ -174,33 +206,93 @@ export default function NeighborhoodResultsPage() {
             {/* Contenido de pestaña: Overview */}
             <TabsContent value="overview" className="mt-0">
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-2xl font-bold mb-4">Sobre {decodedNeighborhood}</h2>
-                {district && (
+                {/* Título personalizado según el tipo de página */}
+                {isBarcelonaPage && (
+                  <h2 className="text-2xl font-bold mb-4">Barcelona</h2>
+                )}
+                {isDistrictPage && (
+                  <h2 className="text-2xl font-bold mb-4">Distrito de {decodedNeighborhood}</h2>
+                )}
+                {!isBarcelonaPage && !isDistrictPage && (
+                  <h2 className="text-2xl font-bold mb-4">Barrio de {decodedNeighborhood}</h2>
+                )}
+                
+                {/* Información de distrito para barrios */}
+                {district && !isDistrictPage && !isBarcelonaPage && (
                   <div className="flex items-center mb-4">
                     <MapPin className="h-5 w-5 mr-2 text-primary" />
                     <span>Distrito: <strong>{district}</strong></span>
                   </div>
                 )}
-                <p className="text-gray-600 mb-4">
-                  Información general sobre el barrio de {decodedNeighborhood}.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                
+                {/* Información del distrito cuando estamos viendo un distrito */}
+                {isDistrictPage && (
+                  <div className="mb-6">
+                    <p className="text-gray-600">
+                      El distrito de {decodedNeighborhood} incluye los siguientes barrios:
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS
+                        .find(d => d.district === decodedNeighborhood)
+                        ?.neighborhoods.map(neighborhood => (
+                          <span 
+                            key={neighborhood}
+                            className="bg-gray-100 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-primary/10"
+                            onClick={() => setLocation(`/neighborhood/${encodeURIComponent(neighborhood)}/properties`)}
+                          >
+                            {neighborhood}
+                          </span>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+                
+                {/* Información de Barcelona cuando estamos en la página general */}
+                {isBarcelonaPage && (
+                  <div className="mb-6">
+                    <p className="text-gray-600 mb-4">
+                      Barcelona está dividida en los siguientes distritos:
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {BARCELONA_DISTRICTS.map(district => (
+                        <span 
+                          key={district}
+                          className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
+                          onClick={() => setLocation(`/neighborhood/${encodeURIComponent(district)}/properties`)}
+                        >
+                          {district}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Información genérica del barrio */}
+                {!isBarcelonaPage && !isDistrictPage && (
+                  <p className="text-gray-600 mb-4">
+                    Información general sobre el barrio de {decodedNeighborhood}.
+                  </p>
+                )}
+                
+                {/* Estadísticas */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="font-semibold mb-2">Propiedades</h3>
                     <p className="text-sm text-gray-600">
-                      {properties?.length || 0} propiedades disponibles en este barrio
+                      {properties?.length || 0} propiedades disponibles
                     </p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="font-semibold mb-2">Agencias</h3>
                     <p className="text-sm text-gray-600">
-                      {agencies?.length || 0} agencias inmobiliarias operando en este barrio
+                      {agencies?.length || 0} agencias inmobiliarias
                     </p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="font-semibold mb-2">Agentes</h3>
                     <p className="text-sm text-gray-600">
-                      {agents?.length || 0} agentes especializados en este barrio
+                      {agents?.length || 0} agentes especializados
                     </p>
                   </div>
                 </div>

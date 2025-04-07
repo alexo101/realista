@@ -54,3 +54,11 @@ export function findDistrictByNeighborhood(neighborhood: string): string | null 
 
 // Lista plana de todos los barrios para manipulación fácil
 export const BARCELONA_NEIGHBORHOODS = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.flatMap(district => district.neighborhoods);
+
+// Lista de distritos
+export const BARCELONA_DISTRICTS = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map(district => district.district);
+
+// Comprobar si un elemento es un distrito
+export function isDistrict(name: string): boolean {
+  return BARCELONA_DISTRICTS.includes(name);
+}

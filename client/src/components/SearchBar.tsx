@@ -18,7 +18,7 @@ import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AgentReview } from "./AgentReview";
 import { AgencyReview } from "./AgencyReview";
-import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS, isDistrict } from "@/utils/neighborhoods";
 
 // Definimos rangos de precios para el selector
 const PRICE_RANGES = [
@@ -107,17 +107,18 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
-    // Si hay un solo barrio seleccionado, redirigir a la página de resultados de barrio
+    // Si hay un solo barrio/distrito/Barcelona seleccionado, redirigir a la página de resultados específica
     if (selectedNeighborhoods.length === 1) {
-      const encodedNeighborhood = encodeURIComponent(selectedNeighborhoods[0]);
-      // Dirigir a la pestaña correspondiente según el tipo de búsqueda
-      if (searchType === 'agencies') {
-        setLocation(`/neighborhood/${encodedNeighborhood}/agencies`);
-      } else if (searchType === 'agents') {
-        setLocation(`/neighborhood/${encodedNeighborhood}/agents`);
-      } else {
-        setLocation(`/neighborhood/${encodedNeighborhood}/properties`);
-      }
+      const selectedValue = selectedNeighborhoods[0];
+      const encodedValue = encodeURIComponent(selectedValue);
+      
+      // Determinar la pestaña según el tipo de búsqueda
+      let tab = 'properties';
+      if (searchType === 'agencies') tab = 'agencies';
+      else if (searchType === 'agents') tab = 'agents';
+      
+      // Redirigir a la página de resultados
+      setLocation(`/neighborhood/${encodedValue}/${tab}`);
       return;
     }
     
@@ -253,7 +254,6 @@ export function SearchBar() {
       
       // Solo cerrar el diálogo de barrios, pero NO ejecutar búsqueda automática
       setIsNeighborhoodOpen(false);
-      // No se hace la búsqueda automática, el usuario debe presionar el botón "Buscar"
     }
   };
 
@@ -552,6 +552,21 @@ export function SearchBar() {
             )}
 
             <div className="max-h-[300px] overflow-auto">
+              {/* Barcelona option (for no filter) */}
+              <div className="mb-4">
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start font-bold ${
+                    selectedNeighborhoods.includes("Barcelona")
+                      ? "bg-primary/10"
+                      : ""
+                  }`}
+                  onClick={() => toggleNeighborhood("Barcelona")}
+                >
+                  Barcelona (Todos los barrios)
+                </Button>
+              </div>
+              
               {/* Group neighborhoods by district */}
               {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => {
                 // Filter neighborhoods in this district
@@ -559,17 +574,33 @@ export function SearchBar() {
                   n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
                 );
                 
-                // Skip districts with no matching neighborhoods
-                if (filteredNeighborhoodsInDistrict.length === 0) return null;
+                // Show distrito even if no neighborhoods match (for search)
+                const showDistrict = neighborhoodSearch === "" || 
+                  district.district.toLowerCase().includes(neighborhoodSearch.toLowerCase()) ||
+                  filteredNeighborhoodsInDistrict.length > 0;
+                
+                if (!showDistrict) return null;
                 
                 return (
                   <div key={district.district} className="mb-4">
-                    <p className="font-bold text-sm mb-1">{district.district}</p>
-                    {filteredNeighborhoodsInDistrict.map(neighborhood => (
+                    {/* Make distrito selectable */}
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start font-bold ${
+                        selectedNeighborhoods.includes(district.district)
+                          ? "bg-primary/10"
+                          : ""
+                      }`}
+                      onClick={() => toggleNeighborhood(district.district)}
+                    >
+                      {district.district}
+                    </Button>
+                    
+                    {filteredNeighborhoodsInDistrict.length > 0 && filteredNeighborhoodsInDistrict.map(neighborhood => (
                       <Button
                         key={neighborhood}
                         variant="ghost"
-                        className={`w-full justify-start ${
+                        className={`w-full justify-start pl-6 ${
                           selectedNeighborhoods.includes(neighborhood)
                             ? "bg-primary/10"
                             : ""
