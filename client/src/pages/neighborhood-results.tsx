@@ -4,9 +4,10 @@ import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
-import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info } from "lucide-react";
+import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { findDistrictByNeighborhood, isDistrict, BARCELONA_DISTRICTS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 export default function NeighborhoodResultsPage() {
@@ -77,6 +78,19 @@ export default function NeighborhoodResultsPage() {
       return response.json();
     },
     enabled: activeTab === 'agents',
+  });
+  
+  // Consulta para las valoraciones del barrio
+  const { data: ratings, isLoading: ratingsLoading } = useQuery({
+    queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: decodedNeighborhood }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('neighborhood', decodedNeighborhood);
+      const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
+      if (!response.ok) throw new Error(`Failed to fetch ratings for ${decodedNeighborhood}`);
+      return response.json();
+    },
+    enabled: !isBarcelonaPage && !isDistrictPage && activeTab === 'overview',
   });
 
   return (
@@ -237,9 +251,89 @@ export default function NeighborhoodResultsPage() {
                 
                 {/* Información genérica del barrio */}
                 {!isBarcelonaPage && !isDistrictPage && (
-                  <p className="text-gray-600 mb-4">
-                    Información general sobre el barrio de {decodedNeighborhood}.
-                  </p>
+                  <>
+                    <p className="text-gray-600 mb-6">
+                      Información general sobre el barrio de {decodedNeighborhood}.
+                    </p>
+                    
+                    {/* Valoraciones del barrio */}
+                    {!ratingsLoading && ratings && (
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center">
+                          <Star className="h-5 w-5 mr-2 text-yellow-500" />
+                          Valoraciones del barrio
+                          {ratings.count > 0 && (
+                            <span className="text-sm font-normal text-gray-500 ml-2">
+                              ({ratings.count} {ratings.count === 1 ? 'valoración' : 'valoraciones'})
+                            </span>
+                          )}
+                        </h3>
+                        
+                        {ratings.count > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                            <div className="space-y-3">
+                              <div>
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-sm font-medium">Sensación de seguridad</span>
+                                  <span className="text-sm font-semibold">{ratings.security}/10</span>
+                                </div>
+                                <Progress value={ratings.security * 10} className="h-2" />
+                              </div>
+                              
+                              <div>
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-sm font-medium">Facilidad de aparcar</span>
+                                  <span className="text-sm font-semibold">{ratings.parking}/10</span>
+                                </div>
+                                <Progress value={ratings.parking * 10} className="h-2" />
+                              </div>
+                              
+                              <div>
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-sm font-medium">Amigable para peques</span>
+                                  <span className="text-sm font-semibold">{ratings.familyFriendly}/10</span>
+                                </div>
+                                <Progress value={ratings.familyFriendly * 10} className="h-2" />
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div>
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-sm font-medium">Conexión con transporte público</span>
+                                  <span className="text-sm font-semibold">{ratings.publicTransport}/10</span>
+                                </div>
+                                <Progress value={ratings.publicTransport * 10} className="h-2" />
+                              </div>
+                              
+                              <div>
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-sm font-medium">Parques y espacios verdes</span>
+                                  <span className="text-sm font-semibold">{ratings.greenSpaces}/10</span>
+                                </div>
+                                <Progress value={ratings.greenSpaces * 10} className="h-2" />
+                              </div>
+                              
+                              <div>
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-sm font-medium">Disponibilidad de servicios</span>
+                                  <span className="text-sm font-semibold">{ratings.services}/10</span>
+                                </div>
+                                <Progress value={ratings.services * 10} className="h-2" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-6 bg-gray-50 rounded-lg">
+                            <p className="text-gray-500">No hay valoraciones para este barrio todavía.</p>
+                            <span className="inline-block mt-3 text-primary hover:underline cursor-pointer" onClick={() => setLocation('/')}>
+                              Sé el primero en valorar este barrio
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
                 
                 {/* Estadísticas */}

@@ -61,6 +61,9 @@ export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   security: decimal("security").notNull(),
   parking: decimal("parking").notNull(),
   familyFriendly: decimal("family_friendly").notNull(),
+  publicTransport: decimal("public_transport").notNull(),
+  greenSpaces: decimal("green_spaces").notNull(),
+  services: decimal("services").notNull(),
   userId: integer("user_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

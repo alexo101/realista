@@ -232,6 +232,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/neighborhoods/ratings/average", async (req, res) => {
+    try {
+      const neighborhood = req.query.neighborhood as string;
+      if (!neighborhood) {
+        return res.status(400).json({ message: "Neighborhood parameter is required" });
+      }
+      const averages = await storage.getNeighborhoodRatingsAverage(neighborhood);
+      res.json(averages);
+    } catch (error) {
+      console.error('Error calculating neighborhood rating averages:', error);
+      res.status(500).json({ message: "Failed to calculate neighborhood rating averages" });
+    }
+  });
+
   // Add after the existing agent routes
   app.get("/api/agents/search", async (req, res) => {
     try {

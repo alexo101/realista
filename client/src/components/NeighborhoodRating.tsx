@@ -30,6 +30,9 @@ const formSchema = z.object({
   security: z.number().min(1).max(10),
   parking: z.number().min(1).max(10),
   familyFriendly: z.number().min(1).max(10),
+  publicTransport: z.number().min(1).max(10),
+  greenSpaces: z.number().min(1).max(10),
+  services: z.number().min(1).max(10),
 });
 
 type NeighborhoodRating = z.infer<typeof formSchema>;
@@ -46,6 +49,9 @@ export function NeighborhoodRating() {
       security: 5,
       parking: 5,
       familyFriendly: 5,
+      publicTransport: 5,
+      greenSpaces: 5,
+      services: 5,
     },
   });
 
@@ -98,6 +104,40 @@ export function NeighborhoodRating() {
     }
   };
 
+  // Crear un componente reutilizable para el slider con tooltip
+  const RatingSlider = ({ name, label }: { name: keyof NeighborhoodRating, label: string }) => {
+    return (
+      <FormField
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+          <FormItem className="flex-1">
+            <FormLabel>{label}</FormLabel>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <FormControl>
+                    <Slider
+                      min={1}
+                      max={10}
+                      step={1}
+                      value={[field.value]}
+                      onValueChange={([value]) => field.onChange(value)}
+                    />
+                  </FormControl>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>{field.value}/10</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center">
@@ -121,102 +161,24 @@ export function NeighborhoodRating() {
             <h3 className="text-lg font-medium mb-4">Valoración para: {selectedNeighborhoods[0]}</h3>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="flex gap-4 items-end">
-                  <FormField
-                    control={form.control}
-                    name="security"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Seguridad</FormLabel>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <FormControl>
-                                <Slider
-                                  min={1}
-                                  max={10}
-                                  step={1}
-                                  value={[field.value]}
-                                  onValueChange={([value]) => field.onChange(value)}
-                                />
-                              </FormControl>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Valor: {field.value}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="parking"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Fácil de aparcar</FormLabel>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <FormControl>
-                                <Slider
-                                  min={1}
-                                  max={10}
-                                  step={1}
-                                  value={[field.value]}
-                                  onValueChange={([value]) => field.onChange(value)}
-                                />
-                              </FormControl>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Valor: {field.value}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="familyFriendly"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Amigable para niños</FormLabel>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <FormControl>
-                                <Slider
-                                  min={1}
-                                  max={10}
-                                  step={1}
-                                  value={[field.value]}
-                                  onValueChange={([value]) => field.onChange(value)}
-                                />
-                              </FormControl>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Valor: {field.value}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <RatingSlider name="security" label="Sensación de seguridad" />
+                  <RatingSlider name="parking" label="Facilidad de aparcar" />
+                  <RatingSlider name="familyFriendly" label="Amigable para peques" />
+                  <RatingSlider name="publicTransport" label="Conexión con transporte público" />
+                  <RatingSlider name="greenSpaces" label="Presencia de parques y espacios verdes" />
+                  <RatingSlider name="services" label="Disponibilidad de servicios" />
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={!form.formState.isValid || isSubmitting}
-                >
-                  Enviar
-                </Button>
+                <div className="w-full" style={{ maxWidth: "var(--search-bar-width, 100%)" }}>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={!form.formState.isValid || isSubmitting}
+                  >
+                    Enviar
+                  </Button>
+                </div>
               </form>
             </Form>
           </CardContent>

@@ -60,6 +60,7 @@ export interface IStorage {
 
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
+  getNeighborhoodRatingsAverage(neighborhood: string): Promise<Record<string, number>>;
   createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating>;
   
   // Appointments
@@ -389,6 +390,51 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(neighborhoodRatings)
       .where(eq(neighborhoodRatings.neighborhood, neighborhood));
+  }
+
+  async getNeighborhoodRatingsAverage(neighborhood: string): Promise<Record<string, number>> {
+    const ratings = await this.getNeighborhoodRatings(neighborhood);
+    
+    if (!ratings.length) {
+      return {
+        security: 0,
+        parking: 0,
+        familyFriendly: 0,
+        publicTransport: 0,
+        greenSpaces: 0,
+        services: 0,
+        count: 0,
+      };
+    }
+    
+    // Inicializar acumuladores
+    let security = 0;
+    let parking = 0;
+    let familyFriendly = 0;
+    let publicTransport = 0;
+    let greenSpaces = 0;
+    let services = 0;
+
+    // Sumar todas las calificaciones
+    ratings.forEach(rating => {
+      security += Number(rating.security);
+      parking += Number(rating.parking);
+      familyFriendly += Number(rating.familyFriendly);
+      publicTransport += Number(rating.publicTransport || 0);
+      greenSpaces += Number(rating.greenSpaces || 0);
+      services += Number(rating.services || 0);
+    });
+
+    // Calcular los promedios
+    return {
+      security: parseFloat((security / ratings.length).toFixed(1)),
+      parking: parseFloat((parking / ratings.length).toFixed(1)),
+      familyFriendly: parseFloat((familyFriendly / ratings.length).toFixed(1)),
+      publicTransport: parseFloat((publicTransport / ratings.length).toFixed(1)),
+      greenSpaces: parseFloat((greenSpaces / ratings.length).toFixed(1)),
+      services: parseFloat((services / ratings.length).toFixed(1)),
+      count: ratings.length,
+    };
   }
 
   async createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating> {
