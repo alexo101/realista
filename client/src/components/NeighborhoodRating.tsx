@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
 import { Info } from "lucide-react";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
@@ -46,12 +46,12 @@ export function NeighborhoodRating() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      security: 5,
-      parking: 5,
-      familyFriendly: 5,
-      publicTransport: 5,
-      greenSpaces: 5,
-      services: 5,
+      security: 1,
+      parking: 1,
+      familyFriendly: 1,
+      publicTransport: 1,
+      greenSpaces: 1,
+      services: 1,
     },
   });
 
@@ -68,10 +68,16 @@ export function NeighborhoodRating() {
 
       if (response.ok) {
         toast({
-          title: "Valoración enviada",
-          description: "Gracias por valorar el barrio.",
-          duration: 3000,
+          title: "Valoración guardada correctamente",
+          description: `Tu valoración para ${selectedNeighborhoods[0]} ha sido guardada con éxito.`,
+          duration: 5000,
         });
+        
+        // Invalidar la caché de la consulta de valoraciones para este barrio
+        queryClient.invalidateQueries({
+          queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: selectedNeighborhoods[0] }],
+        });
+        
         form.reset();
         setSelectedNeighborhoods([]);
       } else {
