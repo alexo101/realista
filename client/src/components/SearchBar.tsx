@@ -107,6 +107,16 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
+    // Verificar si se ha seleccionado al menos una ubicación
+    if (selectedNeighborhoods.length === 0 && (searchType === 'buy' || searchType === 'rent')) {
+      toast({
+        title: "Ubicación requerida",
+        description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Si hay un solo barrio/distrito/Barcelona seleccionado, redirigir a la página de resultados específica
     if (selectedNeighborhoods.length === 1) {
       const selectedValue = selectedNeighborhoods[0];
@@ -395,11 +405,13 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(0) 
-                            ? prev.filter(r => r !== 0) 
-                            : [...prev, 0]
-                        );
+                        // Si 0 está seleccionado, lo quitamos
+                        // Si no está seleccionado, lo seleccionamos pero quitamos todos los demás
+                        if (roomsFilter.includes(0)) {
+                          setRoomsFilter(prev => prev.filter(r => r !== 0));
+                        } else {
+                          setRoomsFilter([0]); // Solo se permite seleccionar estudios
+                        }
                       }}
                     >
                       <input 
@@ -414,11 +426,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(1) 
-                            ? prev.filter(r => r !== 1) 
-                            : [...prev, 1]
-                        );
+                        if (roomsFilter.includes(1)) {
+                          // Si 1 está seleccionado, lo quitamos junto con todos los superiores
+                          setRoomsFilter(prev => prev.filter(r => r !== 1 && r !== 2 && r !== 3 && r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 1, 2, 3, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -433,11 +451,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(2) 
-                            ? prev.filter(r => r !== 2) 
-                            : [...prev, 2]
-                        );
+                        if (roomsFilter.includes(2)) {
+                          // Si 2 está seleccionado, lo quitamos junto con todos los superiores
+                          setRoomsFilter(prev => prev.filter(r => r !== 2 && r !== 3 && r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 2, 3, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -452,11 +476,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(3) 
-                            ? prev.filter(r => r !== 3) 
-                            : [...prev, 3]
-                        );
+                        if (roomsFilter.includes(3)) {
+                          // Si 3 está seleccionado, lo quitamos junto con todos los superiores
+                          setRoomsFilter(prev => prev.filter(r => r !== 3 && r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 3, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -471,11 +501,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(4) 
-                            ? prev.filter(r => r !== 4) 
-                            : [...prev, 4]
-                        );
+                        if (roomsFilter.includes(4)) {
+                          // Si 4 está seleccionado, lo quitamos
+                          setRoomsFilter(prev => prev.filter(r => r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -622,6 +658,7 @@ export function SearchBar() {
                   // No ejecutar búsqueda automáticamente
                 }}
                 className="ml-auto"
+                disabled={selectedNeighborhoods.length === 0}
               >
                 Seleccionar
               </Button>
