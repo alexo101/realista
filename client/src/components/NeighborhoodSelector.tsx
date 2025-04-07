@@ -128,13 +128,38 @@ export function NeighborhoodSelector({
             </div>
           )}
 
+          {/* Opción para seleccionar toda Barcelona */}
+          <div className="border-b pb-2 mb-3">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start font-bold ${
+                localNeighborhoods.includes("Barcelona (Todos los barrios)")
+                  ? "bg-primary/10"
+                  : ""
+              }`}
+              onClick={() => toggleNeighborhood("Barcelona (Todos los barrios)")}
+              type="button"
+            >
+              Barcelona (Todos los barrios)
+            </Button>
+          </div>
+          
           <div className="max-h-[300px] overflow-auto">
             {filteredDistricts.map((district) => (
               <div key={district.district}>
-                {/* El distrito en negrita y no seleccionable */}
-                <div className="font-bold text-gray-800 py-2 px-4">
+                {/* El distrito en negrita y también seleccionable */}
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start font-bold ${
+                    localNeighborhoods.includes(district.district)
+                      ? "bg-primary/10"
+                      : ""
+                  }`}
+                  onClick={() => toggleNeighborhood(district.district)}
+                  type="button"
+                >
                   {district.district}
-                </div>
+                </Button>
 
                 {/* Los barrios de ese distrito */}
                 {district.neighborhoods

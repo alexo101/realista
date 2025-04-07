@@ -266,14 +266,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
+      // Verificar si la búsqueda es para toda Barcelona
+      const isBarcelona = hasNeighborhoods && 
+                         updatedQuery.neighborhoods !== undefined && 
+                         updatedQuery.neighborhoods.toString().includes('Barcelona');
+      
+      // Si es Barcelona, vamos a mostrar todas las agencias (showAll = true)
+      if (isBarcelona) {
+        console.log('Búsqueda para toda Barcelona - mostrando todas las agencias');
+        updatedQuery.showAll = 'true';
+        delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
+      }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
-      if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+      else if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if (hasSearchTerm || hasNeighborhoods) {
+      if ((hasSearchTerm || hasNeighborhoods) && !isBarcelona) {
         delete updatedQuery.showAll; // No es necesario con términos de búsqueda
       }
       
@@ -298,14 +309,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
+      // Verificar si la búsqueda es para toda Barcelona
+      const isBarcelona = hasNeighborhoods && 
+                         updatedQuery.neighborhoods !== undefined && 
+                         updatedQuery.neighborhoods.toString().includes('Barcelona');
+      
+      // Si es Barcelona, vamos a mostrar todos los agentes (showAll = true)
+      if (isBarcelona) {
+        console.log('Búsqueda para toda Barcelona - mostrando todos los agentes');
+        updatedQuery.showAll = 'true';
+        delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
+      }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
-      if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+      else if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if (hasSearchTerm || hasNeighborhoods) {
+      if ((hasSearchTerm || hasNeighborhoods) && !isBarcelona) {
         delete updatedQuery.showAll; // No es necesario con términos de búsqueda
       }
       
@@ -323,7 +345,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/search/buy", async (req, res) => {
     try {
       // Añadimos el filtro de tipo de operación (venta)
-      const filters = { ...req.query, operationType: 'Venta' };
+      const filters: Record<string, any> = { ...req.query, operationType: 'Venta' };
+      
+      // Verificar si la búsqueda es para toda Barcelona
+      const hasNeighborhoods = 'neighborhoods' in filters && 
+                               filters.neighborhoods && 
+                               filters.neighborhoods.toString().trim() !== '';
+      const isBarcelona = hasNeighborhoods && 
+                         filters.neighborhoods.toString().includes('Barcelona');
+      
+      // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
+      if (isBarcelona) {
+        console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de venta');
+        // Eliminar el filtro de barrios para mostrar todas las propiedades
+        delete filters.neighborhoods;
+      }
+      
       const properties = await storage.searchProperties(filters);
       res.json(properties);
     } catch (error) {
@@ -347,8 +384,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         delete filters.initialLoad;
       }
       
+      // Verificar si la búsqueda es para toda Barcelona
+      const hasNeighborhoods = 'neighborhoods' in filters && 
+                               filters.neighborhoods && 
+                               filters.neighborhoods.toString().trim() !== '';
+      const isBarcelona = hasNeighborhoods && 
+                         filters.neighborhoods.toString().includes('Barcelona');
+      
+      // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
+      if (isBarcelona) {
+        console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de alquiler');
+        // Eliminar el filtro de barrios para mostrar todas las propiedades
+        delete filters.neighborhoods;
+        const properties = await storage.searchProperties(filters);
+        res.json(properties);
+      }
       // Solo buscar si hay al menos un barrio seleccionado
-      if ('neighborhoods' in filters) {
+      else if ('neighborhoods' in filters) {
         const properties = await storage.searchProperties(filters);
         res.json(properties);
       } else {

@@ -107,8 +107,8 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
-    // Verificar si se ha seleccionado al menos una ubicación
-    if (selectedNeighborhoods.length === 0 && (searchType === 'buy' || searchType === 'rent')) {
+    // Verificar si se ha seleccionado al menos una ubicación para todos los tipos de búsqueda
+    if (selectedNeighborhoods.length === 0) {
       toast({
         title: "Ubicación requerida",
         description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar",
@@ -236,6 +236,9 @@ export function SearchBar() {
       // Solo permitimos un barrio a la vez
       setSelectedNeighborhoods([neighborhood]);
     }
+    
+    // Nota: Ya no ejecutamos la búsqueda automáticamente al seleccionar un barrio.
+    // Ahora el usuario debe hacer clic en "Buscar" para iniciar la búsqueda
   };
   
   // Handler for Enter key press in search inputs
