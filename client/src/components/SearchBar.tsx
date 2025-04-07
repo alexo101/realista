@@ -619,7 +619,7 @@ export function SearchBar() {
               <Button 
                 onClick={() => {
                   setIsNeighborhoodOpen(false);
-                  handleSearch();
+                  // No ejecutar búsqueda automáticamente
                 }}
                 className="ml-auto"
               >
