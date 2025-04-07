@@ -269,7 +269,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar si la búsqueda es para toda Barcelona
       const isBarcelona = hasNeighborhoods && 
                          updatedQuery.neighborhoods !== undefined && 
-                         updatedQuery.neighborhoods.toString().includes('Barcelona');
+                         (updatedQuery.neighborhoods.toString().includes('Barcelona') || 
+                          updatedQuery.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
       
       // Si es Barcelona, vamos a mostrar todas las agencias (showAll = true)
       if (isBarcelona) {
@@ -312,7 +313,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar si la búsqueda es para toda Barcelona
       const isBarcelona = hasNeighborhoods && 
                          updatedQuery.neighborhoods !== undefined && 
-                         updatedQuery.neighborhoods.toString().includes('Barcelona');
+                         (updatedQuery.neighborhoods.toString().includes('Barcelona') || 
+                          updatedQuery.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
       
       // Si es Barcelona, vamos a mostrar todos los agentes (showAll = true)
       if (isBarcelona) {
@@ -352,7 +354,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                filters.neighborhoods && 
                                filters.neighborhoods.toString().trim() !== '';
       const isBarcelona = hasNeighborhoods && 
-                         filters.neighborhoods.toString().includes('Barcelona');
+                         (filters.neighborhoods.toString().includes('Barcelona') || 
+                          filters.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
       
       // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
       if (isBarcelona) {
@@ -389,7 +392,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                filters.neighborhoods && 
                                filters.neighborhoods.toString().trim() !== '';
       const isBarcelona = hasNeighborhoods && 
-                         filters.neighborhoods.toString().includes('Barcelona');
+                         (filters.neighborhoods.toString().includes('Barcelona') || 
+                          filters.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
       
       // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
       if (isBarcelona) {

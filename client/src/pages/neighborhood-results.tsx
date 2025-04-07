@@ -154,53 +154,20 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
-              {!propertiesLoading && properties?.length === 0 && (
-                <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
-                  <HomeIcon className="h-16 w-16 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No se encontraron propiedades</h3>
-                  <p className="text-gray-600 max-w-md">
-                    No hay propiedades registradas en {decodedNeighborhood}. 
-                    Prueba a buscar en otro barrio.
-                  </p>
-                </div>
-              )}
-              {properties && properties.length > 0 && (
-                <PropertyResults results={properties} isLoading={propertiesLoading} />
-              )}
+              {/* Removed empty state */}
+              <PropertyResults results={properties || []} isLoading={propertiesLoading} />
             </TabsContent>
 
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
-              {!agenciesLoading && agencies?.length === 0 && (
-                <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
-                  <Building2 className="h-16 w-16 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No se encontraron agencias</h3>
-                  <p className="text-gray-600 max-w-md">
-                    No hay agencias inmobiliarias registradas en {decodedNeighborhood}. 
-                    Prueba a buscar en otro barrio.
-                  </p>
-                </div>
-              )}
-              {agencies && agencies.length > 0 && (
-                <AgencyResults results={agencies} isLoading={agenciesLoading} />
-              )}
+              {/* Removed empty state */}
+              <AgencyResults results={agencies || []} isLoading={agenciesLoading} />
             </TabsContent>
 
             {/* Contenido de pestaña: Agentes */}
             <TabsContent value="agents" className="mt-0">
-              {!agentsLoading && agents?.length === 0 && (
-                <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
-                  <UserCircle className="h-16 w-16 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No se encontraron agentes</h3>
-                  <p className="text-gray-600 max-w-md">
-                    No hay agentes inmobiliarios registrados en {decodedNeighborhood}. 
-                    Prueba a buscar en otro barrio.
-                  </p>
-                </div>
-              )}
-              {agents && agents.length > 0 && (
-                <AgentResults results={agents} isLoading={agentsLoading} />
-              )}
+              {/* Removed empty state */}
+              <AgentResults results={agents || []} isLoading={agentsLoading} />
             </TabsContent>
 
             {/* Contenido de pestaña: Overview */}
