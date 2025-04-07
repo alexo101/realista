@@ -90,6 +90,7 @@ export function SearchBar() {
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
   const [agencyName, setAgencyName] = useState('');
   const [agentName, setAgentName] = useState('');
+  const [roomsFilter, setRoomsFilter] = useState<number[]>([]);
 
   // Determine initial search type based on current location
   const getInitialSearchType = (): SearchType => {
@@ -151,6 +152,11 @@ export function SearchBar() {
       params.append("maxPrice", priceRange.max);
     }
     
+    // Añadir filtro de habitaciones
+    if ((searchType === 'buy' || searchType === 'rent') && roomsFilter.length > 0) {
+      params.append("rooms", roomsFilter.join(','));
+    }
+    
     // Parámetros para búsqueda de agencias
     if (searchType === 'agencies') {
       if (agencyName && agencyName.trim() !== '') {
@@ -182,6 +188,7 @@ export function SearchBar() {
     setSearchType(newType);
     setSelectedNeighborhoods([]);
     setPriceRange({ min: "", max: "" });
+    setRoomsFilter([]);
     setAgencyName('');
     setAgentName('');
     
@@ -353,35 +360,10 @@ export function SearchBar() {
           {(searchType === 'buy' || searchType === 'rent') && (
             <div className="flex-1 flex gap-2">
               <Select
-                value={priceRange.min}
-                onValueChange={(value) => setPriceRange(prev => ({
-                  ...prev,
-                  min: value,
-                  max: value > prev.max ? value : prev.max
-                }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Precio min" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRICE_RANGES.map(range => (
-                    <SelectItem
-                      key={range.value}
-                      value={range.value}
-                      disabled={!!priceRange.max && range.value > priceRange.max}
-                    >
-                      {range.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
                 value={priceRange.max}
                 onValueChange={(value) => setPriceRange(prev => ({
                   ...prev,
-                  max: value,
-                  min: value < prev.min ? value : prev.min
+                  max: value
                 }))}
               >
                 <SelectTrigger className="w-full">
@@ -392,11 +374,119 @@ export function SearchBar() {
                     <SelectItem
                       key={range.value}
                       value={range.value}
-                      disabled={!!priceRange.min && range.value < priceRange.min}
                     >
                       {range.label}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              
+              <Select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={
+                    roomsFilter.length > 0 
+                      ? `${roomsFilter.length} seleccionadas` 
+                      : "Habitaciones"
+                  } />
+                </SelectTrigger>
+                <SelectContent className="w-[240px]">
+                  <div className="space-y-2 px-1 py-2">
+                    <label 
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoomsFilter(prev => 
+                          prev.includes(0) 
+                            ? prev.filter(r => r !== 0) 
+                            : [...prev, 0]
+                        );
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={roomsFilter.includes(0)}
+                        onChange={() => {}} // Controlado por el onClick del label
+                      />
+                      <span>0 habitaciones (estudios)</span>
+                    </label>
+                    <label 
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoomsFilter(prev => 
+                          prev.includes(1) 
+                            ? prev.filter(r => r !== 1) 
+                            : [...prev, 1]
+                        );
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={roomsFilter.includes(1)}
+                        onChange={() => {}} // Controlado por el onClick del label
+                      />
+                      <span>1</span>
+                    </label>
+                    <label 
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoomsFilter(prev => 
+                          prev.includes(2) 
+                            ? prev.filter(r => r !== 2) 
+                            : [...prev, 2]
+                        );
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={roomsFilter.includes(2)}
+                        onChange={() => {}} // Controlado por el onClick del label
+                      />
+                      <span>2</span>
+                    </label>
+                    <label 
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoomsFilter(prev => 
+                          prev.includes(3) 
+                            ? prev.filter(r => r !== 3) 
+                            : [...prev, 3]
+                        );
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={roomsFilter.includes(3)}
+                        onChange={() => {}} // Controlado por el onClick del label
+                      />
+                      <span>3</span>
+                    </label>
+                    <label 
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoomsFilter(prev => 
+                          prev.includes(4) 
+                            ? prev.filter(r => r !== 4) 
+                            : [...prev, 4]
+                        );
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={roomsFilter.includes(4)}
+                        onChange={() => {}} // Controlado por el onClick del label
+                      />
+                      <span>4 habitaciones o más</span>
+                    </label>
+                  </div>
                 </SelectContent>
               </Select>
             </div>
