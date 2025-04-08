@@ -54,6 +54,9 @@ export function NeighborhoodRating() {
       services: 1,
     },
   });
+  
+  // Estado para saber si el usuario ha modificado al menos una valoración
+  const [hasModified, setHasModified] = useState(false);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     if (!selectedNeighborhoods.length || !user) return;
@@ -118,6 +121,19 @@ export function NeighborhoodRating() {
     } else {
       setSelectedNeighborhoods(neighborhoods);
     }
+    
+    // Reiniciar el estado de modificación cuando se selecciona un nuevo barrio
+    setHasModified(false);
+    
+    // Reiniciar el formulario a sus valores por defecto
+    form.reset({
+      security: 1,
+      parking: 1,
+      familyFriendly: 1,
+      publicTransport: 1,
+      greenSpaces: 1,
+      services: 1,
+    });
   };
 
   // Crear un componente reutilizable para el slider con tooltip
@@ -138,7 +154,13 @@ export function NeighborhoodRating() {
                       max={10}
                       step={1}
                       value={[field.value]}
-                      onValueChange={([value]) => field.onChange(value)}
+                      onValueChange={([value]) => {
+                        // Marcar que se ha modificado alguna valoración
+                        if (value !== field.value) {
+                          setHasModified(true);
+                        }
+                        field.onChange(value);
+                      }}
                     />
                   </FormControl>
                 </TooltipTrigger>
@@ -187,10 +209,15 @@ export function NeighborhoodRating() {
                 </div>
 
                 <div className="w-full" style={{ maxWidth: "var(--search-bar-width, 100%)" }}>
+                  {!hasModified && (
+                    <p className="text-sm text-gray-500 mb-2 text-center">
+                      Mueve las barras para valorar cada categoría
+                    </p>
+                  )}
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={!form.formState.isValid || isSubmitting}
+                    disabled={!form.formState.isValid || isSubmitting || !hasModified}
                   >
                     Enviar
                   </Button>
