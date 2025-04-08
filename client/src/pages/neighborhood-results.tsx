@@ -90,7 +90,7 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch ratings for ${decodedNeighborhood}`);
       return response.json();
     },
-    enabled: !isBarcelonaPage && !isDistrictPage && activeTab === 'overview',
+    enabled: !isBarcelonaPage && !isDistrictPage, // Siempre habilitado para barrios individuales
   });
 
   return (

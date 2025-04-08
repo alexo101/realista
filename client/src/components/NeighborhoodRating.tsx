@@ -67,15 +67,20 @@ export function NeighborhoodRating() {
       });
 
       if (response.ok) {
+        // Mostrar el mensaje de confirmación exactamente como se solicitó
         toast({
-          title: "Reseña guardada",
-          description: "Muchas gracias por tu contribución",
+          title: "Reseña guardada, muchas gracias por tu contribución",
           duration: 5000,
         });
         
         // Invalidar la caché de la consulta de valoraciones para este barrio
         queryClient.invalidateQueries({
           queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: selectedNeighborhoods[0] }],
+        });
+        
+        // También invalidar la consulta general de valoraciones
+        queryClient.invalidateQueries({
+          queryKey: ['/api/neighborhoods/ratings'],
         });
         
         form.reset();
