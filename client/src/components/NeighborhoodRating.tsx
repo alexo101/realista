@@ -71,20 +71,25 @@ export function NeighborhoodRating() {
         toast({
           title: "Reseña guardada, muchas gracias por tu contribución",
           duration: 5000,
+          variant: "default",
+          className: "bg-green-100 border-green-500 text-green-800",
         });
         
         // Invalidar la caché de la consulta de valoraciones para este barrio
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: selectedNeighborhoods[0] }],
         });
         
         // También invalidar la consulta general de valoraciones
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: ['/api/neighborhoods/ratings'],
         });
         
-        form.reset();
-        setSelectedNeighborhoods([]);
+        // Esperar un momento antes de restablecer el formulario
+        setTimeout(() => {
+          form.reset();
+          setSelectedNeighborhoods([]);
+        }, 1000);
       } else {
         const error = await response.json();
         toast({

@@ -88,9 +88,12 @@ export default function NeighborhoodResultsPage() {
       params.append('neighborhood', decodedNeighborhood);
       const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch ratings for ${decodedNeighborhood}`);
+      console.log('Ratings response data:', await response.clone().json());
       return response.json();
     },
     enabled: !isBarcelonaPage && !isDistrictPage, // Siempre habilitado para barrios individuales
+    staleTime: 1000, // Reducir el tiempo de caché para actualizar más rápido
+    refetchOnWindowFocus: true // Refrescar cuando la ventana obtiene el foco
   });
 
   return (
@@ -258,7 +261,7 @@ export default function NeighborhoodResultsPage() {
                     
                     {/* Valoraciones del barrio */}
                     {!ratingsLoading && ratings && (
-                      <div className="mb-8">
+                      <div className="mb-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <h3 className="text-lg font-semibold mb-2 flex items-center">
                           <Star className="h-5 w-5 mr-2 text-yellow-500" />
                           Valoraciones del barrio
@@ -271,27 +274,27 @@ export default function NeighborhoodResultsPage() {
                         
                         {ratings.count > 0 && (
                           <div className="flex flex-wrap gap-2 mb-4">
-                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                            <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
                               <span className="text-xs font-medium mr-1">Seguridad:</span>
                               <span className="text-xs font-bold">{ratings.security}/10</span>
                             </div>
-                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                            <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
                               <span className="text-xs font-medium mr-1">Aparcamiento:</span>
                               <span className="text-xs font-bold">{ratings.parking}/10</span>
                             </div>
-                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                            <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
                               <span className="text-xs font-medium mr-1">Familias:</span>
                               <span className="text-xs font-bold">{ratings.familyFriendly}/10</span>
                             </div>
-                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                            <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
                               <span className="text-xs font-medium mr-1">Transporte:</span>
                               <span className="text-xs font-bold">{ratings.publicTransport}/10</span>
                             </div>
-                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                            <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
                               <span className="text-xs font-medium mr-1">Espacios verdes:</span>
                               <span className="text-xs font-bold">{ratings.greenSpaces}/10</span>
                             </div>
-                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                            <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
                               <span className="text-xs font-medium mr-1">Servicios:</span>
                               <span className="text-xs font-bold">{ratings.services}/10</span>
                             </div>
