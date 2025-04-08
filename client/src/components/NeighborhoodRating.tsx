@@ -68,8 +68,8 @@ export function NeighborhoodRating() {
 
       if (response.ok) {
         toast({
-          title: "Valoración guardada correctamente",
-          description: `Tu valoración para ${selectedNeighborhoods[0]} ha sido guardada con éxito.`,
+          title: "Reseña guardada",
+          description: "Muchas gracias por tu contribución",
           duration: 5000,
         });
         
