@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -58,6 +58,25 @@ export function NeighborhoodRating() {
   // Estado para saber si el usuario ha modificado al menos una valoración
   const [hasModified, setHasModified] = useState(false);
 
+  // Comprobar si hay un barrio almacenado en localStorage al cargar el componente
+  useEffect(() => {
+    const storedNeighborhood = localStorage.getItem('barrio_a_valorar');
+    if (storedNeighborhood) {
+      // Seleccionar automáticamente el barrio guardado
+      setSelectedNeighborhoods([storedNeighborhood]);
+      // Limpiamos el localStorage para evitar que se seleccione automáticamente en futuras visitas
+      localStorage.removeItem('barrio_a_valorar');
+      
+      // Hacer scroll al componente para que sea visible
+      const element = document.getElementById('valorar-barrio');
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 500);
+      }
+    }
+  }, []);
+
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     if (!selectedNeighborhoods.length || !user) return;
 
@@ -70,13 +89,16 @@ export function NeighborhoodRating() {
       });
 
       if (response.ok) {
-        // Mostrar el mensaje de confirmación exactamente como se solicitó
+        // Mostrar un mensaje de confirmación más visible y duradero
         toast({
           title: "Reseña guardada, muchas gracias por tu contribución",
-          duration: 5000,
+          description: `Tu valoración para ${selectedNeighborhoods[0]} ha sido guardada con éxito.`,
+          duration: 8000, // Mayor duración para asegurar que el usuario lo vea
           variant: "default",
-          className: "bg-green-100 border-green-500 text-green-800",
+          className: "bg-green-100 border-2 border-green-500 text-green-800 font-medium",
         });
+        
+        console.log("Valoración enviada correctamente:", response);
         
         // Invalidar la caché de la consulta de valoraciones para este barrio
         await queryClient.invalidateQueries({
@@ -177,7 +199,7 @@ export function NeighborhoodRating() {
   };
 
   return (
-    <div className="space-y-6">
+    <div id="valorar-barrio" className="space-y-6">
       <div className="flex items-center">
         <h2 className="text-2xl font-semibold flex-1">Conoce los barrios</h2>
       </div>

@@ -81,19 +81,22 @@ export default function NeighborhoodResultsPage() {
   });
   
   // Consulta para las valoraciones del barrio
-  const { data: ratings, isLoading: ratingsLoading } = useQuery({
+  const { data: ratings, isLoading: ratingsLoading, refetch: refetchRatings } = useQuery({
     queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: decodedNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('neighborhood', decodedNeighborhood);
       const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch ratings for ${decodedNeighborhood}`);
-      console.log('Ratings response data:', await response.clone().json());
-      return response.json();
+      const data = await response.json();
+      console.log('Ratings response data:', data);
+      return data;
     },
     enabled: !isBarcelonaPage && !isDistrictPage, // Siempre habilitado para barrios individuales
-    staleTime: 1000, // Reducir el tiempo de caché para actualizar más rápido
-    refetchOnWindowFocus: true // Refrescar cuando la ventana obtiene el foco
+    staleTime: 0, // Sin caché para asegurar datos frescos
+    refetchOnWindowFocus: true, // Refrescar cuando la ventana obtiene el foco
+    refetchOnMount: true, // Refrescar cuando el componente se monta
+    refetchInterval: activeTab === 'overview' ? 3000 : false // Refresca cada 3 segundos en la pestaña de overview
   });
 
   return (
@@ -358,9 +361,17 @@ export default function NeighborhoodResultsPage() {
                         ) : (
                           <div className="text-center py-6 bg-gray-50 rounded-lg">
                             <p className="text-gray-500">No hay valoraciones para este barrio todavía.</p>
-                            <span className="inline-block mt-3 text-primary hover:underline cursor-pointer" onClick={() => setLocation('/')}>
+                            <Button 
+                              variant="link" 
+                              className="mt-3 text-primary hover:underline cursor-pointer font-medium" 
+                              onClick={() => {
+                                // Almacenar el barrio en localStorage para seleccionarlo automáticamente en el formulario
+                                localStorage.setItem('barrio_a_valorar', decodedNeighborhood);
+                                setLocation('/#valorar-barrio');
+                              }}
+                            >
                               Sé el primero en valorar este barrio
-                            </span>
+                            </Button>
                           </div>
                         )}
                       </div>
