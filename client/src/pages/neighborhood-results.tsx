@@ -259,7 +259,7 @@ export default function NeighborhoodResultsPage() {
                     {/* Valoraciones del barrio */}
                     {!ratingsLoading && ratings && (
                       <div className="mb-8">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <h3 className="text-lg font-semibold mb-2 flex items-center">
                           <Star className="h-5 w-5 mr-2 text-yellow-500" />
                           Valoraciones del barrio
                           {ratings.count > 0 && (
@@ -268,6 +268,35 @@ export default function NeighborhoodResultsPage() {
                             </span>
                           )}
                         </h3>
+                        
+                        {ratings.count > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                              <span className="text-xs font-medium mr-1">Seguridad:</span>
+                              <span className="text-xs font-bold">{ratings.security}/10</span>
+                            </div>
+                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                              <span className="text-xs font-medium mr-1">Aparcamiento:</span>
+                              <span className="text-xs font-bold">{ratings.parking}/10</span>
+                            </div>
+                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                              <span className="text-xs font-medium mr-1">Familias:</span>
+                              <span className="text-xs font-bold">{ratings.familyFriendly}/10</span>
+                            </div>
+                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                              <span className="text-xs font-medium mr-1">Transporte:</span>
+                              <span className="text-xs font-bold">{ratings.publicTransport}/10</span>
+                            </div>
+                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                              <span className="text-xs font-medium mr-1">Espacios verdes:</span>
+                              <span className="text-xs font-bold">{ratings.greenSpaces}/10</span>
+                            </div>
+                            <div className="inline-flex items-center bg-gray-100 rounded-full px-3 py-1">
+                              <span className="text-xs font-medium mr-1">Servicios:</span>
+                              <span className="text-xs font-bold">{ratings.services}/10</span>
+                            </div>
+                          </div>
+                        )}
                         
                         {ratings.count > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
