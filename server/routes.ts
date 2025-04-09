@@ -212,66 +212,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
-      console.log('Recibiendo valoración de barrio:', req.body);
-      
-      // Verificar que el barrio esté presente
-      if (!req.body.neighborhood) {
-        console.error('Barrio no especificado en la valoración');
-        return res.status(400).json({ 
-          success: false,
-          message: "Datos incompletos. Se requiere especificar un barrio.", 
-          received: req.body 
-        });
-      }
-      
-      // Si no hay userId o es -1 (anónimo), asignamos un ID especial para usuarios anónimos
-      if (!req.body.userId) {
-        req.body.userId = -1; // ID especial para valoraciones anónimas
-      }
-      
-      // Asegurar que todos los campos de valoración son números
-      const ratingFields = ['security', 'parking', 'familyFriendly', 'publicTransport', 'greenSpaces', 'services'];
-      for (const field of ratingFields) {
-        if (typeof req.body[field] !== 'number') {
-          console.error(`Field ${field} is not a number:`, req.body[field]);
-          return res.status(400).json({ 
-            success: false,
-            message: `El campo ${field} debe ser un número`, 
-            received: { field, value: req.body[field] } 
-          });
-        }
-      }
-      
-      try {
-        const rating = insertNeighborhoodRatingSchema.parse(req.body);
-        console.log('Rating data validada:', rating);
-        
-        const result = await storage.createNeighborhoodRating(rating);
-        console.log('Valoración guardada en la base de datos:', result);
-        
-        // Invalidar cualquier caché para este barrio específico
-        // (En un entorno de producción esto requeriría un mecanismo de invalidación de caché)
-        
-        res.status(201).json({
-          success: true,
-          message: `Valoración para ${rating.neighborhood} guardada con éxito`,
-          data: result
-        });
-      } catch (validationError) {
-        console.error('Error validando datos de valoración:', validationError);
-        res.status(400).json({ 
-          success: false,
-          message: "Datos inválidos para la valoración del barrio", 
-          error: validationError 
-        });
-      }
+      const rating = insertNeighborhoodRatingSchema.parse(req.body);
+      const result = await storage.createNeighborhoodRating(rating);
+      res.status(201).json(result);
     } catch (error) {
-      console.error('Error general al crear valoración de barrio:', error);
-      res.status(500).json({ 
-        success: false,
-        message: "Error interno al procesar la valoración",
-        error: error instanceof Error ? error.message : "Error desconocido"
-      });
+      console.error('Error creating neighborhood rating:', error);
+      res.status(400).json({ message: "Invalid rating data" });
     }
   });
 
@@ -283,38 +229,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching neighborhood ratings:', error);
       res.status(500).json({ message: "Failed to fetch neighborhood ratings" });
-    }
-  });
-
-  app.get("/api/neighborhoods/ratings/average", async (req, res) => {
-    try {
-      console.log(`Recibida solicitud para promedios de barrio: ${req.query.neighborhood}`);
-      
-      const neighborhood = req.query.neighborhood as string;
-      if (!neighborhood) {
-        return res.status(400).json({ 
-          success: false,
-          message: "Es necesario especificar el parámetro 'neighborhood'"
-        });
-      }
-      
-      // Añadir cabeceras para evitar caché
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      console.log(`Obteniendo promedios para barrio: ${neighborhood} a las ${new Date().toISOString()}`);
-      const averages = await storage.getNeighborhoodRatingsAverage(neighborhood);
-      console.log(`Promedios para ${neighborhood} obtenidos:`, averages);
-      
-      return res.json(averages);
-    } catch (error) {
-      console.error('Error al calcular promedios para el barrio:', error);
-      res.status(500).json({ 
-        success: false,
-        message: "Error al calcular los promedios de valoraciones del barrio",
-        error: error instanceof Error ? error.message : "Error desconocido"
-      });
     }
   });
 
@@ -352,26 +266,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
-      // Verificar si la búsqueda es para toda Barcelona
-      const isBarcelona = hasNeighborhoods && 
-                         updatedQuery.neighborhoods !== undefined && 
-                         (updatedQuery.neighborhoods.toString().includes('Barcelona') || 
-                          updatedQuery.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
-      
-      // Si es Barcelona, vamos a mostrar todas las agencias (showAll = true)
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todas las agencias');
-        updatedQuery.showAll = 'true';
-        delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
-      }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
-      else if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+      if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if ((hasSearchTerm || hasNeighborhoods) && !isBarcelona) {
+      if (hasSearchTerm || hasNeighborhoods) {
         delete updatedQuery.showAll; // No es necesario con términos de búsqueda
       }
       
@@ -396,26 +298,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
-      // Verificar si la búsqueda es para toda Barcelona
-      const isBarcelona = hasNeighborhoods && 
-                         updatedQuery.neighborhoods !== undefined && 
-                         (updatedQuery.neighborhoods.toString().includes('Barcelona') || 
-                          updatedQuery.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
-      
-      // Si es Barcelona, vamos a mostrar todos los agentes (showAll = true)
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todos los agentes');
-        updatedQuery.showAll = 'true';
-        delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
-      }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
-      else if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+      if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if ((hasSearchTerm || hasNeighborhoods) && !isBarcelona) {
+      if (hasSearchTerm || hasNeighborhoods) {
         delete updatedQuery.showAll; // No es necesario con términos de búsqueda
       }
       
@@ -433,23 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/search/buy", async (req, res) => {
     try {
       // Añadimos el filtro de tipo de operación (venta)
-      const filters: Record<string, any> = { ...req.query, operationType: 'Venta' };
-      
-      // Verificar si la búsqueda es para toda Barcelona
-      const hasNeighborhoods = 'neighborhoods' in filters && 
-                               filters.neighborhoods && 
-                               filters.neighborhoods.toString().trim() !== '';
-      const isBarcelona = hasNeighborhoods && 
-                         (filters.neighborhoods.toString().includes('Barcelona') || 
-                          filters.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
-      
-      // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de venta');
-        // Eliminar el filtro de barrios para mostrar todas las propiedades
-        delete filters.neighborhoods;
-      }
-      
+      const filters = { ...req.query, operationType: 'Venta' };
       const properties = await storage.searchProperties(filters);
       res.json(properties);
     } catch (error) {
@@ -473,24 +347,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         delete filters.initialLoad;
       }
       
-      // Verificar si la búsqueda es para toda Barcelona
-      const hasNeighborhoods = 'neighborhoods' in filters && 
-                               filters.neighborhoods && 
-                               filters.neighborhoods.toString().trim() !== '';
-      const isBarcelona = hasNeighborhoods && 
-                         (filters.neighborhoods.toString().includes('Barcelona') || 
-                          filters.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
-      
-      // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de alquiler');
-        // Eliminar el filtro de barrios para mostrar todas las propiedades
-        delete filters.neighborhoods;
-        const properties = await storage.searchProperties(filters);
-        res.json(properties);
-      }
       // Solo buscar si hay al menos un barrio seleccionado
-      else if ('neighborhoods' in filters) {
+      if ('neighborhoods' in filters) {
         const properties = await storage.searchProperties(filters);
         res.json(properties);
       } else {

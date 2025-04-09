@@ -25,7 +25,18 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
     );
   }
 
-  // Removed empty state
+  // Verificamos si hay resultados y mostramos mensaje adecuado
+  if (!results || results.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
+        <Building className="h-16 w-16 text-gray-400 mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No se encontraron agencias</h3>
+        <p className="text-gray-600 max-w-md">
+          Prueba a buscar con otro nombre o selecciona un barrio diferente para encontrar agencias inmobiliarias.
+        </p>
+      </div>
+    );
+  }
 
   // Mostramos los datos de las agencias
   return (

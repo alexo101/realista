@@ -1,4 +1,4 @@
-import { db, pool } from "./db";
+import { db } from "./db";
 import { eq, sql, and, gte, lte, arrayOverlaps, not, isNull } from "drizzle-orm";
 import {
   users,
@@ -60,7 +60,6 @@ export interface IStorage {
 
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
-  getNeighborhoodRatingsAverage(neighborhood: string): Promise<Record<string, number>>;
   createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating>;
   
   // Appointments
@@ -392,100 +391,9 @@ export class DatabaseStorage implements IStorage {
       .where(eq(neighborhoodRatings.neighborhood, neighborhood));
   }
 
-  async getNeighborhoodRatingsAverage(neighborhood: string): Promise<Record<string, number>> {
-    console.log(`Calculando promedios para el barrio: ${neighborhood}`);
-    
-    try {
-      // Usamos SQL directo para obtener los promedios
-      const query = sql`
-        SELECT 
-          AVG(security)::numeric(10,1) as security, 
-          AVG(parking)::numeric(10,1) as parking, 
-          AVG(family_friendly)::numeric(10,1) as "familyFriendly", 
-          AVG(public_transport)::numeric(10,1) as "publicTransport", 
-          AVG(green_spaces)::numeric(10,1) as "greenSpaces", 
-          AVG(services)::numeric(10,1) as services,
-          COUNT(*) as count
-        FROM neighborhood_ratings 
-        WHERE neighborhood = ${neighborhood}
-      `;
-      
-      const result = await db.execute(query);
-      console.log(`SQL directo: Encontradas valoraciones para: ${neighborhood}`, result.rows);
-      
-      if (!result.rows.length || result.rows[0].count === 0) {
-        console.log(`No hay valoraciones para: ${neighborhood}`);
-        return {
-          security: 0,
-          parking: 0,
-          familyFriendly: 0,
-          publicTransport: 0,
-          greenSpaces: 0,
-          services: 0,
-          count: 0,
-        };
-      }
-      
-      // Resultado en formato adecuado
-      const averages = {
-        security: Number(result.rows[0].security) || 0,
-        parking: Number(result.rows[0].parking) || 0,
-        familyFriendly: Number(result.rows[0].familyFriendly) || 0,
-        publicTransport: Number(result.rows[0].publicTransport) || 0,
-        greenSpaces: Number(result.rows[0].greenSpaces) || 0,
-        services: Number(result.rows[0].services) || 0,
-        count: Number(result.rows[0].count) || 0,
-      };
-      
-      console.log('Promedios calculados para', neighborhood, averages);
-      return averages;
-    } catch (error) {
-      console.error('Error al calcular los promedios para el barrio:', neighborhood, error);
-      return {
-        security: 0,
-        parking: 0,
-        familyFriendly: 0,
-        publicTransport: 0,
-        greenSpaces: 0,
-        services: 0,
-        count: 0,
-      };
-    }
-  }
-
   async createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating> {
-    console.log('Guardando nueva valoración para barrio:', rating.neighborhood);
-    
-    try {
-      // Verificar que todos los campos necesarios estén presentes y sean números
-      const numericFields = ['security', 'parking', 'familyFriendly', 'publicTransport', 'greenSpaces', 'services'];
-      numericFields.forEach(field => {
-        if (typeof rating[field as keyof InsertNeighborhoodRating] !== 'number') {
-          console.error(`El campo ${field} no es un número válido:`, rating[field as keyof InsertNeighborhoodRating]);
-          throw new Error(`El campo ${field} debe ser un número válido`);
-        }
-      });
-      
-      console.log('Datos de valoración validados');
-      
-      // Convertir números a strings para compatibilidad con la columna decimal en Drizzle
-      const [newRating] = await db.insert(neighborhoodRatings).values({
-        neighborhood: rating.neighborhood,
-        security: rating.security.toString(),
-        parking: rating.parking.toString(),
-        familyFriendly: rating.familyFriendly.toString(),
-        publicTransport: rating.publicTransport.toString(),
-        greenSpaces: rating.greenSpaces.toString(),
-        services: rating.services.toString(),
-        userId: rating.userId
-      }).returning();
-      
-      console.log('Valoración guardada con éxito:', newRating);
-      return newRating;
-    } catch (error) {
-      console.error('Error al insertar valoración de barrio:', error);
-      throw error;
-    }
+    const [newRating] = await db.insert(neighborhoodRatings).values(rating).returning();
+    return newRating;
   }
 
   // Appointments

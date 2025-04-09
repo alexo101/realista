@@ -44,17 +44,6 @@ export const BARCELONA_DISTRICTS_AND_NEIGHBORHOODS = [
 
 // Función para encontrar el distrito de un barrio
 export function findDistrictByNeighborhood(neighborhood: string): string | null {
-  // Si es el texto 'Barcelona (Todos los barrios)', devolvemos 'Barcelona'
-  if (neighborhood.match(/Barcelona\s*\(Todos los barrios\)/i)) {
-    return 'Barcelona';
-  }
-  
-  // Si el neighborhood es un distrito, devolvemos el mismo
-  if (isDistrict(neighborhood)) {
-    return neighborhood;
-  }
-  
-  // Caso normal: buscar a qué distrito pertenece el barrio
   for (const district of BARCELONA_DISTRICTS_AND_NEIGHBORHOODS) {
     if (district.neighborhoods.includes(neighborhood)) {
       return district.district;
@@ -65,11 +54,3 @@ export function findDistrictByNeighborhood(neighborhood: string): string | null 
 
 // Lista plana de todos los barrios para manipulación fácil
 export const BARCELONA_NEIGHBORHOODS = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.flatMap(district => district.neighborhoods);
-
-// Lista de distritos
-export const BARCELONA_DISTRICTS = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map(district => district.district);
-
-// Comprobar si un elemento es un distrito
-export function isDistrict(name: string): boolean {
-  return BARCELONA_DISTRICTS.includes(name);
-}
