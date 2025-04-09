@@ -218,6 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.body.neighborhood || !req.body.userId) {
         console.error('Missing required fields in neighborhood rating request');
         return res.status(400).json({ 
+          success: false,
           message: "Datos incompletos. Se requiere barrio y usuario.", 
           received: req.body 
         });
@@ -229,6 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (typeof req.body[field] !== 'number') {
           console.error(`Field ${field} is not a number:`, req.body[field]);
           return res.status(400).json({ 
+            success: false,
             message: `El campo ${field} debe ser un número`, 
             received: { field, value: req.body[field] } 
           });
@@ -242,17 +244,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const result = await storage.createNeighborhoodRating(rating);
         console.log('Valoración guardada en la base de datos:', result);
         
-        res.status(201).json(result);
+        // Invalidar cualquier caché para este barrio específico
+        // (En un entorno de producción esto requeriría un mecanismo de invalidación de caché)
+        
+        res.status(201).json({
+          success: true,
+          message: `Valoración para ${rating.neighborhood} guardada con éxito`,
+          data: result
+        });
       } catch (validationError) {
         console.error('Error validando datos de valoración:', validationError);
         res.status(400).json({ 
-          message: "Datos inválidos", 
+          success: false,
+          message: "Datos inválidos para la valoración del barrio", 
           error: validationError 
         });
       }
     } catch (error) {
       console.error('Error general al crear valoración de barrio:', error);
-      res.status(500).json({ message: "Error interno al procesar la valoración" });
+      res.status(500).json({ 
+        success: false,
+        message: "Error interno al procesar la valoración",
+        error: error instanceof Error ? error.message : "Error desconocido"
+      });
     }
   });
 
@@ -269,15 +283,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/neighborhoods/ratings/average", async (req, res) => {
     try {
+      console.log(`Recibida solicitud para promedios de barrio: ${req.query.neighborhood}`);
+      
       const neighborhood = req.query.neighborhood as string;
       if (!neighborhood) {
-        return res.status(400).json({ message: "Neighborhood parameter is required" });
+        return res.status(400).json({ 
+          success: false,
+          message: "Es necesario especificar el parámetro 'neighborhood'"
+        });
       }
+      
+      console.log(`Obteniendo promedios para barrio: ${neighborhood}`);
       const averages = await storage.getNeighborhoodRatingsAverage(neighborhood);
-      res.json(averages);
+      console.log(`Promedios para ${neighborhood} obtenidos:`, averages);
+      
+      return res.json(averages);
     } catch (error) {
-      console.error('Error calculating neighborhood rating averages:', error);
-      res.status(500).json({ message: "Failed to calculate neighborhood rating averages" });
+      console.error('Error al calcular promedios para el barrio:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Error al calcular los promedios de valoraciones del barrio",
+        error: error instanceof Error ? error.message : "Error desconocido"
+      });
     }
   });
 
