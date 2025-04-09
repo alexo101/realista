@@ -22,8 +22,12 @@ export default function NeighborhoodResultsPage() {
   // Verificar si el valor seleccionado es un distrito
   const isDistrictPage = isDistrict(decodedNeighborhood);
   
+  // Manejo especial para Sant Andreu del Palomar (que es en realidad Sant Andreu barrio)
+  const isSantAndreuBarrio = decodedNeighborhood === "Sant Andreu del Palomar";
+  const effectiveNeighborhood = isSantAndreuBarrio ? "Sant Andreu" : decodedNeighborhood;
+  
   // Determinar el distrito correspondiente al barrio (solo si no es un distrito o Barcelona)
-  const district = !isDistrictPage && !isBarcelonaPage ? findDistrictByNeighborhood(decodedNeighborhood) : null;
+  const district = !isDistrictPage && !isBarcelonaPage ? findDistrictByNeighborhood(effectiveNeighborhood) : null;
   
   // Determinar la pestaña activa según la ruta
   const getActiveTab = () => {
@@ -43,12 +47,12 @@ export default function NeighborhoodResultsPage() {
 
   // Consultas para propiedades
   const { data: properties, isLoading: propertiesLoading } = useQuery({
-    queryKey: ['/api/search/buy', { neighborhoods: decodedNeighborhood }],
+    queryKey: ['/api/search/buy', { neighborhoods: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.append('neighborhoods', decodedNeighborhood);
+      params.append('neighborhoods', effectiveNeighborhood);
       const response = await fetch(`/api/search/buy?${params.toString()}`);
-      if (!response.ok) throw new Error(`Failed to fetch properties for ${decodedNeighborhood}`);
+      if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();
     },
     enabled: activeTab === 'properties',
@@ -56,12 +60,12 @@ export default function NeighborhoodResultsPage() {
 
   // Consultas para agencias
   const { data: agencies, isLoading: agenciesLoading } = useQuery({
-    queryKey: ['/api/search/agencies', { neighborhoods: decodedNeighborhood }],
+    queryKey: ['/api/search/agencies', { neighborhoods: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.append('neighborhoods', decodedNeighborhood);
+      params.append('neighborhoods', effectiveNeighborhood);
       const response = await fetch(`/api/search/agencies?${params.toString()}`);
-      if (!response.ok) throw new Error(`Failed to fetch agencies for ${decodedNeighborhood}`);
+      if (!response.ok) throw new Error(`Failed to fetch agencies for ${effectiveNeighborhood}`);
       return response.json();
     },
     enabled: activeTab === 'agencies',
@@ -69,12 +73,12 @@ export default function NeighborhoodResultsPage() {
 
   // Consultas para agentes
   const { data: agents, isLoading: agentsLoading } = useQuery({
-    queryKey: ['/api/search/agents', { neighborhoods: decodedNeighborhood }],
+    queryKey: ['/api/search/agents', { neighborhoods: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.append('neighborhoods', decodedNeighborhood);
+      params.append('neighborhoods', effectiveNeighborhood);
       const response = await fetch(`/api/search/agents?${params.toString()}`);
-      if (!response.ok) throw new Error(`Failed to fetch agents for ${decodedNeighborhood}`);
+      if (!response.ok) throw new Error(`Failed to fetch agents for ${effectiveNeighborhood}`);
       return response.json();
     },
     enabled: activeTab === 'agents',
@@ -82,16 +86,16 @@ export default function NeighborhoodResultsPage() {
   
   // Consulta para las valoraciones del barrio
   const { data: ratings, isLoading: ratingsLoading, refetch: refetchRatings } = useQuery({
-    queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: decodedNeighborhood }],
+    queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.append('neighborhood', decodedNeighborhood);
+      params.append('neighborhood', effectiveNeighborhood);
       
       // Añadir un parámetro timestamp para evitar caché del navegador
       params.append('_t', Date.now().toString());
       
       const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
-      if (!response.ok) throw new Error(`Failed to fetch ratings for ${decodedNeighborhood}`);
+      if (!response.ok) throw new Error(`Failed to fetch ratings for ${effectiveNeighborhood}`);
       const data = await response.json();
       console.log('Ratings response data:', data);
       return data;
@@ -140,7 +144,10 @@ export default function NeighborhoodResultsPage() {
                       {district}
                     </span>
                     <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
-                    <span className="font-medium">{decodedNeighborhood}</span>
+                    <span className="font-medium">
+                      {/* Caso especial para Sant Andreu del Palomar */}
+                      {decodedNeighborhood === "Sant Andreu del Palomar" ? "Sant Andreu del Palomar" : decodedNeighborhood}
+                    </span>
                   </>
                 )}
               </>
@@ -228,9 +235,19 @@ export default function NeighborhoodResultsPage() {
                           <span 
                             key={neighborhood}
                             className="bg-gray-100 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-primary/10"
-                            onClick={() => setLocation(`/neighborhood/${encodeURIComponent(neighborhood)}/properties`)}
+                            onClick={() => {
+                              // Caso especial para "Sant Andreu" barrio dentro del distrito "Sant Andreu"
+                              if (decodedNeighborhood === "Sant Andreu" && neighborhood === "Sant Andreu") {
+                                // Renombramos a "Sant Andreu del Palomar" solo para uso interno de navegación
+                                setLocation(`/neighborhood/Sant Andreu del Palomar/properties`);
+                              } else {
+                                setLocation(`/neighborhood/${encodeURIComponent(neighborhood)}/properties`);
+                              }
+                            }}
                           >
-                            {neighborhood}
+                            {neighborhood === "Sant Andreu" && decodedNeighborhood === "Sant Andreu" 
+                              ? "Sant Andreu del Palomar" 
+                              : neighborhood}
                           </span>
                         ))
                       }
