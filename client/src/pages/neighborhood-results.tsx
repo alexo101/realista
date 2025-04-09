@@ -86,6 +86,10 @@ export default function NeighborhoodResultsPage() {
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('neighborhood', decodedNeighborhood);
+      
+      // Añadir un parámetro timestamp para evitar caché del navegador
+      params.append('_t', Date.now().toString());
+      
       const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch ratings for ${decodedNeighborhood}`);
       const data = await response.json();
@@ -93,10 +97,9 @@ export default function NeighborhoodResultsPage() {
       return data;
     },
     enabled: !isBarcelonaPage && !isDistrictPage, // Siempre habilitado para barrios individuales
-    staleTime: 0, // Sin caché para asegurar datos frescos
     refetchOnWindowFocus: true, // Refrescar cuando la ventana obtiene el foco
     refetchOnMount: true, // Refrescar cuando el componente se monta
-    refetchInterval: activeTab === 'overview' ? 3000 : false // Refresca cada 3 segundos en la pestaña de overview
+    refetchInterval: 2000 // Refresca cada 2 segundos siempre
   });
 
   return (

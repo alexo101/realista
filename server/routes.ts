@@ -298,7 +298,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      console.log(`Obteniendo promedios para barrio: ${neighborhood}`);
+      // Añadir cabeceras para evitar caché
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      console.log(`Obteniendo promedios para barrio: ${neighborhood} a las ${new Date().toISOString()}`);
       const averages = await storage.getNeighborhoodRatingsAverage(neighborhood);
       console.log(`Promedios para ${neighborhood} obtenidos:`, averages);
       
