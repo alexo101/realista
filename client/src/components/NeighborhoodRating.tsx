@@ -82,14 +82,17 @@ export function NeighborhoodRating() {
   const [barrioValorado, setBarrioValorado] = useState<string>("");
   
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    if (!selectedNeighborhoods.length || !user) {
+    if (!selectedNeighborhoods.length) {
       toast({
         title: "Error",
-        description: "Debes seleccionar un barrio y estar conectado para enviar una valoración.",
+        description: "Debes seleccionar un barrio para enviar una valoración.",
         variant: "destructive",
       });
       return;
     }
+    
+    // Crear un ID de usuario anónimo o usar el ID del usuario conectado
+    const submitterId = user ? user.id : -1; // Usamos -1 para usuarios anónimos
 
     try {
       setIsSubmitting(true);
@@ -101,7 +104,7 @@ export function NeighborhoodRating() {
         duration: 3000,
       });
       
-      console.log("Enviando valoración para:", selectedNeighborhoods[0], "con datos:", {...data, userId: user.id});
+      console.log("Enviando valoración para:", selectedNeighborhoods[0], "con datos:", {...data, userId: submitterId, neighborhood: selectedNeighborhoods[0]});
       
       const response = await fetch("/api/neighborhoods/ratings", {
         method: "POST",
@@ -111,7 +114,7 @@ export function NeighborhoodRating() {
         body: JSON.stringify({
           ...data,
           neighborhood: selectedNeighborhoods[0],
-          userId: user.id,
+          userId: submitterId,
         }),
       });
       

@@ -114,7 +114,7 @@ export const insertNeighborhoodRatingSchema = z.object({
   publicTransport: z.number().min(1).max(10),
   greenSpaces: z.number().min(1).max(10),
   services: z.number().min(1).max(10),
-  userId: z.number().int().positive(),
+  userId: z.number().int(), // Permitimos IDs negativos para usuarios anónimos
 });
 export const insertAgencyAgentSchema = createInsertSchema(agencyAgents).omit({ id: true, createdAt: true });
 export const insertAppointmentSchema = createInsertSchema(appointments).omit({ id: true, createdAt: true });

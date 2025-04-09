@@ -214,14 +214,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Recibiendo valoración de barrio:', req.body);
       
-      // Verificar que los campos obligatorios estén presentes
-      if (!req.body.neighborhood || !req.body.userId) {
-        console.error('Missing required fields in neighborhood rating request');
+      // Verificar que el barrio esté presente
+      if (!req.body.neighborhood) {
+        console.error('Barrio no especificado en la valoración');
         return res.status(400).json({ 
           success: false,
-          message: "Datos incompletos. Se requiere barrio y usuario.", 
+          message: "Datos incompletos. Se requiere especificar un barrio.", 
           received: req.body 
         });
+      }
+      
+      // Si no hay userId o es -1 (anónimo), asignamos un ID especial para usuarios anónimos
+      if (!req.body.userId) {
+        req.body.userId = -1; // ID especial para valoraciones anónimas
       }
       
       // Asegurar que todos los campos de valoración son números
