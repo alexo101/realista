@@ -212,12 +212,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
-      const rating = insertNeighborhoodRatingSchema.parse(req.body);
-      const result = await storage.createNeighborhoodRating(rating);
-      res.status(201).json(result);
+      console.log('Recibiendo valoración de barrio:', req.body);
+      
+      // Verificar que los campos obligatorios estén presentes
+      if (!req.body.neighborhood || !req.body.userId) {
+        console.error('Missing required fields in neighborhood rating request');
+        return res.status(400).json({ 
+          message: "Datos incompletos. Se requiere barrio y usuario.", 
+          received: req.body 
+        });
+      }
+      
+      // Asegurar que todos los campos de valoración son números
+      const ratingFields = ['security', 'parking', 'familyFriendly', 'publicTransport', 'greenSpaces', 'services'];
+      for (const field of ratingFields) {
+        if (typeof req.body[field] !== 'number') {
+          console.error(`Field ${field} is not a number:`, req.body[field]);
+          return res.status(400).json({ 
+            message: `El campo ${field} debe ser un número`, 
+            received: { field, value: req.body[field] } 
+          });
+        }
+      }
+      
+      try {
+        const rating = insertNeighborhoodRatingSchema.parse(req.body);
+        console.log('Rating data validada:', rating);
+        
+        const result = await storage.createNeighborhoodRating(rating);
+        console.log('Valoración guardada en la base de datos:', result);
+        
+        res.status(201).json(result);
+      } catch (validationError) {
+        console.error('Error validando datos de valoración:', validationError);
+        res.status(400).json({ 
+          message: "Datos inválidos", 
+          error: validationError 
+        });
+      }
     } catch (error) {
-      console.error('Error creating neighborhood rating:', error);
-      res.status(400).json({ message: "Invalid rating data" });
+      console.error('Error general al crear valoración de barrio:', error);
+      res.status(500).json({ message: "Error interno al procesar la valoración" });
     }
   });
 

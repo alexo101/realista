@@ -82,11 +82,13 @@ export function NeighborhoodRating() {
 
     try {
       setIsSubmitting(true);
+      console.log("Enviando valoración para:", selectedNeighborhoods[0], "con datos:", {...data, userId: user.id});
       const response = await apiRequest("POST", "/api/neighborhoods/ratings", {
         ...data,
         neighborhood: selectedNeighborhoods[0],
         userId: user.id,
       });
+      console.log("Respuesta de la API:", response);
 
       if (response.ok) {
         // Mostrar un mensaje de confirmación más visible y duradero
