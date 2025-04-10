@@ -24,7 +24,8 @@ export default function NeighborhoodResultsPage() {
   
   // Manejo especial para Sant Andreu del Palomar (que es en realidad Sant Andreu barrio)
   const isSantAndreuBarrio = decodedNeighborhood === "Sant Andreu del Palomar";
-  const effectiveNeighborhood = isSantAndreuBarrio ? "Sant Andreu" : decodedNeighborhood;
+  // Mantenemos el nombre original para consultas de valoraciones
+  const effectiveNeighborhood = decodedNeighborhood;
   
   // Determinar el distrito correspondiente al barrio (solo si no es un distrito o Barcelona)
   const district = !isDistrictPage && !isBarcelonaPage ? findDistrictByNeighborhood(effectiveNeighborhood) : null;
