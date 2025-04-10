@@ -61,6 +61,9 @@ export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   security: decimal("security").notNull(),
   parking: decimal("parking").notNull(),
   familyFriendly: decimal("family_friendly").notNull(),
+  publicTransport: decimal("public_transport").notNull(),
+  greenSpaces: decimal("green_spaces").notNull(),
+  services: decimal("services").notNull(),
   userId: integer("user_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -102,7 +105,17 @@ export const inquiries = pgTable("inquiries", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertPropertySchema = createInsertSchema(properties).omit({ id: true, createdAt: true });
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
-export const insertNeighborhoodRatingSchema = createInsertSchema(neighborhoodRatings).omit({ id: true, createdAt: true });
+// Para valoraciones, usamos un esquema personalizado para asegurar que los valores sean numéricos
+export const insertNeighborhoodRatingSchema = z.object({
+  neighborhood: z.string(),
+  security: z.number().min(1).max(10),
+  parking: z.number().min(1).max(10),
+  familyFriendly: z.number().min(1).max(10),
+  publicTransport: z.number().min(1).max(10),
+  greenSpaces: z.number().min(1).max(10),
+  services: z.number().min(1).max(10),
+  userId: z.number().int(), // Permitimos IDs negativos para usuarios anónimos
+});
 export const insertAgencyAgentSchema = createInsertSchema(agencyAgents).omit({ id: true, createdAt: true });
 export const insertAppointmentSchema = createInsertSchema(appointments).omit({ id: true, createdAt: true });
 export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true, createdAt: true });

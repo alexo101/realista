@@ -28,17 +28,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
     );
   }
 
-  if (results.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
-        <Building2 className="h-16 w-16 text-gray-400 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No se encontraron propiedades</h3>
-        <p className="text-gray-600 max-w-md">
-          Prueba a cambiar los filtros de búsqueda o seleccionar otros barrios para ver más resultados.
-        </p>
-      </div>
-    );
-  }
+  // Removed empty state
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

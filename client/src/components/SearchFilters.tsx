@@ -41,7 +41,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label>Min Price</Label>
+          <Label>Precio mínimo</Label>
           <Input
             type="number"
             value={filters.minPrice}
@@ -53,7 +53,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
         </div>
         
         <div>
-          <Label>Max Price</Label>
+          <Label>Precio máximo</Label>
           <Input
             type="number"
             value={filters.maxPrice}
@@ -66,28 +66,46 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
       </div>
 
       <div>
-        <Label>Bedrooms</Label>
+        <Label>Habitaciones</Label>
         <Select
           value={filters.bedrooms}
-          onValueChange={(value) =>
-            setFilters({ ...filters, bedrooms: value })
-          }
+          onValueChange={(value) => {
+            let selectedValue = value;
+            
+            // Lógica para seleccionar habitaciones en cascada
+            if (value === "1") {
+              // Si selecciona 1, también marcar 2, 3 y 4+
+              selectedValue = "1,2,3,4";
+            } else if (value === "2") {
+              // Si selecciona 2, también marcar 3 y 4+
+              selectedValue = "2,3,4";
+            } else if (value === "3") {
+              // Si selecciona 3, también marcar 4+
+              selectedValue = "3,4";
+            } else if (value === "0") {
+              // Si selecciona "estudio", seleccionar solo 0 (exclusivo)
+              selectedValue = "0";
+            }
+            
+            setFilters({ ...filters, bedrooms: selectedValue });
+          }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Any" />
+            <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Any</SelectItem>
-            <SelectItem value="1">1+</SelectItem>
-            <SelectItem value="2">2+</SelectItem>
-            <SelectItem value="3">3+</SelectItem>
-            <SelectItem value="4">4+</SelectItem>
+            <SelectItem value="">Cualquiera</SelectItem>
+            <SelectItem value="0">0 habitaciones (estudio)</SelectItem>
+            <SelectItem value="1">1+ habitaciones</SelectItem>
+            <SelectItem value="2">2+ habitaciones</SelectItem>
+            <SelectItem value="3">3+ habitaciones</SelectItem>
+            <SelectItem value="4">4+ habitaciones</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div>
-        <Label>Property Type</Label>
+        <Label>Tipo de propiedad</Label>
         <Select
           value={filters.type}
           onValueChange={(value) =>
@@ -95,13 +113,15 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
           }
         >
           <SelectTrigger>
-            <SelectValue placeholder="Any" />
+            <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Any</SelectItem>
-            <SelectItem value="apartment">Apartment</SelectItem>
-            <SelectItem value="house">House</SelectItem>
+            <SelectItem value="">Cualquiera</SelectItem>
+            <SelectItem value="apartment">Piso</SelectItem>
+            <SelectItem value="house">Casa</SelectItem>
             <SelectItem value="villa">Villa</SelectItem>
+            <SelectItem value="penthouse">Ático</SelectItem>
+            <SelectItem value="duplex">Dúplex</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -112,7 +132,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
           onClick={handleFilter}
         >
           <Search className="w-4 h-4 mr-2" />
-          Filter
+          Filtrar
         </Button>
         
         <Button

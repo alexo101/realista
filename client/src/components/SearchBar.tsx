@@ -14,11 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, X, Pencil, HomeIcon } from "lucide-react";
+import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AgentReview } from "./AgentReview";
 import { AgencyReview } from "./AgencyReview";
-import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS, isDistrict } from "@/utils/neighborhoods";
 
 // Definimos rangos de precios para el selector
 const PRICE_RANGES = [
@@ -107,17 +107,28 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
-    // Si hay un solo barrio seleccionado, redirigir a la página de resultados de barrio
+    // Verificar si se ha seleccionado al menos una ubicación para todos los tipos de búsqueda
+    if (selectedNeighborhoods.length === 0) {
+      toast({
+        title: "Ubicación requerida",
+        description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Si hay un solo barrio/distrito/Barcelona seleccionado, redirigir a la página de resultados específica
     if (selectedNeighborhoods.length === 1) {
-      const encodedNeighborhood = encodeURIComponent(selectedNeighborhoods[0]);
-      // Dirigir a la pestaña correspondiente según el tipo de búsqueda
-      if (searchType === 'agencies') {
-        setLocation(`/neighborhood/${encodedNeighborhood}/agencies`);
-      } else if (searchType === 'agents') {
-        setLocation(`/neighborhood/${encodedNeighborhood}/agents`);
-      } else {
-        setLocation(`/neighborhood/${encodedNeighborhood}/properties`);
-      }
+      const selectedValue = selectedNeighborhoods[0];
+      const encodedValue = encodeURIComponent(selectedValue);
+      
+      // Determinar la pestaña según el tipo de búsqueda
+      let tab = 'properties';
+      if (searchType === 'agencies') tab = 'agencies';
+      else if (searchType === 'agents') tab = 'agents';
+      
+      // Redirigir a la página de resultados
+      setLocation(`/neighborhood/${encodedValue}/${tab}`);
       return;
     }
     
@@ -225,6 +236,9 @@ export function SearchBar() {
       // Solo permitimos un barrio a la vez
       setSelectedNeighborhoods([neighborhood]);
     }
+    
+    // Nota: Ya no ejecutamos la búsqueda automáticamente al seleccionar un barrio.
+    // Ahora el usuario debe hacer clic en "Buscar" para iniciar la búsqueda
   };
   
   // Handler for Enter key press in search inputs
@@ -253,7 +267,6 @@ export function SearchBar() {
       
       // Solo cerrar el diálogo de barrios, pero NO ejecutar búsqueda automática
       setIsNeighborhoodOpen(false);
-      // No se hace la búsqueda automática, el usuario debe presionar el botón "Buscar"
     }
   };
 
@@ -395,11 +408,13 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(0) 
-                            ? prev.filter(r => r !== 0) 
-                            : [...prev, 0]
-                        );
+                        // Si 0 está seleccionado, lo quitamos
+                        // Si no está seleccionado, lo seleccionamos pero quitamos todos los demás
+                        if (roomsFilter.includes(0)) {
+                          setRoomsFilter(prev => prev.filter(r => r !== 0));
+                        } else {
+                          setRoomsFilter([0]); // Solo se permite seleccionar estudios
+                        }
                       }}
                     >
                       <input 
@@ -414,11 +429,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(1) 
-                            ? prev.filter(r => r !== 1) 
-                            : [...prev, 1]
-                        );
+                        if (roomsFilter.includes(1)) {
+                          // Si 1 está seleccionado, lo quitamos junto con todos los superiores
+                          setRoomsFilter(prev => prev.filter(r => r !== 1 && r !== 2 && r !== 3 && r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 1, 2, 3, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -433,11 +454,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(2) 
-                            ? prev.filter(r => r !== 2) 
-                            : [...prev, 2]
-                        );
+                        if (roomsFilter.includes(2)) {
+                          // Si 2 está seleccionado, lo quitamos junto con todos los superiores
+                          setRoomsFilter(prev => prev.filter(r => r !== 2 && r !== 3 && r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 2, 3, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -452,11 +479,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(3) 
-                            ? prev.filter(r => r !== 3) 
-                            : [...prev, 3]
-                        );
+                        if (roomsFilter.includes(3)) {
+                          // Si 3 está seleccionado, lo quitamos junto con todos los superiores
+                          setRoomsFilter(prev => prev.filter(r => r !== 3 && r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 3, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -471,11 +504,17 @@ export function SearchBar() {
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setRoomsFilter(prev => 
-                          prev.includes(4) 
-                            ? prev.filter(r => r !== 4) 
-                            : [...prev, 4]
-                        );
+                        if (roomsFilter.includes(4)) {
+                          // Si 4 está seleccionado, lo quitamos
+                          setRoomsFilter(prev => prev.filter(r => r !== 4));
+                        } else {
+                          // Si no está seleccionado, lo seleccionamos
+                          // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                          setRoomsFilter(prev => {
+                            const newFilter = prev.filter(r => r !== 0);
+                            return [...newFilter, 4];
+                          });
+                        }
                       }}
                     >
                       <input 
@@ -552,6 +591,21 @@ export function SearchBar() {
             )}
 
             <div className="max-h-[300px] overflow-auto">
+              {/* Barcelona option (for no filter) */}
+              <div className="mb-4">
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start font-bold ${
+                    selectedNeighborhoods.includes("Barcelona")
+                      ? "bg-primary/10"
+                      : ""
+                  }`}
+                  onClick={() => toggleNeighborhood("Barcelona")}
+                >
+                  Barcelona (Todos los barrios)
+                </Button>
+              </div>
+              
               {/* Group neighborhoods by district */}
               {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => {
                 // Filter neighborhoods in this district
@@ -559,17 +613,33 @@ export function SearchBar() {
                   n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
                 );
                 
-                // Skip districts with no matching neighborhoods
-                if (filteredNeighborhoodsInDistrict.length === 0) return null;
+                // Show distrito even if no neighborhoods match (for search)
+                const showDistrict = neighborhoodSearch === "" || 
+                  district.district.toLowerCase().includes(neighborhoodSearch.toLowerCase()) ||
+                  filteredNeighborhoodsInDistrict.length > 0;
+                
+                if (!showDistrict) return null;
                 
                 return (
                   <div key={district.district} className="mb-4">
-                    <p className="font-bold text-sm mb-1">{district.district}</p>
-                    {filteredNeighborhoodsInDistrict.map(neighborhood => (
+                    {/* Make distrito selectable */}
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start font-bold ${
+                        selectedNeighborhoods.includes(district.district)
+                          ? "bg-primary/10"
+                          : ""
+                      }`}
+                      onClick={() => toggleNeighborhood(district.district)}
+                    >
+                      {district.district}
+                    </Button>
+                    
+                    {filteredNeighborhoodsInDistrict.length > 0 && filteredNeighborhoodsInDistrict.map(neighborhood => (
                       <Button
                         key={neighborhood}
                         variant="ghost"
-                        className={`w-full justify-start ${
+                        className={`w-full justify-start pl-6 ${
                           selectedNeighborhoods.includes(neighborhood)
                             ? "bg-primary/10"
                             : ""
@@ -588,9 +658,10 @@ export function SearchBar() {
               <Button 
                 onClick={() => {
                   setIsNeighborhoodOpen(false);
-                  handleSearch();
+                  // No ejecutar búsqueda automáticamente
                 }}
                 className="ml-auto"
+                disabled={selectedNeighborhoods.length === 0}
               >
                 Seleccionar
               </Button>

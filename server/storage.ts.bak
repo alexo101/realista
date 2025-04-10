@@ -1,4 +1,4 @@
-import { db, pool } from "./db";
+import { db } from "./db";
 import { eq, sql, and, gte, lte, arrayOverlaps, not, isNull } from "drizzle-orm";
 import {
   users,
@@ -468,20 +468,55 @@ export class DatabaseStorage implements IStorage {
       
       console.log('Datos de valoración validados');
       
-      // Convertir números a strings para compatibilidad con la columna decimal en Drizzle
-      const [newRating] = await db.insert(neighborhoodRatings).values({
-        neighborhood: rating.neighborhood,
-        security: rating.security.toString(),
-        parking: rating.parking.toString(),
-        familyFriendly: rating.familyFriendly.toString(),
-        publicTransport: rating.publicTransport.toString(),
-        greenSpaces: rating.greenSpaces.toString(),
-        services: rating.services.toString(),
-        userId: rating.userId
-      }).returning();
+      // Usamos el pool directo por problemas con Drizzle y los tipos decimal
+      const client = await pool.connect();
       
-      console.log('Valoración guardada con éxito:', newRating);
-      return newRating;
+      try {
+        console.log('Conexión a base de datos establecida, ejecutando insert');
+        const result = await client.query(`
+          INSERT INTO neighborhood_ratings 
+          (neighborhood, security, parking, family_friendly, public_transport, green_spaces, services, user_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING id, neighborhood, security, parking, family_friendly, public_transport, green_spaces, services, user_id, created_at
+        `, [
+          rating.neighborhood,
+          rating.security,
+          rating.parking,
+          rating.familyFriendly,
+          rating.publicTransport,
+          rating.greenSpaces,
+          rating.services,
+          rating.userId
+        ]);
+        
+        if (result.rows.length === 0) {
+          throw new Error("No se pudo crear la valoración de barrio");
+        }
+        
+        const row = result.rows[0];
+        
+        console.log('Valoración creada en la base de datos:', row);
+        
+        // Convertimos manualmente a la estructura esperada por NeighborhoodRating con conversiones explícitas
+        const newRating: NeighborhoodRating = {
+          id: Number(row.id),
+          neighborhood: String(row.neighborhood),
+          security: String(row.security),
+          parking: String(row.parking),
+          familyFriendly: String(row.family_friendly),
+          publicTransport: String(row.public_transport),
+          greenSpaces: String(row.green_spaces),
+          services: String(row.services),
+          userId: Number(row.user_id),
+          createdAt: new Date(row.created_at)
+        };
+        
+        console.log('Valoración convertida a formato NeighborhoodRating:', newRating);
+        return newRating;
+      } finally {
+        client.release();
+        console.log('Conexión a base de datos liberada');
+      }
     } catch (error) {
       console.error('Error al insertar valoración de barrio:', error);
       throw error;
