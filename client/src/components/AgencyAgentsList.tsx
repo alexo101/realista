@@ -20,7 +20,11 @@ type AgencyAgent = {
   createdAt: string;
 };
 
-export function AgencyAgentsList() {
+type AgencyAgentsListProps = {
+  hideAddButton?: boolean;
+};
+
+export function AgencyAgentsList({ hideAddButton = false }: AgencyAgentsListProps) {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const agencyId = user?.id;
@@ -71,14 +75,17 @@ export function AgencyAgentsList() {
 
   return (
     <div className="mt-6">
-      <div className="flex justify-between items-center mb-4">
-        <Button 
-          onClick={() => setIsFormOpen(true)}
-          size="sm"
-        >
-          <Plus className="mr-2 h-4 w-4" /> Añadir Agente
-        </Button>
-      </div>
+      {!hideAddButton && (
+        <div className="flex justify-between items-center mb-4">
+          <Button 
+            onClick={() => setIsFormOpen(true)}
+            size="sm"
+            className="agency-agents-list-button"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Añadir Agente
+          </Button>
+        </div>
+      )}
 
       <Separator className="my-4" />
 

@@ -11,7 +11,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
@@ -358,7 +358,7 @@ export default function ManagePage() {
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
-                <div>
+                <div className="w-full">
                   <Label htmlFor="influence-neighborhoods">Barrios de influencia</Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
