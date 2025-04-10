@@ -472,7 +472,7 @@ export default function ManagePage() {
                     onChange={(e) => setAgencyPhone(e.target.value)}
                   />
                 </div>
-                <div>
+                <div className="w-full">
                   <Label htmlFor="agency-influence-neighborhoods">Barrios de influencia</Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
@@ -490,8 +490,25 @@ export default function ManagePage() {
                 {/* Componente de gestión de agentes para agencias */}
                 {user && !user.isAgent && (
                   <div className="pt-4 pb-2 border-t border-gray-200">
-                    <h3 className="text-lg font-medium mb-4">Agentes de la agencia</h3>
-                    <AgencyAgentsList />
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium">Agentes de la agencia</h3>
+                      <Button 
+                        onClick={() => {
+                          // Obtener referencia al componente AgencyAgentsList
+                          const agencyAgentsListElement = document.querySelector('.agency-agents-list-button');
+                          // Simular clic en el botón de añadir agente
+                          agencyAgentsListElement?.dispatchEvent(new MouseEvent('click', {
+                            bubbles: true,
+                            cancelable: true,
+                            view: window
+                          }));
+                        }}
+                        size="sm"
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Añadir Agente
+                      </Button>
+                    </div>
+                    <AgencyAgentsList hideAddButton={true} />
                   </div>
                 )}
 
