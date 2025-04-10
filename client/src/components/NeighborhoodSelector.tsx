@@ -79,7 +79,7 @@ export function NeighborhoodSelector({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-1/3 justify-start h-auto py-2 px-3"
+          className="w-full justify-start h-auto py-2 px-3"
           onClick={() => {
             // Restablecer selección local al abrir
             setLocalNeighborhoods(selectedNeighborhoods);
