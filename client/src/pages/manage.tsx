@@ -19,7 +19,7 @@ import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { InquiriesList } from "@/components/InquiriesList";
-import { AppointmentsManager } from "@/components/AppointmentForm";
+import { CentralAppointmentsManager } from "@/components/CentralAppointmentsManager";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -213,8 +213,6 @@ export default function ManagePage() {
     }
   });
 
-
-
   // Redireccionar si el usuario no está autenticado
   if (!user) {
     return <Redirect to="/" />;
@@ -304,8 +302,6 @@ export default function ManagePage() {
                   <span>Mensajes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
-
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
@@ -632,8 +628,6 @@ export default function ManagePage() {
                   Guardar cambios
                 </Button>
               </div>
-              
-              {/* Este componente ahora está más arriba en el formulario */}
             </div>
           )}
 
@@ -656,7 +650,6 @@ export default function ManagePage() {
                       await updatePropertyMutation.mutateAsync(data);
                     } else {
                       await createPropertyMutation.mutateAsync(data);
-                      setIsAddingProperty(false); // Solo cerramos automáticamente al crear, no al editar
                     }
                   }}
                   onClose={() => {
@@ -664,47 +657,96 @@ export default function ManagePage() {
                     setEditingProperty(null);
                   }}
                   initialData={editingProperty ? {
-                    address: editingProperty.address,
-                    type: editingProperty.type as "Piso" | "Casa",
-                    operationType: editingProperty.operationType as "Venta" | "Alquiler",
+                    title: editingProperty.title,
                     description: editingProperty.description,
                     price: editingProperty.price,
-                    neighborhood: editingProperty.neighborhood,
-                    title: editingProperty.title || "",
+                    address: editingProperty.address,
+                    size: editingProperty.size,
+                    bedrooms: editingProperty.bedrooms,
+                    bathrooms: editingProperty.bathrooms,
                     images: editingProperty.images || [],
-                    mainImageIndex: editingProperty.mainImageIndex || 0,
-                    reference: editingProperty.reference === null ? undefined : editingProperty.reference,
-                    bedrooms: editingProperty.bedrooms || undefined,
-                    bathrooms: editingProperty.bathrooms || undefined,
-                    superficie: editingProperty.superficie || undefined
+                    propertyType: editingProperty.propertyType,
+                    neighborhood: editingProperty.neighborhood,
+                    reference: editingProperty.reference,
+                    operationType: editingProperty.operationType,
+                    features: editingProperty.features || [],
+                    status: editingProperty.status || "disponible"
                   } : undefined}
                   isEditing={!!editingProperty}
                 />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {isLoadingProperties ? (
-                    Array(6).fill(0).map((_, i) => (
-                      <div key={i} className="bg-gray-100 animate-pulse h-48 rounded-lg" />
-                    ))
-                  ) : properties?.length === 0 ? (
-                    <div className="col-span-full text-center py-12">
+                    <div className="col-span-full text-center py-8">
+                      <p>Cargando propiedades...</p>
+                    </div>
+                  ) : !properties?.length ? (
+                    <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg">
                       <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">Sin propiedades</h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Empieza añadiendo una nueva propiedad.
+                      <h3 className="mt-2 text-lg font-medium text-gray-900">Sin propiedades</h3>
+                      <p className="mt-1 text-gray-500">
+                        Empieza añadiendo tu primera propiedad
                       </p>
                     </div>
                   ) : (
-                    properties?.map((property) => (
+                    properties.map((property) => (
                       <div 
                         key={property.id} 
-                        className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => setEditingProperty(property)}
+                        className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
+                        onClick={() => {
+                          setEditingProperty(property);
+                          setIsAddingProperty(false);
+                        }}
                       >
-                        <p className="font-medium">{property.address}</p>
-                        <p className="text-sm text-gray-600">{property.type}</p>
-                        <p className="text-primary font-semibold mt-2">{property.price}€</p>
-                        <p className="text-sm text-gray-500 mt-1">{property.neighborhood}</p>
+                        <div className="h-48 overflow-hidden relative">
+                          {property.images && property.images.length > 0 ? (
+                            <img 
+                              src={property.images[0]} 
+                              alt={property.title || property.address}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                              <Building2 className="h-12 w-12 text-gray-400" />
+                            </div>
+                          )}
+                          
+                          {property.operationType && (
+                            <div className="absolute top-0 left-0 bg-primary text-white px-2 py-1 text-xs m-2 rounded-sm">
+                              {property.operationType === 'venta' ? 'Venta' : 'Alquiler'}
+                            </div>
+                          )}
+                          
+                          {property.reference && (
+                            <div className="absolute bottom-0 right-0 bg-black/70 text-white px-2 py-1 text-xs m-2 rounded-sm">
+                              Ref: {property.reference}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium truncate">{property.title || property.address}</h3>
+                              <p className="text-sm text-gray-500 truncate">{property.address}</p>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-semibold text-lg">{property.price?.toLocaleString('es-ES')}{property.operationType === 'alquiler' ? '€/mes' : '€'}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                            {property.size && (
+                              <div>{property.size} m²</div>
+                            )}
+                            {property.bedrooms && (
+                              <div>{property.bedrooms} hab.</div>
+                            )}
+                            {property.bathrooms && (
+                              <div>{property.bathrooms} baños</div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))
                   )}
@@ -712,17 +754,21 @@ export default function ManagePage() {
               )}
             </div>
           )}
+
           {section === "clients" && (
             <div className="space-y-4">
-              <Button 
-                onClick={() => {
-                  setIsAddingClient(true);
-                  setEditingClient(null);
-                }} 
-                size="lg"
-              >
-                Añadir cliente
-              </Button>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Gestión de Clientes</h2>
+                <Button 
+                  onClick={() => {
+                    setIsAddingClient(true);
+                    setEditingClient(null);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir cliente
+                </Button>
+              </div>
 
               {(isAddingClient || editingClient) ? (
                 <ClientForm 
@@ -738,138 +784,136 @@ export default function ManagePage() {
                     setEditingClient(null);
                   }}
                   initialData={editingClient ? {
-                    id: editingClient.id,
                     name: editingClient.name,
                     email: editingClient.email,
-                    phone: editingClient.phone
+                    phone: editingClient.phone,
+                    notes: editingClient.notes,
+                    preferredNeighborhoods: editingClient.preferredNeighborhoods || [],
+                    budget: editingClient.budget || undefined,
+                    propertyType: editingClient.propertyType || undefined,
+                    minBedrooms: editingClient.minBedrooms || undefined,
+                    minBathrooms: editingClient.minBathrooms || undefined,
+                    minSize: editingClient.minSize || undefined,
+                    preferredFeatures: editingClient.preferredFeatures || [],
+                    operationType: editingClient.operationType || undefined,
                   } : undefined}
                   isEditing={!!editingClient}
                 />
               ) : (
-                <div className="bg-white rounded-md shadow overflow-hidden">
+                <div className="grid gap-6">
                   {isLoadingClients ? (
-                    <div className="p-6">
-                      <div className="h-8 bg-gray-100 animate-pulse rounded-md mb-4 w-1/4" />
-                      <div className="space-y-3">
-                        {Array(6).fill(0).map((_, i) => (
-                          <div key={i} className="h-12 bg-gray-100 animate-pulse rounded-md" />
-                        ))}
-                      </div>
+                    <div className="text-center py-8">
+                      <p>Cargando clientes...</p>
                     </div>
-                  ) : clients?.length === 0 ? (
-                    <div className="text-center py-12">
+                  ) : !clients?.length ? (
+                    <div className="text-center py-16 bg-gray-50 rounded-lg">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-semibold text-gray-900">Sin clientes</h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Empieza añadiendo un nuevo cliente.
+                      <h3 className="mt-2 text-lg font-medium text-gray-900">Sin clientes</h3>
+                      <p className="mt-1 text-gray-500">
+                        Empieza añadiendo tu primer cliente al CRM
                       </p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-gray-50 text-xs uppercase text-gray-700">
-                          <tr>
-                            <th className="px-6 py-3 text-left">ID</th>
-                            <th className="px-6 py-3 text-left">Nombre</th>
-                            <th className="px-6 py-3 text-left">Email</th>
-                            <th className="px-6 py-3 text-left">Teléfono</th>
-                            <th className="px-6 py-3 text-left">Fecha de registro</th>
-                            <th className="px-6 py-3 text-center">Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {clients?.map((client) => (
-                            <tr 
-                              key={client.id}
-                              className="hover:bg-gray-50 transition-colors cursor-pointer"
-                            >
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                #{client.id}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {client.name}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {client.email}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {client.phone}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {client.createdAt ? new Date(client.createdAt).toLocaleDateString('es-ES') : 'N/A'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => setEditingClient(client)}
-                                >
-                                  Editar
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    clients.map((client) => (
+                      <div 
+                        key={client.id} 
+                        className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
+                        onClick={() => {
+                          setEditingClient(client);
+                          setIsAddingClient(false);
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-lg font-medium">{client.name}</h3>
+                            <p className="text-sm text-gray-600 mt-1">Email: {client.email} • Teléfono: {client.phone}</p>
+                            
+                            {client.operationType && (
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                                  {client.operationType === 'venta' ? 'Compra' : 'Alquiler'}
+                                </span>
+                                {client.propertyType && (
+                                  <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                                    {client.propertyType}
+                                  </span>
+                                )}
+                                {client.budget && (
+                                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                    Hasta {client.budget.toLocaleString('es-ES')}€{client.operationType === 'alquiler' ? '/mes' : ''}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            {client.preferredNeighborhoods && client.preferredNeighborhoods.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-xs text-gray-500">Zonas de interés:</p>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {client.preferredNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
+                                    <span key={idx} className="bg-gray-100 text-xs px-2 py-0.5 rounded">
+                                      {neighborhood}
+                                    </span>
+                                  ))}
+                                  {client.preferredNeighborhoods.length > 3 && (
+                                    <span className="text-xs text-gray-500">
+                                      +{client.preferredNeighborhoods.length - 3} más
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsRequestingReview(true);
+                            }}
+                          >
+                            <Star className="h-4 w-4 mr-1" />
+                            Solicitar reseña
+                          </Button>
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
               )}
-            </div>
-          )}
-          {section === "reviews" && (
-            <div className="space-y-4">
-              <Button onClick={() => setIsRequestingReview(true)} size="lg">
-                Solicitar reseña
-              </Button>
-
-              {isRequestingReview ? (
-                <ReviewRequestForm onClose={() => setIsRequestingReview(false)} />
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Reviews grid will go here */}
-                </div>
+              
+              {isRequestingReview && (
+                <ReviewRequestForm
+                  onClose={() => setIsRequestingReview(false)}
+                />
               )}
             </div>
           )}
+          
+          {section === "reviews" && (
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold mb-6">Gestión de Reseñas</h2>
+              <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <Star className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-lg font-medium text-gray-900">Funcionalidad en desarrollo</h3>
+                <p className="mt-1 text-gray-500">
+                  Esta sección estará disponible próximamente.
+                </p>
+              </div>
+            </div>
+          )}
+          
           {section === "messages" && (
             <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold mb-6">Gestión de Mensajes</h2>
               <InquiriesList />
             </div>
           )}
           
           {section === "appointments" && (
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl font-bold mb-6">Gestión de Citas</h2>
-              <p className="text-gray-500 mb-8">
-                Aquí puedes gestionar todas las citas con tus clientes. Selecciona un cliente para ver, añadir o editar sus citas.
-              </p>
-              
-              {clients && clients.length > 0 ? (
-                <div className="grid gap-6">
-                  {clients.map((client) => (
-                    <div key={client.id} className="bg-white rounded-lg p-6 shadow-sm">
-                      <h3 className="text-lg font-medium mb-2">{client.name}</h3>
-                      <p className="text-sm text-gray-600 mb-4">Email: {client.email} • Teléfono: {client.phone}</p>
-                      <AppointmentsManager clientId={client.id} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16 bg-gray-50 rounded-lg">
-                  <Users className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-lg font-medium text-gray-900">No hay clientes registrados</h3>
-                  <p className="mt-1 text-gray-500">
-                    Para gestionar citas, primero necesitas añadir clientes desde la sección "CRM clientes".
-                  </p>
-                  <Button 
-                    onClick={() => setSection("clients")} 
-                    className="mt-4"
-                  >
-                    Ir a gestión de clientes
-                  </Button>
-                </div>
-              )}
+              <CentralAppointmentsManager />
             </div>
           )}
         </main>

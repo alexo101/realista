@@ -473,6 +473,14 @@ export function AppointmentList({ clientId, onEdit, onDelete }: AppointmentListP
   );
 }
 
+// Nuevo tipo para cliente
+export interface Client {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 // Componente principal que gestiona todas las citas
 interface AppointmentsManagerProps {
   clientId: number;
@@ -497,6 +505,7 @@ export function AppointmentsManager({ clientId }: AppointmentsManagerProps) {
     },
     enabled: !!clientId
   });
+
 
   // Guardar una cita (nueva o existente)
   const handleSaveAppointment = async (appointmentData: Appointment) => {
