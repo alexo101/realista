@@ -11,7 +11,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
@@ -19,6 +19,7 @@ import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { InquiriesList } from "@/components/InquiriesList";
+import { AppointmentsManager } from "@/components/AppointmentForm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -282,6 +283,16 @@ export default function ManagePage() {
                 >
                   <MessageSquare className="h-4 w-4" />
                   <span>Mensajes</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={section === "appointments"}
+                  onClick={() => setSection("appointments")}
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Citas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -813,6 +824,41 @@ export default function ManagePage() {
           {section === "messages" && (
             <div className="max-w-4xl mx-auto">
               <InquiriesList />
+            </div>
+          )}
+          
+          {section === "appointments" && (
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-2xl font-bold mb-6">Gestión de Citas</h2>
+              <p className="text-gray-500 mb-8">
+                Aquí puedes gestionar todas las citas con tus clientes. Selecciona un cliente para ver, añadir o editar sus citas.
+              </p>
+              
+              {clients && clients.length > 0 ? (
+                <div className="grid gap-6">
+                  {clients.map((client) => (
+                    <div key={client.id} className="bg-white rounded-lg p-6 shadow-sm">
+                      <h3 className="text-lg font-medium mb-2">{client.name}</h3>
+                      <p className="text-sm text-gray-600 mb-4">Email: {client.email} • Teléfono: {client.phone}</p>
+                      <AppointmentsManager clientId={client.id} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 bg-gray-50 rounded-lg">
+                  <Users className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-lg font-medium text-gray-900">No hay clientes registrados</h3>
+                  <p className="mt-1 text-gray-500">
+                    Para gestionar citas, primero necesitas añadir clientes desde la sección "CRM clientes".
+                  </p>
+                  <Button 
+                    onClick={() => setSection("clients")} 
+                    className="mt-4"
+                  >
+                    Ir a gestión de clientes
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </main>
