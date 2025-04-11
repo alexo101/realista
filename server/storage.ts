@@ -316,9 +316,27 @@ export class DatabaseStorage implements IStorage {
   async searchProperties(filters: any): Promise<Property[]> {
     let conditions = [] as any[];
 
+    // Manejo de neighborhood o neighborhoods (asegurarnos de capturar ambos)
     if (filters.neighborhood) {
       conditions.push(eq(properties.neighborhood, filters.neighborhood));
+    } else if (filters.neighborhoods) {
+      // Verificar si neighborhoods es una cadena o un array
+      const neighborhoodValue = filters.neighborhoods;
+      if (typeof neighborhoodValue === 'string') {
+        // Usar exactly equal para asegurar que coincida exactamente con el barrio seleccionado
+        conditions.push(eq(properties.neighborhood, neighborhoodValue));
+      } else if (Array.isArray(neighborhoodValue)) {
+        // Si es un array, necesitamos buscar barrios que coincidan exactamente
+        // Creamos una condición OR para cada barrio
+        const neighborhoodConditions = neighborhoodValue.map(
+          (neighborhood: string) => eq(properties.neighborhood, neighborhood)
+        );
+        conditions.push(sql`(${sql.join(neighborhoodConditions, sql` OR `)})`);
+        // Nota: No podemos usar inArray ya que estamos buscando un valor string dentro de un array
+        // pero tampoco podemos usar arrayContains ya que properties.neighborhood no es un array
+      }
     }
+    
     if (filters.type) {
       conditions.push(eq(properties.type, filters.type));
     }
