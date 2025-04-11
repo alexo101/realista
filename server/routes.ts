@@ -352,12 +352,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agencyName && updatedQuery.agencyName.toString().trim() !== '';
-      const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
+      const hasNeighborhoods = updatedQuery.neighborhoods !== undefined && 
+                               typeof updatedQuery.neighborhoods === 'string' && 
+                               updatedQuery.neighborhoods.trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
       // Si hay barrios seleccionados, expandir la búsqueda según la jerarquía
-      if (hasNeighborhoods) {
-        const neighborhood = updatedQuery.neighborhoods.toString();
+      if (hasNeighborhoods && typeof updatedQuery.neighborhoods === 'string') {
+        const neighborhood = updatedQuery.neighborhoods;
         
         // Si es búsqueda a nivel de ciudad, mostramos todas las agencias
         if (isCityWideSearch(neighborhood)) {
@@ -384,8 +386,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if ((hasSearchTerm || hasNeighborhoods) && !isCityWideSearch(updatedQuery.neighborhoods?.toString() || '')) {
-        delete updatedQuery.showAll; // No es necesario con términos de búsqueda
+      if ((hasSearchTerm || hasNeighborhoods) && typeof updatedQuery.neighborhoods === 'string') {
+        if (!isCityWideSearch(updatedQuery.neighborhoods)) {
+          delete updatedQuery.showAll; // No es necesario con términos de búsqueda
+        }
       }
       
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
@@ -409,12 +413,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agentName && updatedQuery.agentName.toString().trim() !== '';
-      const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
+      const hasNeighborhoods = updatedQuery.neighborhoods !== undefined && 
+                               typeof updatedQuery.neighborhoods === 'string' && 
+                               updatedQuery.neighborhoods.trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
       // Si hay barrios seleccionados, expandir la búsqueda según la jerarquía
-      if (hasNeighborhoods && updatedQuery.neighborhoods) {
-        const neighborhood = updatedQuery.neighborhoods.toString();
+      if (hasNeighborhoods && typeof updatedQuery.neighborhoods === 'string') {
+        const neighborhood = updatedQuery.neighborhoods;
         
         // Si es búsqueda a nivel de ciudad, mostramos todos los agentes
         if (isCityWideSearch(neighborhood)) {
@@ -441,9 +447,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if ((hasSearchTerm || hasNeighborhoods) && updatedQuery.neighborhoods) {
-        const neighborhoodString = updatedQuery.neighborhoods.toString();
-        if (!isCityWideSearch(neighborhoodString)) {
+      if ((hasSearchTerm || hasNeighborhoods) && typeof updatedQuery.neighborhoods === 'string') {
+        if (!isCityWideSearch(updatedQuery.neighborhoods)) {
           delete updatedQuery.showAll; // No es necesario con términos de búsqueda
         }
       }
@@ -470,10 +475,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
                                filters.neighborhoods && 
-                               filters.neighborhoods.toString().trim() !== '';
+                               typeof filters.neighborhoods === 'string' && 
+                               filters.neighborhoods.trim() !== '';
       
-      if (hasNeighborhoods) {
-        const neighborhood = filters.neighborhoods.toString();
+      if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
+        const neighborhood = filters.neighborhoods;
         
         // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
         if (isCityWideSearch(neighborhood)) {
@@ -522,10 +528,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
                                filters.neighborhoods && 
-                               filters.neighborhoods.toString().trim() !== '';
+                               typeof filters.neighborhoods === 'string' && 
+                               filters.neighborhoods.trim() !== '';
       
-      if (hasNeighborhoods) {
-        const neighborhood = filters.neighborhoods.toString();
+      if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
+        const neighborhood = filters.neighborhoods;
         
         // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
         if (isCityWideSearch(neighborhood)) {
