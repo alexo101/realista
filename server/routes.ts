@@ -435,19 +435,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Añadimos el filtro de tipo de operación (venta)
       const filters: Record<string, any> = { ...req.query, operationType: 'Venta' };
       
-      // Verificar si la búsqueda es para toda Barcelona
+      // Importamos las funciones de neighborhoods para expandir la búsqueda
+      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      
+      // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
                                filters.neighborhoods && 
                                filters.neighborhoods.toString().trim() !== '';
-      const isBarcelona = hasNeighborhoods && 
-                         (filters.neighborhoods.toString().includes('Barcelona') || 
-                          filters.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
       
-      // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de venta');
-        // Eliminar el filtro de barrios para mostrar todas las propiedades
-        delete filters.neighborhoods;
+      if (hasNeighborhoods) {
+        const neighborhood = filters.neighborhoods.toString();
+        
+        // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
+        if (isCityWideSearch(neighborhood)) {
+          console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de venta');
+          delete filters.neighborhoods;
+        } 
+        // Si es un distrito o barrio específico, expandimos la búsqueda
+        else {
+          // Expandimos el barrio o distrito a una lista de barrios
+          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
+          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
+          
+          if (expandedNeighborhoods.length > 0) {
+            // Reemplazamos el filtro original con la lista expandida
+            filters.neighborhoods = expandedNeighborhoods;
+          }
+        }
       }
       
       const properties = await storage.searchProperties(filters);
@@ -473,28 +487,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         delete filters.initialLoad;
       }
       
-      // Verificar si la búsqueda es para toda Barcelona
+      // Importamos las funciones de neighborhoods para expandir la búsqueda
+      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      
+      // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
                                filters.neighborhoods && 
                                filters.neighborhoods.toString().trim() !== '';
-      const isBarcelona = hasNeighborhoods && 
-                         (filters.neighborhoods.toString().includes('Barcelona') || 
-                          filters.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
       
-      // Si es Barcelona, vamos a mostrar todas las propiedades sin filtrar por barrio
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de alquiler');
-        // Eliminar el filtro de barrios para mostrar todas las propiedades
-        delete filters.neighborhoods;
+      if (hasNeighborhoods) {
+        const neighborhood = filters.neighborhoods.toString();
+        
+        // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
+        if (isCityWideSearch(neighborhood)) {
+          console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de alquiler');
+          delete filters.neighborhoods;
+        } 
+        // Si es un distrito o barrio específico, expandimos la búsqueda
+        else {
+          // Expandimos el barrio o distrito a una lista de barrios
+          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
+          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
+          
+          if (expandedNeighborhoods.length > 0) {
+            // Reemplazamos el filtro original con la lista expandida
+            filters.neighborhoods = expandedNeighborhoods;
+          }
+        }
+        
         const properties = await storage.searchProperties(filters);
         res.json(properties);
-      }
-      // Solo buscar si hay al menos un barrio seleccionado
-      else if ('neighborhoods' in filters) {
-        const properties = await storage.searchProperties(filters);
-        res.json(properties);
-      } else {
-        // Si no hay barrios seleccionados, devolver array vacío
+      } 
+      // Si no hay barrios seleccionados, devolver array vacío
+      else {
         res.json([]);
       }
     } catch (error) {
