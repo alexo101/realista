@@ -306,47 +306,79 @@ export function SearchBar() {
 
         <div className="flex items-center gap-4">
           {(searchType === 'agencies' || searchType === 'agents') && (
-            <div className="flex-1">
-              <Input
-                type="text"
-                placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
-                className="w-full"
-                onChange={(e) => {
-                  if (searchType === 'agencies') {
-                    setAgencyName(e.target.value);
-                    // Realizar búsqueda con pequeño retraso para evitar muchas solicitudes
+            <div className="flex-1 relative">
+              <div className="flex items-center">
+                <Input
+                  type="text"
+                  placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
+                  className="w-full pr-10"
+                  onChange={(e) => {
+                    const searchValue = e.target.value;
+                    
+                    if (searchType === 'agencies') {
+                      setAgencyName(searchValue);
+                      if (!searchValue.trim()) {
+                        // Solo limpiar el campo si está vacío
+                        setAgencyName('');
+                      }
+                    } else {
+                      setAgentName(searchValue);
+                      if (!searchValue.trim()) {
+                        // Solo limpiar el campo si está vacío
+                        setAgentName('');
+                      }
+                    }
+
+                    // En lugar de redireccionar, actualizamos inmediatamente para mostrar resultados
+                    // mientras el usuario escribe (efecto de autocompletado)
                     setTimeout(() => {
                       const params = new URLSearchParams();
-                      const searchValue = e.target.value.trim();
-                      if (searchValue) {
-                        // Solo enviar el parámetro si hay texto escrito
+                      if (searchValue.trim()) {
+                        if (searchType === 'agencies') {
+                          params.append('agencyName', searchValue.trim());
+                        } else {
+                          params.append('agentName', searchValue.trim());
+                        }
+                        // Si hay barrios seleccionados, añadirlos a la búsqueda
+                        if (selectedNeighborhoods.length > 0) {
+                          params.append('neighborhoods', selectedNeighborhoods.join(','));
+                        }
+                        setLocation(`/search/${searchType}?${params}`);
+                      }
+                    }, 300);
+                  }}
+                  value={searchType === 'agencies' ? agencyName : agentName}
+                  onKeyDown={handleKeyDown}
+                />
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    const searchValue = searchType === 'agencies' ? agencyName.trim() : agentName.trim();
+                    
+                    if (searchValue) {
+                      if (searchType === 'agencies') {
                         params.append('agencyName', searchValue);
                       } else {
-                        // Si no hay texto, no mostrar ningún resultado
-                        params.append('showAll', 'false');
-                      }
-                      setLocation(`/search/agencies?${params}`);
-                    }, 300);
-                  } else {
-                    setAgentName(e.target.value);
-                    // Realizar búsqueda con pequeño retraso para evitar muchas solicitudes
-                    setTimeout(() => {
-                      const params = new URLSearchParams();
-                      const searchValue = e.target.value.trim();
-                      if (searchValue) {
-                        // Solo enviar el parámetro si hay texto escrito
                         params.append('agentName', searchValue);
-                      } else {
-                        // Si no hay texto, no mostrar ningún resultado
-                        params.append('showAll', 'false');
                       }
-                      setLocation(`/search/agents?${params}`);
-                    }, 300);
-                  }
-                }}
-                value={searchType === 'agencies' ? agencyName : agentName}
-                onKeyDown={handleKeyDown}
-              />
+                    } else {
+                      params.append('showAll', 'true');
+                    }
+                    
+                    // Si hay barrios seleccionados, añadirlos a la búsqueda
+                    if (selectedNeighborhoods.length > 0) {
+                      params.append('neighborhoods', selectedNeighborhoods.join(','));
+                    }
+                    
+                    setLocation(`/search/${searchType}?${params}`);
+                  }}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
 
