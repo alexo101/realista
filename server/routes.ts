@@ -9,6 +9,7 @@ import {
   insertAppointmentSchema
 } from "@shared/schema";
 import { sendWelcomeEmail } from "./emailService";
+import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
@@ -346,8 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Search agencies params:', req.query);
       
-      // Importamos las funciones de neighborhoods para expandir la búsqueda
-      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      // Usamos las funciones de neighborhoods importadas al principio del archivo
       
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
@@ -407,8 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Search agents params:', req.query);
       
-      // Importamos las funciones de neighborhoods para expandir la búsqueda
-      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      // Usamos las funciones de neighborhoods importadas al principio del archivo
       
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
@@ -469,8 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Añadimos el filtro de tipo de operación (venta)
       const filters: Record<string, any> = { ...req.query, operationType: 'Venta' };
       
-      // Importamos las funciones de neighborhoods para expandir la búsqueda
-      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      // Usamos las funciones de neighborhoods importadas al principio del archivo
       
       // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
@@ -522,8 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         delete filters.initialLoad;
       }
       
-      // Importamos las funciones de neighborhoods para expandir la búsqueda
-      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      // Usamos las funciones de neighborhoods importadas al principio del archivo
       
       // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
