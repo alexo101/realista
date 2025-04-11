@@ -258,11 +258,30 @@ export default function ManagePage() {
 
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={section === "clients"}
+                  isActive={section === "clients" || section === "appointments"}
                   onClick={() => setSection("clients")}
                 >
                   <Users className="h-4 w-4" />
                   <span>CRM clientes</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className="ml-6">
+                <SidebarMenuButton
+                  isActive={section === "clients"}
+                  onClick={() => setSection("clients")}
+                >
+                  <span>Gestionar todo</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem className="ml-6">
+                <SidebarMenuButton
+                  isActive={section === "appointments"}
+                  onClick={() => setSection("appointments")}
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Citas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -286,15 +305,7 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={section === "appointments"}
-                  onClick={() => setSection("appointments")}
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span>Citas</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>

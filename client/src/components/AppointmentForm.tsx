@@ -19,6 +19,14 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
 
 import { Textarea } from "@/components/ui/textarea";
 import { 
