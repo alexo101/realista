@@ -116,9 +116,12 @@ export class DatabaseStorage implements IStorage {
     console.log('SearchAgents - neighborhoods:', neighborhoods);
     console.log('SearchAgents - showAll:', showAll);
 
+    // En modo autocompletado, siempre mostramos resultados
+    const isAutoCompleteMode = searchTerm.trim() !== '';
+
     // Si no hay término de búsqueda ni barrios, y no se ha solicitado explícitamente
     // mostrar todos (showAll), entonces retornar un array vacío
-    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
+    if (!isAutoCompleteMode && neighborhoods.length === 0 && !showAll) {
       console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
       return [];
     }
@@ -197,9 +200,12 @@ export class DatabaseStorage implements IStorage {
     console.log('SearchAgencies - neighborhoods:', neighborhoods);
     console.log('SearchAgencies - showAll:', showAll);
     
+    // En modo autocompletado, siempre mostramos resultados
+    const isAutoCompleteMode = searchTerm.trim() !== '';
+    
     // Si no hay término de búsqueda ni barrios, y no se ha solicitado explícitamente
     // mostrar todos (showAll), entonces retornar un array vacío
-    if (searchTerm.trim() === '' && neighborhoods.length === 0 && !showAll) {
+    if (!isAutoCompleteMode && neighborhoods.length === 0 && !showAll) {
       console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
       return [];
     }
