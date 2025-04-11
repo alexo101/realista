@@ -346,32 +346,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Search agencies params:', req.query);
       
+      // Importamos las funciones de neighborhoods para expandir la búsqueda
+      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agencyName && updatedQuery.agencyName.toString().trim() !== '';
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
-      // Verificar si la búsqueda es para toda Barcelona
-      const isBarcelona = hasNeighborhoods && 
-                         updatedQuery.neighborhoods !== undefined && 
-                         (updatedQuery.neighborhoods.toString().includes('Barcelona') || 
-                          updatedQuery.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
-      
-      // Si es Barcelona, vamos a mostrar todas las agencias (showAll = true)
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todas las agencias');
-        updatedQuery.showAll = 'true';
-        delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
+      // Si hay barrios seleccionados, expandir la búsqueda según la jerarquía
+      if (hasNeighborhoods) {
+        const neighborhood = updatedQuery.neighborhoods.toString();
+        
+        // Si es búsqueda a nivel de ciudad, mostramos todas las agencias
+        if (isCityWideSearch(neighborhood)) {
+          console.log('Búsqueda para toda Barcelona - mostrando todas las agencias');
+          updatedQuery.showAll = 'true';
+          delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
+        } 
+        // Si es un distrito o barrio específico, expandimos la búsqueda
+        else {
+          // Expandimos el barrio o distrito a una lista de barrios
+          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
+          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
+          
+          if (expandedNeighborhoods.length > 0) {
+            // Reemplazamos el filtro original con la lista expandida
+            updatedQuery.neighborhoods = expandedNeighborhoods.join(',');
+          }
+        }
       }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
-      else if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+      else if (!showAll && !hasSearchTerm) {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if ((hasSearchTerm || hasNeighborhoods) && !isBarcelona) {
+      if ((hasSearchTerm || hasNeighborhoods) && !isCityWideSearch(updatedQuery.neighborhoods?.toString() || '')) {
         delete updatedQuery.showAll; // No es necesario con términos de búsqueda
       }
       
@@ -390,33 +403,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Search agents params:', req.query);
       
+      // Importamos las funciones de neighborhoods para expandir la búsqueda
+      const { expandNeighborhoodSearch, isCityWideSearch } = require('./utils/neighborhoods');
+      
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agentName && updatedQuery.agentName.toString().trim() !== '';
       const hasNeighborhoods = updatedQuery.neighborhoods && updatedQuery.neighborhoods.toString().trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
       
-      // Verificar si la búsqueda es para toda Barcelona
-      const isBarcelona = hasNeighborhoods && 
-                         updatedQuery.neighborhoods !== undefined && 
-                         (updatedQuery.neighborhoods.toString().includes('Barcelona') || 
-                          updatedQuery.neighborhoods.toString().match(/Barcelona\s*\(Todos los barrios\)/i));
-      
-      // Si es Barcelona, vamos a mostrar todos los agentes (showAll = true)
-      if (isBarcelona) {
-        console.log('Búsqueda para toda Barcelona - mostrando todos los agentes');
-        updatedQuery.showAll = 'true';
-        delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
+      // Si hay barrios seleccionados, expandir la búsqueda según la jerarquía
+      if (hasNeighborhoods && updatedQuery.neighborhoods) {
+        const neighborhood = updatedQuery.neighborhoods.toString();
+        
+        // Si es búsqueda a nivel de ciudad, mostramos todos los agentes
+        if (isCityWideSearch(neighborhood)) {
+          console.log('Búsqueda para toda Barcelona - mostrando todos los agentes');
+          updatedQuery.showAll = 'true';
+          delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
+        } 
+        // Si es un distrito o barrio específico, expandimos la búsqueda
+        else {
+          // Expandimos el barrio o distrito a una lista de barrios
+          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
+          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
+          
+          if (expandedNeighborhoods.length > 0) {
+            // Reemplazamos el filtro original con la lista expandida
+            updatedQuery.neighborhoods = expandedNeighborhoods.join(',');
+          }
+        }
       }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
-      else if (!showAll && !hasSearchTerm && !hasNeighborhoods) {
+      else if (!showAll && !hasSearchTerm) {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
       
       // Si hay términos de búsqueda, usarlos para filtrar
-      if ((hasSearchTerm || hasNeighborhoods) && !isBarcelona) {
-        delete updatedQuery.showAll; // No es necesario con términos de búsqueda
+      if ((hasSearchTerm || hasNeighborhoods) && updatedQuery.neighborhoods) {
+        const neighborhoodString = updatedQuery.neighborhoods.toString();
+        if (!isCityWideSearch(neighborhoodString)) {
+          delete updatedQuery.showAll; // No es necesario con términos de búsqueda
+        }
       }
       
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
