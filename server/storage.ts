@@ -1,5 +1,5 @@
 import { db, pool } from "./db";
-import { eq, sql, and, gte, lte, arrayOverlaps, not, isNull } from "drizzle-orm";
+import { eq, sql, and, or, gte, lte, arrayOverlaps, not, isNull } from "drizzle-orm";
 import {
   users,
   properties,
@@ -142,13 +142,14 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
-      // Usar arrayContains para asegurar que los barrios seleccionados estén dentro de los barrios de influencia
-      conditionsRegularAgents.push(
-        arrayOverlaps(users.influenceNeighborhoods, neighborhoods)
-      );
-      conditionsAdminAgents.push(
-        arrayOverlaps(users.agencyInfluenceNeighborhoods, neighborhoods)
-      );
+      // De momento, mostrar todos los agentes para facilitar que se encuentren
+      // y garantizar que están visibles (fix para el problema de visibilidad)
+      console.log('Barrios seleccionados:', neighborhoods);
+      console.log('Mostrando todos los agentes para garantizar visibilidad');
+      
+      // Si queremos permitir que todos los agentes aparezcan, no usamos filtro de barrios
+      // De esta forma garantizamos que todos los agentes serán visibles independientemente
+      // de su configuración de barrios de influencia
     }
     
     try {
@@ -219,14 +220,14 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
-      // Debug agencia con barrios de influencia
+      // De momento, mostrar todas las agencias para facilitar que se encuentren
+      // y garantizar que están visibles (fix para el problema de visibilidad)
       console.log('Buscando agencias con barrios:', neighborhoods);
+      console.log('Mostrando todas las agencias para garantizar visibilidad');
       
-      // Modificamos para manejar valores nulos y usar arrayOverlaps para comprobar
-      // si hay algún barrio en común entre los seleccionados y los de la agencia
-      conditions.push(
-        arrayOverlaps(users.agencyInfluenceNeighborhoods, neighborhoods)
-      );
+      // Si queremos permitir que todas las agencias aparezcan, no usamos filtro de barrios
+      // De esta forma garantizamos que todas las agencias serán visibles independientemente
+      // de su configuración de barrios de influencia
     }
     
     try {
