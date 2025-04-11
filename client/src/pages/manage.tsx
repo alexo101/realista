@@ -269,7 +269,7 @@ export default function ManagePage() {
                   isActive={section === "clients"}
                   onClick={() => setSection("clients")}
                 >
-                  <span>Gestionar todo</span>
+                  <span>Clientes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
