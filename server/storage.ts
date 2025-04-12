@@ -297,6 +297,71 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getAgentById(id: number): Promise<User | undefined> {
+    try {
+      const [agent] = await db.select()
+        .from(users)
+        .where(
+          and(
+            eq(users.id, id),
+            eq(users.isAgent, true)
+          )
+        );
+      
+      if (agent) {
+        // También obtenemos las propiedades asociadas a este agente
+        const agentProperties = await this.getPropertiesByAgent(id);
+        
+        // No devolvemos la contraseña en la respuesta por seguridad
+        const { password, ...agentWithoutPassword } = agent;
+        
+        // Retornamos el agente con sus propiedades (pero sin incluir la contraseña)
+        return {
+          ...agentWithoutPassword,
+          properties: agentProperties
+        } as User;
+      }
+      
+      return undefined;
+    } catch (error) {
+      console.error('Error en getAgentById:', error);
+      return undefined;
+    }
+  }
+  
+  async getAgencyById(id: number): Promise<User | undefined> {
+    try {
+      const [agency] = await db.select()
+        .from(users)
+        .where(
+          and(
+            eq(users.id, id),
+            eq(users.isAgent, false),
+            not(isNull(users.agencyName))
+          )
+        );
+      
+      if (agency) {
+        // Obtenemos todos los agentes asociados a esta agencia
+        const agencyAgentsList = await this.getAgencyAgents(id);
+        
+        // No devolvemos la contraseña en la respuesta por seguridad
+        const { password, ...agencyWithoutPassword } = agency;
+        
+        // Retornamos la agencia con sus agentes asociados (pero sin incluir la contraseña)
+        return {
+          ...agencyWithoutPassword,
+          agents: agencyAgentsList
+        } as User;
+      }
+      
+      return undefined;
+    } catch (error) {
+      console.error('Error en getAgencyById:', error);
+      return undefined;
+    }
+  }
+  
   async createAgentReview(review: any): Promise<any> {
     // This is a placeholder implementation since we don't have an agent_reviews table defined yet
     // In a real implementation, we would insert into an agent_reviews table

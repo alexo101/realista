@@ -570,6 +570,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Invalid review data" });
     }
   });
+  
+  // Nuevas rutas para obtener detalles de agentes y agencias
+  app.get("/api/agents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+      
+      const agent = await storage.getAgentById(id);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      res.json(agent);
+    } catch (error) {
+      console.error('Error getting agent details:', error);
+      res.status(500).json({ message: "Failed to get agent details" });
+    }
+  });
+  
+  app.get("/api/agencies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid agency ID" });
+      }
+      
+      const agency = await storage.getAgencyById(id);
+      if (!agency) {
+        return res.status(404).json({ message: "Agency not found" });
+      }
+      
+      res.json(agency);
+    } catch (error) {
+      console.error('Error getting agency details:', error);
+      res.status(500).json({ message: "Failed to get agency details" });
+    }
+  });
 
   // User profile update
   app.patch("/api/users/:id", async (req, res) => {
