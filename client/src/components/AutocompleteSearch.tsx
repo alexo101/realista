@@ -204,6 +204,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       {showResults && (
         <div 
           className="absolute z-50 mt-1 w-full max-h-80 overflow-auto bg-white border rounded-md shadow-lg" 
+          style={{ maxHeight: '300px' }}
           ref={resultsRef}
         >
           {isLoading ? (

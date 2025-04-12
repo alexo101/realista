@@ -132,7 +132,7 @@ export default function AgentProfile() {
 
   if (isLoading) {
     return (
-      <div className="container py-8 max-w-7xl mx-auto">
+      <div className="container pt-16 pb-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8 mb-8">
           <Skeleton className="h-32 w-32 rounded-full" />
           <div className="flex-1 space-y-4">
@@ -150,7 +150,7 @@ export default function AgentProfile() {
 
   if (error || !agent) {
     return (
-      <div className="container py-8 max-w-7xl mx-auto">
+      <div className="container pt-16 pb-8 max-w-7xl mx-auto">
         <div className="text-center py-8">
           <h2 className="text-2xl font-bold mb-4">No se pudo cargar el perfil del agente</h2>
           <p className="text-gray-500 mb-6">
@@ -166,8 +166,13 @@ export default function AgentProfile() {
 
   const fullName = `${agent.name || ""} ${agent.surname || ""}`.trim();
 
+  // Añadir efecto para desplazar al inicio de la página cuando se carga
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
   return (
-    <div className="container py-8 max-w-7xl mx-auto">
+    <div className="container pt-16 pb-8 max-w-7xl mx-auto">
       {/* Header del Perfil */}
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <Avatar className="h-32 w-32">
