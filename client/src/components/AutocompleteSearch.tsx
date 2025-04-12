@@ -131,14 +131,12 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     if (onSelect) {
       onSelect(result);
     } else {
-      // Navegar a la página del agente o agencia
-      const params = new URLSearchParams();
+      // Navegar a la página detallada del agente o agencia
       if (type === 'agencies') {
-        params.append('agencyName', result.agencyName || '');
+        setLocation(`/agency/${result.id}`);
       } else {
-        params.append('agentId', result.id.toString());
+        setLocation(`/agent/${result.id}`);
       }
-      setLocation(`/search/${type}?${params}`);
     }
   };
 
