@@ -82,7 +82,7 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={() => window.location.href = `/agency/${agency.id}`}
+              onClick={() => window.location.href = `/agencias/${agency.id}`}
             >
               Ver agencia <ExternalLink className="w-4 h-4 ml-2" />
             </Button>

@@ -84,7 +84,7 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={() => window.location.href = `/agent/${agent.id}`}
+              onClick={() => window.location.href = `/agentes/${agent.id}`}
             >
               Ver perfil <ExternalLink className="w-4 h-4 ml-2" />
             </Button>

@@ -27,6 +27,9 @@ function Router() {
       <Route path="/neighborhood/:neighborhood/agents" component={NeighborhoodResults} />
       <Route path="/neighborhood/:neighborhood/overview" component={NeighborhoodResults} />
       <Route path="/property/:id" component={Property} />
+      <Route path="/agentes/:id" component={AgentProfile} />
+      <Route path="/agencias/:id" component={AgencyProfile} />
+      {/* Mantener las rutas antiguas para compatibilidad */}
       <Route path="/agent/:id" component={AgentProfile} />
       <Route path="/agency/:id" component={AgencyProfile} />
       <Route path="/manage" component={Manage} />

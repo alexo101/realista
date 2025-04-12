@@ -139,7 +139,8 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       onSelect(result);
     } else {
       // Navegar a la página detallada del agente o agencia
-      const targetPath = type === 'agencies' ? `/agency/${result.id}` : `/agent/${result.id}`;
+      // Usamos las rutas correctas: /agencias/:id para agencias y /agentes/:id para agentes
+      const targetPath = type === 'agencies' ? `/agencias/${result.id}` : `/agentes/${result.id}`;
       console.log('Redirecting to', targetPath);
       
       // Usar window.location para asegurar la recarga completa en lugar de setLocation
