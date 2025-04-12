@@ -349,7 +349,7 @@ export default function AgentProfile() {
             
             {reviews.length > 0 ? (
               <div className="space-y-4">
-                {reviews.slice(0, 2).map(review => (
+                {reviews.slice(0, 2).map((review: Review) => (
                   <Card key={review.id}>
                     <CardContent className="p-4">
                       <div className="flex justify-between mb-2">
@@ -463,7 +463,7 @@ export default function AgentProfile() {
               
               {reviews.length > 0 ? (
                 <div className="space-y-6">
-                  {reviews.map(review => (
+                  {reviews.map((review: Review) => (
                     <Card key={review.id}>
                       <CardContent className="p-6">
                         <div className="flex justify-between mb-2">
