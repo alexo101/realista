@@ -141,6 +141,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       // Navegar a la página detallada del agente o agencia
       const targetPath = type === 'agencies' ? `/agency/${result.id}` : `/agent/${result.id}`;
       console.log('Redirecting to', targetPath);
+      // Usar window.location.href para forzar una recarga completa
       window.location.href = targetPath;
     }
   };
