@@ -135,8 +135,13 @@ export default function AgencyProfile() {
     "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1000&auto=format&fit=crop"
   ];
 
+  useEffect(() => {
+    // Desplazar al inicio de la página cuando se carga
+    window.scrollTo(0, 0);
+  }, [id]);
+
   return (
-    <div className="container py-8 max-w-7xl mx-auto">
+    <div className="container pt-16 pb-8 max-w-7xl mx-auto">
       {/* Header del Perfil */}
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="md:w-36 lg:w-48">
