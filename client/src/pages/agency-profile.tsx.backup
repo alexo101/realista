@@ -151,6 +151,12 @@ export default function AgencyProfile() {
           <h1 className="text-3xl font-bold mb-2">{agency.agencyName}</h1>
           <div className="flex items-center text-sm text-gray-500 mb-4">
             <Badge variant="outline" className="mr-2">Agencia inmobiliaria</Badge>
+            <div className="flex items-center">
+              <Star className="h-4 w-4 text-yellow-400 mr-1" />
+              <span className="font-medium">4.8</span>
+              <span className="mx-1">·</span>
+              <span>(24 reseñas)</span>
+            </div>
           </div>
           <p className="text-gray-700 mb-4">
             {agency.agencyDescription || "Esta agencia aún no ha añadido una descripción."}
@@ -352,6 +358,7 @@ export default function AgencyProfile() {
                 Escribir una reseña
               </Button>
             </div>
+            </div>
           </div>
         </TabsContent>
 
@@ -400,16 +407,96 @@ export default function AgencyProfile() {
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-4">Valoración general</h2>
-                  <div className="text-center py-8">
-                    <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No hay reseñas disponibles</h3>
-                    <p className="text-gray-500 max-w-md mx-auto">
-                      Esta agencia aún no tiene reseñas.
-                    </p>
-                    <Button className="mt-4">
-                      Escribir una reseña
-                    </Button>
+                  <div className="flex items-center mb-4">
+                    <div className="text-4xl font-bold mr-3">4.8</div>
+                    <div className="flex text-yellow-400">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star key={star} className="h-6 w-6 fill-current" />
+                      ))}
+                    </div>
                   </div>
+                  <div className="text-sm text-gray-500 mb-6">Basado en 24 reseñas</div>
+                  
+                  <Button className="w-full">Escribir una reseña</Button>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="md:w-2/3 space-y-4">
+              {/* Reseñas de ejemplo, en una implementación real se cargarían desde la API */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-2">
+                    <div className="flex text-yellow-400">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star key={star} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-500">hace 3 meses</span>
+                  </div>
+                  <h3 className="font-semibold mb-2">Servicio excelente</h3>
+                  <p className="text-gray-700">
+                    Trabajamos con {agency.agencyName} para vender nuestro piso y fue una experiencia muy positiva.
+                    Profesionales y eficientes en todo momento.
+                  </p>
+                  <div className="mt-2 font-medium">Juan C.</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-2">
+                    <div className="flex text-yellow-400">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star key={star} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-500">hace 1 mes</span>
+                  </div>
+                  <h3 className="font-semibold mb-2">Gran equipo de profesionales</h3>
+                  <p className="text-gray-700">
+                    Encontramos nuestro piso ideal gracias a {agency.agencyName}. 
+                    Muy buenos profesionales que nos asesoraron durante todo el proceso.
+                  </p>
+                  <div className="mt-2 font-medium">Laura B.</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-2">
+                    <div className="flex text-yellow-400">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star key={star} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-500">hace 5 meses</span>
+                  </div>
+                  <h3 className="font-semibold mb-2">Eficientes y rápidos</h3>
+                  <p className="text-gray-700">
+                    Conseguimos alquilar nuestro piso en menos de dos semanas gracias a {agency.agencyName}.
+                    Todo el proceso fue muy profesional y sin complicaciones.
+                  </p>
+                  <div className="mt-2 font-medium">Roberto M.</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center mb-2">
+                    <div className="flex text-yellow-400">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star key={star} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                    <span className="ml-2 text-sm text-gray-500">hace 7 meses</span>
+                  </div>
+                  <h3 className="font-semibold mb-2">La mejor agencia de Barcelona</h3>
+                  <p className="text-gray-700">
+                    Después de trabajar con varias agencias, puedo decir que {agency.agencyName} es la mejor.
+                    Su atención al cliente es excepcional y su conocimiento del mercado es impresionante.
+                  </p>
+                  <div className="mt-2 font-medium">Elena T.</div>
                 </CardContent>
               </Card>
             </div>
