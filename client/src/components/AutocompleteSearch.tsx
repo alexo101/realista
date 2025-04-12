@@ -141,9 +141,9 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       // Navegar a la página detallada del agente o agencia
       console.log('Redirecting to', type === 'agencies' ? `/agency/${result.id}` : `/agent/${result.id}`);
       if (type === 'agencies') {
-        setLocation(`/agency/${result.id}`);
+        window.location.href = `/agency/${result.id}`;
       } else {
-        setLocation(`/agent/${result.id}`);
+        window.location.href = `/agent/${result.id}`;
       }
     }
   };
@@ -194,7 +194,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                   params.append('agentName', searchTerm.trim());
                 }
                 params.append('showAll', 'true');
-                setLocation(`/search/${type}?${params}`);
+                window.location.href = `/search/${type}?${params}`;
               }
             }}
             type="button"

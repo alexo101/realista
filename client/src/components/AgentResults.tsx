@@ -81,10 +81,12 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
           )}
           
           <div className="mt-auto pt-4">
-            <Button variant="outline" className="w-full" asChild>
-              <Link href={`/agent/${agent.id}`}>
-                Ver perfil <ExternalLink className="w-4 h-4 ml-2" />
-              </Link>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => window.location.href = `/agent/${agent.id}`}
+            >
+              Ver perfil <ExternalLink className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </div>
