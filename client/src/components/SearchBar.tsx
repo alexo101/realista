@@ -329,23 +329,26 @@ export function SearchBar() {
                       }
                     }
 
-                    // En lugar de redireccionar, actualizamos inmediatamente para mostrar resultados
-                    // mientras el usuario escribe (efecto de autocompletado)
-                    setTimeout(() => {
+                    // Para el efecto de autocompletado, realizamos la búsqueda inmediatamente
+                    if (searchValue.trim()) {
                       const params = new URLSearchParams();
-                      if (searchValue.trim()) {
-                        if (searchType === 'agencies') {
-                          params.append('agencyName', searchValue.trim());
-                        } else {
-                          params.append('agentName', searchValue.trim());
-                        }
-                        // Si hay barrios seleccionados, añadirlos a la búsqueda
-                        if (selectedNeighborhoods.length > 0) {
-                          params.append('neighborhoods', selectedNeighborhoods.join(','));
-                        }
-                        setLocation(`/search/${searchType}?${params}`);
+                      if (searchType === 'agencies') {
+                        params.append('agencyName', searchValue.trim());
+                        params.append('showAll', 'true'); // Importante: forzar que se muestren resultados
+                      } else {
+                        params.append('agentName', searchValue.trim());
+                        params.append('showAll', 'true'); // Importante: forzar que se muestren resultados
                       }
-                    }, 300);
+                      
+                      // Si hay barrios seleccionados, añadirlos a la búsqueda
+                      if (selectedNeighborhoods.length > 0) {
+                        params.append('neighborhoods', selectedNeighborhoods.join(','));
+                      }
+                      
+                      setTimeout(() => {
+                        setLocation(`/search/${searchType}?${params}`);
+                      }, 300);
+                    }
                   }}
                   value={searchType === 'agencies' ? agencyName : agentName}
                   onKeyDown={handleKeyDown}
@@ -361,8 +364,10 @@ export function SearchBar() {
                     if (searchValue) {
                       if (searchType === 'agencies') {
                         params.append('agencyName', searchValue);
+                        params.append('showAll', 'true');
                       } else {
                         params.append('agentName', searchValue);
+                        params.append('showAll', 'true');
                       }
                     } else {
                       params.append('showAll', 'true');
