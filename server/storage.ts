@@ -34,6 +34,8 @@ export interface IStorage {
   // Agents
   searchAgents(query: string): Promise<User[]>;
   searchAgencies(query: string): Promise<User[]>;
+  getAgentById(id: number): Promise<User | undefined>; // Nuevo método para obtener un agente por ID
+  getAgencyById(id: number): Promise<User | undefined>; // Nuevo método para obtener una agencia por ID
   createAgentReview(review: any): Promise<any>;
   
   // Agency Agents

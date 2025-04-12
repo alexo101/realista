@@ -1,0 +1,90 @@
+✅ Autocomplete Working:
+The autocomplete functionality in both the Agencias and Agentes tabs is working as expected. Users can now search for agencies and agents by name and receive dynamic, real-time suggestions.
+
+🚧 Next Task – Build Profile Detail Pages with Wireframes:
+We need to create dedicated profile detail pages for each agency and agent. These pages should deliver an in-depth view of the profile, including key details and images. Please use Zillow, RateMyAgent, or RankMyAgent as design references.
+
+Requirements:
+
+Profile Detail Pages:
+
+For Agencies:
+
+Agency name
+
+Contact information
+
+Areas/Neighborhoods served
+
+Listings, recent projects, or properties
+
+Agency ratings/testimonials (if applicable)
+
+Uploaded images (e.g., agency logo, photos of the office or projects)
+
+For Agents:
+
+Agent name
+
+Contact details (phone, email, social media)
+
+Neighborhoods served
+
+Listings or recent properties
+
+Agent ratings/testimonials
+
+Profile picture and any additional relevant images
+
+User Interface & Experience:
+
+Use the design patterns from platforms such as Zillow, RateMyAgent, or RankMyAgent as references to deliver a clean, modern, and user-friendly interface.
+
+Ensure the pages are visually appealing and easy to navigate.
+
+Wireframes:
+Below are sample wireframes to guide the layout and structure of the profile detail pages.
+
+Agency Profile Wireframe:
+
+markdown
+Copy
+Edit
+---------------------------------------------------
+|                    Agency Logo                   |
+---------------------------------------------------
+| Agency Name                                     |
+| Contact Information                             |
+|-------------------------------------------------|
+| Areas/Neighborhoods Served                      |
+|-------------------------------------------------|
+| Listings/Projects                               |
+| [Property Card]  [Property Card]  [Property Card]|
+|-------------------------------------------------|
+| Testimonials / Ratings                          |
+---------------------------------------------------
+| Uploaded Images (Gallery)                       |
+---------------------------------------------------
+Agent Profile Wireframe:
+
+markdown
+Copy
+Edit
+---------------------------------------------------
+|                Agent Profile Picture             |
+---------------------------------------------------
+| Agent Name                                      |
+| Contact Details (Phone, Email)                   |
+|-------------------------------------------------|
+| Neighborhoods Served                             |
+|-------------------------------------------------|
+| Listings/Recent Properties                       |
+| [Property Card]  [Property Card]  [Property Card]|
+|-------------------------------------------------|
+| Ratings / Testimonials                           |
+---------------------------------------------------
+| Uploaded Images (Portfolio)                      |
+---------------------------------------------------
+Objective:
+
+Develop visually rich and highly functional profile detail pages for both agencies and agents, ensuring that all relevant information and images are displayed clearly. The design should align with the aesthetics and user interaction patterns of leading real estate platforms, ensuring a seamless and professional user experience.
