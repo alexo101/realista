@@ -11,6 +11,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { PropertyCard } from "@/components/PropertyCard";
 
+// Interfaz para las reseñas
+interface Review {
+  id: number;
+  author: string;
+  rating: number;
+  date: string;
+  comment: string;
+}
+
 interface Agent {
   id: number;
   email: string;
@@ -80,23 +89,8 @@ export default function AgentProfile() {
     window.scrollTo(0, 0);
   }, [id]);
 
-  // Estado para las reseñas (simuladas)
-  const [reviews] = useState([
-    {
-      id: 1,
-      author: "María García",
-      rating: 5,
-      date: "hace 2 meses",
-      comment: "Excelente profesional, nos ayudó a encontrar nuestra casa ideal. Muy recomendable."
-    },
-    {
-      id: 2,
-      author: "Juan Pérez",
-      rating: 4,
-      date: "hace 3 meses",
-      comment: "Buen servicio y atención personalizada. Conoce muy bien los barrios de Barcelona."
-    },
-  ]);
+  // Estado para las reseñas (inicialmente vacío)
+  const [reviews] = useState<Review[]>([]);
 
   // Si los datos están cargando, mostramos un esqueleto de carga
   if (isLoading) {
@@ -135,8 +129,8 @@ export default function AgentProfile() {
   }
 
   const fullName = `${agent.name || ''} ${agent.surname || ''}`.trim();
-  const reviewAverage = agent.reviewAverage || 4.8; // Valor por defecto en caso de que no exista
-  const reviewCount = agent.reviewCount || reviews.length; // Valor por defecto en caso de que no exista
+  const reviewAverage = agent.reviewAverage || 0; // Valor predeterminado 0 si no hay reseñas
+  const reviewCount = agent.reviewCount || 0; // Valor predeterminado 0 si no hay reseñas
 
   // Renderizamos el perfil completo del agente
   return (
@@ -236,7 +230,7 @@ export default function AgentProfile() {
                           <Home className="h-5 w-5 mr-2 text-primary" />
                           <h4 className="font-medium">Propiedades activas</h4>
                         </div>
-                        <div className="text-3xl font-bold">{agent.properties?.length || 12}</div>
+                        <div className="text-3xl font-bold">{agent.properties?.length || 0}</div>
                       </CardContent>
                     </Card>
                     
@@ -246,7 +240,7 @@ export default function AgentProfile() {
                           <Briefcase className="h-5 w-5 mr-2 text-primary" />
                           <h4 className="font-medium">Años de experiencia</h4>
                         </div>
-                        <div className="text-3xl font-bold">5+</div>
+                        <div className="text-3xl font-bold">-</div>
                       </CardContent>
                     </Card>
                   </div>
@@ -298,23 +292,23 @@ export default function AgentProfile() {
                     <div>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm">Comunicación</span>
-                        <span className="text-sm font-medium">4.9/5</span>
+                        <span className="text-sm font-medium">-</span>
                       </div>
-                      <Progress value={98} className="h-2" />
+                      <Progress value={0} className="h-2" />
                     </div>
                     <div>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm">Conocimiento del mercado</span>
-                        <span className="text-sm font-medium">4.8/5</span>
+                        <span className="text-sm font-medium">-</span>
                       </div>
-                      <Progress value={96} className="h-2" />
+                      <Progress value={0} className="h-2" />
                     </div>
                     <div>
                       <div className="flex justify-between mb-1">
                         <span className="text-sm">Profesionalidad</span>
-                        <span className="text-sm font-medium">5.0/5</span>
+                        <span className="text-sm font-medium">-</span>
                       </div>
-                      <Progress value={100} className="h-2" />
+                      <Progress value={0} className="h-2" />
                     </div>
                   </div>
                 </div>
