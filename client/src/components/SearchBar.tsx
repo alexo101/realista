@@ -308,20 +308,43 @@ export function SearchBar() {
         <div className="flex items-center gap-4">
           {/* Buscador para Agencias y Agentes */}
           {(searchType === 'agencies' || searchType === 'agents') && (
-            <div className="flex-1 relative">
-              <AutocompleteSearch 
-                type={searchType as 'agencies' | 'agents'} 
-                placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
-                onSelect={(result) => {
-                  // Actualiza el estado con el resultado seleccionado
-                  if (searchType === 'agencies') {
-                    setAgencyName(result.agencyName || '');
-                  } else {
-                    setAgentName(`${result.name || ''} ${result.surname || ''}`);
-                  }
-                }}
-              />
-            </div>
+            <>
+              <div className="flex-1 relative" style={{ flex: 2 }}>
+                <AutocompleteSearch 
+                  type={searchType as 'agencies' | 'agents'} 
+                  placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
+                  onSelect={(result) => {
+                    // Actualiza el estado con el resultado seleccionado
+                    if (searchType === 'agencies') {
+                      setAgencyName(result.agencyName || '');
+                    } else {
+                      setAgentName(`${result.name || ''} ${result.surname || ''}`);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Selector de barrio para Agencias y Agentes */}
+              <div className="flex-1">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto py-2 px-3"
+                  onClick={() => setIsNeighborhoodOpen(true)}
+                >
+                  {selectedNeighborhoods.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedNeighborhoods.map(n => (
+                        <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    "Selecciona un barrio"
+                  )}
+                </Button>
+              </div>
+            </>
           )}
 
           {/* Filtros para Alquilar y Comprar */}

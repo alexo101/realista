@@ -77,11 +77,6 @@ export default function AgencyProfile() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("overview");
   
-  // Desplazar al inicio de la página cuando se carga
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [id]);
-
   const { data: agency, isLoading, error } = useQuery<Agency>({
     queryKey: [`/api/agencies/${id}`],
     queryFn: async () => {

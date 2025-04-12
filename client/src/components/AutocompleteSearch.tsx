@@ -79,8 +79,8 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     }
     
     const targetPath = type === 'agencies' 
-      ? `/agencias/${result.id}` 
-      : `/agentes/${result.id}`;
+      ? `/agency-profile/${result.id}` 
+      : `/agent-profile/${result.id}`;
     
     console.log('Navigating to', targetPath);
     window.location.href = targetPath;
