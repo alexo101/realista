@@ -1,54 +1,81 @@
+import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { type Property } from "@shared/schema";
-import { Building2, Eye } from "lucide-react";
-import { ReviewButtons } from "./ReviewButtons";
+import { Badge } from "@/components/ui/badge";
+import { Bed, Bath, Square, MapPin, Euro } from "lucide-react";
+
+interface Property {
+  id: number;
+  title: string;
+  address: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  size: number;
+  images: string[];
+  type: string;
+  operationType: string;
+}
 
 interface PropertyCardProps {
   property: Property;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  return (
-    <Card className="overflow-hidden group h-full flex flex-col">
-      <div className="cursor-pointer" onClick={() => window.location.href = `/property/${property.id}`}>
-        <div className="aspect-video relative overflow-hidden">
-          {property.images?.length ? (
-            <img
-              src={property.images[property.mainImageIndex || 0] || property.images[0]}
-              alt={property.title || property.address}
-              className="object-cover w-full h-full group-hover:scale-105 transition-transform"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-              <Building2 className="h-12 w-12 text-gray-400" />
-            </div>
-          )}
-          <div className="absolute top-2 right-2 bg-primary text-white text-xs font-medium px-2 py-1 rounded-md">
-            {property.operationType === 'Alquiler' ? 'Alquiler' : 'Venta'}
-          </div>
-        </div>
+  // Formato del precio en euros con puntos como separadores de miles
+  const formattedPrice = new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0
+  }).format(property.price);
 
+  // Imagen por defecto en caso de que no haya imágenes
+  const imageUrl = property.images && property.images.length > 0
+    ? property.images[0]
+    : "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=2070&auto=format&fit=crop";
+
+  return (
+    <Link href={`/property/${property.id}`}>
+      <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+        <div className="relative">
+          <img
+            src={imageUrl}
+            alt={property.title}
+            className="h-48 w-full object-cover"
+          />
+          <Badge className="absolute top-2 right-2 capitalize">
+            {property.operationType === 'rent' ? 'Alquiler' : 'Venta'}
+          </Badge>
+        </div>
+        
         <CardContent className="p-4">
-          <h3 className="text-lg font-semibold line-clamp-1">{property.title || property.address}</h3>
-          <p className="text-2xl font-bold text-primary mt-2">
-            €{property.price.toLocaleString()}
-          </p>
-          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-            <span>{property.type}</span>
-            <span>{property.neighborhood}</span>
-          </div>
-          <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
-          {property.viewCount !== undefined && property.viewCount > 0 && (
-            <div className="flex items-center mt-2 text-xs text-gray-500">
-              <Eye className="h-3 w-3 mr-1" />
-              <span>{property.viewCount} {property.viewCount === 1 ? 'vista' : 'vistas'}</span>
+          <div className="mb-2">
+            <h3 className="font-semibold text-lg truncate">{property.title}</h3>
+            <div className="flex items-center text-sm text-gray-500">
+              <MapPin className="h-3 w-3 mr-1" /> {property.address}
             </div>
-          )}
+          </div>
+          
+          <div className="text-xl font-bold mb-3 flex items-center">
+            <Euro className="h-5 w-5 mr-1" /> {formattedPrice}
+            {property.operationType === 'rent' && <span className="text-sm font-normal ml-1">/mes</span>}
+          </div>
+          
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center">
+              <Bed className="h-4 w-4 mr-1" />
+              <span>{property.bedrooms}</span>
+            </div>
+            <div className="flex items-center">
+              <Bath className="h-4 w-4 mr-1" />
+              <span>{property.bathrooms}</span>
+            </div>
+            <div className="flex items-center">
+              <Square className="h-4 w-4 mr-1" />
+              <span>{property.size}m²</span>
+            </div>
+          </div>
         </CardContent>
-      </div>
-      <CardContent className="border-t pt-4 mt-auto">
-        <ReviewButtons />
-      </CardContent>
-    </Card>
+      </Card>
+    </Link>
   );
 }

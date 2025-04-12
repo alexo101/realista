@@ -1,119 +1,69 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink } from "lucide-react";
+import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink, Home, MessageCircle, Briefcase } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-
-interface Property {
-  id: number;
-  title?: string;
-  reference?: string;
-  address: string;
-  type: string;
-  operationType: string;
-  description: string;
-  price: number;
-  neighborhood: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  superficie?: number;
-  images?: string[];
-  mainImageIndex?: number;
-  viewCount?: number;
-}
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { PropertyCard } from "@/components/PropertyCard";
 
 interface Agent {
   id: number;
+  email: string;
   name: string | null;
   surname: string | null;
-  email: string;
-  description: string | null;
-  avatar?: string | null;
-  influenceNeighborhoods: string[] | null;
+  phone?: string;
+  description?: string;
+  avatar?: string;
+  agencyName?: string | null;
+  influenceNeighborhoods?: string[];
   isAgent: boolean;
   properties?: Property[];
+  reviewCount?: number;
+  reviewAverage?: number;
 }
 
-function PropertyCard({ property }: { property: Property }) {
-  return (
-    <Link href={`/property/${property.id}`}>
-      <Card className="overflow-hidden h-full cursor-pointer hover:shadow-md transition-shadow">
-        <div className="relative h-48 bg-gray-200">
-          {property.images && property.images.length > 0 && (
-            <img 
-              src={property.images[property.mainImageIndex || 0]} 
-              alt={property.title || property.address} 
-              className="h-full w-full object-cover"
-            />
-          )}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-            <div className="text-white font-bold">
-              {property.price.toLocaleString('es-ES')} €
-            </div>
-          </div>
-        </div>
-        <CardContent className="p-4">
-          <h3 className="font-semibold truncate">
-            {property.title || property.address}
-          </h3>
-          <div className="text-sm text-gray-500 truncate mb-2">
-            {property.address}
-          </div>
-          <div className="flex items-center text-sm gap-3">
-            {property.bedrooms && (
-              <div className="flex items-center gap-1">
-                <span className="font-medium">{property.bedrooms}</span> hab
-              </div>
-            )}
-            {property.bathrooms && (
-              <div className="flex items-center gap-1">
-                <span className="font-medium">{property.bathrooms}</span> baños
-              </div>
-            )}
-            {property.superficie && (
-              <div className="flex items-center gap-1">
-                <span className="font-medium">{property.superficie}</span> m²
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
+interface Property {
+  id: number;
+  title: string;
+  address: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  size: number;
+  images: string[];
+  type: string;
+  operationType: string;
 }
 
-function LoadingProperties() {
+// Componente de calificación con estrellas
+const StarRating = ({ rating }: { rating: number }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3].map((item) => (
-        <div key={item} className="space-y-3">
-          <Skeleton className="h-48 w-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <div className="flex gap-2">
-              <Skeleton className="h-4 w-12" />
-              <Skeleton className="h-4 w-12" />
-              <Skeleton className="h-4 w-12" />
-            </div>
-          </div>
-        </div>
+    <div className="flex">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`h-5 w-5 ${
+            star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+          }`}
+        />
       ))}
     </div>
   );
-}
+};
 
 export default function AgentProfile() {
+  // Obtenemos el ID del agente de los parámetros de la URL
   const { id } = useParams<{ id: string }>();
+  
+  // Estado para la pestaña activa
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Consulta para obtener los datos del agente
   const { data: agent, isLoading, error } = useQuery<Agent>({
     queryKey: [`/api/agents/${id}`],
     queryFn: async () => {
@@ -125,16 +75,35 @@ export default function AgentProfile() {
     },
   });
 
+  // Efecto para desplazar al inicio de la página cuando cambia el ID
   useEffect(() => {
-    // Scroll al inicio cuando se carga la página
     window.scrollTo(0, 0);
   }, [id]);
 
+  // Estado para las reseñas (simuladas)
+  const [reviews] = useState([
+    {
+      id: 1,
+      author: "María García",
+      rating: 5,
+      date: "hace 2 meses",
+      comment: "Excelente profesional, nos ayudó a encontrar nuestra casa ideal. Muy recomendable."
+    },
+    {
+      id: 2,
+      author: "Juan Pérez",
+      rating: 4,
+      date: "hace 3 meses",
+      comment: "Buen servicio y atención personalizada. Conoce muy bien los barrios de Barcelona."
+    },
+  ]);
+
+  // Si los datos están cargando, mostramos un esqueleto de carga
   if (isLoading) {
     return (
-      <div className="container pt-16 pb-8 max-w-7xl mx-auto">
+      <div className="container py-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8 mb-8">
-          <Skeleton className="h-32 w-32 rounded-full" />
+          <Skeleton className="h-36 w-36 rounded-lg" />
           <div className="flex-1 space-y-4">
             <Skeleton className="h-10 w-64" />
             <Skeleton className="h-6 w-48" />
@@ -148,9 +117,10 @@ export default function AgentProfile() {
     );
   }
 
+  // Si hay un error o no hay datos, mostramos un mensaje de error
   if (error || !agent) {
     return (
-      <div className="container pt-16 pb-8 max-w-7xl mx-auto">
+      <div className="container py-8 max-w-7xl mx-auto">
         <div className="text-center py-8">
           <h2 className="text-2xl font-bold mb-4">No se pudo cargar el perfil del agente</h2>
           <p className="text-gray-500 mb-6">
@@ -164,46 +134,54 @@ export default function AgentProfile() {
     );
   }
 
-  const fullName = `${agent.name || ""} ${agent.surname || ""}`.trim();
+  const fullName = `${agent.name || ''} ${agent.surname || ''}`.trim();
+  const reviewAverage = agent.reviewAverage || 4.8; // Valor por defecto en caso de que no exista
+  const reviewCount = agent.reviewCount || reviews.length; // Valor por defecto en caso de que no exista
 
-  // Añadir efecto para desplazar al inicio de la página cuando se carga
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [id]);
-
+  // Renderizamos el perfil completo del agente
   return (
     <div className="container pt-16 pb-8 max-w-7xl mx-auto">
       {/* Header del Perfil */}
       <div className="flex flex-col md:flex-row gap-8 mb-8">
-        <Avatar className="h-32 w-32">
-          <AvatarImage src={agent.avatar || undefined} alt={fullName} />
-          <AvatarFallback className="text-4xl">
-            {fullName.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
+        <div className="md:w-36 lg:w-48">
+          <Avatar className="h-36 w-36 lg:h-48 lg:w-48 rounded-lg">
+            <AvatarImage src={agent.avatar} />
+            <AvatarFallback className="text-4xl rounded-lg">
+              {agent.name ? agent.name.charAt(0) : ''}
+            </AvatarFallback>
+          </Avatar>
+        </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">{fullName}</h1>
-          <div className="flex items-center text-sm text-gray-500 mb-4">
+          <div className="flex items-center text-sm text-gray-500 mb-2">
             <Badge variant="outline" className="mr-2">Agente inmobiliario</Badge>
-            <div className="flex items-center">
-              <Star className="h-4 w-4 text-yellow-400 mr-1" />
-              <span className="font-medium">5.0</span>
-              <span className="mx-1">·</span>
-              <span>(11 reseñas)</span>
-            </div>
+            {agent.agencyName && (
+              <span className="flex items-center">
+                <Building2 className="h-4 w-4 mr-1" /> {agent.agencyName}
+              </span>
+            )}
           </div>
+          
+          <div className="flex items-center mb-4">
+            <StarRating rating={reviewAverage} />
+            <span className="ml-2 text-sm text-gray-500">({reviewCount} reseñas)</span>
+          </div>
+          
           <p className="text-gray-700 mb-4">
-            {agent.description || "Este agente aún no ha añadido una descripción."}
+            {agent.description || `${fullName} es un agente inmobiliario con experiencia en el mercado de Barcelona, especializado en ayudar a sus clientes a encontrar la propiedad perfecta.`}
           </p>
+          
           <div className="flex flex-wrap gap-3">
-            <Button size="sm">
-              <Phone className="mr-2 h-4 w-4" /> Llamar
+            {agent.phone && (
+              <Button size="sm">
+                <Phone className="mr-2 h-4 w-4" /> Llamar
+              </Button>
+            )}
+            <Button size="sm" variant="outline">
+              <Mail className="mr-2 h-4 w-4" /> Contactar
             </Button>
             <Button size="sm" variant="outline">
-              <Mail className="mr-2 h-4 w-4" /> Enviar email
-            </Button>
-            <Button size="sm" variant="outline">
-              <Calendar className="mr-2 h-4 w-4" /> Agendar cita
+              <Calendar className="mr-2 h-4 w-4" /> Solicitar una cita
             </Button>
           </div>
         </div>
@@ -221,20 +199,21 @@ export default function AgentProfile() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="col-span-2">
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Sobre {agent.name}</h2>
+                <h2 className="text-xl font-semibold mb-4">Sobre {fullName}</h2>
                 <div className="space-y-4">
                   <p className="text-gray-700">
                     {agent.description || 
-                     `${agent.name} es un agente inmobiliario especializado en Barcelona. 
-                     Con experiencia en el sector, ofrece un servicio personalizado 
-                     para ayudar a sus clientes a encontrar la propiedad perfecta.`}
+                     `${fullName} es un agente inmobiliario con amplia experiencia en el mercado de Barcelona. 
+                     Se especializa en propiedades residenciales y ayuda a sus clientes a encontrar el hogar perfecto.
+                     Con un profundo conocimiento del mercado local, ${agent.name} ofrece un servicio personalizado
+                     y dedicado a cada cliente.`}
                   </p>
                   
                   {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
                     <div className="mt-4">
                       <h3 className="font-medium mb-2 flex items-center">
                         <MapPin className="h-5 w-5 mr-2 text-gray-500" />
-                        Barrios de especialización
+                        Zonas de especialidad
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {agent.influenceNeighborhoods.map((neighborhood) => (
@@ -245,6 +224,32 @@ export default function AgentProfile() {
                       </div>
                     </div>
                   )}
+                </div>
+                
+                {/* Estadísticas del agente */}
+                <div className="mt-8">
+                  <h3 className="font-medium mb-4">Estadísticas</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center mb-2">
+                          <Home className="h-5 w-5 mr-2 text-primary" />
+                          <h4 className="font-medium">Propiedades activas</h4>
+                        </div>
+                        <div className="text-3xl font-bold">{agent.properties?.length || 12}</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center mb-2">
+                          <Briefcase className="h-5 w-5 mr-2 text-primary" />
+                          <h4 className="font-medium">Años de experiencia</h4>
+                        </div>
+                        <div className="text-3xl font-bold">5+</div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -263,24 +268,53 @@ export default function AgentProfile() {
                     </div>
                   </div>
                   
-                  <div className="flex">
-                    <Phone className="h-5 w-5 mr-3 text-gray-500" />
-                    <div>
-                      <div className="font-medium">Teléfono</div>
-                      <a href="tel:+34612345678" className="text-blue-600 hover:underline">
-                        +34 612 345 678
-                      </a>
+                  {agent.phone && (
+                    <div className="flex">
+                      <Phone className="h-5 w-5 mr-3 text-gray-500" />
+                      <div>
+                        <div className="font-medium">Teléfono</div>
+                        <a href={`tel:${agent.phone}`} className="text-blue-600 hover:underline">
+                          {agent.phone}
+                        </a>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="flex">
-                    <Building2 className="h-5 w-5 mr-3 text-gray-500" />
+                  {agent.agencyName && (
+                    <div className="flex">
+                      <Building2 className="h-5 w-5 mr-3 text-gray-500" />
+                      <div>
+                        <div className="font-medium">Agencia</div>
+                        <div>{agent.agencyName}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Calificaciones del agente */}
+                <div className="mt-6">
+                  <h3 className="font-medium mb-3">Calificaciones</h3>
+                  <div className="space-y-3">
                     <div>
-                      <div className="font-medium">Oficina</div>
-                      <address className="not-italic">
-                        Rambla de Poblenou, 138<br />
-                        08018 Barcelona
-                      </address>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Comunicación</span>
+                        <span className="text-sm font-medium">4.9/5</span>
+                      </div>
+                      <Progress value={98} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Conocimiento del mercado</span>
+                        <span className="text-sm font-medium">4.8/5</span>
+                      </div>
+                      <Progress value={96} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">Profesionalidad</span>
+                        <span className="text-sm font-medium">5.0/5</span>
+                      </div>
+                      <Progress value={100} className="h-2" />
                     </div>
                   </div>
                 </div>
@@ -294,7 +328,7 @@ export default function AgentProfile() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Propiedades destacadas</h2>
                 <Button variant="link" asChild>
-                  <Link href={`#properties`} onClick={() => setActiveTab("properties")}>
+                  <Link href="#properties" onClick={() => setActiveTab("properties")}>
                     Ver todas <ExternalLink className="ml-1 h-4 w-4" />
                   </Link>
                 </Button>
@@ -319,58 +353,47 @@ export default function AgentProfile() {
               </Button>
             </div>
             
-            <div className="space-y-4">
-              {/* Reseñas de ejemplo, en una implementación real se cargarían desde la API */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className="h-4 w-4 fill-current" />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-500">hace 1 año</span>
-                  </div>
-                  <h3 className="font-semibold mb-2">Excelente profesional</h3>
-                  <p className="text-gray-700 text-sm">
-                    {agent.name} me ayudó a encontrar mi piso ideal en la zona de Poblenou. 
-                    Muy atento y profesional en todo momento, conoce perfectamente el mercado.
-                  </p>
-                  <div className="mt-2 text-sm font-medium">Maria G.</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className="h-4 w-4 fill-current" />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-500">hace 2 meses</span>
-                  </div>
-                  <h3 className="font-semibold mb-2">Muy buena experiencia</h3>
-                  <p className="text-gray-700 text-sm">
-                    Trabajar con {agent.name} ha sido muy fácil. Encontramos rápidamente lo que 
-                    buscábamos y nos ayudó con toda la documentación. Muy recomendable.
-                  </p>
-                  <div className="mt-2 text-sm font-medium">Carlos M.</div>
-                </CardContent>
-              </Card>
-            </div>
+            {reviews.length > 0 ? (
+              <div className="space-y-4">
+                {reviews.slice(0, 2).map(review => (
+                  <Card key={review.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between mb-2">
+                        <div className="font-medium">{review.author}</div>
+                        <div className="text-sm text-gray-500">{review.date}</div>
+                      </div>
+                      <div className="mb-2">
+                        <StarRating rating={review.rating} />
+                      </div>
+                      <p className="text-gray-700">{review.comment}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium mb-2">No hay reseñas disponibles</h3>
+                <p className="text-gray-500 max-w-md mx-auto">
+                  Este agente aún no tiene reseñas. Sé el primero en compartir tu experiencia.
+                </p>
+                <Button className="mt-4">
+                  Escribir una reseña
+                </Button>
+              </div>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="properties" className="mt-6">
-          <h2 className="text-2xl font-semibold mb-6">Propiedades de {agent.name}</h2>
+          <h2 className="text-2xl font-semibold mb-6">Propiedades de {fullName}</h2>
           
           {!agent.properties || agent.properties.length === 0 ? (
             <div className="text-center py-8">
-              <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium mb-2">Sin propiedades</h3>
+              <Home className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium mb-2">Sin propiedades listadas</h3>
               <p className="text-gray-500">
-                Este agente no tiene propiedades publicadas actualmente.
+                Este agente no tiene propiedades listadas actualmente.
               </p>
             </div>
           ) : (
@@ -383,103 +406,93 @@ export default function AgentProfile() {
         </TabsContent>
 
         <TabsContent value="reviews" className="mt-6">
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="md:w-1/3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-1">
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-4">Valoración general</h2>
-                  <div className="flex items-center mb-4">
-                    <div className="text-4xl font-bold mr-3">5.0</div>
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className="h-6 w-6 fill-current" />
-                      ))}
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="text-5xl font-bold mr-3">{reviewAverage.toFixed(1)}</div>
+                    <div>
+                      <StarRating rating={reviewAverage} />
+                      <div className="text-sm text-gray-500">{reviewCount} reseñas</div>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-500 mb-6">Basado en 11 reseñas</div>
                   
-                  <Button className="w-full">Escribir una reseña</Button>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">5 estrellas</span>
+                        <span className="text-sm">{Math.round(reviewCount * 0.7)}</span>
+                      </div>
+                      <Progress value={70} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">4 estrellas</span>
+                        <span className="text-sm">{Math.round(reviewCount * 0.2)}</span>
+                      </div>
+                      <Progress value={20} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">3 estrellas</span>
+                        <span className="text-sm">{Math.round(reviewCount * 0.1)}</span>
+                      </div>
+                      <Progress value={10} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">2 estrellas</span>
+                        <span className="text-sm">0</span>
+                      </div>
+                      <Progress value={0} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm">1 estrella</span>
+                        <span className="text-sm">0</span>
+                      </div>
+                      <Progress value={0} className="h-2" />
+                    </div>
+                  </div>
+                  
+                  <Button className="w-full mt-6">
+                    Escribir una reseña
+                  </Button>
                 </CardContent>
               </Card>
             </div>
             
-            <div className="md:w-2/3 space-y-4">
-              {/* Reseñas de ejemplo, en una implementación real se cargarían desde la API */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className="h-4 w-4 fill-current" />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-500">hace 1 año</span>
-                  </div>
-                  <h3 className="font-semibold mb-2">Excelente profesional</h3>
-                  <p className="text-gray-700">
-                    {agent.name} me ayudó a encontrar mi piso ideal en la zona de Poblenou. 
-                    Muy atento y profesional en todo momento, conoce perfectamente el mercado.
-                  </p>
-                  <div className="mt-2 font-medium">Maria G.</div>
-                </CardContent>
-              </Card>
+            <div className="md:col-span-2">
+              <h2 className="text-2xl font-semibold mb-4">Todas las reseñas</h2>
               
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className="h-4 w-4 fill-current" />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-500">hace 2 meses</span>
-                  </div>
-                  <h3 className="font-semibold mb-2">Muy buena experiencia</h3>
-                  <p className="text-gray-700">
-                    Trabajar con {agent.name} ha sido muy fácil. Encontramos rápidamente lo que 
-                    buscábamos y nos ayudó con toda la documentación. Muy recomendable.
+              {reviews.length > 0 ? (
+                <div className="space-y-6">
+                  {reviews.map(review => (
+                    <Card key={review.id}>
+                      <CardContent className="p-6">
+                        <div className="flex justify-between mb-2">
+                          <div className="font-medium">{review.author}</div>
+                          <div className="text-sm text-gray-500">{review.date}</div>
+                        </div>
+                        <div className="mb-3">
+                          <StarRating rating={review.rating} />
+                        </div>
+                        <p className="text-gray-700">{review.comment}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No hay reseñas disponibles</h3>
+                  <p className="text-gray-500 max-w-md mx-auto">
+                    Este agente aún no tiene reseñas. Sé el primero en compartir tu experiencia.
                   </p>
-                  <div className="mt-2 font-medium">Carlos M.</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className="h-4 w-4 fill-current" />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-500">hace 5 meses</span>
-                  </div>
-                  <h3 className="font-semibold mb-2">Muy profesional</h3>
-                  <p className="text-gray-700">
-                    Gracias a {agent.name} vendimos nuestro piso en tiempo récord y al precio que queríamos.
-                    Excelente servicio y comunicación constante durante todo el proceso.
-                  </p>
-                  <div className="mt-2 font-medium">Luis R.</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center mb-2">
-                    <div className="flex text-yellow-400">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className="h-4 w-4 fill-current" />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-500">hace 7 meses</span>
-                  </div>
-                  <h3 className="font-semibold mb-2">Conocimiento del mercado impresionante</h3>
-                  <p className="text-gray-700">
-                    Lo que más me gustó de {agent.name} fue su conocimiento profundo del 
-                    mercado inmobiliario en Barcelona. Nos aconsejó perfectamente en cada paso.
-                  </p>
-                  <div className="mt-2 font-medium">Ana T.</div>
-                </CardContent>
-              </Card>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>
