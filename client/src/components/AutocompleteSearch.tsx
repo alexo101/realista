@@ -54,12 +54,28 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     staleTime: 5000, // Caché para 5 segundos para evitar muchas peticiones
   });
 
-  // Cerrar el menú desplegable si se hace clic fuera
+  // Cerrar el menú desplegable si se hace clic fuera, con un pequeño retraso
   useEffect(() => {
+    // Bandera para rastrear si se está procesando un clic
+    let isProcessingClick = false;
+    
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowResults(false);
+      // Si ya estamos procesando un clic, no hacemos nada
+      if (isProcessingClick) return;
+      
+      // Si el clic fue dentro del contenedor, no hacemos nada
+      if (containerRef.current && containerRef.current.contains(event.target as Node)) {
+        return;
       }
+      
+      // Marcamos que estamos procesando un clic y cerramos el desplegable con un pequeño retraso
+      isProcessingClick = true;
+      
+      // Usamos un pequeño retraso para permitir que otros manejadores de eventos se ejecuten primero
+      setTimeout(() => {
+        setShowResults(false);
+        isProcessingClick = false;
+      }, 100);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -85,19 +101,22 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         break;
       case 'Enter':
         if (highlightedIndex >= 0 && highlightedIndex < results.length) {
+          // Usamos handleResultClick que ya tiene el setTimeout implementado
           handleResultClick(results[highlightedIndex]);
         } else {
           // Si no hay resultado resaltado, ir a la página de búsqueda
-          const params = new URLSearchParams();
-          if (type === 'agencies') {
-            params.append('agencyName', searchTerm.trim());
-          } else {
-            params.append('agentName', searchTerm.trim());
-          }
-          params.append('showAll', 'true');
-          window.location.href = `/search/${type}?${params}`;
+          // Utilizamos un pequeño retraso para asegurar que el evento se procesa completamente
+          setTimeout(() => {
+            const params = new URLSearchParams();
+            if (type === 'agencies') {
+              params.append('agencyName', searchTerm.trim());
+            } else {
+              params.append('agentName', searchTerm.trim());
+            }
+            params.append('showAll', 'true');
+            window.location.href = `/search/${type}?${params}`;
+          }, 50);
         }
-        setShowResults(false);
         break;
       case 'Escape':
         setShowResults(false);
@@ -133,19 +152,26 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       setSearchTerm(`${result.name || ''} ${result.surname || ''}`);
     }
     
-    setShowResults(false);
+    // Usamos una referencia al resultado para poder usarlo en el setTimeout
+    const resultRef = result;
     
-    if (onSelect) {
-      onSelect(result);
-    } else {
-      // Navegar a la página detallada del agente o agencia
-      // Usamos las rutas correctas: /agencias/:id para agencias y /agentes/:id para agentes
-      const targetPath = type === 'agencies' ? `/agencias/${result.id}` : `/agentes/${result.id}`;
-      console.log('Redirecting to', targetPath);
+    // Utilizamos un pequeño retraso para permitir que el evento de clic se propague
+    // antes de cerrar el desplegable y navegar
+    setTimeout(() => {
+      setShowResults(false);
       
-      // Usar window.location para asegurar la recarga completa en lugar de setLocation
-      window.location.href = targetPath;
-    }
+      if (onSelect) {
+        onSelect(resultRef);
+      } else {
+        // Navegar a la página detallada del agente o agencia
+        // Usamos las rutas correctas: /agencias/:id para agencias y /agentes/:id para agentes
+        const targetPath = type === 'agencies' ? `/agencias/${resultRef.id}` : `/agentes/${resultRef.id}`;
+        console.log('Redirecting to', targetPath);
+        
+        // Usar window.location para asegurar la recarga completa en lugar de setLocation
+        window.location.href = targetPath;
+      }
+    }, 150); // Un retraso mayor para asegurar que el clic se procesa correctamente
   };
 
   const clearSearch = () => {
@@ -222,7 +248,12 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                   "flex items-center p-3 cursor-pointer hover:bg-gray-100",
                   highlightedIndex === index && "bg-gray-100"
                 )}
-                onClick={() => handleResultClick(result)}
+                onClick={(e) => {
+                  // Detener la propagación del evento para evitar que se cierre el desplegable prematuramente
+                  e.stopPropagation();
+                  e.preventDefault();
+                  handleResultClick(result);
+                }}
                 onMouseEnter={() => setHighlightedIndex(index)}
               >
                 <Avatar className="h-10 w-10 mr-3">
