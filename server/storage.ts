@@ -133,14 +133,44 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por nombre si existe y no está vacío
     if (searchTerm && searchTerm.trim() !== '') {
-      const nameCondition = sql`(
-        LOWER(${users.name}::text) LIKE LOWER(${'%' + searchTerm + '%'}) OR 
-        LOWER(${users.surname}::text) LIKE LOWER(${'%' + searchTerm + '%'}) OR 
-        LOWER(${users.email}::text) LIKE LOWER(${'%' + searchTerm + '%'})
-      )`;
+      const trimmedTerm = searchTerm.trim();
       
-      conditionsRegularAgents.push(nameCondition);
-      conditionsAdminAgents.push(nameCondition);
+      if (isAutoCompleteMode) {
+        // Para autocompletado, priorizamos los que comienzan con el término de búsqueda
+        // y luego los que contienen el término en cualquier parte
+        const exactStartCondition = sql`(
+          LOWER(${users.name}::text) LIKE LOWER(${trimmedTerm + '%'}) OR 
+          LOWER(${users.surname}::text) LIKE LOWER(${trimmedTerm + '%'}) OR 
+          LOWER(CONCAT(${users.name}, ' ', ${users.surname})) LIKE LOWER(${trimmedTerm + '%'}) OR
+          LOWER(${users.email}::text) LIKE LOWER(${trimmedTerm + '%'})
+        )`;
+        
+        const containsCondition = sql`(
+          LOWER(${users.name}::text) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR 
+          LOWER(${users.surname}::text) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR 
+          LOWER(CONCAT(${users.name}, ' ', ${users.surname})) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR
+          LOWER(${users.email}::text) LIKE LOWER(${'%' + trimmedTerm + '%'})
+        )`;
+        
+        // Usamos primero la condición exacta y luego la contiene
+        conditionsRegularAgents.push(
+          or(exactStartCondition as any, containsCondition as any)
+        );
+        conditionsAdminAgents.push(
+          or(exactStartCondition as any, containsCondition as any)
+        );
+      } else {
+        // Para búsqueda normal, mantenemos el comportamiento anterior
+        const nameCondition = sql`(
+          LOWER(${users.name}::text) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR 
+          LOWER(${users.surname}::text) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR 
+          LOWER(CONCAT(${users.name}, ' ', ${users.surname})) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR
+          LOWER(${users.email}::text) LIKE LOWER(${'%' + trimmedTerm + '%'})
+        )`;
+        
+        conditionsRegularAgents.push(nameCondition);
+        conditionsAdminAgents.push(nameCondition);
+      }
     }
     
     // Añadir condición de búsqueda por barrios si existen
@@ -159,13 +189,13 @@ export class DatabaseStorage implements IStorage {
       // Consulta para obtener agentes regulares
       const regularAgentsQuery = db.select()
         .from(users)
-        .where(and(...conditionsRegularAgents))
+        .where(conditionsRegularAgents.length > 0 ? and(...conditionsRegularAgents) : undefined as any)
         .orderBy(users.name);
         
       // Consulta para obtener agentes administrativos
       const adminAgentsQuery = db.select()
         .from(users)
-        .where(and(...conditionsAdminAgents))
+        .where(conditionsAdminAgents.length > 0 ? and(...conditionsAdminAgents) : undefined as any)
         .orderBy(users.name);
         
       // Ejecutar ambas consultas y combinar resultados
@@ -219,9 +249,23 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por nombre si existe y no está vacío
     if (searchTerm && searchTerm.trim() !== '') {
-      conditions.push(
-        sql`LOWER(${users.agencyName}::text) LIKE LOWER(${'%' + searchTerm.trim() + '%'})`
-      );
+      const trimmedTerm = searchTerm.trim();
+      
+      if (isAutoCompleteMode) {
+        // Para autocompletado, priorizamos las agencias que comienzan con el término
+        // y luego las que contienen el término en cualquier parte
+        const exactStartCondition = sql`LOWER(${users.agencyName}::text) LIKE LOWER(${trimmedTerm + '%'})`;
+        const containsCondition = sql`LOWER(${users.agencyName}::text) LIKE LOWER(${'%' + trimmedTerm + '%'})`;
+        
+        conditions.push(
+          or(exactStartCondition as any, containsCondition as any)
+        );
+      } else {
+        // Para búsqueda normal, mantenemos el comportamiento anterior
+        conditions.push(
+          sql`LOWER(${users.agencyName}::text) LIKE LOWER(${'%' + trimmedTerm + '%'})`
+        );
+      }
     }
     
     // Añadir condición de búsqueda por barrios si existen
@@ -239,7 +283,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db.select()
         .from(users)
-        .where(and(...conditions))
+        .where(conditions.length > 0 ? and(...conditions) : undefined as any)
         .orderBy(users.agencyName);
         
       console.log('SearchAgencies - query conditions:', conditions);
