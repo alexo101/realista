@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'wouter';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Search, X } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
+// Definición de tipos
 interface SearchResult {
   id: number;
   name: string | null;
@@ -24,15 +24,17 @@ interface AutocompleteSearchProps {
 }
 
 export function AutocompleteSearch({ type, placeholder, onSelect }: AutocompleteSearchProps) {
-  const [, setLocation] = useLocation();
+  // Estado local
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  
+  // Referencias a elementos DOM
   const containerRef = useRef<HTMLDivElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Consulta para buscar agentes o agencias basado en el término de búsqueda
+  const resultsContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Consulta a la API
   const { data: results = [], isLoading } = useQuery<SearchResult[]>({
     queryKey: [`/api/search/${type}`, searchTerm],
     queryFn: async () => {
@@ -51,107 +53,122 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       return response.json();
     },
     enabled: !!searchTerm.trim(),
-    staleTime: 5000, // Caché para 5 segundos para evitar muchas peticiones
+    staleTime: 5000,
   });
-
-  // Cerrar el menú desplegable si se hace clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowResults(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Manejar eventos de teclado para navegación
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!results.length) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedIndex((prev) => 
-          prev < results.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-        break;
-      case 'Enter':
-        if (highlightedIndex >= 0 && highlightedIndex < results.length) {
-          handleNavigateToProfile(results[highlightedIndex]);
-        } else {
-          // Si no hay resultado resaltado, ir a la página de búsqueda
-          const params = new URLSearchParams();
-          if (type === 'agencies') {
-            params.append('agencyName', searchTerm.trim());
-          } else {
-            params.append('agentName', searchTerm.trim());
-          }
-          params.append('showAll', 'true');
-          window.location.href = `/search/${type}?${params}`;
-        }
-        break;
-      case 'Escape':
-        setShowResults(false);
-        break;
-    }
-  };
-
-  // Scroll hacia el resultado resaltado
-  useEffect(() => {
-    if (resultsRef.current && highlightedIndex >= 0) {
-      const highlightedElement = resultsRef.current.children[highlightedIndex] as HTMLElement;
-      if (highlightedElement) {
-        highlightedElement.scrollIntoView({ 
-          block: 'nearest',
-          behavior: 'smooth'
-        });
-      }
-    }
-  }, [highlightedIndex]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+  // Funciones de manejo de eventos
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     setHighlightedIndex(-1);
     setShowResults(value.trim().length > 0);
   };
-
-  const handleNavigateToProfile = (result: SearchResult) => {
-    // Actualizar el término de búsqueda según el tipo de resultado
-    if (type === 'agencies') {
-      setSearchTerm(result.agencyName || '');
-    } else {
-      setSearchTerm(`${result.name || ''} ${result.surname || ''}`);
-    }
-    
-    setShowResults(false);
-    
-    if (onSelect) {
-      onSelect(result);
-    } else {
-      // Navegar a la página detallada del agente o agencia
-      const targetPath = type === 'agencies' ? `/agencias/${result.id}` : `/agentes/${result.id}`;
-      console.log(`Navigating to: ${targetPath}`);
-      window.location.href = targetPath;
-    }
-  };
-
-  const clearSearch = () => {
+  
+  const handleClearSearch = () => {
     setSearchTerm('');
     setShowResults(false);
     if (inputRef.current) {
       inputRef.current.focus();
     }
   };
-
+  
+  const navigateToProfile = (result: SearchResult) => {
+    if (onSelect) {
+      onSelect(result);
+      return;
+    }
+    
+    const targetPath = type === 'agencies' 
+      ? `/agencias/${result.id}` 
+      : `/agentes/${result.id}`;
+    
+    console.log('Navigating to', targetPath);
+    window.location.href = targetPath;
+  };
+  
+  const navigateToSearch = () => {
+    if (!searchTerm.trim()) return;
+    
+    const params = new URLSearchParams();
+    if (type === 'agencies') {
+      params.append('agencyName', searchTerm.trim());
+    } else {
+      params.append('agentName', searchTerm.trim());
+    }
+    params.append('showAll', 'true');
+    
+    window.location.href = `/search/${type}?${params}`;
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!results.length) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < results.length - 1 ? prev + 1 : prev
+        );
+        break;
+        
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : 0
+        );
+        break;
+        
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < results.length) {
+          navigateToProfile(results[highlightedIndex]);
+        } else {
+          navigateToSearch();
+        }
+        break;
+        
+      case 'Escape':
+        setShowResults(false);
+        break;
+    }
+  };
+  
+  // Efecto para cerrar al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Efecto para hacer scroll al elemento resaltado
+  useEffect(() => {
+    if (resultsContainerRef.current && highlightedIndex >= 0) {
+      const container = resultsContainerRef.current;
+      const highlightedItem = container.children[highlightedIndex] as HTMLElement;
+      
+      if (highlightedItem) {
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.clientHeight;
+        const itemTop = highlightedItem.offsetTop;
+        const itemBottom = itemTop + highlightedItem.clientHeight;
+        
+        if (itemTop < containerTop) {
+          container.scrollTop = itemTop;
+        } else if (itemBottom > containerBottom) {
+          container.scrollTop = itemBottom - container.clientHeight;
+        }
+      }
+    }
+  }, [highlightedIndex]);
+  
+  // Renderizado
   return (
     <div className="relative w-full" ref={containerRef}>
       <div className="relative">
@@ -159,52 +176,43 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           ref={inputRef}
           type="text"
           value={searchTerm}
-          onChange={handleChange}
+          onChange={handleInputChange}
           onFocus={() => setShowResults(searchTerm.trim().length > 0)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder || `Buscar ${type === 'agencies' ? 'agencias' : 'agentes'}...`}
           className="pr-16"
         />
+        
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-1">
           {searchTerm && (
             <Button
               size="icon"
               variant="ghost"
               className="h-6 w-6"
-              onClick={clearSearch}
+              onClick={handleClearSearch}
               type="button"
             >
               <X className="h-4 w-4" />
             </Button>
           )}
+          
           <Button
             size="icon"
             variant="ghost"
             className="h-6 w-6"
-            onClick={() => {
-              if (searchTerm.trim()) {
-                const params = new URLSearchParams();
-                if (type === 'agencies') {
-                  params.append('agencyName', searchTerm.trim());
-                } else {
-                  params.append('agentName', searchTerm.trim());
-                }
-                params.append('showAll', 'true');
-                window.location.href = `/search/${type}?${params}`;
-              }
-            }}
+            onClick={navigateToSearch}
             type="button"
           >
             <Search className="h-4 w-4" />
           </Button>
         </div>
       </div>
-
+      
       {showResults && (
         <div 
-          className="absolute z-50 mt-1 w-full max-h-80 overflow-auto bg-white border rounded-md shadow-lg" 
+          className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto"
           style={{ maxHeight: '300px' }}
-          ref={resultsRef}
+          ref={resultsContainerRef}
         >
           {isLoading ? (
             <div className="p-4 text-center text-gray-500">Buscando...</div>
@@ -212,16 +220,17 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
             <div className="p-4 text-center text-gray-500">No se encontraron resultados</div>
           ) : (
             results.map((result, index) => (
-              <div
+              <button
                 key={result.id}
+                type="button"
                 className={cn(
-                  "flex items-center p-3 cursor-pointer hover:bg-gray-100",
+                  "w-full flex items-center p-3 text-left hover:bg-gray-100 border-b border-gray-100 last:border-0",
                   highlightedIndex === index && "bg-gray-100"
                 )}
-                onClick={() => handleNavigateToProfile(result)}
+                onClick={() => navigateToProfile(result)}
                 onMouseEnter={() => setHighlightedIndex(index)}
               >
-                <Avatar className="h-10 w-10 mr-3">
+                <Avatar className="h-10 w-10 mr-3 flex-shrink-0">
                   {result.avatar ? (
                     <img 
                       src={result.avatar} 
@@ -234,20 +243,23 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                     </div>
                   )}
                 </Avatar>
-                <div className="flex-1">
-                  <div className="font-medium">
+                
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">
                     {type === 'agents' 
                       ? `${result.name || ''} ${result.surname || ''}` 
                       : result.agencyName || ''}
                   </div>
+                  
                   {type === 'agents' && result.agencyName && (
-                    <div className="text-sm text-gray-500">{result.agencyName}</div>
+                    <div className="text-sm text-gray-500 truncate">{result.agencyName}</div>
                   )}
+                  
                   {type === 'agencies' && result.description && (
-                    <div className="text-sm text-gray-500">{result.description}</div>
+                    <div className="text-sm text-gray-500 truncate">{result.description}</div>
                   )}
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>
