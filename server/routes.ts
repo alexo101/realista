@@ -395,8 +395,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
       console.log('Search agencies queryString:', queryString);
       const agencies = await storage.searchAgencies(queryString);
-      console.log('Search agencies results:', agencies.length);
-      res.json(agencies);
+      
+      // Procesamos los resultados para asegurar que se usen las propiedades correctas
+      const processedResults = agencies.map(agency => {
+        return {
+          ...agency,
+          // Aseguramos que se usa el logo específico de la agencia en lugar del avatar del administrador
+          avatar: agency.agencyLogo || agency.avatar,
+          // Aseguramos que se usa la descripción específica de la agencia
+          description: agency.agencyDescription || agency.description
+        };
+      });
+      
+      console.log('Search agencies results:', processedResults.length);
+      res.json(processedResults);
     } catch (error) {
       console.error('Error searching agencies:', error);
       res.status(500).json({ message: "Failed to search agencies" });

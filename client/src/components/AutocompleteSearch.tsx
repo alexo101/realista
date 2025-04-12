@@ -14,7 +14,10 @@ interface SearchResult {
   email: string;
   avatar: string | null;
   agencyName?: string | null;
+  agencyLogo?: string | null;
+  agencyDescription?: string | null;
   description?: string | null;
+  isAgent?: boolean;
 }
 
 interface AutocompleteSearchProps {

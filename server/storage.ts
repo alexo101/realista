@@ -395,9 +395,47 @@ export class DatabaseStorage implements IStorage {
   
   // Agency Agents
   async getAgencyAgents(agencyId: number): Promise<AgencyAgent[]> {
-    return db.select()
+    // Primero obtenemos los agentes normales de la tabla agencyAgents
+    const regularAgents = await db.select()
       .from(agencyAgents)
       .where(eq(agencyAgents.agencyId, agencyId));
+      
+    // Ahora necesitamos obtener la información del administrador de la agencia
+    // que es un usuario con agencyName pero no aparece en la lista de agentes
+    const [admin] = await db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.id, agencyId),
+          not(isNull(users.agencyName))
+        )
+      );
+    
+    // Si existe un administrador, lo añadimos como un agente adicional
+    if (admin) {
+      console.log(`Añadiendo administrador ${admin.name} ${admin.surname} como agente de la agencia ${agencyId}`);
+      
+      // Verificamos si ya tenemos este usuario en la lista de agentes
+      const adminAlreadyInList = regularAgents.some(agent => 
+        agent.agentEmail === admin.email
+      );
+      
+      if (!adminAlreadyInList) {
+        // Creamos un objeto tipo AgencyAgent para el administrador
+        const adminAsAgent: AgencyAgent = {
+          id: -admin.id, // Usamos un ID negativo para indicar que es un admin
+          agencyId: agencyId,
+          agentName: admin.name || 'Administrador',
+          agentSurname: admin.surname || '',
+          agentEmail: admin.email,
+          createdAt: admin.createdAt
+        };
+        
+        return [...regularAgents, adminAsAgent];
+      }
+    }
+    
+    return regularAgents;
   }
 
   async createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent> {
