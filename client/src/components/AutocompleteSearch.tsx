@@ -126,12 +126,20 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
   };
 
   const handleResultClick = (result: SearchResult) => {
-    setSearchTerm(`${result.name || ''} ${result.surname || ''}`);
+    // Actualizar el término de búsqueda según el tipo de resultado
+    if (type === 'agencies') {
+      setSearchTerm(result.agencyName || '');
+    } else {
+      setSearchTerm(`${result.name || ''} ${result.surname || ''}`);
+    }
+    
     setShowResults(false);
+    
     if (onSelect) {
       onSelect(result);
     } else {
       // Navegar a la página detallada del agente o agencia
+      console.log('Redirecting to', type === 'agencies' ? `/agency/${result.id}` : `/agent/${result.id}`);
       if (type === 'agencies') {
         setLocation(`/agency/${result.id}`);
       } else {
