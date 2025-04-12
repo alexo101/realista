@@ -125,7 +125,7 @@ export default function NeighborhoodResultsPage() {
             {/* Barcelona siempre está en el nivel superior */}
             <span 
               className="cursor-pointer hover:text-primary"
-              onClick={() => setLocation('/neighborhood/Barcelona/properties')}
+              onClick={() => window.location.href = '/neighborhood/Barcelona/properties'}
             >
               Barcelona
             </span>
@@ -140,7 +140,7 @@ export default function NeighborhoodResultsPage() {
                   <>
                     <span 
                       className="cursor-pointer hover:text-primary"
-                      onClick={() => setLocation(`/neighborhood/${encodeURIComponent(district || '')}/properties`)}
+                      onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(district || '')}/properties`}
                     >
                       {district}
                     </span>
@@ -240,9 +240,9 @@ export default function NeighborhoodResultsPage() {
                               // Caso especial para "Sant Andreu" barrio dentro del distrito "Sant Andreu"
                               if (decodedNeighborhood === "Sant Andreu" && neighborhood === "Sant Andreu") {
                                 // Renombramos a "Sant Andreu del Palomar" solo para uso interno de navegación
-                                setLocation(`/neighborhood/Sant Andreu del Palomar/properties`);
+                                window.location.href = `/neighborhood/Sant Andreu del Palomar/properties`;
                               } else {
-                                setLocation(`/neighborhood/${encodeURIComponent(neighborhood)}/properties`);
+                                window.location.href = `/neighborhood/${encodeURIComponent(neighborhood)}/properties`;
                               }
                             }}
                           >
@@ -267,7 +267,7 @@ export default function NeighborhoodResultsPage() {
                         <span 
                           key={district}
                           className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
-                          onClick={() => setLocation(`/neighborhood/${encodeURIComponent(district)}/properties`)}
+                          onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(district)}/properties`}
                         >
                           {district}
                         </span>
@@ -388,7 +388,7 @@ export default function NeighborhoodResultsPage() {
                               onClick={() => {
                                 // Almacenar el barrio en localStorage para seleccionarlo automáticamente en el formulario
                                 localStorage.setItem('barrio_a_valorar', decodedNeighborhood);
-                                setLocation('/#valorar-barrio');
+                                window.location.href = '/#valorar-barrio';
                               }}
                             >
                               Sé el primero en valorar este barrio
