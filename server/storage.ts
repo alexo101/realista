@@ -346,28 +346,37 @@ export class DatabaseStorage implements IStorage {
   
   async getAgencyById(id: number): Promise<User | undefined> {
     try {
+      // Primero obtenemos la información básica de la agencia
       const [agency] = await db.select()
         .from(users)
         .where(
           and(
             eq(users.id, id),
-            eq(users.isAgent, false),
             not(isNull(users.agencyName))
           )
         );
       
       if (agency) {
-        // Obtenemos todos los agentes asociados a esta agencia
+        // También obtenemos los agentes asociados a esta agencia
         const agencyAgentsList = await this.getAgencyAgents(id);
         
         // No devolvemos la contraseña en la respuesta por seguridad
         const { password, ...agencyWithoutPassword } = agency;
         
-        // Retornamos la agencia con sus agentes asociados (pero sin incluir la contraseña)
-        return {
+        // Aseguramos que se use el logo de la agencia, no foto de perfil del admin
+        // y que se use la descripción de la agencia, no del admin
+        const agencyData = {
           ...agencyWithoutPassword,
-          agents: agencyAgentsList
-        } as User;
+          agents: agencyAgentsList,
+          // Aseguramos que el avatar usado sea específicamente el logo de la agencia (si existe)
+          avatar: agency.agencyLogo || agency.avatar,
+          // Usamos la descripción específica de la agencia (si existe)
+          description: agency.agencyDescription || agency.description
+        };
+        
+        console.log(`Perfil de agencia ${id} (${agency.agencyName}) cargado con ${agencyAgentsList.length} agentes`);
+        
+        return agencyData as User;
       }
       
       return undefined;

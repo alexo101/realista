@@ -231,7 +231,19 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                 onMouseEnter={() => setHighlightedIndex(index)}
               >
                 <Avatar className="h-10 w-10 mr-3 flex-shrink-0">
-                  {result.avatar ? (
+                  {type === 'agencies' ? (
+                    result.agencyLogo ? (
+                      <img 
+                        src={result.agencyLogo} 
+                        alt={result.agencyName || ''} 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-600">
+                        {(result.agencyName?.[0] || '')}
+                      </div>
+                    )
+                  ) : result.avatar ? (
                     <img 
                       src={result.avatar} 
                       alt={`${result.name || ''} ${result.surname || ''}`} 
@@ -255,8 +267,10 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                     <div className="text-sm text-gray-500 truncate">{result.agencyName}</div>
                   )}
                   
-                  {type === 'agencies' && result.description && (
-                    <div className="text-sm text-gray-500 truncate">{result.description}</div>
+                  {type === 'agencies' && (
+                    <div className="text-sm text-gray-500 truncate">
+                      {result.agencyDescription || result.description || 'Agencia inmobiliaria'}
+                    </div>
                   )}
                 </div>
               </button>
