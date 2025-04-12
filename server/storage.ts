@@ -299,16 +299,31 @@ export class DatabaseStorage implements IStorage {
 
   async getAgentById(id: number): Promise<User | undefined> {
     try {
-      const [agent] = await db.select()
+      // Primero intentamos obtener un agente regular (isAgent=true)
+      let agent = await db.select()
         .from(users)
         .where(
           and(
             eq(users.id, id),
             eq(users.isAgent, true)
           )
-        );
+        ).then(res => res[0]);
+      
+      // Si no encontramos un agente regular, intentamos buscar un administrador de agencia
+      if (!agent) {
+        console.log('No se encontró agente regular con ID', id, 'intentando buscar admin de agencia');
+        agent = await db.select()
+          .from(users)
+          .where(
+            and(
+              eq(users.id, id),
+              not(isNull(users.agencyName))
+            )
+          ).then(res => res[0]);
+      }
       
       if (agent) {
+        console.log('Agente encontrado:', agent.email, 'isAgent:', agent.isAgent);
         // También obtenemos las propiedades asociadas a este agente
         const agentProperties = await this.getPropertiesByAgent(id);
         
