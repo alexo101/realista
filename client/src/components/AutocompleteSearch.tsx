@@ -95,7 +95,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
             params.append('agentName', searchTerm.trim());
           }
           params.append('showAll', 'true');
-          setLocation(`/search/${type}?${params}`);
+          window.location.href = `/search/${type}?${params}`;
         }
         setShowResults(false);
         break;
@@ -193,7 +193,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                   params.append('agentName', searchTerm.trim());
                 }
                 params.append('showAll', 'true');
-                setLocation(`/search/${type}?${params}`);
+                window.location.href = `/search/${type}?${params}`;
               }
             }}
             type="button"

@@ -79,14 +79,13 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
           )}
           
           <div className="mt-auto pt-4">
-            <Link href={`/agency/${agency.id}`}>
-              <Button 
-                variant="outline" 
-                className="w-full"
-              >
-                Ver agencia <ExternalLink className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => window.location.href = `/agency/${agency.id}`}
+            >
+              Ver agencia <ExternalLink className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </div>
       ))}

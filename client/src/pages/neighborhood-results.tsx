@@ -43,7 +43,7 @@ export default function NeighborhoodResultsPage() {
   
   // Cambiar tab
   const handleTabChange = (value: string) => {
-    setLocation(`/neighborhood/${encodeURIComponent(decodedNeighborhood)}/${value}`);
+    window.location.href = `/neighborhood/${encodeURIComponent(decodedNeighborhood)}/${value}`;
   };
 
   // Consultas para propiedades
@@ -114,7 +114,7 @@ export default function NeighborhoodResultsPage() {
           <Button 
             variant="ghost" 
             className="mb-2"
-            onClick={() => setLocation('/')}
+            onClick={() => window.location.href = '/'}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Volver a inicio
