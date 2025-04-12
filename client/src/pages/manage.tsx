@@ -269,6 +269,7 @@ export default function ManagePage() {
                   isActive={section === "clients"}
                   onClick={() => setSection("clients")}
                 >
+                  <UserCircle className="h-4 w-4" />
                   <span>Clientes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

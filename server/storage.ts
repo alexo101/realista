@@ -272,14 +272,14 @@ export class DatabaseStorage implements IStorage {
     
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
-      // De momento, mostrar todas las agencias para facilitar que se encuentren
-      // y garantizar que están visibles (fix para el problema de visibilidad)
-      console.log('Buscando agencias con barrios:', neighborhoods);
-      console.log('Mostrando todas las agencias para garantizar visibilidad');
+      console.log('Buscando agencias con barrios de influencia:', neighborhoods);
       
-      // Si queremos permitir que todas las agencias aparezcan, no usamos filtro de barrios
-      // De esta forma garantizamos que todas las agencias serán visibles independientemente
-      // de su configuración de barrios de influencia
+      // Ahora sí filtramos para mostrar solo las agencias que tienen estos barrios como barrios de influencia
+      // Usamos la función de array_overlaps para verificar que la agencia tiene al menos uno de estos barrios
+      const neighborhoodsArray = neighborhoods.map(n => `"${n}"`).join(',');
+      conditions.push(
+        sql`array[${sql.raw(neighborhoodsArray)}]::text[] && ${users.influenceNeighborhoods}`
+      );
     }
     
     try {
