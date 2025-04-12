@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
@@ -141,7 +141,9 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       // Navegar a la página detallada del agente o agencia
       const targetPath = type === 'agencies' ? `/agency/${result.id}` : `/agent/${result.id}`;
       console.log('Redirecting to', targetPath);
-      setLocation(targetPath);
+      
+      // Usar window.location para asegurar la recarga completa en lugar de setLocation
+      window.location.href = targetPath;
     }
   };
 

@@ -93,11 +93,6 @@ export default function AgencyProfile() {
     },
   });
 
-  useEffect(() => {
-    // Scroll al inicio cuando se carga la página
-    window.scrollTo(0, 0);
-  }, [id]);
-
   if (isLoading) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
