@@ -18,6 +18,7 @@ import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AgentReview } from "./AgentReview";
 import { AgencyReview } from "./AgencyReview";
+import { AutocompleteSearch } from "./AutocompleteSearch";
 import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS, isDistrict } from "@/utils/neighborhoods";
 
 // Definimos rangos de precios para el selector
@@ -307,83 +308,18 @@ export function SearchBar() {
         <div className="flex items-center gap-4">
           {(searchType === 'agencies' || searchType === 'agents') && (
             <div className="flex-1 relative">
-              <div className="flex items-center">
-                <Input
-                  type="text"
-                  placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
-                  className="w-full pr-10"
-                  onChange={(e) => {
-                    const searchValue = e.target.value;
-                    
-                    if (searchType === 'agencies') {
-                      setAgencyName(searchValue);
-                      if (!searchValue.trim()) {
-                        // Solo limpiar el campo si está vacío
-                        setAgencyName('');
-                      }
-                    } else {
-                      setAgentName(searchValue);
-                      if (!searchValue.trim()) {
-                        // Solo limpiar el campo si está vacío
-                        setAgentName('');
-                      }
-                    }
-
-                    // Para el efecto de autocompletado, realizamos la búsqueda inmediatamente
-                    if (searchValue.trim()) {
-                      const params = new URLSearchParams();
-                      if (searchType === 'agencies') {
-                        params.append('agencyName', searchValue.trim());
-                        params.append('showAll', 'true'); // Importante: forzar que se muestren resultados
-                      } else {
-                        params.append('agentName', searchValue.trim());
-                        params.append('showAll', 'true'); // Importante: forzar que se muestren resultados
-                      }
-                      
-                      // Si hay barrios seleccionados, añadirlos a la búsqueda
-                      if (selectedNeighborhoods.length > 0) {
-                        params.append('neighborhoods', selectedNeighborhoods.join(','));
-                      }
-                      
-                      setTimeout(() => {
-                        setLocation(`/search/${searchType}?${params}`);
-                      }, 300);
-                    }
-                  }}
-                  value={searchType === 'agencies' ? agencyName : agentName}
-                  onKeyDown={handleKeyDown}
-                />
-                <Button 
-                  size="sm" 
-                  variant="ghost"
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2"
-                  onClick={() => {
-                    const params = new URLSearchParams();
-                    const searchValue = searchType === 'agencies' ? agencyName.trim() : agentName.trim();
-                    
-                    if (searchValue) {
-                      if (searchType === 'agencies') {
-                        params.append('agencyName', searchValue);
-                        params.append('showAll', 'true');
-                      } else {
-                        params.append('agentName', searchValue);
-                        params.append('showAll', 'true');
-                      }
-                    } else {
-                      params.append('showAll', 'true');
-                    }
-                    
-                    // Si hay barrios seleccionados, añadirlos a la búsqueda
-                    if (selectedNeighborhoods.length > 0) {
-                      params.append('neighborhoods', selectedNeighborhoods.join(','));
-                    }
-                    
-                    setLocation(`/search/${searchType}?${params}`);
-                  }}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
+              <AutocompleteSearch 
+                type={searchType as 'agencies' | 'agents'} 
+                placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
+                onSelect={(result) => {
+                  // Actualiza el estado con el resultado seleccionado
+                  if (searchType === 'agencies') {
+                    setAgencyName(result.agencyName || '');
+                  } else {
+                    setAgentName(`${result.name || ''} ${result.surname || ''}`);
+                  }
+                }}
+              />
             </div>
           )}
 
