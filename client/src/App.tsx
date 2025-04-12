@@ -32,6 +32,9 @@ function Router() {
       {/* Mantener las rutas antiguas para compatibilidad */}
       <Route path="/agent/:id" component={AgentProfile} />
       <Route path="/agency/:id" component={AgencyProfile} />
+      {/* Nuevas rutas para compatibilidad con autocompletado */}
+      <Route path="/agent-profile/:id" component={AgentProfile} />
+      <Route path="/agency-profile/:id" component={AgencyProfile} />
       <Route path="/manage" component={Manage} />
       <Route component={NotFound} />
     </Switch>

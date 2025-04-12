@@ -37,13 +37,16 @@ interface Agency {
   agents?: AgencyAgent[];
 }
 
+// Componente para mostrar una tarjeta de agente
 function AgentCard({ agent }: { agent: AgencyAgent }) {
   return (
     <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarFallback>{agent.agentName.charAt(0)}</AvatarFallback>
+          <Avatar className="h-12 w-12">
+            <AvatarFallback>
+              {agent.agentName.charAt(0)}
+            </AvatarFallback>
           </Avatar>
           <div>
             <h3 className="font-medium">
@@ -57,26 +60,22 @@ function AgentCard({ agent }: { agent: AgencyAgent }) {
   );
 }
 
-function LoadingAgents() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {[1, 2, 3, 4].map((item) => (
-        <div key={item} className="flex gap-3">
-          <Skeleton className="h-10 w-10 rounded-full" />
-          <div className="space-y-2 flex-1">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function AgencyProfile() {
+  // Obtenemos el ID de la agencia de los parámetros de la URL
   const { id } = useParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState("overview");
   
+  // Estado para la pestaña activa
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Imágenes de muestra para la galería (en una implementación real vendrían del backend)
+  const sampleImages = [
+    "https://images.unsplash.com/photo-1513584684374-8bab748fbf90?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1577415124269-fc1140a69e91?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=80&w=1000&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1000&auto=format&fit=crop"
+  ];
+
+  // Consulta para obtener los datos de la agencia
   const { data: agency, isLoading, error } = useQuery<Agency>({
     queryKey: [`/api/agencies/${id}`],
     queryFn: async () => {
@@ -88,6 +87,12 @@ export default function AgencyProfile() {
     },
   });
 
+  // Efecto para desplazar al inicio de la página cuando cambia el ID
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  // Si los datos están cargando, mostramos un esqueleto de carga
   if (isLoading) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
@@ -106,6 +111,7 @@ export default function AgencyProfile() {
     );
   }
 
+  // Si hay un error o no hay datos, mostramos un mensaje de error
   if (error || !agency) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
@@ -122,19 +128,7 @@ export default function AgencyProfile() {
     );
   }
 
-  // Imágenes de muestra para la galería (en una implementación real vendrían del backend)
-  const sampleImages = [
-    "https://images.unsplash.com/photo-1513584684374-8bab748fbf90?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1577415124269-fc1140a69e91?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1000&auto=format&fit=crop"
-  ];
-
-  useEffect(() => {
-    // Desplazar al inicio de la página cuando se carga
-    window.scrollTo(0, 0);
-  }, [id]);
-
+  // Renderizamos el perfil completo de la agencia
   return (
     <div className="container pt-16 pb-8 max-w-7xl mx-auto">
       {/* Header del Perfil */}
