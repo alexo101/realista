@@ -82,15 +82,37 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     }
     
     try {
-      // Updated paths to match the application's URL structure
-      const targetPath = type === 'agencies' 
-        ? `/agencias/${result.id}` 
-        : `/agentes/${result.id}`;
+      // Updated paths to match the application's URL structure with explicit string types
+      let targetPath = '';
       
-      console.log('Navigating to', targetPath);
+      if (type === 'agencies') {
+        targetPath = `/agencias/${result.id}`;
+        console.log('Navigating to agency profile:', targetPath);
+      } else {
+        targetPath = `/agentes/${result.id}`;
+        console.log('Navigating to agent profile:', targetPath);
+      }
+      
+      // Force a complete page reload to ensure routing works correctly
       window.location.href = targetPath;
+      
+      // Add a fallback in case the primary navigation doesn't work
+      setTimeout(() => {
+        console.log('Fallback navigation to:', targetPath);
+        window.location.replace(targetPath);
+      }, 100);
     } catch (error) {
       console.error('Navigation error:', error);
+      // Last resort - try direct navigation with different path format
+      try {
+        const fallbackPath = type === 'agencies' 
+          ? `/agency-profile/${result.id}` 
+          : `/agent-profile/${result.id}`;
+        console.log('Attempting fallback navigation to:', fallbackPath);
+        window.location.href = fallbackPath;
+      } catch (secondError) {
+        console.error('Fallback navigation error:', secondError);
+      }
     }
   };
   

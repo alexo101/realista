@@ -117,22 +117,22 @@ export function SearchBar() {
       });
       return;
     }
-    
+
     // Si hay un solo barrio/distrito/Barcelona seleccionado, redirigir a la página de resultados específica
     if (selectedNeighborhoods.length === 1) {
       const selectedValue = selectedNeighborhoods[0];
       const encodedValue = encodeURIComponent(selectedValue);
-      
+
       // Determinar la pestaña según el tipo de búsqueda
       let tab = 'properties';
       if (searchType === 'agencies') tab = 'agencies';
       else if (searchType === 'agents') tab = 'agents';
-      
+
       // Redirigir a la página de resultados
       setLocation(`/neighborhood/${encodedValue}/${tab}`);
       return;
     }
-    
+
     let baseUrl = '';
     switch (searchType) {
       case 'agencies':
@@ -150,12 +150,12 @@ export function SearchBar() {
     }
 
     const params = new URLSearchParams();
-    
+
     // Añadir parámetros según el tipo de búsqueda
     if (selectedNeighborhoods.length > 0) {
       params.append("neighborhoods", selectedNeighborhoods.join(","));
     }
-    
+
     // Parámetros específicos para propiedades
     if ((searchType === 'buy' || searchType === 'rent') && priceRange.min) {
       params.append("minPrice", priceRange.min);
@@ -163,12 +163,12 @@ export function SearchBar() {
     if ((searchType === 'buy' || searchType === 'rent') && priceRange.max) {
       params.append("maxPrice", priceRange.max);
     }
-    
+
     // Añadir filtro de habitaciones
     if ((searchType === 'buy' || searchType === 'rent') && roomsFilter.length > 0) {
       params.append("rooms", roomsFilter.join(','));
     }
-    
+
     // Parámetros para búsqueda de agencias
     if (searchType === 'agencies') {
       if (agencyName && agencyName.trim() !== '') {
@@ -179,7 +179,7 @@ export function SearchBar() {
         params.append('showAll', 'true');
       }
     }
-    
+
     // Parámetros para búsqueda de agentes
     if (searchType === 'agents') {
       if (agentName && agentName.trim() !== '') {
@@ -203,7 +203,7 @@ export function SearchBar() {
     setRoomsFilter([]);
     setAgencyName('');
     setAgentName('');
-    
+
     // Ejecutar búsqueda después de actualizar el estado
     setTimeout(() => {
       // Construir la URL base según el nuevo tipo de búsqueda
@@ -237,11 +237,11 @@ export function SearchBar() {
       // Solo permitimos un barrio a la vez
       setSelectedNeighborhoods([neighborhood]);
     }
-    
+
     // Nota: Ya no ejecutamos la búsqueda automáticamente al seleccionar un barrio.
     // Ahora el usuario debe hacer clic en "Buscar" para iniciar la búsqueda
   };
-  
+
   // Handler for Enter key press in search inputs
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -265,7 +265,7 @@ export function SearchBar() {
           if (exactMatch) toggleNeighborhood(exactMatch);
         }
       }
-      
+
       // Solo cerrar el diálogo de barrios, pero NO ejecutar búsqueda automática
       setIsNeighborhoodOpen(false);
     }
@@ -314,12 +314,13 @@ export function SearchBar() {
                   type={searchType as 'agencies' | 'agents'} 
                   placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
                   onSelect={(result) => {
-                    // Actualiza el estado con el resultado seleccionado
-                    if (searchType === 'agencies') {
-                      setAgencyName(result.agencyName || '');
-                    } else {
-                      setAgentName(`${result.name || ''} ${result.surname || ''}`);
-                    }
+                    // En vez de solo actualizar el estado, navegamos directamente al perfil
+                    const targetPath = searchType === 'agencies'
+                      ? `/agencias/${result.id}`
+                      : `/agentes/${result.id}`;
+
+                    console.log('SearchBar - navigating to profile:', targetPath);
+                    window.location.href = targetPath;
                   }}
                 />
               </div>
@@ -541,7 +542,7 @@ export function SearchBar() {
             <Search className="h-4 w-4" /> Buscar
           </Button>
         </div>
-        
+
         <div className="flex items-center gap-4 mt-4">
           <Button
             variant="ghost"
@@ -551,7 +552,7 @@ export function SearchBar() {
           >
             <Pencil className="h-4 w-4" /> Valorar agente
           </Button>
-          
+
           <Button
             variant="ghost"
             className="text-primary flex items-center gap-2 text-sm"
@@ -608,21 +609,21 @@ export function SearchBar() {
                   Barcelona (Todos los barrios)
                 </Button>
               </div>
-              
+
               {/* Group neighborhoods by district */}
               {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => {
                 // Filter neighborhoods in this district
                 const filteredNeighborhoodsInDistrict = district.neighborhoods.filter(n =>
                   n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
                 );
-                
+
                 // Show distrito even if no neighborhoods match (for search)
                 const showDistrict = neighborhoodSearch === "" || 
                   district.district.toLowerCase().includes(neighborhoodSearch.toLowerCase()) ||
                   filteredNeighborhoodsInDistrict.length > 0;
-                
+
                 if (!showDistrict) return null;
-                
+
                 return (
                   <div key={district.district} className="mb-4">
                     {/* Make distrito selectable */}
@@ -637,7 +638,7 @@ export function SearchBar() {
                     >
                       {district.district}
                     </Button>
-                    
+
                     {filteredNeighborhoodsInDistrict.length > 0 && filteredNeighborhoodsInDistrict.map(neighborhood => (
                       <Button
                         key={neighborhood}
