@@ -11,6 +11,7 @@ interface Property {
   bedrooms: number;
   bathrooms: number;
   size: number;
+  superficie?: number;
   images: string[];
   type: string;
   operationType: string;
@@ -71,7 +72,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             </div>
             <div className="flex items-center">
               <Square className="h-4 w-4 mr-1" />
-              <span>{property.size}m²</span>
+              <span>{property.superficie || property.size}m²</span>
             </div>
           </div>
         </CardContent>
