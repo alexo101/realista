@@ -32,6 +32,15 @@ export const properties = pgTable("properties", {
   address: text("address").notNull(),
   type: text("type").notNull(),
   operationType: text("operation_type").notNull(), // "Venta" or "Alquiler"
+  // Nuevos campos
+  housingType: text("housing_type"), // Tipo de vivienda (piso, chalet, etc)
+  housingStatus: text("housing_status"), // Situación (obra nueva, a reformar, etc)
+  floor: text("floor"), // Planta (última planta, planta intermedia, etc)
+  features: text("features").array(), // Array de características
+  availability: text("availability"), // Disponibilidad
+  availabilityDate: timestamp("availability_date"), // Fecha de disponibilidad
+  previousPrice: integer("previous_price"), // Precio anterior (para calcular bajadas)
+  // Campos existentes
   description: text("description").notNull(),
   price: integer("price").notNull(),
   neighborhood: text("neighborhood").notNull(),
