@@ -66,12 +66,41 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
           </div>
           <div className="p-4">
             <h3 className="font-semibold text-lg line-clamp-1">{property.title || property.address}</h3>
-            <p className="text-2xl font-bold text-primary mt-2">€{property.price.toLocaleString()}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-2xl font-bold text-primary">€{property.price.toLocaleString()}</p>
+              {property.previousPrice && property.previousPrice > property.price && (
+                <span className="text-sm font-medium text-red-600">
+                  {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓
+                </span>
+              )}
+            </div>
+            {property.superficie && (
+              <p className="text-sm font-medium text-gray-800">
+                {Math.round(property.price / property.superficie)}€/m²
+              </p>
+            )}
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
               <span>{property.type}</span>
+              {property.housingType && <span>{property.housingType}</span>}
               <span>{property.neighborhood}</span>
             </div>
             <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
+            
+            {/* Mostrar características si existen */}
+            {property.features && property.features.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {property.features.slice(0, 3).map(feature => (
+                  <span key={feature} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                    {feature}
+                  </span>
+                ))}
+                {property.features.length > 3 && (
+                  <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                    +{property.features.length - 3}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ))}
