@@ -9,6 +9,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,18 +21,90 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+
+const propertyTypes = [
+  "Vivienda",
+  "Oficinas",
+  "Locales",
+  "Parking",
+  "Terrenos",
+  "Trasteros",
+  "Edificios"
+] as const;
+
+const housingTypes = [
+  "Pisos",
+  "Áticos",
+  "Dúplex",
+  "Casa o chalet independiente",
+  "Casa o chalet adosado",
+  "Casa o chalet pareado"
+] as const;
+
+const housingStatus = [
+  "Disponible sin limitación",
+  "Sin cédula de habitabilidad",
+  "Nuda propiedad",
+  "Alquilada con inquilinos",
+  "Ocupada ilegalmente",
+  "De banco"
+] as const;
+
+const floorOptions = [
+  "Última planta",
+  "Plantas intermedias",
+  "Bajos"
+] as const;
+
+const availabilityOptions = [
+  "Inmediatamente",
+  "A partir de"
+] as const;
+
+const features = [
+  { id: "aire-acondicionado", label: "Aire acondicionado" },
+  { id: "calefaccion", label: "Calefacción" },
+  { id: "armarios-empotrados", label: "Armarios empotrados" },
+  { id: "ascensor", label: "Ascensor" },
+  { id: "terraza", label: "Terraza" },
+  { id: "balcon", label: "Balcón" },
+  { id: "exterior", label: "Exterior" },
+  { id: "garaje", label: "Garaje" },
+  { id: "jardin", label: "Jardín" },
+  { id: "piscina", label: "Piscina" },
+  { id: "trastero", label: "Trastero" },
+  { id: "accesible", label: "Accesible" },
+  { id: "permite-mascota", label: "Permite mascota" },
+  { id: "vistas-mar", label: "Vistas al mar" },
+  { id: "bien-conectado", label: "Bien conectado" },
+  { id: "amueblado", label: "Amueblado" },
+  { id: "electrodomesticos", label: "Electrodomésticos" },
+  { id: "bano-suite", label: "Baño en-suite" }
+];
 
 const formSchema = z.object({
   reference: z.string().optional(), // Campo de referencia para identificación interna
   address: z.string().min(1, "La dirección es obligatoria"),
-  type: z.enum(["Piso", "Casa"], {
+  type: z.enum(propertyTypes, {
     required_error: "Selecciona el tipo de inmueble",
   }),
+  housingType: z.enum(housingTypes, {
+    required_error: "Selecciona el tipo de vivienda",
+  }).optional(),
+  housingStatus: z.enum(housingStatus).optional(),
+  floor: z.enum(floorOptions).optional(),
   operationType: z.enum(["Venta", "Alquiler"], {
     required_error: "Selecciona el tipo de operación",
   }),
@@ -58,6 +131,9 @@ const formSchema = z.object({
   title: z.string().optional(),
   images: z.array(z.string()).optional(),
   mainImageIndex: z.number().default(0),
+  features: z.array(z.string()).default([]),
+  availability: z.enum(availabilityOptions).default("Inmediatamente"),
+  availabilityDate: z.date().optional(),
 });
 
 interface PropertyFormProps {
@@ -88,6 +164,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       address: "",
       type: undefined as any,
       operationType: undefined as any,
+      housingType: undefined,
+      housingStatus: undefined,
+      floor: undefined,
       description: "",
       price: "" as any, // Se convertirá a número en el validador
       bedrooms: 1 as any, // Default to 1 bedroom
@@ -97,6 +176,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       title: "",
       images: [],
       mainImageIndex: 0,
+      features: [],
+      availability: "Inmediatamente",
+      availabilityDate: undefined,
     },
   });
   
@@ -166,8 +248,15 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   <FormItem>
                     <FormLabel>Tipo de inmueble</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Si cambia a un valor que no es "Vivienda", limpiar los campos relacionados
+                        if (value !== "Vivienda") {
+                          form.setValue("housingType", undefined);
+                          form.setValue("housingStatus", undefined);
+                        }
+                      }}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -175,8 +264,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Piso">Piso</SelectItem>
-                        <SelectItem value="Casa">Casa</SelectItem>
+                        {propertyTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -209,6 +301,97 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 )}
               />
             </div>
+
+            {/* Campos que aparecen solo cuando el tipo es "Vivienda" */}
+            {form.watch("type") === "Vivienda" && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="housingType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de vivienda</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona el tipo de vivienda" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {housingTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="housingStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Situación de la vivienda</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona la situación" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {housingStatus.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Campo de planta */}
+            {form.watch("type") === "Vivienda" && (
+              <FormField
+                control={form.control}
+                name="floor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Planta</FormLabel>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex space-x-4"
+                    >
+                      {floorOptions.map((option) => (
+                        <FormItem key={option} className="flex items-center space-x-2">
+                          <FormControl>
+                            <RadioGroupItem value={option} />
+                          </FormControl>
+                          <FormLabel className="font-normal cursor-pointer">
+                            {option}
+                          </FormLabel>
+                        </FormItem>
+                      ))}
+                    </RadioGroup>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
@@ -451,6 +634,132 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 </FormItem>
               )}
             />
+            
+            {/* Sección de Características */}
+            <FormField
+              control={form.control}
+              name="features"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Características</FormLabel>
+                  <div className="border rounded-md p-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {features.map((feature) => (
+                        <FormField
+                          key={feature.id}
+                          control={form.control}
+                          name="features"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={feature.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(feature.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...field.value, feature.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== feature.id
+                                            )
+                                          )
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal cursor-pointer">
+                                  {feature.label}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Sección de Disponibilidad */}
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="availability"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Disponibilidad</FormLabel>
+                    <div className="flex flex-col space-y-1">
+                      <RadioGroup
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          if (value === "Inmediatamente") {
+                            form.setValue("availabilityDate", undefined);
+                          }
+                        }}
+                        value={field.value}
+                        className="flex flex-col space-y-2"
+                      >
+                        {availabilityOptions.map((option) => (
+                          <FormItem key={option} className="flex items-center space-x-3">
+                            <FormControl>
+                              <RadioGroupItem value={option} />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              {option}
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {form.watch("availability") === "A partir de" && (
+                <FormField
+                  control={form.control}
+                  name="availabilityDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Fecha de disponibilidad</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={`w-full pl-3 text-left font-normal ${
+                                !field.value && "text-muted-foreground"
+                              }`}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP", { locale: es })
+                              ) : (
+                                <span>Selecciona una fecha</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
 
             <div className="flex justify-end gap-3">
