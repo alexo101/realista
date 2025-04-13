@@ -661,17 +661,23 @@ export default function ManagePage() {
                     title: editingProperty.title,
                     description: editingProperty.description,
                     price: editingProperty.price,
+                    previousPrice: editingProperty.previousPrice || null,
                     address: editingProperty.address,
-                    size: editingProperty.size,
+                    superficie: editingProperty.superficie,
                     bedrooms: editingProperty.bedrooms,
                     bathrooms: editingProperty.bathrooms,
                     images: editingProperty.images || [],
-                    propertyType: editingProperty.propertyType,
+                    type: editingProperty.type,
+                    housingType: editingProperty.housingType || undefined,
+                    housingStatus: editingProperty.housingStatus || undefined,
+                    floor: editingProperty.floor || undefined,
                     neighborhood: editingProperty.neighborhood,
                     reference: editingProperty.reference,
                     operationType: editingProperty.operationType,
                     features: editingProperty.features || [],
-                    status: editingProperty.status || "disponible"
+                    availability: editingProperty.availability || "Inmediatamente",
+                    availabilityDate: editingProperty.availabilityDate ? new Date(editingProperty.availabilityDate) : undefined,
+                    mainImageIndex: editingProperty.mainImageIndex || 0
                   } : undefined}
                   isEditing={!!editingProperty}
                 />
@@ -737,9 +743,11 @@ export default function ManagePage() {
                           </div>
                           
                           <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                            {property.size && (
+                            {property.superficie ? (
+                              <div>{property.superficie} m²</div>
+                            ) : property.size ? (
                               <div>{property.size} m²</div>
-                            )}
+                            ) : null}
                             {property.bedrooms && (
                               <div>{property.bedrooms} hab.</div>
                             )}
@@ -747,6 +755,30 @@ export default function ManagePage() {
                               <div>{property.bathrooms} baños</div>
                             )}
                           </div>
+                          
+                          {property.previousPrice && property.previousPrice > property.price && (
+                            <div className="mt-2 text-sm text-red-600">
+                              Antes: {property.previousPrice.toLocaleString('es-ES')}€ 
+                              <span className="ml-2 font-medium">
+                                ({Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓)
+                              </span>
+                            </div>
+                          )}
+                          
+                          {property.features && property.features.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {property.features.slice(0, 3).map(feature => (
+                                <span key={feature} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                  {feature}
+                                </span>
+                              ))}
+                              {property.features.length > 3 && (
+                                <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                  +{property.features.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))
