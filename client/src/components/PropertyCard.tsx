@@ -43,7 +43,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             className="h-48 w-full object-cover"
           />
           <Badge className="absolute top-2 right-2 capitalize">
-            {property.operationType === 'rent' ? 'Alquiler' : 'Venta'}
+            {property.operationType === 'Alquiler' || property.operationType === 'alquiler' ? 'Alquiler' : 'Venta'}
           </Badge>
         </div>
         
