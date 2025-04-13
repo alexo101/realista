@@ -714,7 +714,7 @@ export default function ManagePage() {
                           
                           {property.operationType && (
                             <div className="absolute top-0 left-0 bg-primary text-white px-2 py-1 text-xs m-2 rounded-sm">
-                              {property.operationType === 'venta' ? 'Venta' : 'Alquiler'}
+                              {property.operationType === 'Venta' || property.operationType === 'venta' ? 'Venta' : 'Alquiler'}
                             </div>
                           )}
                           

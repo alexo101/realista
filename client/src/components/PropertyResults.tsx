@@ -51,7 +51,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
               </div>
             )}
             <div className="absolute top-2 right-2 bg-primary text-white text-xs font-medium px-2 py-1 rounded-md">
-              {property.operationType === 'Alquiler' ? 'Alquiler' : 'Venta'}
+              {property.operationType === 'Alquiler' || property.operationType === 'alquiler' ? 'Alquiler' : 'Venta'}
             </div>
           </div>
           <div className="p-4">
