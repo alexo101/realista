@@ -6,10 +6,20 @@ interface PropertyResult {
   type: string;
   operationType: string;
   price: number;
+  previousPrice?: number | null;
   neighborhood: string;
   title?: string;
   images?: string[] | null;
   mainImageIndex?: number | null;
+  superficie?: number | null;
+  createdAt?: string;
+  // Campos nuevos
+  housingType?: string | null;
+  housingStatus?: string | null;
+  floor?: string | null;
+  features?: string[] | null;
+  availability?: string | null;
+  availabilityDate?: string | null;
 }
 
 interface PropertyResultsProps {

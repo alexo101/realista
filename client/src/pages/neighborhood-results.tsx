@@ -1,13 +1,22 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
-import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star } from "lucide-react";
+import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { findDistrictByNeighborhood, isDistrict, BARCELONA_DISTRICTS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 export default function NeighborhoodResultsPage() {
@@ -15,6 +24,11 @@ export default function NeighborhoodResultsPage() {
   const [, setLocation] = useLocation();
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
+  
+  // Filtros para cada pestaña
+  const [propertiesFilter, setPropertiesFilter] = useState<string>("default");
+  const [agenciesFilter, setAgenciesFilter] = useState<string>("default");
+  const [agentsFilter, setAgentsFilter] = useState<string>("default");
   
   // Verificar si estamos en Barcelona general
   const isBarcelonaPage = decodedNeighborhood === 'Barcelona';
@@ -185,20 +199,144 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
-              {/* Removed empty state */}
-              <PropertyResults results={properties || []} isLoading={propertiesLoading} />
+              <div className="mb-4 flex justify-end">
+                <Select
+                  value={propertiesFilter}
+                  onValueChange={setPropertiesFilter}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Predeterminado</SelectItem>
+                    <SelectItem value="price_asc">Más baratos</SelectItem>
+                    <SelectItem value="newest">Más recientes</SelectItem>
+                    <SelectItem value="price_m2">Más baratos €/m2</SelectItem>
+                    <SelectItem value="price_drop">Mayores bajadas de precio</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <PropertyResults 
+                results={useMemo(() => {
+                  if (!properties) return [];
+                  
+                  const sortedProperties = [...properties];
+                  
+                  switch (propertiesFilter) {
+                    case 'price_asc':
+                      return sortedProperties.sort((a, b) => a.price - b.price);
+                    case 'newest':
+                      return sortedProperties.sort((a, b) => 
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                      );
+                    case 'price_m2':
+                      return sortedProperties.sort((a, b) => {
+                        const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
+                        const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
+                        return pricePerM2A - pricePerM2B;
+                      });
+                    case 'price_drop':
+                      return sortedProperties.sort((a, b) => {
+                        const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
+                        const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
+                        return dropB - dropA; // Mayor a menor
+                      });
+                    default:
+                      return sortedProperties;
+                  }
+                }, [properties, propertiesFilter]) || []} 
+                isLoading={propertiesLoading} 
+              />
             </TabsContent>
 
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
-              {/* Removed empty state */}
-              <AgencyResults results={agencies || []} isLoading={agenciesLoading} />
+              <div className="mb-4 flex justify-end">
+                <Select
+                  value={agenciesFilter}
+                  onValueChange={setAgenciesFilter}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Predeterminado</SelectItem>
+                    <SelectItem value="best_rating">Mejor puntuación</SelectItem>
+                    <SelectItem value="newest_reviews">Más recientes</SelectItem>
+                    <SelectItem value="most_reviews">Más reseñas</SelectItem>
+                    <SelectItem value="most_properties">Más propiedades</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <AgencyResults 
+                results={useMemo(() => {
+                  if (!agencies) return [];
+                  
+                  const sortedAgencies = [...agencies];
+                  
+                  switch (agenciesFilter) {
+                    case 'best_rating':
+                      return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    case 'newest_reviews':
+                      return sortedAgencies.sort((a, b) => 
+                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
+                        (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
+                      );
+                    case 'most_reviews':
+                      return sortedAgencies.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+                    case 'most_properties':
+                      return sortedAgencies.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
+                    default:
+                      return sortedAgencies;
+                  }
+                }, [agencies, agenciesFilter]) || []} 
+                isLoading={agenciesLoading} 
+              />
             </TabsContent>
 
             {/* Contenido de pestaña: Agentes */}
             <TabsContent value="agents" className="mt-0">
-              {/* Removed empty state */}
-              <AgentResults results={agents || []} isLoading={agentsLoading} />
+              <div className="mb-4 flex justify-end">
+                <Select
+                  value={agentsFilter}
+                  onValueChange={setAgentsFilter}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Predeterminado</SelectItem>
+                    <SelectItem value="best_rating">Mejor puntuación</SelectItem>
+                    <SelectItem value="newest_reviews">Más recientes</SelectItem>
+                    <SelectItem value="most_reviews">Más reseñas</SelectItem>
+                    <SelectItem value="most_properties">Más propiedades</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <AgentResults 
+                results={useMemo(() => {
+                  if (!agents) return [];
+                  
+                  const sortedAgents = [...agents];
+                  
+                  switch (agentsFilter) {
+                    case 'best_rating':
+                      return sortedAgents.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    case 'newest_reviews':
+                      return sortedAgents.sort((a, b) => 
+                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
+                        (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
+                      );
+                    case 'most_reviews':
+                      return sortedAgents.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+                    case 'most_properties':
+                      return sortedAgents.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
+                    default:
+                      return sortedAgents;
+                  }
+                }, [agents, agentsFilter]) || []} 
+                isLoading={agentsLoading} 
+              />
             </TabsContent>
 
             {/* Contenido de pestaña: Overview */}
