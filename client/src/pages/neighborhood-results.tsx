@@ -179,7 +179,7 @@ export default function NeighborhoodResultsPage() {
               </TabsTrigger>
               <TabsTrigger value="overview" className="flex items-center gap-1">
                 <Info className="h-4 w-4" />
-                Overview
+                Descripción
               </TabsTrigger>
             </TabsList>
 
