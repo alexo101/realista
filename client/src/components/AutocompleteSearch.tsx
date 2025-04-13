@@ -81,12 +81,17 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       return;
     }
     
-    const targetPath = type === 'agencies' 
-      ? `/agency-profile/${result.id}` 
-      : `/agent-profile/${result.id}`;
-    
-    console.log('Navigating to', targetPath);
-    window.location.href = targetPath;
+    try {
+      // Updated paths to match the application's URL structure
+      const targetPath = type === 'agencies' 
+        ? `/agencias/${result.id}` 
+        : `/agentes/${result.id}`;
+      
+      console.log('Navigating to', targetPath);
+      window.location.href = targetPath;
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
   
   const navigateToSearch = () => {
