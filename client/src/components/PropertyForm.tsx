@@ -708,7 +708,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                             <FormControl>
                               <RadioGroupItem value={option} />
                             </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">
+                            <FormLabel className="font-normal cursor-pointer flex items-center">
                               {option}
                             </FormLabel>
                           </FormItem>
