@@ -4,6 +4,7 @@ import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
+import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +30,15 @@ export default function NeighborhoodResultsPage() {
   const [propertiesFilter, setPropertiesFilter] = useState<string>("default");
   const [agenciesFilter, setAgenciesFilter] = useState<string>("default");
   const [agentsFilter, setAgentsFilter] = useState<string>("default");
+  
+  // Filtros específicos para propiedades
+  const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
+    operationType: "Venta",
+    priceMin: null,
+    priceMax: null,
+    bedrooms: null,
+    bathrooms: null
+  });
   
   // Verificar si estamos en Barcelona general
   const isBarcelonaPage = decodedNeighborhood === 'Barcelona';
@@ -62,11 +72,38 @@ export default function NeighborhoodResultsPage() {
 
   // Consultas para propiedades
   const { data: properties, isLoading: propertiesLoading } = useQuery({
-    queryKey: ['/api/search/buy', { neighborhoods: effectiveNeighborhood }],
+    queryKey: ['/api/search/buy', { 
+      neighborhoods: effectiveNeighborhood,
+      operationType: propertyFilters.operationType,
+      priceMin: propertyFilters.priceMin,
+      priceMax: propertyFilters.priceMax,
+      bedrooms: propertyFilters.bedrooms,
+      bathrooms: propertyFilters.bathrooms
+    }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('neighborhoods', effectiveNeighborhood);
-      const response = await fetch(`/api/search/buy?${params.toString()}`);
+      params.append('operationType', propertyFilters.operationType);
+      
+      if (propertyFilters.priceMin !== null) {
+        params.append('priceMin', propertyFilters.priceMin.toString());
+      }
+      
+      if (propertyFilters.priceMax !== null) {
+        params.append('priceMax', propertyFilters.priceMax.toString());
+      }
+      
+      if (propertyFilters.bedrooms !== null) {
+        params.append('bedrooms', propertyFilters.bedrooms.toString());
+      }
+      
+      if (propertyFilters.bathrooms !== null) {
+        params.append('bathrooms', propertyFilters.bathrooms.toString());
+      }
+      
+      // Determinar la URL en función del tipo de operación
+      const endpoint = propertyFilters.operationType === 'Venta' ? '/api/search/buy' : '/api/search/rent';
+      const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();
     },
@@ -199,6 +236,12 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
+              {/* Filtros de propiedades */}
+              <PropertyFilters 
+                onFilterChange={setPropertyFilters}
+                defaultOperationType={activeTab === 'rent' ? 'Alquiler' : 'Venta'}
+              />
+              
               <div className="mb-4 flex justify-end">
                 <Select
                   value={propertiesFilter}
