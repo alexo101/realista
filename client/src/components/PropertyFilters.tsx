@@ -33,8 +33,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
-  const [bedrooms, setBedrooms] = useState<number | null>(null);
-  const [bathrooms, setBathrooms] = useState<number | null>(null);
+  const [bedrooms, setBedrooms] = useState<number | null | string>(null);
+  const [bathrooms, setBathrooms] = useState<number | null | string>(null);
 
   // Precios máximos por defecto según el tipo de operación
   const maxPriceByType = {
@@ -186,7 +186,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   <SelectValue placeholder="Habitaciones" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Cualquiera</SelectItem>
+                  <SelectItem value="any">Cualquiera</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
                   <SelectItem value="3">3+</SelectItem>
@@ -203,7 +203,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   <SelectValue placeholder="Baños" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Cualquiera</SelectItem>
+                  <SelectItem value="any">Cualquiera</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
                   <SelectItem value="3">3+</SelectItem>

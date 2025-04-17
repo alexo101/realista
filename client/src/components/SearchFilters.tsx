@@ -51,7 +51,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
             placeholder="€"
           />
         </div>
-        
+
         <div>
           <Label>Precio máximo</Label>
           <Input
@@ -71,7 +71,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
           value={filters.bedrooms}
           onValueChange={(value) => {
             let selectedValue = value;
-            
+
             // Lógica para seleccionar habitaciones en cascada
             if (value === "1") {
               // Si selecciona 1, también marcar 2, 3 y 4+
@@ -86,7 +86,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
               // Si selecciona "estudio", seleccionar solo 0 (exclusivo)
               selectedValue = "0";
             }
-            
+
             setFilters({ ...filters, bedrooms: selectedValue });
           }}
         >
@@ -94,7 +94,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Cualquiera</SelectItem>
+            <SelectItem value="any">Cualquiera</SelectItem>
             <SelectItem value="0">0 habitaciones (estudio)</SelectItem>
             <SelectItem value="1">1+ habitaciones</SelectItem>
             <SelectItem value="2">2+ habitaciones</SelectItem>
@@ -116,7 +116,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Cualquiera</SelectItem>
+            <SelectItem value="any">Cualquiera</SelectItem>
             <SelectItem value="apartment">Piso</SelectItem>
             <SelectItem value="house">Casa</SelectItem>
             <SelectItem value="villa">Villa</SelectItem>
@@ -134,7 +134,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
           <Search className="w-4 h-4 mr-2" />
           Filtrar
         </Button>
-        
+
         <Button
           variant="outline"
           onClick={clearFilters}
