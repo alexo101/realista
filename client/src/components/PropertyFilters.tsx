@@ -118,14 +118,14 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           <Label className="mb-2 block">Precio</Label>
           <div className="flex items-center gap-2">
             <Select
-              value={priceMin?.toString() || ""}
-              onValueChange={(value) => setPriceMin(value ? parseInt(value) : null)}
+              value={priceMin?.toString() || "any"}
+              onValueChange={(value) => setPriceMin(value === "any" ? null : parseInt(value))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Min precio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Cualquier precio</SelectItem>
+                <SelectItem value="any">Cualquier precio</SelectItem>
                 {priceOptions[operationType].map((option) => (
                   <SelectItem key={`min-${option.value}`} value={option.value}>
                     {option.label}
@@ -135,14 +135,14 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             </Select>
             <span>-</span>
             <Select
-              value={priceMax?.toString() || ""}
-              onValueChange={(value) => setPriceMax(value ? parseInt(value) : null)}
+              value={priceMax?.toString() || "any"}
+              onValueChange={(value) => setPriceMax(value === "any" ? null : parseInt(value))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Máx precio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Cualquier precio</SelectItem>
+                <SelectItem value="any">Cualquier precio</SelectItem>
                 {priceOptions[operationType].map((option) => (
                   <SelectItem key={`max-${option.value}`} value={option.value}>
                     {option.label}
@@ -157,7 +157,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
         <div>
           <Label className="mb-2 block">Habitaciones</Label>
           <Select
-            value={bedrooms?.toString() || ""}
+            value={bedrooms?.toString() || "any"}
             onValueChange={(value) => setBedrooms(value ? value : "any")}
           >
             <SelectTrigger>
@@ -178,7 +178,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
         <div>
           <Label className="mb-2 block">Baños</Label>
           <Select
-            value={bathrooms?.toString() || ""}
+            value={bathrooms?.toString() || "any"}
             onValueChange={(value) => setBathrooms(value ? value : "any")}
           >
             <SelectTrigger>
