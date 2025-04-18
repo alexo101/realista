@@ -34,6 +34,8 @@ interface Agent {
   properties?: Property[];
   reviewCount?: number;
   reviewAverage?: number;
+  yearsOfExperience?: number;
+  languagesSpoken?: string[];
 }
 
 interface Property {
@@ -240,7 +242,7 @@ export default function AgentProfile() {
                           <Briefcase className="h-5 w-5 mr-2 text-primary" />
                           <h4 className="font-medium">Años de experiencia</h4>
                         </div>
-                        <div className="text-3xl font-bold">-</div>
+                        <div className="text-3xl font-bold">{agent.yearsOfExperience || '-'}</div>
                       </CardContent>
                     </Card>
                   </div>
@@ -280,6 +282,16 @@ export default function AgentProfile() {
                       <div>
                         <div className="font-medium">Agencia</div>
                         <div>{agent.agencyName}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {agent.languagesSpoken && agent.languagesSpoken.length > 0 && (
+                    <div className="flex">
+                      <div className="h-5 w-5 mr-3 text-gray-500">🌍</div>
+                      <div>
+                        <div className="font-medium">Idiomas</div>
+                        <div>{agent.languagesSpoken.join(', ')}</div>
                       </div>
                     </div>
                   )}
