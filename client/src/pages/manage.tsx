@@ -44,6 +44,8 @@ export default function ManagePage() {
   const [surname, setSurname] = useState("");
   const [description, setDescription] = useState("");
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
+  const [yearsOfExperience, setYearsOfExperience] = useState<number | undefined>(undefined);
+  const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
   
   // Estados para los campos de perfil de agencia
   const [agencyName, setAgencyName] = useState("");
@@ -52,6 +54,8 @@ export default function ManagePage() {
   const [agencyPhone, setAgencyPhone] = useState("");
   const [agencyWebsite, setAgencyWebsite] = useState("");
   const [agencyInfluenceNeighborhoods, setAgencyInfluenceNeighborhoods] = useState<string[]>([]);
+  const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
+  const [agencyLanguagesSpoken, setAgencyLanguagesSpoken] = useState<string[]>([]);
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -67,12 +71,17 @@ export default function ManagePage() {
       setSurname(user.surname || "");
       setDescription(user.description || "");
       setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
+      setYearsOfExperience(user.yearsOfExperience);
+      setLanguagesSpoken(user.languagesSpoken || []);
+      
       setAgencyName(user.agencyName || "");
       setAgencyAddress(user.agencyAddress || "");
       setAgencyDescription(user.agencyDescription || "");
       setAgencyPhone(user.agencyPhone || "");
       setAgencyWebsite(user.agencyWebsite || "");
       setAgencyInfluenceNeighborhoods(user.agencyInfluenceNeighborhoods || []);
+      setYearEstablished(user.yearEstablished);
+      setAgencyLanguagesSpoken(user.agencyLanguagesSpoken || []);
       
       // Cargar redes sociales si existen
       const socialMedia = user.agencySocialMedia as Record<string, string> | undefined;
@@ -375,6 +384,53 @@ export default function ManagePage() {
                     className="min-h-[100px]"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="yearsOfExperience">Años de experiencia</Label>
+                  <Input 
+                    id="yearsOfExperience" 
+                    type="number"
+                    placeholder="Introduce tus años de experiencia" 
+                    value={yearsOfExperience !== undefined ? yearsOfExperience : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setYearsOfExperience(undefined);
+                      } else {
+                        const numValue = parseInt(value, 10);
+                        if (!isNaN(numValue) && numValue >= 0) {
+                          setYearsOfExperience(numValue);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="languagesSpoken">Idiomas que hablas</Label>
+                  <Select
+                    isMulti
+                    placeholder="Seleccionar idiomas..."
+                    options={[
+                      { value: 'español', label: 'Español' },
+                      { value: 'català', label: 'Català' },
+                      { value: 'english', label: 'English' },
+                      { value: 'français', label: 'Français' },
+                      { value: 'deutsch', label: 'Deutsch' },
+                      { value: 'italiano', label: 'Italiano' },
+                      { value: 'português', label: 'Português' },
+                      { value: 'русский', label: 'Русский' },
+                      { value: '中文', label: '中文' },
+                      { value: '日本語', label: '日本語' },
+                      { value: 'العربية', label: 'العربية' },
+                    ]}
+                    value={languagesSpoken.map(lang => ({ value: lang, label: lang }))}
+                    onChange={(selectedOptions) => {
+                      const values = selectedOptions ? selectedOptions.map((option: any) => option.value) : [];
+                      setLanguagesSpoken(values);
+                    }}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
                   />
                 </div>
                 <div className="w-full">

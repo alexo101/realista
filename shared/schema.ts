@@ -13,6 +13,9 @@ export const users = pgTable("users", {
   isAgent: boolean("is_agent").notNull().default(false),
   // Barrios de influencia para agentes
   influenceNeighborhoods: text("influence_neighborhoods").array(),
+  // Agent specific details
+  yearsOfExperience: integer("years_of_experience"), // Años de experiencia del agente
+  languagesSpoken: text("languages_spoken").array(), // Idiomas que habla el agente
   // Agency details
   agencyName: text("agency_name"),
   agencyAddress: text("agency_address"),
@@ -23,6 +26,9 @@ export const users = pgTable("users", {
   agencyLogo: text("agency_logo"),
   // Barrios de influencia para agencias
   agencyInfluenceNeighborhoods: text("agency_influence_neighborhoods").array(),
+  // Agency specific details
+  yearEstablished: integer("year_established"), // Año de fundación de la agencia
+  agencyLanguagesSpoken: text("agency_languages_spoken").array(), // Idiomas que hablan en la agencia
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
