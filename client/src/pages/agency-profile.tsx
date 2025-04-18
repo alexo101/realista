@@ -67,13 +67,8 @@ export default function AgencyProfile() {
   // Estado para la pestaña activa
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Imágenes de muestra para la galería (en una implementación real vendrían del backend)
-  const sampleImages = [
-    "https://images.unsplash.com/photo-1513584684374-8bab748fbf90?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1577415124269-fc1140a69e91?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=80&w=1000&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1000&auto=format&fit=crop"
-  ];
+  // La galería no mostrará imágenes predeterminadas, solo las que agregue el agente
+  const agencyImages: string[] = [];
 
   // Consulta para obtener los datos de la agencia
   const { data: agency, isLoading, error } = useQuery<Agency>({
@@ -207,7 +202,7 @@ export default function AgencyProfile() {
                 <div className="mt-6">
                   <h3 className="font-medium mb-3">Galería</h3>
                   <div className="rounded-lg overflow-hidden">
-                    <ImageGallery images={sampleImages} />
+                    <ImageGallery images={agencyImages} />
                   </div>
                 </div>
               </CardContent>
