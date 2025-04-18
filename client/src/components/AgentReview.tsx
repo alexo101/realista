@@ -41,10 +41,15 @@ export function AgentReview({ onClose }: AgentReviewProps) {
   });
 
   const { data: agents, isError, error } = useQuery<Agent[]>({
-    queryKey: ['/api/agents/search', searchTerm],
+    queryKey: ['/api/search/agents', searchTerm],
     queryFn: async () => {
       if (!searchTerm) return [];
-      const response = await fetch(`/api/agents/search?q=${encodeURIComponent(searchTerm)}`);
+      
+      const params = new URLSearchParams();
+      params.append('agentName', searchTerm);
+      params.append('showAll', 'true');
+      
+      const response = await fetch(`/api/search/agents?${params}`);
       if (!response.ok) {
         const message = `Error searching agents: ${response.status} ${response.statusText}`;
         throw new Error(message);

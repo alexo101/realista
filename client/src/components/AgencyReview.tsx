@@ -61,6 +61,31 @@ export function AgencyReview({ onClose }: AgencyReviewProps) {
       });
       return;
     }
+    
+    try {
+      setIsSearching(true);
+      
+      const params = new URLSearchParams();
+      params.append('agencyName', searchTerm);
+      params.append('showAll', 'true');
+      
+      const response = await fetch(`/api/search/agencies?${params}`);
+      if (!response.ok) {
+        throw new Error("Error al buscar agencias");
+      }
+      
+      const results = await response.json();
+      setSearchResults(results);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al buscar agencias",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+    }
 
     setIsSearching(true);
     try {
