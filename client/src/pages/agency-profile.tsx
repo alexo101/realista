@@ -3,12 +3,13 @@ import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle } from "lucide-react";
+import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle, Home } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageGallery } from "@/components/ImageGallery";
+import { PropertyCard } from "@/components/PropertyCard";
 
 interface AgencyAgent {
   id: number;
@@ -17,6 +18,9 @@ interface AgencyAgent {
   agentSurname: string;
   agentEmail: string;
   createdAt: string;
+  avatar?: string;
+  rating?: number;
+  reviewCount?: number;
 }
 
 interface Agency {
@@ -162,8 +166,9 @@ export default function AgencyProfile() {
 
       {/* Tabs de Navegación */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-        <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex">
+        <TabsList className="grid w-full grid-cols-4 md:w-auto md:inline-flex">
           <TabsTrigger value="overview">Información general</TabsTrigger>
+          <TabsTrigger value="properties">Propiedades</TabsTrigger>
           <TabsTrigger value="agents">Agentes</TabsTrigger>
           <TabsTrigger value="reviews">Reseñas</TabsTrigger>
         </TabsList>
@@ -305,43 +310,7 @@ export default function AgencyProfile() {
             </Card>
           </div>
           
-          {/* Agentes destacados */}
-          {agency.agents && agency.agents.length > 0 && (
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Agentes destacados</h2>
-                <Button variant="link" asChild>
-                  <Link href="#agents" onClick={() => setActiveTab("agents")}>
-                    Ver todos <ExternalLink className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {agency.agents.slice(0, 4).map(agent => (
-                  <AgentCard key={agent.id} agent={agent} />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Reseñas recientes */}
-          <div className="mt-8">
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold">Reseñas</h2>
-            </div>
-            
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium mb-2">No hay reseñas disponibles</h3>
-              <p className="text-gray-500 max-w-md mx-auto">
-                Esta agencia aún no tiene reseñas. Sé el primero en compartir tu experiencia.
-              </p>
-              <Button className="mt-4">
-                Escribir una reseña
-              </Button>
-            </div>
-          </div>
+
         </TabsContent>
 
         <TabsContent value="agents" className="mt-6">
@@ -356,28 +325,45 @@ export default function AgencyProfile() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {agency.agents.map(agent => (
-                <Card key={agent.id} className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col items-center text-center">
-                      <Avatar className="h-24 w-24 mb-4">
-                        <AvatarFallback className="text-2xl">
-                          {agent.agentName.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <h3 className="font-semibold text-lg mb-1">
-                        {agent.agentName} {agent.agentSurname}
-                      </h3>
-                      <div className="text-sm text-gray-500 mb-3">{agent.agentEmail}</div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
-                          <Mail className="h-4 w-4 mr-1" /> Contactar
-                        </Button>
+                <Link key={agent.id} href={`/agents/${agent.id}`}>
+                  <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center text-center">
+                        <Avatar className="h-24 w-24 mb-4">
+                          <AvatarImage src={agent.avatar || undefined} />
+                          <AvatarFallback className="text-2xl bg-primary/10">
+                            {agent.agentName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <h3 className="font-semibold text-lg mb-1">
+                          {agent.agentName} {agent.agentSurname}
+                        </h3>
+                        <div className="text-sm text-gray-500 mb-2">{agent.agentEmail}</div>
+                        <div className="flex items-center mb-3">
+                          {Array(5).fill(0).map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`h-4 w-4 ${i < (agent.rating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                            />
+                          ))}
+                          <span className="text-sm ml-2 text-gray-500">
+                            {agent.reviewCount ? `(${agent.reviewCount})` : 'Sin reseñas'}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline">
+                            <Mail className="h-4 w-4 mr-1" /> Contactar
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            Ver perfil
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           )}
