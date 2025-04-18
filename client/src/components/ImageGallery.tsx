@@ -38,7 +38,7 @@ export function ImageGallery({ images, mainImageIndex = 0 }: ImageGalleryProps) 
         <DialogTrigger asChild>
           <div className="aspect-video relative overflow-hidden rounded-lg cursor-pointer">
             <img
-              src={images[mainImageIndex] || images[0]}
+              src={images[mainImageIndex]}
               alt="Property main"
               className="object-cover w-full h-full hover:scale-105 transition-transform"
             />
