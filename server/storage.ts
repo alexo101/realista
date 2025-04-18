@@ -523,15 +523,44 @@ export class DatabaseStorage implements IStorage {
     if (filters.operationType) {
       conditions.push(eq(properties.operationType, filters.operationType));
     }
-    if (filters.minPrice) {
+    
+    // Filtros de precio
+    if (filters.priceMin) {
+      conditions.push(gte(properties.price, parseInt(filters.priceMin)));
+    } else if (filters.minPrice) {
       if (filters.minPrice === 'less-than-60000') {
         conditions.push(sql`${properties.price} < 60000`);
       } else {
         conditions.push(gte(properties.price, parseInt(filters.minPrice)));
       }
     }
-    if (filters.maxPrice && filters.maxPrice !== 'no-limit') {
+    
+    if (filters.priceMax) {
+      conditions.push(lte(properties.price, parseInt(filters.priceMax)));
+    } else if (filters.maxPrice && filters.maxPrice !== 'no-limit') {
       conditions.push(lte(properties.price, parseInt(filters.maxPrice)));
+    }
+    
+    // Filtros de habitaciones y baños
+    if (filters.bedrooms) {
+      conditions.push(gte(properties.bedrooms, parseInt(filters.bedrooms)));
+    }
+    
+    if (filters.bathrooms) {
+      conditions.push(gte(properties.bathrooms, parseInt(filters.bathrooms)));
+    }
+    
+    // Filtro por características
+    if (filters.features) {
+      const featuresArray = typeof filters.features === 'string' 
+        ? filters.features.split(',') 
+        : filters.features;
+        
+      if (featuresArray.length > 0) {
+        // Usamos arrayOverlaps para verificar si hay intersección entre las características
+        // de la propiedad y las características buscadas
+        conditions.push(arrayOverlaps(properties.features, featuresArray));
+      }
     }
 
     const query = conditions.length > 0
