@@ -78,7 +78,8 @@ export default function NeighborhoodResultsPage() {
       priceMin: propertyFilters.priceMin,
       priceMax: propertyFilters.priceMax,
       bedrooms: propertyFilters.bedrooms,
-      bathrooms: propertyFilters.bathrooms
+      bathrooms: propertyFilters.bathrooms,
+      features: propertyFilters.features
     }],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -99,6 +100,11 @@ export default function NeighborhoodResultsPage() {
       
       if (propertyFilters.bathrooms !== null) {
         params.append('bathrooms', propertyFilters.bathrooms.toString());
+      }
+      
+      // Añadir filtros de características si existen
+      if (propertyFilters.features && propertyFilters.features.length > 0) {
+        params.append('features', propertyFilters.features.join(','));
       }
       
       // Determinar la URL en función del tipo de operación
@@ -239,7 +245,7 @@ export default function NeighborhoodResultsPage() {
               {/* Filtros de propiedades */}
               <PropertyFilters 
                 onFilterChange={setPropertyFilters}
-                defaultOperationType={activeTab === 'rent' ? 'Alquiler' : 'Venta'}
+                defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
               />
               
               <div className="mb-4 flex justify-end">

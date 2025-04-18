@@ -6,11 +6,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown, Euro, Bath, BedDouble, Building } from "lucide-react";
+import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 
 interface PropertyFiltersProps {
@@ -24,7 +27,25 @@ export interface PropertyFilters {
   priceMax: number | null;
   bedrooms: number | null;
   bathrooms: number | null;
+  features?: string[];
 }
+
+// Lista de características disponibles
+const features = [
+  { id: "terraza", label: "Terraza" },
+  { id: "balcon", label: "Balcón" },
+  { id: "ascensor", label: "Ascensor" },
+  { id: "aire-acondicionado", label: "Aire acondicionado" },
+  { id: "calefaccion", label: "Calefacción" },
+  { id: "piscina", label: "Piscina" },
+  { id: "garaje", label: "Garaje" },
+  { id: "jardin", label: "Jardín" },
+  { id: "trastero", label: "Trastero" },
+  { id: "amueblado", label: "Amueblado" },
+  { id: "vistas-mar", label: "Vistas al mar" },
+  { id: "exterior", label: "Exterior" },
+  { id: "accesible", label: "Accesible" },
+];
 
 export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta" }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
@@ -32,6 +53,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [bedrooms, setBedrooms] = useState<number | null | string>(null);
   const [bathrooms, setBathrooms] = useState<number | null | string>(null);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [openFeatures, setOpenFeatures] = useState(false);
 
   // Opciones para los rangos de precios según el tipo de operación
   const priceOptions = {
@@ -86,112 +109,222 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
       priceMax,
       bedrooms: bedrooms === "any" || bedrooms === "" ? null : parseInt(bedrooms as string),
       bathrooms: bathrooms === "any" || bathrooms === "" ? null : parseInt(bathrooms as string),
+      features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
     };
 
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, bedrooms, bathrooms, debouncedFilterChange]);
+  }, [operationType, priceMin, priceMax, bedrooms, bathrooms, selectedFeatures, debouncedFilterChange]);
+
+  // Añadir o eliminar características
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatures(current => 
+      current.includes(featureId) 
+        ? current.filter(id => id !== featureId) 
+        : [...current, featureId]
+    );
+  };
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
-      <div className="flex flex-wrap md:flex-nowrap items-center gap-4">
-        {/* Tipo de operación */}
-        <div>
-          <Label className="mb-2 block">Operación</Label>
-          <RadioGroup
-            value={operationType}
-            onValueChange={(value) => setOperationType(value as "Venta" | "Alquiler")}
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Venta" id="venta" />
-              <Label htmlFor="venta" className="cursor-pointer">Comprar</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="Alquiler" id="alquiler" />
-              <Label htmlFor="alquiler" className="cursor-pointer">Alquilar</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Filtro de precios con dropdowns */}
-        <div className="flex-1">
-          <Label className="mb-2 block">Precio</Label>
-          <div className="flex items-center gap-2">
-            <Select
-              value={priceMin?.toString() || "any"}
-              onValueChange={(value) => setPriceMin(value === "any" ? null : parseInt(value))}
+      <div className="space-y-4">
+        {/* Fila superior - Operación */}
+        <div className="flex justify-center sm:justify-start">
+          {/* Toggle de tipo de operación */}
+          <div className="flex bg-gray-100 p-1 rounded-full">
+            <Button
+              variant={operationType === "Venta" ? "default" : "ghost"}
+              className={cn(
+                "rounded-full text-sm h-9 px-5",
+                operationType === "Venta" ? "bg-white shadow-sm" : "hover:bg-gray-200"
+              )}
+              onClick={() => setOperationType("Venta")}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Min precio" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Cualquier precio</SelectItem>
-                {priceOptions[operationType].map((option) => (
-                  <SelectItem key={`min-${option.value}`} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>-</span>
-            <Select
-              value={priceMax?.toString() || "any"}
-              onValueChange={(value) => setPriceMax(value === "any" ? null : parseInt(value))}
+              Comprar
+            </Button>
+            <Button
+              variant={operationType === "Alquiler" ? "default" : "ghost"}
+              className={cn(
+                "rounded-full text-sm h-9 px-5",
+                operationType === "Alquiler" ? "bg-white shadow-sm" : "hover:bg-gray-200"
+              )}
+              onClick={() => setOperationType("Alquiler")}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Máx precio" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Cualquier precio</SelectItem>
-                {priceOptions[operationType].map((option) => (
-                  <SelectItem key={`max-${option.value}`} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              Alquilar
+            </Button>
           </div>
         </div>
 
-        {/* Filtro de habitaciones */}
-        <div>
-          <Label className="mb-2 block">Habitaciones</Label>
-          <Select
-            value={bedrooms?.toString() || "any"}
-            onValueChange={(value) => setBedrooms(value ? value : "any")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Habitaciones" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Cualquiera</SelectItem>
-              <SelectItem value="1">1+</SelectItem>
-              <SelectItem value="2">2+</SelectItem>
-              <SelectItem value="3">3+</SelectItem>
-              <SelectItem value="4">4+</SelectItem>
-              <SelectItem value="5">5+</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Fila de filtros - Precio, habitaciones, baños, características */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Filtro de precio */}
+          <div>
+            <Label className="font-medium mb-1.5 block text-sm">
+              <Euro className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+              Precio {operationType === "Alquiler" ? "/mes" : ""}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Select
+                value={priceMin?.toString() || "any"}
+                onValueChange={(value) => setPriceMin(value === "any" ? null : parseInt(value))}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Min precio" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Cualquier precio</SelectItem>
+                  {priceOptions[operationType].map((option) => (
+                    <SelectItem key={`min-${option.value}`} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>-</span>
+              <Select
+                value={priceMax?.toString() || "any"}
+                onValueChange={(value) => setPriceMax(value === "any" ? null : parseInt(value))}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Máx precio" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Cualquier precio</SelectItem>
+                  {priceOptions[operationType].map((option) => (
+                    <SelectItem key={`max-${option.value}`} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Filtro de habitaciones */}
+          <div>
+            <Label className="font-medium mb-1.5 block text-sm">
+              <BedDouble className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+              Habitaciones
+            </Label>
+            <Select
+              value={bedrooms?.toString() || "any"}
+              onValueChange={(value) => setBedrooms(value === "any" ? null : value)}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Habitaciones" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Cualquiera</SelectItem>
+                <SelectItem value="1">1+</SelectItem>
+                <SelectItem value="2">2+</SelectItem>
+                <SelectItem value="3">3+</SelectItem>
+                <SelectItem value="4">4+</SelectItem>
+                <SelectItem value="5">5+</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filtro de baños */}
+          <div>
+            <Label className="font-medium mb-1.5 block text-sm">
+              <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+              Baños
+            </Label>
+            <Select
+              value={bathrooms?.toString() || "any"}
+              onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Baños" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Cualquiera</SelectItem>
+                <SelectItem value="1">1+</SelectItem>
+                <SelectItem value="2">2+</SelectItem>
+                <SelectItem value="3">3+</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filtro de características */}
+          <div>
+            <Label className="font-medium mb-1.5 block text-sm">
+              <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+              Características
+            </Label>
+            <Popover open={openFeatures} onOpenChange={setOpenFeatures}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openFeatures}
+                  className="w-full justify-between h-9 text-sm"
+                >
+                  {selectedFeatures.length === 0
+                    ? "Seleccionar"
+                    : `${selectedFeatures.length} seleccionadas`}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Command>
+                  <CommandList>
+                    <CommandGroup>
+                      {features.map((feature) => (
+                        <CommandItem
+                          key={feature.id}
+                          value={feature.id}
+                          onSelect={() => toggleFeature(feature.id)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedFeatures.includes(feature.id) ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {feature.label}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
-        {/* Filtro de baños */}
-        <div>
-          <Label className="mb-2 block">Baños</Label>
-          <Select
-            value={bathrooms?.toString() || "any"}
-            onValueChange={(value) => setBathrooms(value ? value : "any")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Baños" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">Cualquiera</SelectItem>
-              <SelectItem value="1">1+</SelectItem>
-              <SelectItem value="2">2+</SelectItem>
-              <SelectItem value="3">3+</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Mostrar etiquetas de características seleccionadas */}
+        {selectedFeatures.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {selectedFeatures.map((featureId) => {
+              const feature = features.find(f => f.id === featureId);
+              return feature ? (
+                <Badge
+                  key={featureId}
+                  variant="outline"
+                  className="px-2 py-1 rounded-full bg-gray-50"
+                >
+                  {feature.label}
+                  <button
+                    className="ml-1 text-gray-500 hover:text-gray-700"
+                    onClick={() => toggleFeature(featureId)}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ) : null;
+            })}
+            {selectedFeatures.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 px-2 text-xs"
+                onClick={() => setSelectedFeatures([])}
+              >
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
