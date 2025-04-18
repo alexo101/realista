@@ -40,12 +40,15 @@ export function AgentReview({ onClose }: AgentReviewProps) {
     propertyKnowledge: 0,
   });
 
-  const { data: agents } = useQuery<Agent[]>({
+  const { data: agents, isError, error } = useQuery<Agent[]>({
     queryKey: ['/api/agents/search', searchTerm],
     queryFn: async () => {
       if (!searchTerm) return [];
       const response = await fetch(`/api/agents/search?q=${encodeURIComponent(searchTerm)}`);
-      if (!response.ok) throw new Error('Failed to search agents');
+      if (!response.ok) {
+        const message = `Error searching agents: ${response.status} ${response.statusText}`;
+        throw new Error(message);
+      }
       return response.json();
     },
     enabled: searchTerm.length > 2,
@@ -88,9 +91,13 @@ export function AgentReview({ onClose }: AgentReviewProps) {
 
       if (response.ok) {
         onClose();
+      } else {
+        console.error(`Error submitting review: ${response.status} ${response.statusText}`);
+        // Add error handling here, e.g., display an error message
       }
     } catch (error) {
       console.error('Error submitting review:', error);
+      // Add error handling here, e.g., display an error message
     }
   };
 
@@ -107,6 +114,12 @@ export function AgentReview({ onClose }: AgentReviewProps) {
       ))}
     </div>
   );
+
+  const handleSelectAgent = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setSearchTerm(""); // Clear search after selection
+  };
+
 
   return (
     <Dialog open onOpenChange={() => onClose()}>
@@ -142,7 +155,7 @@ export function AgentReview({ onClose }: AgentReviewProps) {
                       className={`cursor-pointer transition-shadow hover:shadow-md ${
                         selectedAgent?.id === agent.id ? 'border-blue-500' : ''
                       }`}
-                      onClick={() => setSelectedAgent(agent)}
+                      onClick={() => handleSelectAgent(agent)}
                     >
                       <CardContent className="p-4">
                         <div className="font-medium">{agent.name}</div>
@@ -151,8 +164,10 @@ export function AgentReview({ onClose }: AgentReviewProps) {
                     </Card>
                   ))}
                 </div>
-              ) : searchTerm.length > 2 ? (
+              ) : searchTerm.length > 2 && !isError ? (
                 <p className="text-center text-gray-500">No se encontraron agentes</p>
+              ) : isError ? (
+                <p className="text-center text-red-500">Error al buscar agentes: {error?.message}</p>
               ) : null}
             </div>
           )}

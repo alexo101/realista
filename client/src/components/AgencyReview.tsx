@@ -64,32 +64,38 @@ export function AgencyReview({ onClose }: AgencyReviewProps) {
 
     setIsSearching(true);
     try {
-      // Simulamos la búsqueda con una lista estática, en un proyecto real habría una llamada a la API
-      const mockResults = [
-        { id: 1, name: "Inmobiliaria Barcelona", email: "contacto@inmobiliariabcn.es" },
-        { id: 2, name: "Casas de Ensueño", email: "info@casasdeensueno.com" },
-        { id: 3, name: "Propiedades Mediterráneas", email: "contacto@propmed.es" }
-      ].filter(agency => 
-        agency.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        agency.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      
-      setSearchResults(mockResults);
+      // Usar la API real para buscar agencias
+      const response = await fetch(`/api/search/agencies?agencyName=${encodeURIComponent(searchTerm)}&showAll=true`);
+      if (!response.ok) {
+        throw new Error('Error al buscar agencias');
+      }
+      const data = await response.json();
+      // Mapear los resultados para asegurar que tienen la estructura esperada
+      const formattedResults = data.map(agency => ({
+        id: agency.id,
+        name: agency.agencyName || agency.name,
+        email: agency.email
+      }));
+      setSearchResults(formattedResults);
     } catch (error) {
+      console.error('Error searching agencies:', error);
       toast({
         title: "Error",
-        description: "No se pudo realizar la búsqueda",
+        description: "No se pudieron cargar las agencias",
         variant: "destructive",
       });
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
   };
 
-  const handleAgencySelect = (agency: Agency) => {
+  const handleAgencySelect = (agency: any) => {
     setSelectedAgency(agency);
     form.setValue("agencyEmail", agency.email);
+    // Limpiar resultados de búsqueda después de seleccionar
     setSearchResults([]);
+    setSearchTerm("");
   };
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
@@ -110,7 +116,7 @@ export function AgencyReview({ onClose }: AgencyReviewProps) {
         rating: data.rating,
         comment: data.comment,
       }); */
-      
+
       toast({
         title: "Reseña enviada",
         description: `Has dejado una reseña a ${selectedAgency.name}`,
