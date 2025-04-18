@@ -314,6 +314,26 @@ export default function AgencyProfile() {
                     </div>
                   )}
                   
+                  {agency.yearEstablished && (
+                    <div className="flex">
+                      <Calendar className="h-5 w-5 mr-3 text-gray-500" />
+                      <div>
+                        <div className="font-medium">Año de fundación</div>
+                        <div>{agency.yearEstablished}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {agency.agencyLanguagesSpoken && agency.agencyLanguagesSpoken.length > 0 && (
+                    <div className="flex">
+                      <div className="h-5 w-5 mr-3 text-gray-500">🌍</div>
+                      <div>
+                        <div className="font-medium">Idiomas</div>
+                        <div>{agency.agencyLanguagesSpoken.join(', ')}</div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {agency.agencySocialMedia && Object.values(agency.agencySocialMedia).some(x => x) && (
                     <div>
                       <div className="font-medium mb-2">Redes sociales</div>
