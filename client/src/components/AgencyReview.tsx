@@ -61,19 +61,19 @@ export function AgencyReview({ onClose }: AgencyReviewProps) {
       });
       return;
     }
-    
+
     try {
       setIsSearching(true);
-      
+
       const params = new URLSearchParams();
       params.append('agencyName', searchTerm);
       params.append('showAll', 'true');
-      
+
       const response = await fetch(`/api/search/agencies?${params}`);
       if (!response.ok) {
         throw new Error("Error al buscar agencias");
       }
-      
+
       const results = await response.json();
       setSearchResults(results);
     } catch (error) {
@@ -82,34 +82,6 @@ export function AgencyReview({ onClose }: AgencyReviewProps) {
         description: "Error al buscar agencias",
         variant: "destructive",
       });
-    } finally {
-      setIsSearching(false);
-    }
-    }
-
-    setIsSearching(true);
-    try {
-      // Usar la API real para buscar agencias
-      const response = await fetch(`/api/search/agencies?agencyName=${encodeURIComponent(searchTerm)}&showAll=true`);
-      if (!response.ok) {
-        throw new Error('Error al buscar agencias');
-      }
-      const data = await response.json();
-      // Mapear los resultados para asegurar que tienen la estructura esperada
-      const formattedResults = data.map(agency => ({
-        id: agency.id,
-        name: agency.agencyName || agency.name,
-        email: agency.email
-      }));
-      setSearchResults(formattedResults);
-    } catch (error) {
-      console.error('Error searching agencies:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las agencias",
-        variant: "destructive",
-      });
-      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
