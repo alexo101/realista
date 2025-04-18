@@ -23,6 +23,22 @@ interface AgencyAgent {
   reviewCount?: number;
 }
 
+interface Property {
+  id: number;
+  title: string;
+  address: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  size: number;
+  superficie?: number;
+  images: string[];
+  type: string;
+  operationType: string;
+  agentId: number;
+  agentName?: string;
+}
+
 interface Agency {
   id: number;
   email: string;
@@ -39,6 +55,7 @@ interface Agency {
   agencyLogo?: string;
   agencyInfluenceNeighborhoods?: string[];
   agents?: AgencyAgent[];
+  properties?: Property[];
 }
 
 // Componente para mostrar una tarjeta de agente
@@ -84,6 +101,33 @@ export default function AgencyProfile() {
       }
       return response.json();
     },
+  });
+  
+  // Consulta para obtener las propiedades de los agentes de la agencia
+  const { data: agencyProperties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
+    queryKey: [`/api/agencies/${id}/properties`],
+    queryFn: async () => {
+      // Si no hay agencia o no hay agentes, no hay propiedades
+      if (!agency || !agency.agents || agency.agents.length === 0) {
+        return [];
+      }
+      
+      // Obtenemos todos los IDs de agentes de la agencia
+      const agentIds = agency.agents.map(agent => agent.id);
+      
+      // Consulta para obtener las propiedades de todos los agentes
+      const promises = agentIds.map(agentId => 
+        fetch(`/api/properties?agentId=${agentId}`)
+          .then(res => res.ok ? res.json() : [])
+      );
+      
+      // Resolvemos todas las promesas
+      const results = await Promise.all(promises);
+      
+      // Aplanamos el array de arrays de propiedades
+      return results.flat();
+    },
+    enabled: !!agency && !!agency.agents && agency.agents.length > 0,
   });
 
   // Efecto para desplazar al inicio de la página cuando cambia el ID
@@ -309,8 +353,68 @@ export default function AgencyProfile() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="properties" className="mt-6">
+          <h2 className="text-2xl font-semibold mb-6">Propiedades de {agency.agencyName}</h2>
           
-
+          {isLoadingProperties ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <Skeleton className="h-48 w-full" />
+                  <CardContent className="p-4">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full mb-3" />
+                    <Skeleton className="h-6 w-1/2 mb-3" />
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-8" />
+                      <Skeleton className="h-4 w-8" />
+                      <Skeleton className="h-4 w-8" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : !agencyProperties || agencyProperties.length === 0 ? (
+            <div className="text-center py-8">
+              <Home className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium mb-2">Sin propiedades listadas</h3>
+              <p className="text-gray-500">
+                Esta agencia no tiene propiedades listadas actualmente.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Propiedades en venta */}
+              {agencyProperties.some(p => p.operationType.toLowerCase() === 'venta') && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Propiedades en venta</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {agencyProperties
+                      .filter(p => p.operationType.toLowerCase() === 'venta')
+                      .map(property => (
+                        <PropertyCard key={property.id} property={property} />
+                      ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Propiedades en alquiler */}
+              {agencyProperties.some(p => p.operationType.toLowerCase() === 'alquiler') && (
+                <div className="mt-8">
+                  <h3 className="text-xl font-semibold mb-4">Propiedades en alquiler</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {agencyProperties
+                      .filter(p => p.operationType.toLowerCase() === 'alquiler')
+                      .map(property => (
+                        <PropertyCard key={property.id} property={property} />
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="agents" className="mt-6">
