@@ -23,6 +23,13 @@ import { CentralAppointmentsManager } from "@/components/CentralAppointmentsMana
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { type Property, type Client } from "@shared/schema";
 
@@ -408,30 +415,25 @@ export default function ManagePage() {
                 </div>
                 <div>
                   <Label htmlFor="languagesSpoken">Idiomas que hablas</Label>
-                  <Select
-                    isMulti
-                    placeholder="Seleccionar idiomas..."
-                    options={[
-                      { value: 'español', label: 'Español' },
-                      { value: 'català', label: 'Català' },
-                      { value: 'english', label: 'English' },
-                      { value: 'français', label: 'Français' },
-                      { value: 'deutsch', label: 'Deutsch' },
-                      { value: 'italiano', label: 'Italiano' },
-                      { value: 'português', label: 'Português' },
-                      { value: 'русский', label: 'Русский' },
-                      { value: '中文', label: '中文' },
-                      { value: '日本語', label: '日本語' },
-                      { value: 'العربية', label: 'العربية' },
-                    ]}
-                    value={languagesSpoken.map(lang => ({ value: lang, label: lang }))}
-                    onChange={(selectedOptions) => {
-                      const values = selectedOptions ? selectedOptions.map((option: any) => option.value) : [];
-                      setLanguagesSpoken(values);
-                    }}
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                  />
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
+                      <Button 
+                        key={lang}
+                        type="button" 
+                        variant={languagesSpoken.includes(lang) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          if (languagesSpoken.includes(lang)) {
+                            setLanguagesSpoken(languagesSpoken.filter(l => l !== lang));
+                          } else {
+                            setLanguagesSpoken([...languagesSpoken, lang]);
+                          }
+                        }}
+                      >
+                        {lang}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
                 <div className="w-full">
                   <Label htmlFor="influence-neighborhoods">Barrios de influencia</Label>
@@ -456,7 +458,9 @@ export default function ManagePage() {
                     name,
                     surname,
                     description,
-                    influenceNeighborhoods
+                    influenceNeighborhoods,
+                    yearsOfExperience,
+                    languagesSpoken
                   })}
                   disabled={updateProfileMutation.isPending}
                 >
@@ -588,6 +592,50 @@ export default function ManagePage() {
                 )}
 
                 <div>
+                  <Label htmlFor="yearEstablished">Año de fundación</Label>
+                  <Input 
+                    id="yearEstablished" 
+                    type="number"
+                    placeholder="Año en que se fundó la agencia" 
+                    value={yearEstablished !== undefined ? yearEstablished : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setYearEstablished(undefined);
+                      } else {
+                        const numValue = parseInt(value, 10);
+                        if (!isNaN(numValue) && numValue > 1900 && numValue <= new Date().getFullYear()) {
+                          setYearEstablished(numValue);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="agencyLanguagesSpoken">Idiomas que se hablan en la agencia</Label>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
+                      <Button 
+                        key={lang}
+                        type="button" 
+                        variant={agencyLanguagesSpoken.includes(lang) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          if (agencyLanguagesSpoken.includes(lang)) {
+                            setAgencyLanguagesSpoken(agencyLanguagesSpoken.filter(l => l !== lang));
+                          } else {
+                            setAgencyLanguagesSpoken([...agencyLanguagesSpoken, lang]);
+                          }
+                        }}
+                      >
+                        {lang}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <Label htmlFor="agency-website">Sitio web</Label>
                   <Input 
                     id="agency-website" 
@@ -670,6 +718,8 @@ export default function ManagePage() {
                     agencyPhone,
                     agencyWebsite,
                     agencyInfluenceNeighborhoods,
+                    yearEstablished,
+                    agencyLanguagesSpoken,
                     agencySocialMedia: {
                       facebook: facebookUrl,
                       instagram: instagramUrl,
