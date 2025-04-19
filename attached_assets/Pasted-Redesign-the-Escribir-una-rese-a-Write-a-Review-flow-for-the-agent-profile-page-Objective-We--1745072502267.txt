@@ -1,0 +1,81 @@
+Redesign the "Escribir una reseña" (Write a Review) flow for the agent profile page:
+
+Objective:
+We want to guide users through a structured review process after they click the "Escribir una reseña" button on an agent's detailed profile.
+
+🧭 User Flow Overview
+Entry Point:
+
+When the user clicks the "Escribir una reseña" button, redirect them to a new URL:
+
+css
+Copy
+Edit
+/[agent-name]/escribir-reseña
+Step 1 – Verification Question:
+
+Show the question: "¿Has comprado o alquilado alguna propiedad con este agente?"
+
+Two response buttons: "Sí" and "No"
+
+If the user selects "No":
+
+Next screen displays a message:
+"Puedes añadir una reseña pero no contará para la puntuación del agente."
+
+Below the message:
+
+A button labeled "Siguiente" to continue to the review.
+
+The user is then redirected to the "Conocimientos de la zona" review screen.
+
+If the user selects "Sí":
+
+Next screen displays a search bar with all the agent's listed properties.
+
+Clicking the search bar opens a searchable list (by address or name).
+
+Once a property is selected:
+
+Show a confirmation message.
+
+Two buttons appear at the bottom:
+
+"No la encuentro" → takes the user to the screen with the message
+"Puedes añadir una reseña pero no contará para la puntuación del agente.", then proceeds to review steps.
+
+"Siguiente" (disabled until a property is selected)
+
+✍️ Review Steps
+Each step includes:
+
+A question.
+
+A 5-star rating selector.
+
+Navigation buttons: "Anterior" and "Siguiente"
+
+1. Conocimientos de la zona
+¿Conocía las características del barrio (servicios, conexión con medios de transporte, sitios de ocio, etc)?
+
+2. Negociación del precio
+¿Te representó en la búsqueda de un mejor precio?
+
+3. Trato
+¿Recibiste un trato amable y cordial por parte de tu agente? ¿Escuchó tus necesidades y te dio respuestas apropiadas?
+
+4. Puntualidad y tiempo de respuesta
+¿Llegó a tiempo a las citas pactadas? ¿Respondía rápidamente a tus solicitudes? ¿Se mostraba disponible dentro de horarios razonables?
+
+5. Conocimiento de la propiedad
+¿Tenía dominio del inmueble? ¿Fue capaz de mostrarte el potencial y "puntos débiles" de la propiedad?
+
+✅ Final Step
+Button: "Validar reseña"
+
+📊 Scoring Logic
+Each category rating is averaged across all reviews.
+
+Individual category scores are displayed on the agent profile.
+
+An overall score is calculated as the average of all category ratings.

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { PropertyCard } from "@/components/PropertyCard";
+import { AgentReviewFlow } from "@/components/AgentReviewFlow";
 
 // Interfaz para las reseñas
 interface Review {
@@ -71,8 +72,9 @@ export default function AgentProfile() {
   // Obtenemos el ID del agente de los parámetros de la URL
   const { id } = useParams<{ id: string }>();
   
-  // Estado para la pestaña activa
+  // Estados para la pestaña activa y el modal de reseñas
   const [activeTab, setActiveTab] = useState("overview");
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   // Consulta para obtener los datos del agente
   const { data: agent, isLoading, error } = useQuery<Agent>({
@@ -401,7 +403,10 @@ export default function AgentProfile() {
                     </div>
                   </div>
                   
-                  <Button className="w-full mt-6">
+                  <Button 
+                    className="w-full mt-6"
+                    onClick={() => setReviewModalOpen(true)}
+                  >
                     Escribir una reseña
                   </Button>
                 </CardContent>
@@ -435,6 +440,12 @@ export default function AgentProfile() {
                   <p className="text-gray-500 max-w-md mx-auto">
                     Este agente aún no tiene reseñas. Sé el primero en compartir tu experiencia.
                   </p>
+                  <Button 
+                    className="mt-4"
+                    onClick={() => setReviewModalOpen(true)}
+                  >
+                    Escribir una reseña
+                  </Button>
                 </div>
               )}
             </div>
