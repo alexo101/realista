@@ -23,6 +23,7 @@ import {
   type InsertAppointment,
   type InsertInquiry,
 } from "@shared/schema";
+import {reviews, type Review, type InsertReview} from "@shared/schema"; // Added import for reviews schema
 
 export interface IStorage {
   // Users
@@ -30,14 +31,14 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<InsertUser>): Promise<User>;
-  
+
   // Agents
   searchAgents(query: string): Promise<User[]>;
   searchAgencies(query: string): Promise<User[]>;
   getAgentById(id: number): Promise<User | undefined>; // Nuevo método para obtener un agente por ID
   getAgencyById(id: number): Promise<User | undefined>; // Nuevo método para obtener una agencia por ID
-  createAgentReview(review: any): Promise<any>;
-  
+  createAgentReview(review: InsertReview): Promise<Review>; //Updated type
+
   // Agency Agents
   getAgencyAgents(agencyId: number): Promise<AgencyAgent[]>;
   createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent>;
@@ -64,14 +65,14 @@ export interface IStorage {
   getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
   getNeighborhoodRatingsAverage(neighborhood: string): Promise<Record<string, number>>;
   createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating>;
-  
+
   // Appointments
   getAppointmentsByClient(clientId: number): Promise<Appointment[]>;
   getAppointmentsByAgent(agentId: number): Promise<Appointment[]>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
   updateAppointment(id: number, appointment: Partial<InsertAppointment>): Promise<Appointment>;
   deleteAppointment(id: number): Promise<void>;
-  
+
   // Inquiries (Consultas de propiedad)
   getInquiriesByAgent(agentId: number): Promise<Inquiry[]>;
   getInquiryById(id: number): Promise<Inquiry | undefined>;
@@ -132,11 +133,11 @@ export class DatabaseStorage implements IStorage {
     // Los agentes administrativos son aquellos que tienen agencyName
     let conditionsRegularAgents = [eq(users.isAgent, true)];
     let conditionsAdminAgents = [not(isNull(users.agencyName))];
-    
+
     // Añadir condición de búsqueda por nombre si existe y no está vacío
     if (searchTerm && searchTerm.trim() !== '') {
       const trimmedTerm = searchTerm.trim();
-      
+
       if (isAutoCompleteMode) {
         // Para autocompletado, priorizamos los que comienzan con el término de búsqueda
         // y luego los que contienen el término en cualquier parte
@@ -146,14 +147,14 @@ export class DatabaseStorage implements IStorage {
           LOWER(CONCAT(${users.name}, ' ', ${users.surname})) LIKE LOWER(${trimmedTerm + '%'}) OR
           LOWER(${users.email}::text) LIKE LOWER(${trimmedTerm + '%'})
         )`;
-        
+
         const containsCondition = sql`(
           LOWER(${users.name}::text) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR 
           LOWER(${users.surname}::text) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR 
           LOWER(CONCAT(${users.name}, ' ', ${users.surname})) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR
           LOWER(${users.email}::text) LIKE LOWER(${'%' + trimmedTerm + '%'})
         )`;
-        
+
         // Usamos primero la condición exacta y luego la contiene
         conditionsRegularAgents.push(
           or(exactStartCondition as any, containsCondition as any)
@@ -169,49 +170,49 @@ export class DatabaseStorage implements IStorage {
           LOWER(CONCAT(${users.name}, ' ', ${users.surname})) LIKE LOWER(${'%' + trimmedTerm + '%'}) OR
           LOWER(${users.email}::text) LIKE LOWER(${'%' + trimmedTerm + '%'})
         )`;
-        
+
         conditionsRegularAgents.push(nameCondition);
         conditionsAdminAgents.push(nameCondition);
       }
     }
-    
+
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
       // De momento, mostrar todos los agentes para facilitar que se encuentren
       // y garantizar que están visibles (fix para el problema de visibilidad)
       console.log('Barrios seleccionados:', neighborhoods);
       console.log('Mostrando todos los agentes para garantizar visibilidad');
-      
+
       // Si queremos permitir que todos los agentes aparezcan, no usamos filtro de barrios
       // De esta forma garantizamos que todos los agentes serán visibles independientemente
       // de su configuración de barrios de influencia
     }
-    
+
     try {
       // Consulta para obtener agentes regulares
       const regularAgentsQuery = db.select()
         .from(users)
         .where(conditionsRegularAgents.length > 0 ? and(...conditionsRegularAgents) : undefined as any)
         .orderBy(users.name);
-        
+
       // Consulta para obtener agentes administrativos
       const adminAgentsQuery = db.select()
         .from(users)
         .where(conditionsAdminAgents.length > 0 ? and(...conditionsAdminAgents) : undefined as any)
         .orderBy(users.name);
-        
+
       // Ejecutar ambas consultas y combinar resultados
       const [regularAgents, adminAgents] = await Promise.all([
         regularAgentsQuery,
         adminAgentsQuery
       ]);
-      
+
       // Combinar y eliminar duplicados (un agente puede ser tanto regular como administrativo)
       const allAgents = [...regularAgents, ...adminAgents];
       const uniqueAgents = allAgents.filter((agent, index, self) =>
         index === self.findIndex((t) => t.id === agent.id)
       );
-      
+
       console.log('SearchAgents - result count:', uniqueAgents.length);
       return uniqueAgents;
     } catch (error) {
@@ -231,34 +232,34 @@ export class DatabaseStorage implements IStorage {
     console.log('SearchAgencies - searchTerm:', searchTerm);
     console.log('SearchAgencies - neighborhoods:', neighborhoods);
     console.log('SearchAgencies - showAll:', showAll);
-    
+
     // En modo autocompletado, siempre mostramos resultados
     const isAutoCompleteMode = searchTerm.trim() !== '';
-    
+
     // Si no hay término de búsqueda ni barrios, y no se ha solicitado explícitamente
     // mostrar todos (showAll), entonces retornar un array vacío
     if (!isAutoCompleteMode && neighborhoods.length === 0 && !showAll) {
       console.log('No hay términos de búsqueda, y showAll es falso, retornando array vacío');
       return [];
     }
-    
+
     // Importante: Buscar solo los usuarios que son agencias (no agentes)
     // Una agencia es un usuario que tiene agencyName no nulo y no es un agente
     let conditions = [
       sql`${users.agencyName} IS NOT NULL`,
       eq(users.isAgent, false)
     ];
-    
+
     // Añadir condición de búsqueda por nombre si existe y no está vacío
     if (searchTerm && searchTerm.trim() !== '') {
       const trimmedTerm = searchTerm.trim();
-      
+
       if (isAutoCompleteMode) {
         // Para autocompletado, priorizamos las agencias que comienzan con el término
         // y luego las que contienen el término en cualquier parte
         const exactStartCondition = sql`LOWER(${users.agencyName}::text) LIKE LOWER(${trimmedTerm + '%'})`;
         const containsCondition = sql`LOWER(${users.agencyName}::text) LIKE LOWER(${'%' + trimmedTerm + '%'})`;
-        
+
         conditions.push(
           or(exactStartCondition as any, containsCondition as any)
         );
@@ -269,11 +270,11 @@ export class DatabaseStorage implements IStorage {
         );
       }
     }
-    
+
     // Añadir condición de búsqueda por barrios si existen
     if (neighborhoods.length > 0) {
       console.log('Buscando agencias con barrios de influencia:', neighborhoods);
-      
+
       // Ahora sí filtramos para mostrar solo las agencias que tienen estos barrios como barrios de influencia
       // Usamos la función de array_overlaps para verificar que la agencia tiene al menos uno de estos barrios
       const neighborhoodsArray = neighborhoods.map(n => `"${n}"`).join(',');
@@ -281,13 +282,13 @@ export class DatabaseStorage implements IStorage {
         sql`array[${sql.raw(neighborhoodsArray)}]::text[] && ${users.influenceNeighborhoods}`
       );
     }
-    
+
     try {
       const result = await db.select()
         .from(users)
         .where(conditions.length > 0 ? and(...conditions) : undefined as any)
         .orderBy(users.agencyName);
-        
+
       console.log('SearchAgencies - query conditions:', conditions);
       console.log('SearchAgencies - result count:', result.length);
       return result;
@@ -308,7 +309,7 @@ export class DatabaseStorage implements IStorage {
             eq(users.isAgent, true)
           )
         ).then(res => res[0]);
-      
+
       // Si no encontramos un agente regular, intentamos buscar un administrador de agencia
       if (!agent) {
         console.log('No se encontró agente regular con ID', id, 'intentando buscar admin de agencia');
@@ -321,29 +322,29 @@ export class DatabaseStorage implements IStorage {
             )
           ).then(res => res[0]);
       }
-      
+
       if (agent) {
         console.log('Agente encontrado:', agent.email, 'isAgent:', agent.isAgent);
         // También obtenemos las propiedades asociadas a este agente
         const agentProperties = await this.getPropertiesByAgent(id);
-        
+
         // No devolvemos la contraseña en la respuesta por seguridad
         const { password, ...agentWithoutPassword } = agent;
-        
+
         // Retornamos el agente con sus propiedades (pero sin incluir la contraseña)
         return {
           ...agentWithoutPassword,
           properties: agentProperties
         } as User;
       }
-      
+
       return undefined;
     } catch (error) {
       console.error('Error en getAgentById:', error);
       return undefined;
     }
   }
-  
+
   async getAgencyById(id: number): Promise<User | undefined> {
     try {
       // Primero obtenemos la información básica de la agencia
@@ -355,14 +356,14 @@ export class DatabaseStorage implements IStorage {
             not(isNull(users.agencyName))
           )
         );
-      
+
       if (agency) {
         // También obtenemos los agentes asociados a esta agencia
         const agencyAgentsList = await this.getAgencyAgents(id);
-        
+
         // No devolvemos la contraseña en la respuesta por seguridad
         const { password, ...agencyWithoutPassword } = agency;
-        
+
         // Aseguramos que se use el logo de la agencia, no foto de perfil del admin
         // y que se use la descripción de la agencia, no del admin
         const agencyData = {
@@ -373,33 +374,31 @@ export class DatabaseStorage implements IStorage {
           // Usamos la descripción específica de la agencia (si existe)
           description: agency.agencyDescription || agency.description
         };
-        
+
         console.log(`Perfil de agencia ${id} (${agency.agencyName}) cargado con ${agencyAgentsList.length} agentes`);
-        
+
         return agencyData as User;
       }
-      
+
       return undefined;
     } catch (error) {
       console.error('Error en getAgencyById:', error);
       return undefined;
     }
   }
-  
-  async createAgentReview(review: any): Promise<any> {
-    // This is a placeholder implementation since we don't have an agent_reviews table defined yet
-    // In a real implementation, we would insert into an agent_reviews table
-    console.log('Agent review submission:', review);
-    return { ...review, id: Date.now(), createdAt: new Date() };
+
+  async createAgentReview(review: InsertReview): Promise<Review> {
+    const [newReview] = await db.insert(reviews).values(review).returning();
+    return newReview;
   }
-  
+
   // Agency Agents
   async getAgencyAgents(agencyId: number): Promise<AgencyAgent[]> {
     // Primero obtenemos los agentes normales de la tabla agencyAgents
     const regularAgents = await db.select()
       .from(agencyAgents)
       .where(eq(agencyAgents.agencyId, agencyId));
-      
+
     // Ahora necesitamos obtener la información del administrador de la agencia
     // que es un usuario con agencyName pero no aparece en la lista de agentes
     const [admin] = await db.select()
@@ -410,16 +409,16 @@ export class DatabaseStorage implements IStorage {
           not(isNull(users.agencyName))
         )
       );
-    
+
     // Si existe un administrador, lo añadimos como un agente adicional
     if (admin) {
       console.log(`Añadiendo administrador ${admin.name} ${admin.surname} como agente de la agencia ${agencyId}`);
-      
+
       // Verificamos si ya tenemos este usuario en la lista de agentes
       const adminAlreadyInList = regularAgents.some(agent => 
         agent.agentEmail === admin.email
       );
-      
+
       if (!adminAlreadyInList) {
         // Creamos un objeto tipo AgencyAgent para el administrador
         const adminAsAgent: AgencyAgent = {
@@ -430,11 +429,11 @@ export class DatabaseStorage implements IStorage {
           agentEmail: admin.email,
           createdAt: admin.createdAt
         };
-        
+
         return [...regularAgents, adminAsAgent];
       }
     }
-    
+
     return regularAgents;
   }
 
@@ -454,20 +453,20 @@ export class DatabaseStorage implements IStorage {
 
   async getProperty(id: number): Promise<Property | undefined> {
     const [property] = await db.select().from(properties).where(eq(properties.id, id));
-    
+
     // Incrementar el contador de visualizaciones de forma asíncrona, sin esperar el resultado
     if (property) {
       this.incrementPropertyViewCount(id).catch(err => {
         console.error(`Error incrementando contador de visualizaciones para propiedad ${id}:`, err);
       });
     }
-    
+
     return property;
   }
-  
+
   async getMostViewedProperties(limit: number = 6, operationType?: string): Promise<Property[]> {
     let baseQuery = db.select().from(properties);
-    
+
     // Si se especifica un tipo de operación (Venta o Alquiler), filtramos por él
     if (operationType) {
       return baseQuery
@@ -516,14 +515,14 @@ export class DatabaseStorage implements IStorage {
         // pero tampoco podemos usar arrayContains ya que properties.neighborhood no es un array
       }
     }
-    
+
     if (filters.type) {
       conditions.push(eq(properties.type, filters.type));
     }
     if (filters.operationType) {
       conditions.push(eq(properties.operationType, filters.operationType));
     }
-    
+
     // Filtros de precio
     if (filters.priceMin) {
       conditions.push(gte(properties.price, parseInt(filters.priceMin)));
@@ -534,28 +533,28 @@ export class DatabaseStorage implements IStorage {
         conditions.push(gte(properties.price, parseInt(filters.minPrice)));
       }
     }
-    
+
     if (filters.priceMax) {
       conditions.push(lte(properties.price, parseInt(filters.priceMax)));
     } else if (filters.maxPrice && filters.maxPrice !== 'no-limit') {
       conditions.push(lte(properties.price, parseInt(filters.maxPrice)));
     }
-    
+
     // Filtros de habitaciones y baños
     if (filters.bedrooms) {
       conditions.push(gte(properties.bedrooms, parseInt(filters.bedrooms)));
     }
-    
+
     if (filters.bathrooms) {
       conditions.push(gte(properties.bathrooms, parseInt(filters.bathrooms)));
     }
-    
+
     // Filtro por características
     if (filters.features) {
       const featuresArray = typeof filters.features === 'string' 
         ? filters.features.split(',') 
         : filters.features;
-        
+
       if (featuresArray.length > 0) {
         // Usamos arrayOverlaps para verificar si hay intersección entre las características
         // de la propiedad y las características buscadas
@@ -621,7 +620,7 @@ export class DatabaseStorage implements IStorage {
 
   async getNeighborhoodRatingsAverage(neighborhood: string): Promise<Record<string, number>> {
     console.log(`Calculando promedios para el barrio: ${neighborhood}`);
-    
+
     try {
       // Usamos SQL directo para obtener los promedios
       const query = sql`
@@ -636,10 +635,10 @@ export class DatabaseStorage implements IStorage {
         FROM neighborhood_ratings 
         WHERE neighborhood = ${neighborhood}
       `;
-      
+
       const result = await db.execute(query);
       console.log(`SQL directo: Encontradas valoraciones para: ${neighborhood}`, result.rows);
-      
+
       if (!result.rows.length || result.rows[0].count === 0) {
         console.log(`No hay valoraciones para: ${neighborhood}`);
         return {
@@ -652,7 +651,7 @@ export class DatabaseStorage implements IStorage {
           count: 0,
         };
       }
-      
+
       // Resultado en formato adecuado
       const averages = {
         security: Number(result.rows[0].security) || 0,
@@ -663,7 +662,7 @@ export class DatabaseStorage implements IStorage {
         services: Number(result.rows[0].services) || 0,
         count: Number(result.rows[0].count) || 0,
       };
-      
+
       console.log('Promedios calculados para', neighborhood, averages);
       return averages;
     } catch (error) {
@@ -682,7 +681,7 @@ export class DatabaseStorage implements IStorage {
 
   async createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating> {
     console.log('Guardando nueva valoración para barrio:', rating.neighborhood);
-    
+
     try {
       // Verificar que todos los campos necesarios estén presentes y sean números
       const numericFields = ['security', 'parking', 'familyFriendly', 'publicTransport', 'greenSpaces', 'services'];
@@ -692,9 +691,9 @@ export class DatabaseStorage implements IStorage {
           throw new Error(`El campo ${field} debe ser un número válido`);
         }
       });
-      
+
       console.log('Datos de valoración validados');
-      
+
       // Convertir números a strings para compatibilidad con la columna decimal en Drizzle
       const [newRating] = await db.insert(neighborhoodRatings).values({
         neighborhood: rating.neighborhood,
@@ -706,7 +705,7 @@ export class DatabaseStorage implements IStorage {
         services: rating.services.toString(),
         userId: rating.userId
       }).returning();
-      
+
       console.log('Valoración guardada con éxito:', newRating);
       return newRating;
     } catch (error) {
@@ -745,7 +744,7 @@ export class DatabaseStorage implements IStorage {
   async deleteAppointment(id: number): Promise<void> {
     await db.delete(appointments).where(eq(appointments.id, id));
   }
-  
+
   // Inquiries (Consultas de propiedad)
   async getInquiriesByAgent(agentId: number): Promise<Inquiry[]> {
     return db.select()
@@ -753,21 +752,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(inquiries.agentId, agentId))
       .orderBy(sql`${inquiries.createdAt} DESC`);
   }
-  
+
   async getInquiryById(id: number): Promise<Inquiry | undefined> {
     const [inquiry] = await db.select()
       .from(inquiries)
       .where(eq(inquiries.id, id));
     return inquiry;
   }
-  
+
   async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
     const [newInquiry] = await db.insert(inquiries)
       .values(inquiry)
       .returning();
     return newInquiry;
   }
-  
+
   async updateInquiryStatus(id: number, status: string): Promise<Inquiry> {
     const [updatedInquiry] = await db.update(inquiries)
       .set({ status })
@@ -777,4 +776,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage: IStorage = new DatabaseStorage();

@@ -150,3 +150,22 @@ export type InsertNeighborhoodRating = z.infer<typeof insertNeighborhoodRatingSc
 export type InsertAgencyAgent = z.infer<typeof insertAgencyAgentSchema>;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull(),
+  propertyId: integer("property_id"),
+  verified: boolean("verified").notNull(),
+  areaKnowledge: decimal("area_knowledge").notNull(),
+  priceNegotiation: decimal("price_negotiation").notNull(),
+  treatment: decimal("treatment").notNull(),
+  punctuality: decimal("punctuality").notNull(),
+  propertyKnowledge: decimal("property_knowledge").notNull(),
+  rating: decimal("rating").notNull(),
+  author: text("author").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true });
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = z.infer<typeof insertReviewSchema>;
