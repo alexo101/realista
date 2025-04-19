@@ -213,16 +213,13 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       agentId: agentId,
       propertyId: selectedPropertyId,
       verified: hasWorkedWithAgent === true,
-      ratings: {
-        zoneKnowledge: ratings.zoneKnowledge,
-        priceNegotiation: ratings.priceNegotiation,
-        treatment: ratings.treatment,
-        punctuality: ratings.punctuality,
-        propertyKnowledge: ratings.propertyKnowledge
-      },
-      overallRating: calculateOverallRating(),
-      // Nota: En una aplicación real, aquí incluiríamos información del usuario que está escribiendo la reseña
-      author: "Usuario", // Placeholder
+      areaKnowledge: ratings.zoneKnowledge,
+      priceNegotiation: ratings.priceNegotiation,
+      treatment: ratings.treatment,
+      punctuality: ratings.punctuality,
+      propertyKnowledge: ratings.propertyKnowledge,
+      rating: calculateOverallRating(),
+      author: "Usuario",
       date: new Date().toISOString()
     };
 
