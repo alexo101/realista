@@ -7,10 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { MessageCircle, Search, Home, ArrowLeft, Check, Star, AlertCircle } from "lucide-react";
+import { MessageCircle, Search, Home, ArrowLeft, Check, Star, AlertCircle, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { FormProvider, useForm } from "react-hook-form";
 
 interface StarRatingProps {
   value: number;
@@ -80,6 +81,15 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Formulario para datos del usuario
+  const userForm = useForm({
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: ""
+    }
+  });
+
   // Estados para el flujo
   const [step, setStep] = useState('verification');
   const [hasWorkedWithAgent, setHasWorkedWithAgent] = useState<boolean | null>(null);
@@ -87,6 +97,11 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
   const [searchTerm, setSearchTerm] = useState("");
   const [currentReviewStep, setCurrentReviewStep] = useState(0);
   const [commentText, setCommentText] = useState("");
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    email: ""
+  });
   
   // Pasos de la reseña
   const reviewSteps: ReviewStep[] = [
@@ -208,8 +223,20 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
     setSelectedPropertyId(propertyId);
   };
 
+  // Manejador para el formulario de usuario
+  const handleUserDataSubmit = (data: any) => {
+    setUserData(data);
+    handleSubmitReview(data);
+  };
+
   // Función para enviar la reseña
-  const handleSubmitReview = () => {
+  const handleSubmitReview = (userInfo?: any) => {
+    const authorName = userInfo ? 
+      `${userInfo.firstName} ${userInfo.lastName}` : 
+      userData.firstName && userData.lastName ? 
+        `${userData.firstName} ${userData.lastName}` : 
+        "Usuario anónimo";
+    
     const reviewData = {
       agentId: agentId,
       propertyId: selectedPropertyId,
@@ -223,7 +250,8 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       },
       comment: commentText.trim(),
       rating: calculateOverallRating(),
-      author: "Usuario",
+      author: authorName,
+      email: userInfo?.email || userData.email || "",
       date: new Date().toISOString()
     };
 
@@ -245,6 +273,16 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
     setCurrentReviewStep(0);
     setCommentText("");
     setRatings(reviewSteps.reduce((acc, step) => ({ ...acc, [step.id]: 0 }), {}));
+    setUserData({
+      firstName: "",
+      lastName: "",
+      email: ""
+    });
+    userForm.reset({
+      firstName: "",
+      lastName: "",
+      email: ""
+    });
   };
 
   // Función para filtrar propiedades basadas en el término de búsqueda
@@ -438,12 +476,90 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               Anterior
             </Button>
             <Button 
-              onClick={handleSubmitReview}
+              onClick={() => setStep('userIdentification')}
             >
               <Check className="mr-2 h-4 w-4" />
-              Enviar reseña
+              Siguiente
             </Button>
           </div>
+        </div>
+      );
+    } else if (step === 'userIdentification') {
+      return (
+        <div className="flex flex-col p-4">
+          <h2 className="text-xl font-semibold mb-4">Información del revisor</h2>
+          
+          <form onSubmit={userForm.handleSubmit(handleUserDataSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="firstName" className="mb-1 block">Nombre</Label>
+              <Input
+                id="firstName"
+                placeholder="Tu nombre"
+                {...userForm.register('firstName', { required: "El nombre es obligatorio" })}
+              />
+              {userForm.formState.errors.firstName && (
+                <p className="text-sm text-red-500 mt-1">{userForm.formState.errors.firstName.message}</p>
+              )}
+            </div>
+            
+            <div>
+              <Label htmlFor="lastName" className="mb-1 block">Apellido</Label>
+              <Input
+                id="lastName"
+                placeholder="Tu apellido"
+                {...userForm.register('lastName', { required: "El apellido es obligatorio" })}
+              />
+              {userForm.formState.errors.lastName && (
+                <p className="text-sm text-red-500 mt-1">{userForm.formState.errors.lastName.message}</p>
+              )}
+            </div>
+            
+            <div>
+              <div className="flex items-center mb-1">
+                <Label htmlFor="email" className="block">Email</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 ml-2 text-gray-400 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p>Nunca enviaremos spam. Tu email solo se usará para validar la autenticidad de la reseña.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                id="email"
+                type="email"
+                placeholder="tu.email@ejemplo.com"
+                {...userForm.register('email', { 
+                  required: "El email es obligatorio",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Email inválido"
+                  }
+                })}
+              />
+              {userForm.formState.errors.email && (
+                <p className="text-sm text-red-500 mt-1">{userForm.formState.errors.email.message}</p>
+              )}
+            </div>
+            
+            <div className="flex justify-between pt-4">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setStep('commentStep')}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Anterior
+              </Button>
+              <Button type="submit">
+                <Check className="mr-2 h-4 w-4" />
+                Validar reseña
+              </Button>
+            </div>
+          </form>
         </div>
       );
     }
