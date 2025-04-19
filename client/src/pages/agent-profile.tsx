@@ -3,6 +3,8 @@ import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChartContainer } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink, Home, MessageCircle, Briefcase } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -387,40 +389,58 @@ export default function AgentProfile() {
                   </div>
                   
                   <div className="space-y-3">
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">5 estrellas</span>
-                        <span className="text-sm">{Math.round(reviewCount * 0.7)}</span>
-                      </div>
-                      <Progress value={70} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">4 estrellas</span>
-                        <span className="text-sm">{Math.round(reviewCount * 0.2)}</span>
-                      </div>
-                      <Progress value={20} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">3 estrellas</span>
-                        <span className="text-sm">{Math.round(reviewCount * 0.1)}</span>
-                      </div>
-                      <Progress value={10} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">2 estrellas</span>
-                        <span className="text-sm">0</span>
-                      </div>
-                      <Progress value={0} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">1 estrella</span>
-                        <span className="text-sm">0</span>
-                      </div>
-                      <Progress value={0} className="h-2" />
+                    <div className="mt-4">
+                      <ChartContainer
+                        className="h-64"
+                        config={{
+                          rating: { color: "#2563eb" }
+                        }}
+                      >
+                        <BarChart
+                          data={[
+                            {
+                              category: "Conocimientos de la zona",
+                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.zoneKnowledge || 0), 0) / reviews.length || 0
+                            },
+                            {
+                              category: "Negociación del precio",
+                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.priceNegotiation || 0), 0) / reviews.length || 0
+                            },
+                            {
+                              category: "Trato",
+                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.treatment || 0), 0) / reviews.length || 0
+                            },
+                            {
+                              category: "Puntualidad y disponibilidad",
+                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.punctuality || 0), 0) / reviews.length || 0
+                            },
+                            {
+                              category: "Conocimiento de la propiedad",
+                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.propertyKnowledge || 0), 0) / reviews.length || 0
+                            }
+                          ]}
+                          margin={{ top: 10, right: 10, bottom: 40, left: 40 }}
+                        >
+                          <XAxis dataKey="category" angle={-45} textAnchor="end" interval={0} height={60} />
+                          <YAxis domain={[0, 5]} tickCount={6} />
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="font-medium">{payload[0].payload.category}</div>
+                                      <div className="font-medium text-right">{payload[0].value.toFixed(1)}/5</div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Bar dataKey="rating" fill="var(--color-rating)" />
+                        </BarChart>
+                      </ChartContainer>
                     </div>
                   </div>
                   
