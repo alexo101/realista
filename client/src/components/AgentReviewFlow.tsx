@@ -229,13 +229,22 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
     handleSubmitReview(data);
   };
 
+  // Función para generar iniciales del nombre
+  const getInitials = (firstName: string, lastName: string): string => {
+    const firstInitial = firstName.charAt(0).toUpperCase();
+    const lastInitial = lastName.charAt(0).toUpperCase();
+    return `${firstInitial}.${lastInitial}.`;
+  };
+  
   // Función para enviar la reseña
   const handleSubmitReview = (userInfo?: any) => {
-    const authorName = userInfo ? 
-      `${userInfo.firstName} ${userInfo.lastName}` : 
-      userData.firstName && userData.lastName ? 
-        `${userData.firstName} ${userData.lastName}` : 
-        "Usuario anónimo";
+    const firstName = userInfo?.firstName || userData.firstName || "";
+    const lastName = userInfo?.lastName || userData.lastName || "";
+    
+    // Generar iniciales para el autor
+    const authorInitials = firstName && lastName ? 
+                           getInitials(firstName, lastName) : 
+                           "Usuario anónimo";
     
     const reviewData = {
       agentId: agentId,
@@ -250,7 +259,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       },
       comment: commentText.trim(),
       rating: calculateOverallRating(),
-      author: authorName,
+      author: authorInitials,
       email: userInfo?.email || userData.email || "",
       date: new Date().toISOString()
     };
@@ -489,6 +498,15 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
         <div className="flex flex-col p-4">
           <h2 className="text-xl font-semibold mb-4">Información del revisor</h2>
           
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 text-sm">
+            <p className="flex items-start">
+              <AlertCircle className="h-4 w-4 text-amber-500 mr-2 mt-0.5" />
+              <span>
+                Tu reseña se mostrará de forma anónima. Solo se mostrarán tus iniciales (por ejemplo, M.G. para María García).
+              </span>
+            </p>
+          </div>
+          
           <form onSubmit={userForm.handleSubmit(handleUserDataSubmit)} className="space-y-4">
             <div>
               <Label htmlFor="firstName" className="mb-1 block">Nombre</Label>
@@ -554,7 +572,10 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Anterior
               </Button>
-              <Button type="submit">
+              <Button 
+                type="submit"
+                disabled={!userForm.formState.isValid || Object.keys(userForm.formState.errors).length > 0}
+              >
                 <Check className="mr-2 h-4 w-4" />
                 Validar reseña
               </Button>
@@ -563,6 +584,17 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
         </div>
       );
     }
+  };
+
+  // Función para obtener el paso actual (número)
+  const getCurrentStepNumber = (): number => {
+    if (step === 'verification') return 1;
+    if (step === 'verificationNotice') return 2;
+    if (step === 'propertySelection') return 2;
+    if (step === 'reviewFlow') return 3 + currentReviewStep;
+    if (step === 'commentStep') return 8;
+    if (step === 'userIdentification') return 9;
+    return 1;
   };
 
   return (
@@ -581,6 +613,27 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               'Escribir una reseña'
             )}
           </DialogTitle>
+          {/* Stepper */}
+          <div className="flex justify-center mt-4">
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: 9 }).map((_, i) => {
+                const isCurrent = getCurrentStepNumber() === i + 1;
+                const isCompleted = getCurrentStepNumber() > i + 1;
+                return (
+                  <div 
+                    key={i}
+                    className={`h-1.5 rounded-full ${
+                      isCurrent 
+                        ? 'w-6 bg-primary' 
+                        : isCompleted 
+                          ? 'w-6 bg-primary/80' 
+                          : 'w-6 bg-gray-200'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </DialogHeader>
         
         {renderStep()}

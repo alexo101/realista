@@ -326,27 +326,71 @@ export default function AgentProfile() {
                 {/* Calificaciones del agente */}
                 <div className="mt-6">
                   <h3 className="font-medium mb-3">Calificaciones</h3>
-                  <div className="space-y-3">
+                  <div className="space-y-3 bg-gray-50 p-4 rounded-md">
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm">Comunicación</span>
-                        <span className="text-sm font-medium">-</span>
+                        <span className="text-sm font-medium">Conocimientos de la zona</span>
                       </div>
-                      <Progress value={0} className="h-2" />
+                      <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-4 rounded-r-full" 
+                          style={{ width: `${reviews && reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.zoneKnowledge || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
                     </div>
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm">Conocimiento del mercado</span>
-                        <span className="text-sm font-medium">-</span>
+                        <span className="text-sm font-medium">Negociación del precio</span>
                       </div>
-                      <Progress value={0} className="h-2" />
+                      <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-4 rounded-r-full" 
+                          style={{ width: `${reviews && reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.priceNegotiation || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
                     </div>
                     <div>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm">Profesionalidad</span>
-                        <span className="text-sm font-medium">-</span>
+                        <span className="text-sm font-medium">Trato</span>
                       </div>
-                      <Progress value={0} className="h-2" />
+                      <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-4 rounded-r-full" 
+                          style={{ width: `${reviews && reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.treatment || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Puntualidad y disponibilidad</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-4 rounded-r-full" 
+                          style={{ width: `${reviews && reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.punctuality || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Conocimiento de la propiedad</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-4 rounded-r-full" 
+                          style={{ width: `${reviews && reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.propertyKnowledge || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
                 </div>
