@@ -38,6 +38,7 @@ export interface IStorage {
   getAgentById(id: number): Promise<User | undefined>; // Nuevo método para obtener un agente por ID
   getAgencyById(id: number): Promise<User | undefined>; // Nuevo método para obtener una agencia por ID
   createAgentReview(review: InsertReview): Promise<Review>; //Updated type
+  getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
 
   // Agency Agents
   getAgencyAgents(agencyId: number): Promise<AgencyAgent[]>;

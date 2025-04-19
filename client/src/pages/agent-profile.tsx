@@ -101,8 +101,18 @@ export default function AgentProfile() {
     window.scrollTo(0, 0);
   }, [id]);
 
-  // Estado para las reseñas (inicialmente vacío)
-  const [reviews] = useState<Review[]>([]);
+  // Consulta para obtener las reseñas del agente
+  const { data: reviews = [] } = useQuery<Review[]>({
+    queryKey: [`/api/agents/${id}/reviews`],
+    queryFn: async () => {
+      const response = await fetch(`/api/agents/${id}/reviews`);
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: !!agent
+  });
 
   // Si los datos están cargando, mostramos un esqueleto de carga
   if (isLoading) {
