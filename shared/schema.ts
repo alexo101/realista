@@ -155,17 +155,17 @@ export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   agentId: integer("agent_id").notNull(),
   propertyId: integer("property_id"),
-  verified: boolean("verified").notNull(),
-  areaKnowledge: decimal("area_knowledge").notNull(),
-  priceNegotiation: decimal("price_negotiation").notNull(),
-  treatment: decimal("treatment").notNull(),
-  punctuality: decimal("punctuality").notNull(),
-  propertyKnowledge: decimal("property_knowledge").notNull(),
-  rating: decimal("rating").notNull(),
-  author: text("author").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  verified: boolean("verified").notNull().default(false),
+  areaKnowledge: decimal("area_knowledge", { precision: 2, scale: 1 }).notNull(),
+  priceNegotiation: decimal("price_negotiation", { precision: 2, scale: 1 }).notNull(),
+  treatment: decimal("treatment", { precision: 2, scale: 1 }).notNull(),
+  punctuality: decimal("punctuality", { precision: 2, scale: 1 }).notNull(),
+  propertyKnowledge: decimal("property_knowledge", { precision: 2, scale: 1 }).notNull(),
+  rating: decimal("rating", { precision: 2, scale: 1 }).notNull(),
+  author: text("author"),
+  date: timestamp("date").notNull().defaultNow(),
 });
 
-export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true });
+export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true, date: true });
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;

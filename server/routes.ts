@@ -23,7 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to check email" });
     }
   });
-  
+
   // Nueva ruta para validar si un email está asociado a un agente invitado
   app.get("/api/agency-agents/check-email", async (req, res) => {
     try {
@@ -44,22 +44,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       console.log('Registro - Datos recibidos:', req.body);
-      
+
       // Asegurar que isAgent sea un booleano
       const userData = {
         ...req.body,
         isAgent: req.body.isAgent === true
       };
-      
+
       console.log('Registro - Datos procesados:', userData);
-      
+
       const user = await storage.createUser(userData);
       console.log('Usuario creado:', user);
-      
+
       // Enviar email de bienvenida
       const userName = user.name || user.agencyName || 'Usuario';
       const isAgentOrAgency = user.isAgent || !!user.agencyName;
-      
+
       try {
         await sendWelcomeEmail(user.email, userName, isAgentOrAgency);
         console.log('Email de bienvenida enviado a:', user.email);
@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error al enviar email de bienvenida:', emailError);
         // No interrumpimos el flujo si falla el envío de email
       }
-      
+
       res.status(201).json(user);
     } catch (error) {
       console.error('Error registering user:', error);
@@ -80,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Login - Datos recibidos:', req.body);
       const { email, password } = req.body;
       const user = await storage.getUserByEmail(email);
-      
+
       console.log('Login - Usuario encontrado:', user);
 
       if (!user || user.password !== password) {
@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
       const mostViewed = req.query.mostViewed === 'true';
-      
+
       let properties;
       if (mostViewed) {
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
@@ -155,14 +155,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const property = await storage.getProperty(id);
-      
+
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
-      
+
       // Incrementar el contador de vistas
       await storage.incrementPropertyViewCount(id);
-      
+
       // Retornar la propiedad con la vista ya incrementada
       const updatedProperty = await storage.getProperty(id);
       res.json(updatedProperty);
@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
       console.log('Recibiendo valoración de barrio:', req.body);
-      
+
       // Verificar que el barrio esté presente
       if (!req.body.neighborhood) {
         console.error('Barrio no especificado en la valoración');
@@ -224,12 +224,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           received: req.body 
         });
       }
-      
+
       // Si no hay userId o es -1 (anónimo), asignamos un ID especial para usuarios anónimos
       if (!req.body.userId) {
         req.body.userId = -1; // ID especial para valoraciones anónimas
       }
-      
+
       // Asegurar que todos los campos de valoración son números
       const ratingFields = ['security', 'parking', 'familyFriendly', 'publicTransport', 'greenSpaces', 'services'];
       for (const field of ratingFields) {
@@ -242,17 +242,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       try {
         const rating = insertNeighborhoodRatingSchema.parse(req.body);
         console.log('Rating data validada:', rating);
-        
+
         const result = await storage.createNeighborhoodRating(rating);
         console.log('Valoración guardada en la base de datos:', result);
-        
+
         // Invalidar cualquier caché para este barrio específico
         // (En un entorno de producción esto requeriría un mecanismo de invalidación de caché)
-        
+
         res.status(201).json({
           success: true,
           message: `Valoración para ${rating.neighborhood} guardada con éxito`,
@@ -290,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/neighborhoods/ratings/average", async (req, res) => {
     try {
       console.log(`Recibida solicitud para promedios de barrio: ${req.query.neighborhood}`);
-      
+
       const neighborhood = req.query.neighborhood as string;
       if (!neighborhood) {
         return res.status(400).json({ 
@@ -298,16 +298,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Es necesario especificar el parámetro 'neighborhood'"
         });
       }
-      
+
       // Añadir cabeceras para evitar caché
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-      
+
       console.log(`Obteniendo promedios para barrio: ${neighborhood} a las ${new Date().toISOString()}`);
       const averages = await storage.getNeighborhoodRatingsAverage(neighborhood);
       console.log(`Promedios para ${neighborhood} obtenidos:`, averages);
-      
+
       return res.json(averages);
     } catch (error) {
       console.error('Error al calcular promedios para el barrio:', error);
@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to search agents" });
     }
   });
-  
+
   app.get("/api/agencies/search", async (req, res) => {
     try {
       const queryString = new URLSearchParams(req.query as Record<string, string>).toString();
@@ -341,14 +341,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to search agencies" });
     }
   });
-  
+
   // Añadir rutas para búsqueda desde la página de búsqueda
   app.get("/api/search/agencies", async (req, res) => {
     try {
       console.log('Search agencies params:', req.query);
-      
+
       // Usamos las funciones de neighborhoods importadas al principio del archivo
-      
+
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agencyName && updatedQuery.agencyName.toString().trim() !== '';
@@ -356,11 +356,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                typeof updatedQuery.neighborhoods === 'string' && 
                                updatedQuery.neighborhoods.trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
-      
+
       // Si hay barrios seleccionados, expandir la búsqueda según la jerarquía
       if (hasNeighborhoods && typeof updatedQuery.neighborhoods === 'string') {
         const neighborhood = updatedQuery.neighborhoods;
-        
+
         // Si es búsqueda a nivel de ciudad, mostramos todas las agencias
         if (isCityWideSearch(neighborhood)) {
           console.log('Búsqueda para toda Barcelona - mostrando todas las agencias');
@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
           console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
-          
+
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
             updatedQuery.neighborhoods = expandedNeighborhoods.join(',');
@@ -384,18 +384,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
-      
+
       // Si hay términos de búsqueda, usarlos para filtrar
       if ((hasSearchTerm || hasNeighborhoods) && typeof updatedQuery.neighborhoods === 'string') {
         if (!isCityWideSearch(updatedQuery.neighborhoods)) {
           delete updatedQuery.showAll; // No es necesario con términos de búsqueda
         }
       }
-      
+
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
       console.log('Search agencies queryString:', queryString);
       const agencies = await storage.searchAgencies(queryString);
-      
+
       // Procesamos los resultados para asegurar que se usen las propiedades correctas
       const processedResults = agencies.map(agency => {
         return {
@@ -406,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: agency.agencyDescription || agency.description
         };
       });
-      
+
       console.log('Search agencies results:', processedResults.length);
       res.json(processedResults);
     } catch (error) {
@@ -414,13 +414,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to search agencies" });
     }
   });
-  
+
   app.get("/api/search/agents", async (req, res) => {
     try {
       console.log('Search agents params:', req.query);
-      
+
       // Usamos las funciones de neighborhoods importadas al principio del archivo
-      
+
       // Procesar los parámetros de búsqueda
       let updatedQuery = { ...req.query };
       const hasSearchTerm = updatedQuery.agentName && updatedQuery.agentName.toString().trim() !== '';
@@ -428,11 +428,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                typeof updatedQuery.neighborhoods === 'string' && 
                                updatedQuery.neighborhoods.trim() !== '';
       const showAll = updatedQuery.showAll === 'true';
-      
+
       // Si hay barrios seleccionados, expandir la búsqueda según la jerarquía
       if (hasNeighborhoods && typeof updatedQuery.neighborhoods === 'string') {
         const neighborhood = updatedQuery.neighborhoods;
-        
+
         // Si es búsqueda a nivel de ciudad, mostramos todos los agentes
         if (isCityWideSearch(neighborhood)) {
           console.log('Búsqueda para toda Barcelona - mostrando todos los agentes');
@@ -444,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
           console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
-          
+
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
             updatedQuery.neighborhoods = expandedNeighborhoods.join(',');
@@ -456,14 +456,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
-      
+
       // Si hay términos de búsqueda, usarlos para filtrar
       if ((hasSearchTerm || hasNeighborhoods) && typeof updatedQuery.neighborhoods === 'string') {
         if (!isCityWideSearch(updatedQuery.neighborhoods)) {
           delete updatedQuery.showAll; // No es necesario con términos de búsqueda
         }
       }
-      
+
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
       console.log('Search agents queryString:', queryString);
       const agents = await storage.searchAgents(queryString);
@@ -474,23 +474,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to search agents" });
     }
   });
-  
+
   app.get("/api/search/buy", async (req, res) => {
     try {
       // Añadimos el filtro de tipo de operación (venta)
       const filters: Record<string, any> = { ...req.query, operationType: 'Venta' };
-      
+
       // Usamos las funciones de neighborhoods importadas al principio del archivo
-      
+
       // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
                                filters.neighborhoods && 
                                typeof filters.neighborhoods === 'string' && 
                                filters.neighborhoods.trim() !== '';
-      
+
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
         const neighborhood = filters.neighborhoods;
-        
+
         // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
         if (isCityWideSearch(neighborhood)) {
           console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de venta');
@@ -501,14 +501,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
           console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
-          
+
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
             filters.neighborhoods = expandedNeighborhoods;
           }
         }
       }
-      
+
       const properties = await storage.searchProperties(filters);
       res.json(properties);
     } catch (error) {
@@ -516,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to search properties" });
     }
   });
-  
+
   app.get("/api/search/rent", async (req, res) => {
     try {
       // Si es carga inicial, devolver lista vacía 
@@ -524,25 +524,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.query.initialLoad === 'true') {
         return res.json([]);
       }
-      
+
       // Añadimos el filtro de tipo de operación (alquiler)
       const filters: Record<string, any> = { ...req.query, operationType: 'Alquiler' };
       // Eliminamos el parámetro initialLoad si existe
       if ('initialLoad' in filters) {
         delete filters.initialLoad;
       }
-      
+
       // Usamos las funciones de neighborhoods importadas al principio del archivo
-      
+
       // Verificar si hay filtro de barrios
       const hasNeighborhoods = 'neighborhoods' in filters && 
                                filters.neighborhoods && 
                                typeof filters.neighborhoods === 'string' && 
                                filters.neighborhoods.trim() !== '';
-      
+
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
         const neighborhood = filters.neighborhoods;
-        
+
         // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
         if (isCityWideSearch(neighborhood)) {
           console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de alquiler');
@@ -553,13 +553,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
           console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
-          
+
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
             filters.neighborhoods = expandedNeighborhoods;
           }
         }
-        
+
         const properties = await storage.searchProperties(filters);
         res.json(properties);
       } 
@@ -582,7 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Invalid review data" });
     }
   });
-  
+
   // Nuevas rutas para obtener detalles de agentes y agencias
   app.get("/api/agents/:id", async (req, res) => {
     try {
@@ -590,31 +590,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid agent ID" });
       }
-      
+
       const agent = await storage.getAgentById(id);
       if (!agent) {
         return res.status(404).json({ message: "Agent not found" });
       }
-      
+
       res.json(agent);
     } catch (error) {
       console.error('Error getting agent details:', error);
       res.status(500).json({ message: "Failed to get agent details" });
     }
   });
-  
+
   app.get("/api/agencies/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid agency ID" });
       }
-      
+
       const agency = await storage.getAgencyById(id);
       if (!agency) {
         return res.status(404).json({ message: "Agency not found" });
       }
-      
+
       res.json(agency);
     } catch (error) {
       console.error('Error getting agency details:', error);
@@ -634,7 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update user profile" });
     }
   });
-  
+
   // Agency Agents routes
   app.get("/api/agency-agents/:agencyId", async (req, res) => {
     try {
@@ -646,12 +646,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch agency agents" });
     }
   });
-  
+
   app.post("/api/agency-agents", async (req, res) => {
     try {
       const agentData = insertAgencyAgentSchema.parse(req.body);
       const result = await storage.createAgencyAgent(agentData);
-      
+
       // Simulamos envío de correo (en un entorno real usaríamos un servicio de email)
       console.log(`
 -----------------------------------
@@ -669,14 +669,14 @@ Sigue el siguiente link para acceder a tu cuenta:
 Gracias!
 -----------------------------------
 `);
-      
+
       res.status(201).json(result);
     } catch (error) {
       console.error('Error creating agency agent:', error);
       res.status(400).json({ message: "Invalid agent data" });
     }
   });
-  
+
   app.delete("/api/agency-agents/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -714,15 +714,15 @@ Gracias!
   app.post("/api/appointments", async (req, res) => {
     try {
       console.log('Attempting to create appointment with data:', req.body);
-      
+
       // Primero preparamos los datos para asegurarnos de que la fecha es un objeto Date
       const data = {
         ...req.body,
         date: req.body.date ? new Date(req.body.date) : null
       };
-      
+
       console.log('Parsed appointment data:', data);
-      
+
       // Validamos con el esquema
       const appointment = insertAppointmentSchema.parse(data);
       const result = await storage.createAppointment(appointment);
@@ -737,13 +737,13 @@ Gracias!
   app.patch("/api/appointments/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       // Preparamos los datos con el formato correcto de fecha
       const appointmentData = {
         ...req.body,
         date: req.body.date ? new Date(req.body.date) : undefined
       };
-      
+
       console.log('Updating appointment with data:', appointmentData);
       const updatedAppointment = await storage.updateAppointment(id, appointmentData);
       res.json(updatedAppointment);
@@ -780,11 +780,11 @@ Gracias!
     try {
       const id = parseInt(req.params.id);
       const inquiry = await storage.getInquiryById(id);
-      
+
       if (!inquiry) {
         return res.status(404).json({ message: "Consulta no encontrada" });
       }
-      
+
       res.json(inquiry);
     } catch (error) {
       console.error('Error getting inquiry:', error);
@@ -800,7 +800,7 @@ Gracias!
         status: req.body.status || "pendiente", // Estado por defecto
         createdAt: new Date()
       };
-      
+
       console.log('Creating inquiry with data:', inquiryData);
       const newInquiry = await storage.createInquiry(inquiryData);
       res.status(201).json(newInquiry);
@@ -814,16 +814,31 @@ Gracias!
     try {
       const id = parseInt(req.params.id);
       const { status } = req.body;
-      
+
       if (!status) {
         return res.status(400).json({ message: "El estado es requerido" });
       }
-      
+
       const updatedInquiry = await storage.updateInquiryStatus(id, status);
       res.json(updatedInquiry);
     } catch (error) {
       console.error('Error updating inquiry status:', error);
       res.status(500).json({ message: "Error al actualizar el estado de la consulta" });
+    }
+  });
+
+  app.post("/api/agents/:id/reviews", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.id);
+      const review = await storage.createAgentReview({
+                ...req.body,
+        agentId,
+        date: new Date()
+      });
+      res.status(201).json(review);
+    } catch (error) {
+      console.error('Error creating agent review:', error);
+      res.status(500).json({ message: "Failed to create review" });
     }
   });
 
