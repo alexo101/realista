@@ -8,6 +8,7 @@ import {
   agencyAgents,
   appointments,
   inquiries,
+  reviews,
   type User,
   type Property,
   type Client,
@@ -15,6 +16,7 @@ import {
   type AgencyAgent,
   type Appointment,
   type Inquiry,
+  type Review,
   type InsertUser,
   type InsertProperty,
   type InsertClient,
@@ -22,8 +24,8 @@ import {
   type InsertAgencyAgent,
   type InsertAppointment,
   type InsertInquiry,
+  type InsertReview
 } from "@shared/schema";
-import {reviews, type Review, type InsertReview} from "@shared/schema"; // Added import for reviews schema
 
 export interface IStorage {
   // Users
@@ -391,6 +393,19 @@ export class DatabaseStorage implements IStorage {
   async createAgentReview(review: InsertReview): Promise<Review> {
     const [newReview] = await db.insert(reviews).values(review).returning();
     return newReview;
+  }
+  
+  async getAgentReviews(agentId: number): Promise<Review[]> {
+    try {
+      const result = await db.select()
+        .from(reviews)
+        .where(eq(reviews.agentId, agentId))
+        .orderBy(sql`${reviews.date} DESC`);
+      return result;
+    } catch (error) {
+      console.error('Error obteniendo reseñas del agente:', error);
+      return [];
+    }
   }
 
   // Agency Agents

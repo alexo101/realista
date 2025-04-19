@@ -827,6 +827,17 @@ Gracias!
     }
   });
 
+  app.get("/api/agents/:id/reviews", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.id);
+      const reviews = await storage.getAgentReviews(agentId);
+      res.status(200).json(reviews);
+    } catch (error) {
+      console.error('Error getting agent reviews:', error);
+      res.status(500).json({ message: "Failed to get reviews" });
+    }
+  });
+
   app.post("/api/agents/:id/reviews", async (req, res) => {
     try {
       const agentId = parseInt(req.params.id);
