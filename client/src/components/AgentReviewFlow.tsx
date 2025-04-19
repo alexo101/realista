@@ -86,6 +86,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentReviewStep, setCurrentReviewStep] = useState(0);
+  const [commentText, setCommentText] = useState("");
   
   // Pasos de la reseña
   const reviewSteps: ReviewStep[] = [
@@ -184,7 +185,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
     if (currentReviewStep < reviewSteps.length - 1) {
       setCurrentReviewStep(currentReviewStep + 1);
     } else {
-      handleSubmitReview();
+      setStep('commentStep');
     }
   };
 
@@ -213,11 +214,14 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       agentId: agentId,
       propertyId: selectedPropertyId,
       verified: hasWorkedWithAgent === true,
-      areaKnowledge: ratings.zoneKnowledge,
-      priceNegotiation: ratings.priceNegotiation,
-      treatment: ratings.treatment,
-      punctuality: ratings.punctuality,
-      propertyKnowledge: ratings.propertyKnowledge,
+      ratings: {
+        zoneKnowledge: ratings.zoneKnowledge,
+        priceNegotiation: ratings.priceNegotiation,
+        treatment: ratings.treatment,
+        punctuality: ratings.punctuality,
+        propertyKnowledge: ratings.propertyKnowledge
+      },
+      comment: commentText.trim(),
       rating: calculateOverallRating(),
       author: "Usuario",
       date: new Date().toISOString()
@@ -239,6 +243,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
     setSelectedPropertyId(null);
     setSearchTerm("");
     setCurrentReviewStep(0);
+    setCommentText("");
     setRatings(reviewSteps.reduce((acc, step) => ({ ...acc, [step.id]: 0 }), {}));
   };
 
@@ -399,6 +404,44 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
                   Validar reseña
                 </>
               )}
+            </Button>
+          </div>
+        </div>
+      );
+    } else if (step === 'commentStep') {
+      return (
+        <div className="flex flex-col p-4">
+          <h2 className="text-xl font-semibold mb-4">Añadir comentario (opcional)</h2>
+          
+          <div className="mb-6">
+            <Label htmlFor="comment" className="mb-2 block">
+              ¿Quieres añadir algún comentario adicional sobre tu experiencia?
+            </Label>
+            <textarea
+              id="comment"
+              className="w-full min-h-[150px] p-3 border rounded-md"
+              placeholder="Escribe aquí tu comentario..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex justify-between mt-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setStep('reviewFlow');
+                setCurrentReviewStep(reviewSteps.length - 1);
+              }}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Anterior
+            </Button>
+            <Button 
+              onClick={handleSubmitReview}
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Enviar reseña
             </Button>
           </div>
         </div>

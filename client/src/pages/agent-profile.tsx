@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { PropertyCard } from "@/components/PropertyCard";
 import { AgentReviewFlow } from "@/components/AgentReviewFlow";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Interfaz para las reseñas
 interface Review {
@@ -19,6 +20,13 @@ interface Review {
   rating: number;
   date: string;
   comment: string;
+  ratings?: {
+    zoneKnowledge: number;
+    priceNegotiation: number;
+    treatment: number;
+    punctuality: number;
+    propertyKnowledge: number;
+  };
 }
 
 interface Agent {
@@ -425,10 +433,88 @@ export default function AgentProfile() {
                           <div className="font-medium">{review.author}</div>
                           <div className="text-sm text-gray-500">{review.date}</div>
                         </div>
-                        <div className="mb-3">
-                          <StarRating rating={review.rating} />
-                        </div>
-                        <p className="text-gray-700">{review.comment}</p>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="mb-3">
+                                <StarRating rating={review.rating} />
+                              </div>
+                            </TooltipTrigger>
+                            {review.ratings && (
+                              <TooltipContent className="w-80 p-4">
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="text-sm">Conocimientos de la zona:</div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
+                                        <div 
+                                          className="bg-green-500 h-2.5 rounded-full" 
+                                          style={{ width: `${(review.ratings.zoneKnowledge / 5) * 100}%` }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-xs">{review.ratings.zoneKnowledge}/5</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="text-sm">Negociación del precio:</div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
+                                        <div 
+                                          className="bg-green-500 h-2.5 rounded-full" 
+                                          style={{ width: `${(review.ratings.priceNegotiation / 5) * 100}%` }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-xs">{review.ratings.priceNegotiation}/5</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="text-sm">Trato:</div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
+                                        <div 
+                                          className="bg-green-500 h-2.5 rounded-full" 
+                                          style={{ width: `${(review.ratings.treatment / 5) * 100}%` }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-xs">{review.ratings.treatment}/5</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="text-sm">Puntualidad:</div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
+                                        <div 
+                                          className="bg-green-500 h-2.5 rounded-full" 
+                                          style={{ width: `${(review.ratings.punctuality / 5) * 100}%` }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-xs">{review.ratings.punctuality}/5</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="text-sm">Conocimiento de la propiedad:</div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-32 bg-gray-200 rounded-full h-2.5">
+                                        <div 
+                                          className="bg-green-500 h-2.5 rounded-full" 
+                                          style={{ width: `${(review.ratings.propertyKnowledge / 5) * 100}%` }}
+                                        ></div>
+                                      </div>
+                                      <span className="text-xs">{review.ratings.propertyKnowledge}/5</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        {review.comment && <p className="text-gray-700">{review.comment}</p>}
                       </CardContent>
                     </Card>
                   ))}
