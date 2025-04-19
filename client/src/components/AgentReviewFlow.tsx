@@ -439,7 +439,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  Validar reseña
+                  Siguiente
                 </>
               )}
             </Button>
