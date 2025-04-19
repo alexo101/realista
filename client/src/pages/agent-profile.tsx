@@ -452,6 +452,13 @@ export default function AgentProfile() {
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* Modal de reseñas */}
+      <AgentReviewFlow 
+        agentId={parseInt(id)}
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+      />
     </div>
   );
 }
