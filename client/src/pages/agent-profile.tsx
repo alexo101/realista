@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis } from "recharts";
 import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink, Home, MessageCircle, Briefcase } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { PropertyCard } from "@/components/PropertyCard";
 import { AgentReviewFlow } from "@/components/AgentReviewFlow";
+import { Tooltip as RechartsTooltip } from "recharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Interfaz para las reseñas
@@ -81,7 +82,7 @@ const StarRating = ({ rating }: { rating: number }) => {
 export default function AgentProfile() {
   // Obtenemos el ID del agente de los parámetros de la URL
   const { id } = useParams<{ id: string }>();
-  
+
   // Estados para la pestaña activa y el modal de reseñas
   const [activeTab, setActiveTab] = useState("overview");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -182,16 +183,16 @@ export default function AgentProfile() {
               </span>
             )}
           </div>
-          
+
           <div className="flex items-center mb-4">
             <StarRating rating={reviewAverage} />
             <span className="ml-2 text-sm text-gray-500">({reviewCount} reseñas)</span>
           </div>
-          
+
           <p className="text-gray-700 mb-4">
             {agent.description || `${fullName} es un agente inmobiliario con experiencia en el mercado de Barcelona, especializado en ayudar a sus clientes a encontrar la propiedad perfecta.`}
           </p>
-          
+
           <div className="flex flex-wrap gap-3">
             {agent.phone && (
               <Button size="sm">
@@ -229,7 +230,7 @@ export default function AgentProfile() {
                      Con un profundo conocimiento del mercado local, ${agent.name} ofrece un servicio personalizado
                      y dedicado a cada cliente.`}
                   </p>
-                  
+
                   {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
                     <div className="mt-4">
                       <h3 className="font-medium mb-2 flex items-center">
@@ -246,7 +247,7 @@ export default function AgentProfile() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Estadísticas del agente */}
                 <div className="mt-8">
                   <h3 className="font-medium mb-4">Estadísticas</h3>
@@ -260,7 +261,7 @@ export default function AgentProfile() {
                         <div className="text-3xl font-bold">{agent.properties?.length || 0}</div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card>
                       <CardContent className="p-4">
                         <div className="flex items-center mb-2">
@@ -274,7 +275,7 @@ export default function AgentProfile() {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Información de contacto</h2>
@@ -288,7 +289,7 @@ export default function AgentProfile() {
                       </a>
                     </div>
                   </div>
-                  
+
                   {agent.phone && (
                     <div className="flex">
                       <Phone className="h-5 w-5 mr-3 text-gray-500" />
@@ -300,7 +301,7 @@ export default function AgentProfile() {
                       </div>
                     </div>
                   )}
-                  
+
                   {agent.agencyName && (
                     <div className="flex">
                       <Building2 className="h-5 w-5 mr-3 text-gray-500" />
@@ -310,7 +311,7 @@ export default function AgentProfile() {
                       </div>
                     </div>
                   )}
-                  
+
                   {agent.languagesSpoken && agent.languagesSpoken.length > 0 && (
                     <div className="flex">
                       <div className="h-5 w-5 mr-3 text-gray-500">🌍</div>
@@ -321,7 +322,7 @@ export default function AgentProfile() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Calificaciones del agente */}
                 <div className="mt-6">
                   <h3 className="font-medium mb-3">Calificaciones</h3>
@@ -356,7 +357,7 @@ export default function AgentProfile() {
 
         <TabsContent value="properties" className="mt-6">
           <h2 className="text-2xl font-semibold mb-6">Propiedades de {fullName}</h2>
-          
+
           {!agent.properties || agent.properties.length === 0 ? (
             <div className="text-center py-8">
               <Home className="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -387,7 +388,7 @@ export default function AgentProfile() {
                       <div className="text-sm text-gray-500">{reviewCount} reseñas</div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="mt-4">
                       <ChartContainer
@@ -423,7 +424,7 @@ export default function AgentProfile() {
                         >
                           <XAxis dataKey="category" angle={-45} textAnchor="end" interval={0} height={60} />
                           <YAxis domain={[0, 5]} tickCount={6} />
-                          <Tooltip
+                          <RechartsTooltip
                             content={({ active, payload }) => {
                               if (active && payload && payload.length) {
                                 return (
@@ -443,7 +444,7 @@ export default function AgentProfile() {
                       </ChartContainer>
                     </div>
                   </div>
-                  
+
                   <Button 
                     className="w-full mt-6"
                     onClick={() => setReviewModalOpen(true)}
@@ -453,10 +454,10 @@ export default function AgentProfile() {
                 </CardContent>
               </Card>
             </div>
-            
+
             <div className="md:col-span-2">
               <h2 className="text-2xl font-semibold mb-4">Todas las reseñas</h2>
-              
+
               {reviews.length > 0 ? (
                 <div className="space-y-6">
                   {reviews.map((review: Review) => (
@@ -466,7 +467,7 @@ export default function AgentProfile() {
                           <div className="font-medium">{review.author}</div>
                           <div className="text-sm text-gray-500">{review.date}</div>
                         </div>
-                        
+
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -489,7 +490,7 @@ export default function AgentProfile() {
                                       <span className="text-xs">{review.ratings.zoneKnowledge}/5</span>
                                     </div>
                                   </div>
-                                  
+
                                   <div className="grid grid-cols-2 gap-2">
                                     <div className="text-sm">Negociación del precio:</div>
                                     <div className="flex items-center gap-1">
@@ -502,7 +503,7 @@ export default function AgentProfile() {
                                       <span className="text-xs">{review.ratings.priceNegotiation}/5</span>
                                     </div>
                                   </div>
-                                  
+
                                   <div className="grid grid-cols-2 gap-2">
                                     <div className="text-sm">Trato:</div>
                                     <div className="flex items-center gap-1">
@@ -515,7 +516,7 @@ export default function AgentProfile() {
                                       <span className="text-xs">{review.ratings.treatment}/5</span>
                                     </div>
                                   </div>
-                                  
+
                                   <div className="grid grid-cols-2 gap-2">
                                     <div className="text-sm">Puntualidad:</div>
                                     <div className="flex items-center gap-1">
@@ -528,7 +529,7 @@ export default function AgentProfile() {
                                       <span className="text-xs">{review.ratings.punctuality}/5</span>
                                     </div>
                                   </div>
-                                  
+
                                   <div className="grid grid-cols-2 gap-2">
                                     <div className="text-sm">Conocimiento de la propiedad:</div>
                                     <div className="flex items-center gap-1">
@@ -546,7 +547,7 @@ export default function AgentProfile() {
                             )}
                           </Tooltip>
                         </TooltipProvider>
-                        
+
                         {review.comment && <p className="text-gray-700">{review.comment}</p>}
                       </CardContent>
                     </Card>
@@ -571,7 +572,7 @@ export default function AgentProfile() {
           </div>
         </TabsContent>
       </Tabs>
-      
+
       {/* Modal de reseñas */}
       <AgentReviewFlow 
         agentId={parseInt(id)}
