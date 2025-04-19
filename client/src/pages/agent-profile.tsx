@@ -327,68 +327,6 @@ export default function AgentProfile() {
               </CardContent>
             </Card>
           </div>
-          
-          {/* Propiedades destacadas */}
-          {agent.properties && agent.properties.length > 0 && (
-            <div className="mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Propiedades destacadas</h2>
-                <Button variant="link" asChild>
-                  <Link href="#properties" onClick={() => setActiveTab("properties")}>
-                    Ver todas <ExternalLink className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {agent.properties.slice(0, 3).map(property => (
-                  <PropertyCard key={property.id} property={property} />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Reseñas recientes */}
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Reseñas recientes</h2>
-              <Button variant="link" asChild>
-                <Link href="#reviews" onClick={() => setActiveTab("reviews")}>
-                  Ver todas <ExternalLink className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-            
-            {reviews.length > 0 ? (
-              <div className="space-y-4">
-                {reviews.slice(0, 2).map((review: Review) => (
-                  <Card key={review.id}>
-                    <CardContent className="p-4">
-                      <div className="flex justify-between mb-2">
-                        <div className="font-medium">{review.author}</div>
-                        <div className="text-sm text-gray-500">{review.date}</div>
-                      </div>
-                      <div className="mb-2">
-                        <StarRating rating={review.rating} />
-                      </div>
-                      <p className="text-gray-700">{review.comment}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
-                <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium mb-2">No hay reseñas disponibles</h3>
-                <p className="text-gray-500 max-w-md mx-auto">
-                  Este agente aún no tiene reseñas. Sé el primero en compartir tu experiencia.
-                </p>
-                <Button className="mt-4">
-                  Escribir una reseña
-                </Button>
-              </div>
-            )}
-          </div>
         </TabsContent>
 
         <TabsContent value="properties" className="mt-6">
