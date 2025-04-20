@@ -106,7 +106,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
   // Pasos de la reseña
   const reviewSteps: ReviewStep[] = [
     {
-      id: "zoneKnowledge",
+      id: "areaKnowledge",
       title: "Conocimientos de la zona",
       question: "¿Conocía las características del barrio (servicios, conexión con medios de transporte, sitios de ocio, etc)?",
       rating: 0
@@ -250,7 +250,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       agentId: agentId,
       propertyId: selectedPropertyId,
       verified: hasWorkedWithAgent === true,
-      area_knowledge: Number(ratings.zoneKnowledge) || 0,
+      area_knowledge: Number(ratings.areaKnowledge) || 0,
       price_negotiation: Number(ratings.priceNegotiation) || 0,
       treatment: Number(ratings.treatment) || 0,
       punctuality: Number(ratings.punctuality) || 0,
