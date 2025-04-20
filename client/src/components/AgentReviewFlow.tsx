@@ -102,7 +102,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
     lastName: "",
     email: ""
   });
-  
+
   // Pasos de la reseña
   const reviewSteps: ReviewStep[] = [
     {
@@ -165,11 +165,11 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
         },
         body: JSON.stringify(reviewData),
       });
-      
+
       if (!response.ok) {
         throw new Error('Error al enviar la reseña');
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -235,28 +235,26 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
     const lastInitial = lastName.charAt(0).toUpperCase();
     return `${firstInitial}.${lastInitial}.`;
   };
-  
+
   // Función para enviar la reseña
   const handleSubmitReview = (userInfo?: any) => {
     const firstName = userInfo?.firstName || userData.firstName || "";
     const lastName = userInfo?.lastName || userData.lastName || "";
-    
+
     // Generar iniciales para el autor
     const authorInitials = firstName && lastName ? 
                            getInitials(firstName, lastName) : 
                            "Usuario anónimo";
-    
+
     const reviewData = {
       agentId: agentId,
       propertyId: selectedPropertyId,
       verified: hasWorkedWithAgent === true,
-      ratings: {
-        area_knowledge: ratings.zoneKnowledge,
-        price_negotiation: ratings.priceNegotiation,
-        treatment: ratings.treatment,
-        punctuality: ratings.punctuality,
-        property_knowledge: ratings.propertyKnowledge
-      },
+      area_knowledge: ratings.zoneKnowledge,
+      price_negotiation: ratings.priceNegotiation,
+      treatment: ratings.treatment,
+      punctuality: ratings.punctuality,
+      property_knowledge: ratings.propertyKnowledge,
       comment: commentText.trim(),
       rating: calculateOverallRating(),
       author: authorInitials,
@@ -356,7 +354,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <ScrollArea className="h-[200px]">
             {filteredProperties.length > 0 ? (
               <div className="space-y-2">
@@ -412,22 +410,22 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       );
     } else if (step === 'reviewFlow') {
       const currentStep = reviewSteps[currentReviewStep];
-      
+
       return (
         <div className="flex flex-col p-4">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">{currentStep.title}</h2>
           </div>
-          
+
           <p className="mb-6 text-muted-foreground">{currentStep.question}</p>
-          
+
           <div className="flex justify-center mb-8">
             <StarRatingInput 
               value={ratings[currentStep.id]} 
               onChange={(value) => handleRatingChange(currentStep.id, value)}
             />
           </div>
-          
+
           <div className="flex justify-between mt-auto">
             <Button 
               variant="outline" 
@@ -456,7 +454,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       return (
         <div className="flex flex-col p-4">
           <h2 className="text-xl font-semibold mb-4">Añadir comentario (opcional)</h2>
-          
+
           <div className="mb-6">
             <Label htmlFor="comment" className="mb-2 block">
               ¿Quieres añadir algún comentario adicional sobre tu experiencia?
@@ -469,7 +467,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               onChange={(e) => setCommentText(e.target.value)}
             />
           </div>
-          
+
           <div className="flex justify-between mt-auto">
             <Button 
               variant="outline" 
@@ -494,7 +492,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       return (
         <div className="flex flex-col p-4">
           <h2 className="text-xl font-semibold mb-4">Información del revisor</h2>
-          
+
           <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 text-sm">
             <p className="flex items-start">
               <AlertCircle className="h-4 w-4 text-amber-500 mr-2 mt-0.5" />
@@ -503,7 +501,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               </span>
             </p>
           </div>
-          
+
           <form onSubmit={userForm.handleSubmit(handleUserDataSubmit)} className="space-y-4">
             <div>
               <Label htmlFor="firstName" className="mb-1 block">Nombre</Label>
@@ -516,7 +514,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
                 <p className="text-sm text-red-500 mt-1">{userForm.formState.errors.firstName.message}</p>
               )}
             </div>
-            
+
             <div>
               <Label htmlFor="lastName" className="mb-1 block">Apellido</Label>
               <Input
@@ -528,7 +526,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
                 <p className="text-sm text-red-500 mt-1">{userForm.formState.errors.lastName.message}</p>
               )}
             </div>
-            
+
             <div>
               <div className="flex items-center mb-1">
                 <Label htmlFor="email" className="block">Email</Label>
@@ -559,7 +557,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
                 <p className="text-sm text-red-500 mt-1">{userForm.formState.errors.email.message}</p>
               )}
             </div>
-            
+
             <div className="flex justify-between pt-4">
               <Button 
                 type="button"
@@ -632,7 +630,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
             </div>
           </div>
         </DialogHeader>
-        
+
         {renderStep()}
       </DialogContent>
     </Dialog>
