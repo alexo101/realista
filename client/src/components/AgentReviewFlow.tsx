@@ -613,6 +613,27 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               'Escribir una reseña'
             )}
           </DialogTitle>
+          {/* Stepper */}
+          <div className="flex justify-center mt-4">
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: 9 }).map((_, i) => {
+                const isCurrent = getCurrentStepNumber() === i + 1;
+                const isCompleted = getCurrentStepNumber() > i + 1;
+                return (
+                  <div 
+                    key={i}
+                    className={`h-1.5 rounded-full ${
+                      isCurrent 
+                        ? 'w-6 bg-primary' 
+                        : isCompleted 
+                          ? 'w-6 bg-primary/80' 
+                          : 'w-6 bg-gray-200'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </DialogHeader>
         
         {renderStep()}
