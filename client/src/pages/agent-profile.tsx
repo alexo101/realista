@@ -433,59 +433,75 @@ export default function AgentProfile() {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="mt-4">
-                      <ChartContainer
-                        className="h-64"
-                        config={{
-                          rating: { color: "#2563eb" }
-                        }}
-                      >
-                        <BarChart
-                          data={[
-                            {
-                              category: "Conocimientos de la zona",
-                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.zoneKnowledge || 0), 0) / reviews.length || 0
-                            },
-                            {
-                              category: "Negociación del precio",
-                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.priceNegotiation || 0), 0) / reviews.length || 0
-                            },
-                            {
-                              category: "Trato",
-                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.treatment || 0), 0) / reviews.length || 0
-                            },
-                            {
-                              category: "Puntualidad y disponibilidad",
-                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.punctuality || 0), 0) / reviews.length || 0
-                            },
-                            {
-                              category: "Conocimiento de la propiedad",
-                              rating: reviews.reduce((acc, review) => acc + (review.ratings?.propertyKnowledge || 0), 0) / reviews.length || 0
-                            }
-                          ]}
-                          margin={{ top: 10, right: 10, bottom: 40, left: 40 }}
-                        >
-                          <XAxis dataKey="category" angle={-45} textAnchor="end" interval={0} height={60} />
-                          <YAxis domain={[0, 5]} tickCount={6} />
-                          <RechartsTooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div className="font-medium">{payload[0].payload.category}</div>
-                                      <div className="font-medium text-right">{payload[0].value.toFixed(1)}/5</div>
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Bar dataKey="rating" fill="var(--color-rating)" />
-                        </BarChart>
-                      </ChartContainer>
+                  <div className="space-y-5 mt-4 p-4 bg-gray-50 rounded-md">
+                    {/* Conocimientos de la zona */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Conocimientos de la zona</div>
+                      <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-5 rounded-r-full" 
+                          style={{ 
+                            width: `${reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.zoneKnowledge || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {/* Negociación del precio */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Negociación del precio</div>
+                      <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-5 rounded-r-full" 
+                          style={{ 
+                            width: `${reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.priceNegotiation || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {/* Trato */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Trato</div>
+                      <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-5 rounded-r-full" 
+                          style={{ 
+                            width: `${reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.treatment || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {/* Puntualidad y disponibilidad */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Puntualidad y disponibilidad</div>
+                      <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-5 rounded-r-full" 
+                          style={{ 
+                            width: `${reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.punctuality || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {/* Conocimiento de la propiedad */}
+                    <div>
+                      <div className="text-sm font-medium mb-2">Conocimiento de la propiedad</div>
+                      <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+                        <div 
+                          className="bg-green-400 h-5 rounded-r-full" 
+                          style={{ 
+                            width: `${reviews.length > 0 ? 
+                            (reviews.reduce((acc, review) => acc + (review.ratings?.propertyKnowledge || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                          }}
+                        ></div>
+                      </div>
                     </div>
                   </div>
 
