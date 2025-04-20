@@ -251,11 +251,11 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       propertyId: selectedPropertyId,
       verified: hasWorkedWithAgent === true,
       ratings: {
-        zoneKnowledge: ratings.zoneKnowledge,
-        priceNegotiation: ratings.priceNegotiation,
+        area_knowledge: ratings.zoneKnowledge,
+        price_negotiation: ratings.priceNegotiation,
         treatment: ratings.treatment,
         punctuality: ratings.punctuality,
-        propertyKnowledge: ratings.propertyKnowledge
+        property_knowledge: ratings.propertyKnowledge
       },
       comment: commentText.trim(),
       rating: calculateOverallRating(),
