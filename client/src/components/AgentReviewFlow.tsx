@@ -417,9 +417,6 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
         <div className="flex flex-col p-4">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">{currentStep.title}</h2>
-            <div className="text-sm text-muted-foreground">
-              Paso {currentReviewStep + 1} de {reviewSteps.length}
-            </div>
           </div>
           
           <p className="mb-6 text-muted-foreground">{currentStep.question}</p>
