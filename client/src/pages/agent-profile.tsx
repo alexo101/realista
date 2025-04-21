@@ -460,13 +460,6 @@ export default function AgentProfile() {
                   </Button>
                   
                   <h2 className="text-xl font-semibold mb-4">Valoración general</h2>
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="text-5xl font-bold mr-3">{reviewAverage.toFixed(1)}</div>
-                    <div>
-                      <StarRating rating={reviewAverage} />
-                      <div className="text-sm text-gray-500">{reviewCount} reseñas</div>
-                    </div>
-                  </div>
 
                   <div className="space-y-5 mt-4 p-4 bg-gray-50 rounded-md">
                     {/* Conocimientos de la zona */}
