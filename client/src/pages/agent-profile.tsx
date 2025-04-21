@@ -215,11 +215,15 @@ export default function AgentProfile() {
           <div className="flex items-center mb-4">
             <span className="text-xl font-bold mr-2">
               {reviews && reviews.length > 0 ? 
-                (reviews.filter(rev => rev.verified).reduce((acc, rev) => acc + rev.rating, 0) / 
-                  Math.max(1, reviews.filter(rev => rev.verified).length)).toFixed(1) :
+                (() => {
+                  const verifiedReviews = reviews.filter(rev => rev.verified === true);
+                  if (verifiedReviews.length === 0) return "0.0";
+                  const sum = verifiedReviews.reduce((acc, rev) => acc + Number(rev.rating || 0), 0);
+                  return (sum / verifiedReviews.length).toFixed(1);
+                })() :
                 "0.0"}
             </span>
-            <span className="text-sm text-gray-500">({reviews ? reviews.filter(rev => rev.verified).length : 0} reseñas verificadas)</span>
+            <span className="text-sm text-gray-500">({reviews ? reviews.filter(rev => rev.verified === true).length : 0} reseñas verificadas)</span>
           </div>
 
           <p className="text-gray-700 mb-4">
