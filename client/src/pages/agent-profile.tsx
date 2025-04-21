@@ -213,8 +213,8 @@ export default function AgentProfile() {
           </div>
 
           <div className="flex items-center mb-4">
-            <StarRating rating={reviewAverage} />
-            <span className="ml-2 text-sm text-gray-500">({reviewCount} reseñas)</span>
+            <span className="text-xl font-bold mr-2">{reviewAverage.toFixed(1)}</span>
+            <span className="text-sm text-gray-500">({reviewCount} reseñas)</span>
           </div>
 
           <p className="text-gray-700 mb-4">
