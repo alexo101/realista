@@ -22,7 +22,14 @@ interface Review {
   author: string;
   rating: number;
   date: string;
-  comment: string;
+  comment?: string;
+  // Campos directos para las puntuaciones en la BD
+  areaKnowledge: number;
+  priceNegotiation: number;
+  treatment: number;
+  punctuality: number;
+  propertyKnowledge: number;
+  // Estructura anidada para mantener compatibilidad
   ratings?: {
     zoneKnowledge: number;
     priceNegotiation: number;
@@ -112,7 +119,28 @@ export default function AgentProfile() {
       if (!response.ok) {
         return [];
       }
-      return response.json();
+      const reviewsData = await response.json();
+      
+      // Transformamos los datos para garantizar compatibilidad
+      return reviewsData.map((review: any) => ({
+        ...review,
+        // Aseguramos que comment existe y no es null
+        comment: review.comment || "",
+        // Mantenemos también acceso directo a los valores de puntuación
+        areaKnowledge: Number(review.areaKnowledge) || 0,
+        priceNegotiation: Number(review.priceNegotiation) || 0,
+        treatment: Number(review.treatment) || 0,
+        punctuality: Number(review.punctuality) || 0,
+        propertyKnowledge: Number(review.propertyKnowledge) || 0,
+        // Estructura anidada para compatibilidad
+        ratings: {
+          zoneKnowledge: Number(review.areaKnowledge) || 0,
+          priceNegotiation: Number(review.priceNegotiation) || 0,
+          treatment: Number(review.treatment) || 0,
+          punctuality: Number(review.punctuality) || 0,
+          propertyKnowledge: Number(review.propertyKnowledge) || 0
+        }
+      }));
     },
     enabled: !!agent
   });
