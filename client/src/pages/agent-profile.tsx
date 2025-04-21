@@ -553,14 +553,23 @@ export default function AgentProfile() {
                       <CardContent className="p-6">
                         <div className="flex justify-between mb-2">
                           <div className="font-medium">{review.author}</div>
-                          <div className="text-sm text-gray-500">{review.date}</div>
+                          <div className="text-sm text-gray-500">
+                            {typeof review.date === 'string' 
+                              ? review.date.substring(0, 16).replace('T', ' ')
+                              : review.date.toISOString().substring(0, 16).replace('T', ' ')}
+                          </div>
                         </div>
 
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="mb-3">
+                              <div className="mb-3 flex items-center gap-2">
                                 <StarRating rating={review.rating} />
+                                {review.verified && (
+                                  <Badge variant="outline" className="text-xs h-5 bg-blue-50 border-blue-200 text-blue-600">
+                                    Verificado
+                                  </Badge>
+                                )}
                               </div>
                             </TooltipTrigger>
                             {review.ratings && (
