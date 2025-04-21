@@ -459,15 +459,13 @@ export default function AgentProfile() {
                     Escribir una reseña
                   </Button>
                   
-                  <h2 className="text-xl font-semibold mb-4">Valoración general</h2>
-
-                  <div className="space-y-5 mt-4 p-4 bg-gray-50 rounded-md">
+                  <div className="space-y-5 p-4 bg-gray-50 rounded-md">
                     {/* Conocimientos de la zona */}
                     <div>
                       <div className="text-sm font-medium mb-2">Conocimientos de la zona</div>
                       <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
                         <div 
-                          className="bg-green-400 h-5 rounded-r-full" 
+                          className="bg-blue-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
                             (reviews.reduce((acc, review) => acc + (Number(review.areaKnowledge) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
@@ -481,7 +479,7 @@ export default function AgentProfile() {
                       <div className="text-sm font-medium mb-2">Negociación del precio</div>
                       <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
                         <div 
-                          className="bg-green-400 h-5 rounded-r-full" 
+                          className="bg-blue-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
                             (reviews.reduce((acc, review) => acc + (Number(review.priceNegotiation) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
@@ -495,7 +493,7 @@ export default function AgentProfile() {
                       <div className="text-sm font-medium mb-2">Trato</div>
                       <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
                         <div 
-                          className="bg-green-400 h-5 rounded-r-full" 
+                          className="bg-blue-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
                             (reviews.reduce((acc, review) => acc + (Number(review.treatment) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
@@ -509,7 +507,7 @@ export default function AgentProfile() {
                       <div className="text-sm font-medium mb-2">Puntualidad y disponibilidad</div>
                       <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
                         <div 
-                          className="bg-green-400 h-5 rounded-r-full" 
+                          className="bg-blue-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
                             (reviews.reduce((acc, review) => acc + (Number(review.punctuality) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
@@ -523,7 +521,7 @@ export default function AgentProfile() {
                       <div className="text-sm font-medium mb-2">Conocimiento de la propiedad</div>
                       <div className="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
                         <div 
-                          className="bg-green-400 h-5 rounded-r-full" 
+                          className="bg-blue-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
                             (reviews.reduce((acc, review) => acc + (Number(review.propertyKnowledge) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
