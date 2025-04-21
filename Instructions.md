@@ -78,3 +78,69 @@ After implementing these changes:
 1. Creating new routes to match the current paths (not recommended as it introduces redundancy)
 2. Using React Router's navigate function instead of window.location for better integration
 3. Adding a redirect component to handle path translation (more complex than needed)
+# Agent Review Flow - Issue Analysis and Fix
+
+## Problem Identified
+The agent review submission is failing because of field name mismatches between the frontend and backend.
+
+### Root Causes
+1. In `AgentReviewFlow.tsx`, review data is being sent to the API with incorrect field names.
+2. The component uses snake_case field names (`area_knowledge`, `price_negotiation`, etc.) when submitting data, but the server expects camelCase field names (`areaKnowledge`, `priceNegotiation`, etc.) according to the `schema.ts` file.
+
+### Evidence
+- In `schema.ts`, the reviews table uses camelCase field names:
+```typescript
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull(),
+  propertyId: integer("property_id"),
+  verified: boolean("verified").notNull().default(false),
+  areaKnowledge: decimal("area_knowledge", { precision: 2, scale: 1 }).notNull(),
+  priceNegotiation: decimal("price_negotiation", { precision: 2, scale: 1 }).notNull(),
+  treatment: decimal("treatment", { precision: 2, scale: 1 }).notNull(),
+  punctuality: decimal("punctuality", { precision: 2, scale: 1 }).notNull(),
+  propertyKnowledge: decimal("property_knowledge", { precision: 2, scale: 1 }).notNull(),
+  rating: decimal("rating", { precision: 2, scale: 1 }).notNull(),
+  author: text("author"),
+  date: timestamp("date").notNull().defaultNow(),
+});
+```
+
+- However, in `AgentReviewFlow.tsx`, the data was being submitted with snake_case field names:
+```typescript
+const reviewData = {
+  agentId: agentId,
+  propertyId: selectedPropertyId,
+  verified: hasWorkedWithAgent === true,
+  area_knowledge: Number(ratings.areaKnowledge) || 0,
+  price_negotiation: Number(ratings.priceNegotiation) || 0,
+  treatment: Number(ratings.treatment) || 0,
+  punctuality: Number(ratings.punctuality) || 0,
+  property_knowledge: Number(ratings.propertyKnowledge) || 0,
+  comment: commentText.trim(),
+  rating: calculateOverallRating(),
+  author: authorInitials,
+  email: userInfo?.email || userData.email || "",
+  date: new Date().toISOString()
+};
+```
+
+## Solution
+Update the field names in the review submission object in `AgentReviewFlow.tsx` to match the expected camelCase format:
+
+- Change `area_knowledge` to `areaKnowledge`
+- Change `price_negotiation` to `priceNegotiation`
+- Change `property_knowledge` to `propertyKnowledge`
+
+## Implementation Details
+The fix has been applied to `AgentReviewFlow.tsx` by updating the field names in the `handleSubmitReview` function to use the proper camelCase naming convention.
+
+This change ensures that the frontend sends data in the format that the backend expects, allowing the review submission to complete successfully.
+
+## Testing
+To verify the fix:
+1. Navigate to an agent profile
+2. Click "Escribir una reseña"
+3. Complete all steps of the review flow
+4. Submit the review with the "Validar reseña" button
+5. Verify that the review is saved without errors
