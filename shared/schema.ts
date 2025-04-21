@@ -156,6 +156,7 @@ export const reviews = pgTable("reviews", {
   agentId: integer("agent_id").notNull(),
   propertyId: integer("property_id"),
   verified: boolean("verified").notNull().default(false),
+  comment: text("comment"), // Añadimos el campo para los comentarios
   areaKnowledge: decimal("area_knowledge", { precision: 2, scale: 1 }).notNull(),
   priceNegotiation: decimal("price_negotiation", { precision: 2, scale: 1 }).notNull(),
   treatment: decimal("treatment", { precision: 2, scale: 1 }).notNull(),
@@ -166,6 +167,6 @@ export const reviews = pgTable("reviews", {
   date: timestamp("date").notNull().defaultNow(),
 });
 
-export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true, date: true });
+export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, date: true });
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;

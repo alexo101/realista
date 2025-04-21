@@ -424,6 +424,13 @@ export default function AgentProfile() {
             <div className="md:col-span-1">
               <Card>
                 <CardContent className="p-6">
+                  <Button 
+                    className="w-full mb-6"
+                    onClick={() => setReviewModalOpen(true)}
+                  >
+                    Escribir una reseña
+                  </Button>
+                  
                   <h2 className="text-xl font-semibold mb-4">Valoración general</h2>
                   <div className="flex items-center justify-center mb-4">
                     <div className="text-5xl font-bold mr-3">{reviewAverage.toFixed(1)}</div>
@@ -442,7 +449,7 @@ export default function AgentProfile() {
                           className="bg-green-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
-                            (reviews.reduce((acc, review) => acc + (review.ratings?.zoneKnowledge || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                            (reviews.reduce((acc, review) => acc + (Number(review.areaKnowledge) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
                           }}
                         ></div>
                       </div>
@@ -456,7 +463,7 @@ export default function AgentProfile() {
                           className="bg-green-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
-                            (reviews.reduce((acc, review) => acc + (review.ratings?.priceNegotiation || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                            (reviews.reduce((acc, review) => acc + (Number(review.priceNegotiation) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
                           }}
                         ></div>
                       </div>
@@ -470,7 +477,7 @@ export default function AgentProfile() {
                           className="bg-green-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
-                            (reviews.reduce((acc, review) => acc + (review.ratings?.treatment || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                            (reviews.reduce((acc, review) => acc + (Number(review.treatment) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
                           }}
                         ></div>
                       </div>
@@ -484,7 +491,7 @@ export default function AgentProfile() {
                           className="bg-green-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
-                            (reviews.reduce((acc, review) => acc + (review.ratings?.punctuality || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                            (reviews.reduce((acc, review) => acc + (Number(review.punctuality) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
                           }}
                         ></div>
                       </div>
@@ -498,19 +505,12 @@ export default function AgentProfile() {
                           className="bg-green-400 h-5 rounded-r-full" 
                           style={{ 
                             width: `${reviews.length > 0 ? 
-                            (reviews.reduce((acc, review) => acc + (review.ratings?.propertyKnowledge || 0), 0) / reviews.length / 5) * 100 : 0}%` 
+                            (reviews.reduce((acc, review) => acc + (Number(review.propertyKnowledge) || 0), 0) / reviews.length / 5) * 100 : 0}%` 
                           }}
                         ></div>
                       </div>
                     </div>
                   </div>
-
-                  <Button 
-                    className="w-full mt-6"
-                    onClick={() => setReviewModalOpen(true)}
-                  >
-                    Escribir una reseña
-                  </Button>
                 </CardContent>
               </Card>
             </div>
