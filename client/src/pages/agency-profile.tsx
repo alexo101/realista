@@ -249,13 +249,7 @@ export default function AgencyProfile() {
                   )}
                 </div>
                 
-                {/* Galería de imágenes */}
-                <div className="mt-6">
-                  <h3 className="font-medium mb-3">Galería</h3>
-                  <div className="rounded-lg overflow-hidden">
-                    <ImageGallery images={agencyImages} />
-                  </div>
-                </div>
+                
               </CardContent>
             </Card>
             
