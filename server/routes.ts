@@ -869,19 +869,47 @@ Gracias!
       res.status(500).json({ message: "Failed to get reviews" });
     }
   });
+  
+  app.get("/api/agencies/:id/reviews", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.params.id);
+      const reviews = await storage.getAgencyReviews(agencyId);
+      res.status(200).json(reviews);
+    } catch (error) {
+      console.error('Error getting agency reviews:', error);
+      res.status(500).json({ message: "Failed to get agency reviews" });
+    }
+  });
 
   app.post("/api/agents/:id/reviews", async (req, res) => {
     try {
       const agentId = parseInt(req.params.id);
       const review = await storage.createAgentReview({
-                ...req.body,
-        agentId,
+        ...req.body,
+        targetId: agentId,
+        targetType: "agent",
         date: new Date()
       });
       res.status(201).json(review);
     } catch (error) {
       console.error('Error creating agent review:', error);
       res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+  
+  app.post("/api/agencies/:id/reviews", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.params.id);
+      const review = await storage.createAgentReview({
+        ...req.body,
+        targetId: agencyId,
+        targetType: "agency",
+        date: new Date()
+      });
+      res.status(201).json(review);
+    } catch (error) {
+      console.error('Error creating agency review:', error);
+      res.status(500).json({ message: "Failed to create agency review" });
     }
   });
 
