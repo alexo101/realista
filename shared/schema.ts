@@ -2,7 +2,24 @@ import { pgTable, text, serial, integer, boolean, jsonb, timestamp, decimal, pri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
+// Nueva tabla de agencias
+export const agencies = pgTable("agencies", {
+  id: serial("id").primaryKey(),
+  agencyName: text("agency_name"),
+  agencyAddress: text("agency_address"),
+  agencyDescription: text("agency_description"),
+  agencyLogo: text("agency_logo"),
+  agencyEmailToDisplay: text("agency_email_to_display"),
+  agencyActiveSince: text("agency_active_since"),
+  agencyNeighborhoods: text("agency_neighborhoods"), // Debería ser un array, pero la BD actual no lo permite
+  agencySupportedLanguages: text("agency_supported_languages"), // Debería ser un array, pero la BD actual no lo permite
+  adminAgentId: text("admin_agent_id"),
+  agencyWebsite: text("agency_website"),
+  agencySocialMedia: text("agency_social_media"), // Debería ser un jsonb, pero la BD actual no lo permite
+});
+
+// Tabla de agentes (anteriormente users)
+export const agents = pgTable("agents", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
@@ -10,26 +27,16 @@ export const users = pgTable("users", {
   surname: text("surname"),
   description: text("description"),
   avatar: text("avatar"),
-  isAgent: boolean("is_agent").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
   // Barrios de influencia para agentes
   influenceNeighborhoods: text("influence_neighborhoods").array(),
-  // Agent specific details
+  // Detalles específicos del agente
   yearsOfExperience: integer("years_of_experience"), // Años de experiencia del agente
+  yearExperience: integer("year_experience"), // Duplicado de years_of_experience 
   languagesSpoken: text("languages_spoken").array(), // Idiomas que habla el agente
-  // Agency details
-  agencyName: text("agency_name"),
-  agencyAddress: text("agency_address"),
-  agencyDescription: text("agency_description"),
-  agencyPhone: text("agency_phone"),
-  agencyWebsite: text("agency_website"),
-  agencySocialMedia: jsonb("agency_social_media"),
-  agencyLogo: text("agency_logo"),
-  // Barrios de influencia para agencias
-  agencyInfluenceNeighborhoods: text("agency_influence_neighborhoods").array(),
-  // Agency specific details
-  yearEstablished: integer("year_established"), // Año de fundación de la agencia
-  agencyLanguagesSpoken: text("agency_languages_spoken").array(), // Idiomas que hablan en la agencia
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Relación con la agencia
+  agencyId: text("agency_id"), // ID de la agencia a la que pertenece
+  isAdmin: boolean("is_admin").notNull().default(false), // Indica si es un agente administrador
 });
 
 export const properties = pgTable("properties", {
@@ -117,7 +124,9 @@ export const inquiries = pgTable("inquiries", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+// Esquemas de inserción
+export const insertAgentSchema = createInsertSchema(agents).omit({ id: true, createdAt: true });
+export const insertAgencySchema = createInsertSchema(agencies).omit({ id: true });
 export const insertPropertySchema = createInsertSchema(properties).omit({ id: true, createdAt: true });
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
 // Para valoraciones, usamos un esquema personalizado para asegurar que los valores sean numéricos
@@ -135,7 +144,9 @@ export const insertAgencyAgentSchema = createInsertSchema(agencyAgents).omit({ i
 export const insertAppointmentSchema = createInsertSchema(appointments).omit({ id: true, createdAt: true });
 export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true, createdAt: true });
 
-export type User = typeof users.$inferSelect;
+// Tipos de selección
+export type Agent = typeof agents.$inferSelect;
+export type Agency = typeof agencies.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type NeighborhoodRating = typeof neighborhoodRatings.$inferSelect;
@@ -143,7 +154,9 @@ export type AgencyAgent = typeof agencyAgents.$inferSelect;
 export type Appointment = typeof appointments.$inferSelect;
 export type Inquiry = typeof inquiries.$inferSelect;
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+// Tipos de inserción
+export type InsertAgent = z.infer<typeof insertAgentSchema>;
+export type InsertAgency = z.infer<typeof insertAgencySchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertNeighborhoodRating = z.infer<typeof insertNeighborhoodRatingSchema>;
@@ -151,12 +164,16 @@ export type InsertAgencyAgent = z.infer<typeof insertAgencyAgentSchema>;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 
+// Mantener compatibilidad con código antiguo
+export type User = Agent;
+
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
-  agentId: integer("agent_id").notNull(),
+  targetId: integer("target_id").notNull(), // Puede ser un id de agente o agencia
+  targetType: text("target_type"), // Tipo de objetivo: 'agent' o 'agency'
   propertyId: integer("property_id"),
   verified: boolean("verified").notNull().default(false),
-  comment: text("comment"), // Añadimos el campo para los comentarios
+  comment: text("comment"), // Campo para los comentarios
   areaKnowledge: decimal("area_knowledge", { precision: 2, scale: 1 }).notNull(),
   priceNegotiation: decimal("price_negotiation", { precision: 2, scale: 1 }).notNull(),
   treatment: decimal("treatment", { precision: 2, scale: 1 }).notNull(),
