@@ -57,6 +57,7 @@ export interface IStorage {
   getProperty(id: number): Promise<Property | undefined>;
   getMostViewedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
+  getPropertiesByAgency(agencyId: number): Promise<Property[]>;
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(id: number, property: InsertProperty): Promise<Property>;
@@ -233,6 +234,13 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(properties)
       .where(eq(properties.agentId, agentId))
+      .orderBy(sql`${properties.createdAt} DESC`);
+  }
+  
+  async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
+    return await db.select()
+      .from(properties)
+      .where(eq(properties.agencyId, agencyId))
       .orderBy(sql`${properties.createdAt} DESC`);
   }
 

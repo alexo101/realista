@@ -64,7 +64,8 @@ export const properties = pgTable("properties", {
   mainImageIndex: integer("main_image_index").default(0),
   title: text("title"),
   viewCount: integer("view_count").default(0).notNull(), // Contador de visualizaciones
-  agentId: integer("agent_id").notNull(),
+  agentId: integer("agent_id").notNull(), // ID del agente que publicó la propiedad
+  agencyId: integer("agency_id"), // ID de la agencia a la que pertenece la propiedad (opcional)
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
