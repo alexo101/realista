@@ -137,16 +137,40 @@ export class DatabaseStorage implements IStorage {
     const [agency] = await db.select().from(agencies).where(eq(agencies.id, id));
     if (!agency) return undefined;
     
+    console.log('Datos de agencia obtenidos:', agency);
+    
     // Convertir formato agencia a agente para mantener compatibilidad
     const agentFormat = {
       id: agency.id,
-      email: "agency@example.com", // Dummy email para cumplir con el tipo
-      password: "", // Dummy password para cumplir con el tipo
-      name: agency.agencyName,
-      description: agency.agencyDescription,
-      avatar: agency.agencyLogo
-      // Otros campos requeridos por el tipo
+      email: agency.agency_email_to_display || "agency@example.com", // Email público de la agencia
+      password: "", // Campo requerido por el tipo pero no se usa
+      name: agency.agency_name,
+      surname: null, // Las agencias no tienen apellidos
+      description: agency.agency_description,
+      avatar: agency.agency_logo,
+      createdAt: new Date(), // Fecha actual como aproximación si no existe
+      // Barrios de actuación de la agencia
+      influenceNeighborhoods: Array.isArray(agency.agency_neighborhoods) 
+        ? agency.agency_neighborhoods 
+        : (agency.agency_neighborhoods ? [agency.agency_neighborhoods] : []),
+      // Campos específicos de agentes que no son relevantes para agencias
+      yearsOfExperience: null,
+      // Idiomas soportados
+      languagesSpoken: Array.isArray(agency.agency_supported_languages) 
+        ? agency.agency_supported_languages 
+        : (agency.agency_supported_languages ? [agency.agency_supported_languages] : []),
+      // ID de administrador de la agencia
+      agencyId: agency.admin_agent_id,
+      isAdmin: false,
+      // Campos adicionales específicos de agencias
+      agencyName: agency.agency_name,
+      agencyWebsite: agency.agency_website,
+      agencySocialMedia: agency.agency_social_media,
+      agencyActiveSince: agency.agency_active_since,
+      agencyAddress: agency.agency_address
     } as User;
+    
+    console.log('Formato agente generado:', agentFormat);
     
     return agentFormat;
   }
