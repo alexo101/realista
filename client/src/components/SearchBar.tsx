@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { AgentReview } from "./AgentReview";
-import { AgencyReview } from "./AgencyReview";
+
 import { AutocompleteSearch } from "./AutocompleteSearch";
 import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS, isDistrict } from "@/utils/neighborhoods";
 
@@ -84,8 +83,6 @@ export function SearchBar() {
   const [currentLocation] = useLocation();
   const { toast } = useToast();
   const [isNeighborhoodOpen, setIsNeighborhoodOpen] = useState(false);
-  const [isAgentReviewOpen, setIsAgentReviewOpen] = useState(false);
-  const [isAgencyReviewOpen, setIsAgencyReviewOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
@@ -518,25 +515,7 @@ export function SearchBar() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-4 mt-4">
-          <Button
-            variant="ghost"
-            className="text-primary flex items-center gap-2 text-sm"
-            onClick={() => setIsAgentReviewOpen(true)}
-            aria-label="Valorar agente"
-          >
-            <Pencil className="h-4 w-4" /> Valorar agente
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="text-primary flex items-center gap-2 text-sm"
-            onClick={() => setIsAgencyReviewOpen(true)}
-            aria-label="Valorar agencia"
-          >
-            <Pencil className="h-4 w-4" /> Valorar agencia
-          </Button>
-        </div>
+        {/* Review buttons have been removed */}
       </div>
 
       {/* Dialog for neighborhood selection */}
@@ -649,15 +628,7 @@ export function SearchBar() {
         </DialogContent>
       </Dialog>
 
-      {/* Agent Review Dialog */}
-      {isAgentReviewOpen && (
-        <AgentReview onClose={() => setIsAgentReviewOpen(false)} />
-      )}
-
-      {/* Agency Review Dialog */}
-      {isAgencyReviewOpen && (
-        <AgencyReview onClose={() => setIsAgencyReviewOpen(false)} />
-      )}
+      {/* Review dialog components have been removed */}
     </div>
   );
 }
