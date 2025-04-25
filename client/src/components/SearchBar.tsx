@@ -93,11 +93,18 @@ export function SearchBar() {
   const [agentName, setAgentName] = useState('');
   const [roomsFilter, setRoomsFilter] = useState<number[]>([]);
 
-  // Determine initial search type based on current location
+  // Determine initial search type based on URL search params
   const getInitialSearchType = (): SearchType => {
-    if (currentLocation.startsWith('/search/agencies')) return 'agencies';
-    if (currentLocation.startsWith('/search/agents')) return 'agents';
-    if (currentLocation.startsWith('/search/rent')) return 'rent';
+    // Check if we have a type parameter in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const typeParam = urlParams.get('type') as SearchType | null;
+    
+    // If there's a valid type parameter, use it
+    if (typeParam && ['rent', 'buy', 'agencies', 'agents'].includes(typeParam)) {
+      return typeParam as SearchType;
+    }
+    
+    // Otherwise, don't select any tab by default
     return 'buy';
   };
 
@@ -133,30 +140,18 @@ export function SearchBar() {
       return;
     }
 
-    let baseUrl = '';
-    switch (searchType) {
-      case 'agencies':
-        baseUrl = '/search/agencies';
-        break;
-      case 'agents':
-        baseUrl = '/search/agents';
-        break;
-      case 'rent':
-        baseUrl = '/search/rent';
-        break;
-      case 'buy':
-        baseUrl = '/search/buy';
-        break;
-    }
-
+    // Instead of changing URLs for different tabs, we'll use a common URL with search parameters
     const params = new URLSearchParams();
-
-    // Añadir parámetros según el tipo de búsqueda
+    
+    // Add the search type as a parameter
+    params.append("type", searchType);
+    
+    // Add location parameters
     if (selectedNeighborhoods.length > 0) {
       params.append("neighborhoods", selectedNeighborhoods.join(","));
     }
 
-    // Parámetros específicos para propiedades
+    // Property specific parameters
     if ((searchType === 'buy' || searchType === 'rent') && priceRange.min) {
       params.append("minPrice", priceRange.min);
     }
@@ -164,38 +159,38 @@ export function SearchBar() {
       params.append("maxPrice", priceRange.max);
     }
 
-    // Añadir filtro de habitaciones
+    // Add room filter
     if ((searchType === 'buy' || searchType === 'rent') && roomsFilter.length > 0) {
       params.append("rooms", roomsFilter.join(','));
     }
 
-    // Parámetros para búsqueda de agencias
+    // Agency search parameters
     if (searchType === 'agencies') {
       if (agencyName && agencyName.trim() !== '') {
         params.append('agencyName', agencyName.trim());
       }
-      // Mostrar todas las agencias cuando no hay criterios de búsqueda
+      // Show all agencies when no search criteria
       if (!agencyName.trim() && !selectedNeighborhoods.length) {
         params.append('showAll', 'true');
       }
     }
 
-    // Parámetros para búsqueda de agentes
+    // Agent search parameters
     if (searchType === 'agents') {
       if (agentName && agentName.trim() !== '') {
         params.append('agentName', agentName.trim());
       }
-      // Mostrar todos los agentes cuando no hay criterios de búsqueda
+      // Show all agents when no search criteria
       if (!agentName.trim() && !selectedNeighborhoods.length) {
         params.append('showAll', 'true');
       }
     }
 
     const queryString = params.toString();
-    setLocation(`${baseUrl}${queryString ? '?' + queryString : ''}`);
+    setLocation(`/search${queryString ? '?' + queryString : ''}`);
   };
 
-  // Reset state when search type changes
+  // Reset state when search type changes without changing URL
   const handleSearchTypeChange = (newType: SearchType) => {
     setSearchType(newType);
     setSelectedNeighborhoods([]);
@@ -203,30 +198,10 @@ export function SearchBar() {
     setRoomsFilter([]);
     setAgencyName('');
     setAgentName('');
-
-    // Ejecutar búsqueda después de actualizar el estado
-    setTimeout(() => {
-      // Construir la URL base según el nuevo tipo de búsqueda
-      let baseUrl = '';
-      switch (newType) {
-        case 'agencies':
-          // Para agencias, no mostrar resultados inicialmente
-          baseUrl = '/search/agencies?showAll=false';
-          break;
-        case 'agents':
-          // Para agentes, no mostrar resultados inicialmente
-          baseUrl = '/search/agents?showAll=false';
-          break;
-        case 'rent':
-          // Para alquiler, no mostrar resultados inicialmente hasta que se busque explícitamente
-          baseUrl = '/search/rent?initialLoad=true';
-          break;
-        case 'buy':
-          baseUrl = '/search/buy';
-          break;
-      }
-      setLocation(baseUrl);
-    }, 0);
+    
+    // We no longer navigate to different URLs when changing tabs
+    // Instead, we just stay on the current page and let the parent component
+    // handle showing different content based on the searchType state
   };
 
   const toggleNeighborhood = (neighborhood: string) => {
