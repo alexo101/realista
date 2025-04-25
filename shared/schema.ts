@@ -32,7 +32,6 @@ export const agents = pgTable("agents", {
   influenceNeighborhoods: text("influence_neighborhoods").array(),
   // Detalles específicos del agente
   yearsOfExperience: integer("years_of_experience"), // Años de experiencia del agente
-  yearExperience: integer("year_experience"), // Duplicado de years_of_experience 
   languagesSpoken: text("languages_spoken").array(), // Idiomas que habla el agente
   // Relación con la agencia
   agencyId: text("agency_id"), // ID de la agencia a la que pertenece

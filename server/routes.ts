@@ -602,6 +602,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get agent details" });
     }
   });
+  
+  // Obtener propiedades por agente
+  app.get("/api/agents/:id/properties", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+
+      const properties = await storage.getPropertiesByAgent(id);
+      res.json(properties);
+    } catch (error) {
+      console.error('Error getting agent properties:', error);
+      res.status(500).json({ message: "Failed to get agent properties" });
+    }
+  });
 
   app.get("/api/agencies/:id", async (req, res) => {
     try {
@@ -619,6 +635,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error getting agency details:', error);
       res.status(500).json({ message: "Failed to get agency details" });
+    }
+  });
+  
+  // Obtener propiedades por agencia
+  app.get("/api/agencies/:id/properties", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid agency ID" });
+      }
+
+      const properties = await storage.getPropertiesByAgency(id);
+      res.json(properties);
+    } catch (error) {
+      console.error('Error getting agency properties:', error);
+      res.status(500).json({ message: "Failed to get agency properties" });
     }
   });
 
