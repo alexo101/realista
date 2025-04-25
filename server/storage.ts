@@ -128,7 +128,65 @@ export class DatabaseStorage implements IStorage {
 
   async getAgentById(id: number): Promise<User | undefined> {
     const [agent] = await db.select().from(agents).where(eq(agents.id, id));
-    return agent;
+    if (!agent) return undefined;
+    
+    // Añadimos propiedades adicionales para identificar que es un agente
+    return {
+      ...agent,
+      isAgent: true,
+      isAgency: false
+    } as User;
+  }
+
+  // Función auxiliar para procesar campos de array en formato PostgreSQL
+  private parseArrayField(value: string | null | undefined): string[] {
+    if (!value) return [];
+    
+    // Quitar las llaves { } y dividir por comas
+    try {
+      // Eliminar las llaves { } externas
+      const cleanedValue = value.replace(/^\{|\}$/g, '');
+      
+      // Dividir por comas, pero respetando las comillas
+      const result: string[] = [];
+      let currentItem = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < cleanedValue.length; i++) {
+        const char = cleanedValue[i];
+        
+        if (char === '"' && (i === 0 || cleanedValue[i-1] !== '\\')) {
+          inQuotes = !inQuotes;
+          currentItem += char;
+        } else if (char === ',' && !inQuotes) {
+          result.push(currentItem.trim());
+          currentItem = '';
+        } else {
+          currentItem += char;
+        }
+      }
+      
+      if (currentItem) {
+        result.push(currentItem.trim());
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error al parsear campo de array:', error);
+      return value ? [value] : [];
+    }
+  }
+  
+  // Función auxiliar para procesar campos JSON en formato string
+  private parseJsonField(value: string | null | undefined): any {
+    if (!value) return {};
+    
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.error('Error al parsear campo JSON:', error);
+      return {};
+    }
   }
 
   async getAgencyById(id: number): Promise<User | undefined> {
@@ -137,40 +195,40 @@ export class DatabaseStorage implements IStorage {
     const [agency] = await db.select().from(agencies).where(eq(agencies.id, id));
     if (!agency) return undefined;
     
-    console.log('Datos de agencia obtenidos:', agency);
+    // Procesar los campos que deberían ser arrays
+    const neighborhoods = this.parseArrayField(agency.agencyNeighborhoods);
+    const languages = this.parseArrayField(agency.agencySupportedLanguages);
+    const socialMedia = this.parseJsonField(agency.agencySocialMedia);
     
     // Convertir formato agencia a agente para mantener compatibilidad
     const agentFormat = {
       id: agency.id,
-      email: agency.agency_email_to_display || "agency@example.com", // Email público de la agencia
+      email: agency.agencyEmailToDisplay || "agency@example.com", // Email público de la agencia
       password: "", // Campo requerido por el tipo pero no se usa
-      name: agency.agency_name,
+      name: agency.agencyName,
       surname: null, // Las agencias no tienen apellidos
-      description: agency.agency_description,
-      avatar: agency.agency_logo,
+      description: agency.agencyDescription,
+      avatar: agency.agencyLogo,
       createdAt: new Date(), // Fecha actual como aproximación si no existe
       // Barrios de actuación de la agencia
-      influenceNeighborhoods: Array.isArray(agency.agency_neighborhoods) 
-        ? agency.agency_neighborhoods 
-        : (agency.agency_neighborhoods ? [agency.agency_neighborhoods] : []),
+      influenceNeighborhoods: neighborhoods,
       // Campos específicos de agentes que no son relevantes para agencias
       yearsOfExperience: null,
       // Idiomas soportados
-      languagesSpoken: Array.isArray(agency.agency_supported_languages) 
-        ? agency.agency_supported_languages 
-        : (agency.agency_supported_languages ? [agency.agency_supported_languages] : []),
+      languagesSpoken: languages,
       // ID de administrador de la agencia
-      agencyId: agency.admin_agent_id,
+      agencyId: agency.adminAgentId,
       isAdmin: false,
-      // Campos adicionales específicos de agencias
-      agencyName: agency.agency_name,
-      agencyWebsite: agency.agency_website,
-      agencySocialMedia: agency.agency_social_media,
-      agencyActiveSince: agency.agency_active_since,
-      agencyAddress: agency.agency_address
+      // Campos adicionales específicos de agencias para frontend
+      agencyName: agency.agencyName,
+      agencyWebsite: agency.agencyWebsite,
+      agencySocialMedia: socialMedia,
+      agencyActiveSince: agency.agencyActiveSince,
+      agencyAddress: agency.agencyAddress,
+      // Flag para diferenciar agentes de agencias
+      isAgent: false,
+      isAgency: true
     } as User;
-    
-    console.log('Formato agente generado:', agentFormat);
     
     return agentFormat;
   }
