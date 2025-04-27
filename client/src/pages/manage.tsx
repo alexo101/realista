@@ -250,15 +250,18 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={section === "agency-profile"}
-                  onClick={() => setSection("agency-profile")}
-                >
-                  <Building className="h-4 w-4" />
-                  <span>Perfil agencia</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* Only show agency profile option for agency admins */}
+              {!user?.isAgent || user?.agencyName ? (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={section === "agency-profile"}
+                    onClick={() => setSection("agency-profile")}
+                  >
+                    <Building className="h-4 w-4" />
+                    <span>Perfil agencia</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ) : null}
 
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -473,7 +476,7 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "agency-profile" && (
+          {section === "agency-profile" && (!user?.isAgent || user?.agencyName) && (
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center">
                 <div className="w-48 h-48 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">

@@ -29,13 +29,11 @@ export function Navbar() {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
-                  {(user.isAgent || user.agencyName) && (
-                    <Link href="/manage">
-                      <Button variant="outline">
-                        Gestionar todo
-                      </Button>
-                    </Link>
-                  )}
+                  <Link href="/manage">
+                    <Button variant="outline">
+                      Gestionar todo
+                    </Button>
+                  </Link>
                   <UserMenu />
                 </>
               ) : (
