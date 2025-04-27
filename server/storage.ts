@@ -157,7 +157,7 @@ export class DatabaseStorage implements IStorage {
         
         if (char === '"' && (i === 0 || cleanedValue[i-1] !== '\\')) {
           inQuotes = !inQuotes;
-          currentItem += char;
+          // No añadimos el caracter de comillas al item
         } else if (char === ',' && !inQuotes) {
           result.push(currentItem.trim());
           currentItem = '';
@@ -170,7 +170,12 @@ export class DatabaseStorage implements IStorage {
         result.push(currentItem.trim());
       }
       
-      return result;
+      // Eliminar comillas restantes
+      return result.map(item => 
+        item.startsWith('"') && item.endsWith('"') 
+          ? item.substring(1, item.length - 1) 
+          : item
+      );
     } catch (error) {
       console.error('Error al parsear campo de array:', error);
       return value ? [value] : [];
