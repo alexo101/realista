@@ -40,7 +40,7 @@ app.use((req, res, next) => {
 (async () => {
   // Inicializar el servicio de email
   await initEmailService();
-  
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -60,15 +60,36 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  const port = process.env.PORT || 5000;
+  let serverInstance;
+  function startServer(p: number) {
+    serverInstance = server.listen({
+      port: p,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${p}`);
+    });
+
+    serverInstance.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${p} in use, trying port ${p + 1}`);
+        serverInstance.close();
+        startServer(p + 1);
+      } else {
+        console.error('Error starting server:', err);
+      }
+    });
+  }
+  startServer(port);
+
+  // Handle graceful shutdown
+  process.on('SIGINT', () => {
+    if(serverInstance){
+        serverInstance.close(() => {
+          console.log('Server closed gracefully');
+          process.exit(0);
+        });
+    }
   });
 })();
