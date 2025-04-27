@@ -106,6 +106,19 @@ export default function AgentProfile() {
     },
   });
 
+  // Explicitly fetch properties for this agent
+  const { data: agentProperties = [] } = useQuery<Property[]>({
+    queryKey: [`/api/agents/${id}/properties`],
+    queryFn: async () => {
+      const response = await fetch(`/api/agents/${id}/properties`);
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: !!id
+  });
+
   // Efecto para desplazar al inicio de la página cuando cambia el ID
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -367,7 +380,7 @@ export default function AgentProfile() {
         <TabsContent value="properties" className="mt-6">
           <h2 className="text-2xl font-semibold mb-6">Propiedades de {fullName}</h2>
 
-          {!agent.properties || agent.properties.length === 0 ? (
+          {!agentProperties || agentProperties.length === 0 ? (
             <div className="text-center py-8">
               <Home className="h-12 w-12 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium mb-2">Sin propiedades listadas</h3>
@@ -377,7 +390,7 @@ export default function AgentProfile() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {agent.properties.map(property => (
+              {agentProperties.map(property => (
                 <PropertyCard key={property.id} property={property} />
               ))}
             </div>

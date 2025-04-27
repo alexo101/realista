@@ -611,7 +611,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid agent ID" });
       }
 
+      console.log(`Fetching properties for agent ID: ${id} from route handler`);
       const properties = await storage.getPropertiesByAgent(id);
+      console.log(`Returning ${properties.length} properties for agent ID: ${id}`);
       res.json(properties);
     } catch (error) {
       console.error('Error getting agent properties:', error);

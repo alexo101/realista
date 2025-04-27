@@ -318,10 +318,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {
-    return await db.select()
+    console.log(`Fetching properties for agent ID: ${agentId}`);
+    const result = await db.select()
       .from(properties)
       .where(eq(properties.agentId, agentId))
       .orderBy(sql`${properties.createdAt} DESC`);
+    
+    console.log(`Found ${result.length} properties for agent ID: ${agentId}`);
+    return result;
   }
   
   async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
