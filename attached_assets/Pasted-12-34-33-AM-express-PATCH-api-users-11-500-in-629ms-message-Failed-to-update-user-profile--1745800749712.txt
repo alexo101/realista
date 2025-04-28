@@ -1,0 +1,51 @@
+12:34:33 AM [express] PATCH /api/users/11 500 in 629ms :: {"message":"Failed to update user profile"}
+Error in updateUser SQL: error: syntax error at or near "where"
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.updateUser (/home/runner/workspace/server/storage.ts:111:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:664:27) {
+  length: 94,
+  severity: 'ERROR',
+  code: '42601',
+  detail: undefined,
+  hint: undefined,
+  position: '22',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'scan.l',
+  line: '1244',
+  routine: 'scanner_yyerror'
+}
+Error updating user: error: syntax error at or near "where"
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.updateUser (/home/runner/workspace/server/storage.ts:124:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:664:27) {
+  length: 94,
+  severity: 'ERROR',
+  code: '42601',
+  detail: undefined,
+  hint: undefined,
+  position: '22',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'scan.l',
+  line: '1244',
+  routine: 'scanner_yyerror'
+}
+12:34:40 AM [express] PATCH /api/users/11 500 in 625ms :: {"message":"Failed to update user profile"}
+^CServer closed gracefully
