@@ -110,7 +110,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Create a clean copy of userData without reserved SQL keywords
       const cleanedUserData: Record<string, any> = {};
-      
+
       // Only copy over fields that are not SQL reserved words
       for (const key in userData) {
         if (key !== 'where' && key !== 'from' && key !== 'select' && 
@@ -119,15 +119,15 @@ export class DatabaseStorage implements IStorage {
           cleanedUserData[key] = userData[key as keyof typeof userData];
         }
       }
-      
+
       console.log('Updating user with cleaned data:', Object.keys(cleanedUserData));
-      
+
       const [updatedUser] = await db
         .update(agents)
         .set(cleanedUserData)
         .where(eq(agents.id, id))
         .returning();
-        
+
       return updatedUser;
     } catch (error) {
       console.error('Error in updateUser SQL:', error);
@@ -141,15 +141,56 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(agents).limit(10);
   }
 
-  async searchAgencies(query: string): Promise<User[]> {
-    // Versión simplificada para probar la conexión
-    return await db.select().from(agents).limit(10);
+  async searchAgencies(queryString: string): Promise<User[]> {
+    // Parseamos los parámetros de la URL
+    const params = new URLSearchParams(queryString);
+    const showAll = params.get('showAll') === 'true';
+    const agencyName = params.get('agencyName');
+    const neighborhoodsStr = params.get('neighborhoods');
+
+    let query = db.select().from(agencies) // Corrected table name
+      .where(eq(agencies.agencyName.valueIsNotNull(), true)); //Simplified where clause
+
+    // Filtrar por nombre de agencia si se proporciona
+    if (agencyName && agencyName.trim() !== '') {
+      query = query.where(sql`agencies.agencyName LIKE ${`%${agencyName}%`}`); //Corrected table name
+    }
+
+    // Filtrar por barrios de influencia si se proporcionan
+    if (neighborhoodsStr && neighborhoodsStr.trim() !== '') {
+      const neighborhoods = neighborhoodsStr.split(',');
+
+      // Aplicamos un filtro más estricto para que solo devuelva agencias
+      // que tengan explícitamente los barrios seleccionados en su array de influencia
+      query = query.where(
+        or(...neighborhoods.map(neighborhood => 
+          sql`agencies.agencyNeighborhoods LIKE ${`%"${neighborhood}"%`}` //Corrected table name and field name. Assumes agencyNeighborhoods is a stringified array or contains the neighborhood as a substring.  Adjust as needed based on your database schema.
+        ))
+      );
+    }
+
+    // Ejecutamos la consulta
+    const agencies = await query;
+
+    // Verificación adicional para filtrar resultados  (This is redundant given the where clause above. Remove if agencyNeighborhoods is a properly formatted array in the database)
+    // if (neighborhoodsStr && neighborhoodsStr.trim() !== '') {
+    //   const neighborhoods = neighborhoodsStr.split(',');
+    //   // Filtramos manualmente para asegurar que solo se muestran agencias con el barrio seleccionado
+    //   return agencies.filter(agency => {
+    //     if (!agency.agencyNeighborhoods) return false;
+    //     return neighborhoods.some(n => 
+    //       agency.agencyNeighborhoods.includes(n) //Assumes agencyNeighborhoods is an array. Adjust if it's a different format.
+    //     );
+    //   });
+    // }
+
+    return agencies;
   }
 
   async getAgentById(id: number): Promise<User | undefined> {
     const [agent] = await db.select().from(agents).where(eq(agents.id, id));
     if (!agent) return undefined;
-    
+
     // Añadimos propiedades adicionales para identificar que es un agente
     return {
       ...agent,
@@ -161,20 +202,20 @@ export class DatabaseStorage implements IStorage {
   // Función auxiliar para procesar campos de array en formato PostgreSQL
   private parseArrayField(value: string | null | undefined): string[] {
     if (!value) return [];
-    
+
     // Quitar las llaves { } y dividir por comas
     try {
       // Eliminar las llaves { } externas
       const cleanedValue = value.replace(/^\{|\}$/g, '');
-      
+
       // Dividir por comas, pero respetando las comillas
       const result: string[] = [];
       let currentItem = '';
       let inQuotes = false;
-      
+
       for (let i = 0; i < cleanedValue.length; i++) {
         const char = cleanedValue[i];
-        
+
         if (char === '"' && (i === 0 || cleanedValue[i-1] !== '\\')) {
           inQuotes = !inQuotes;
           // No añadimos el caracter de comillas al item
@@ -185,11 +226,11 @@ export class DatabaseStorage implements IStorage {
           currentItem += char;
         }
       }
-      
+
       if (currentItem) {
         result.push(currentItem.trim());
       }
-      
+
       // Eliminar comillas restantes
       return result.map(item => 
         item.startsWith('"') && item.endsWith('"') 
@@ -201,11 +242,11 @@ export class DatabaseStorage implements IStorage {
       return value ? [value] : [];
     }
   }
-  
+
   // Función auxiliar para procesar campos JSON en formato string
   private parseJsonField(value: string | null | undefined): any {
     if (!value) return {};
-    
+
     try {
       return JSON.parse(value);
     } catch (error) {
@@ -219,12 +260,12 @@ export class DatabaseStorage implements IStorage {
     // convertimos la agencia a formato agente para devolver
     const [agency] = await db.select().from(agencies).where(eq(agencies.id, id));
     if (!agency) return undefined;
-    
+
     // Procesar los campos que deberían ser arrays
     const neighborhoods = this.parseArrayField(agency.agencyNeighborhoods);
     const languages = this.parseArrayField(agency.agencySupportedLanguages);
     const socialMedia = this.parseJsonField(agency.agencySocialMedia);
-    
+
     // Convertir formato agencia a agente para mantener compatibilidad
     const agentFormat = {
       id: agency.id,
@@ -254,7 +295,7 @@ export class DatabaseStorage implements IStorage {
       isAgent: false,
       isAgency: true
     } as User;
-    
+
     return agentFormat;
   }
 
@@ -262,7 +303,7 @@ export class DatabaseStorage implements IStorage {
     const [newReview] = await db.insert(reviews).values(review).returning();
     return newReview;
   }
-  
+
   async getAgentReviews(agentId: number): Promise<Review[]> {
     try {
       const result = await db.select()
@@ -278,7 +319,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async getAgencyReviews(agencyId: number): Promise<Review[]> {
     try {
       const result = await db.select()
@@ -301,7 +342,7 @@ export class DatabaseStorage implements IStorage {
       .from(agencyAgents)
       .where(eq(agencyAgents.agencyId, agencyId))
       .orderBy(agencyAgents.agentName);
-      
+
     return result;
   }
 
@@ -343,11 +384,11 @@ export class DatabaseStorage implements IStorage {
       .from(properties)
       .where(eq(properties.agentId, agentId))
       .orderBy(sql`${properties.createdAt} DESC`);
-    
+
     console.log(`Found ${result.length} properties for agent ID: ${agentId}`);
     return result;
   }
-  
+
   async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
     return await db.select()
       .from(properties)

@@ -25,16 +25,6 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {!user.isAgent && !user.agencyName && (
-          <DropdownMenuItem asChild>
-            <Link href="/favorites">
-              <a className="flex items-center gap-2">
-                <Heart className="h-4 w-4" />
-                <span>Favoritos</span>
-              </a>
-            </Link>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuItem onClick={logout} className="text-red-600">
           <LogOut className="h-4 w-4 mr-2" />
           <span>Cerrar sesión</span>
