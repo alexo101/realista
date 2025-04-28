@@ -4,6 +4,7 @@ import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
+import { RealEstateLoader } from "@/components/ui/real-estate-loader";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -242,6 +243,13 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
+              {/* Mostrar loader mientras se cargan los datos */}
+              {propertiesLoading ? (
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <RealEstateLoader type="properties" />
+                </div>
+              ) : (
+              <>
               {/* Filtros de propiedades */}
               <PropertyFilters 
                 onFilterChange={setPropertyFilters}
@@ -294,12 +302,20 @@ export default function NeighborhoodResultsPage() {
                       return sortedProperties;
                   }
                 }, [properties, propertiesFilter]) || []} 
-                isLoading={propertiesLoading} 
+                isLoading={false} 
               />
+              </>
+              )}
             </TabsContent>
 
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
+              {agenciesLoading ? (
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <RealEstateLoader type="agencies" />
+                </div>
+              ) : (
+              <>
               <div className="mb-4 flex justify-end">
                 <Select
                   value={agenciesFilter}
@@ -339,12 +355,20 @@ export default function NeighborhoodResultsPage() {
                       return sortedAgencies;
                   }
                 }, [agencies, agenciesFilter]) || []} 
-                isLoading={agenciesLoading} 
+                isLoading={false} 
               />
+              </>
+              )}
             </TabsContent>
 
             {/* Contenido de pestaña: Agentes */}
             <TabsContent value="agents" className="mt-0">
+              {agentsLoading ? (
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <RealEstateLoader type="agents" />
+                </div>
+              ) : (
+              <>
               <div className="mb-4 flex justify-end">
                 <Select
                   value={agentsFilter}
@@ -384,12 +408,19 @@ export default function NeighborhoodResultsPage() {
                       return sortedAgents;
                   }
                 }, [agents, agentsFilter]) || []} 
-                isLoading={agentsLoading} 
+                isLoading={false} 
               />
+              </>
+              )}
             </TabsContent>
 
             {/* Contenido de pestaña: Overview */}
             <TabsContent value="overview" className="mt-0">
+              {ratingsLoading ? (
+                <div className="min-h-[400px] flex items-center justify-center">
+                  <RealEstateLoader type="overview" />
+                </div>
+              ) : (
               <div className="bg-white rounded-lg shadow p-6">
                 {/* Título personalizado según el tipo de página */}
                 {isBarcelonaPage && (
@@ -609,6 +640,7 @@ export default function NeighborhoodResultsPage() {
                   </div>
                 </div>
               </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
