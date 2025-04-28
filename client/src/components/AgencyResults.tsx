@@ -1,3 +1,4 @@
+
 import { Building, MapPin, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,18 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
     );
   }
 
-  // Removed empty state
+  // Display empty state if no results
+  if (results.length === 0) {
+    return (
+      <div className="text-center py-16 bg-gray-50 rounded-lg">
+        <Building className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-lg font-medium text-gray-900">No hay agencias disponibles</h3>
+        <p className="mt-1 text-gray-500">
+          No se encontraron agencias que coincidan con tu búsqueda
+        </p>
+      </div>
+    );
+  }
 
   // Mostramos los datos de las agencias
   return (
@@ -82,9 +94,11 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={() => window.location.href = `/agencias/${agency.id}`}
+              asChild
             >
-              Ver agencia <ExternalLink className="w-4 h-4 ml-2" />
+              <Link href={`/agencias/${agency.id}`}>
+                Ver agencia <ExternalLink className="w-4 h-4 ml-2" />
+              </Link>
             </Button>
           </div>
         </div>
