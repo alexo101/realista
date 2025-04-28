@@ -29,8 +29,8 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
     );
   }
 
-  // Display empty state if no results
-  if (results.length === 0) {
+  // Display empty state if no results or if results array is empty
+  if (!results || results.length === 0) {
     return (
       <div className="text-center py-16 bg-gray-50 rounded-lg">
         <Building className="mx-auto h-12 w-12 text-gray-400" />
@@ -42,7 +42,7 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
     );
   }
 
-  // Mostramos los datos de las agencias
+  // Mostramos solo los datos de las agencias reales (no mostrar placeholders)
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((agency) => (
