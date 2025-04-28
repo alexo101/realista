@@ -108,25 +108,30 @@ export class DatabaseStorage implements IStorage {
 
   async updateUser(id: number, userData: Partial<InsertAgent>): Promise<User> {
     try {
-      const [updatedUser] = await db
-        .update(agents)
-        .set(userData)
-        .where(eq(agents.id, id))
-        .returning();
-      return updatedUser;
-    } catch (error) {
-      console.error('Error in updateUser SQL:', error);
-      // Check if there are any properties that might be causing issues
-      const cleanedUserData = {...userData};
-      // Remove any properties that might contain SQL keywords or invalid characters
-      delete cleanedUserData.where;
+      // Create a clean copy of userData without reserved SQL keywords
+      const cleanedUserData: Record<string, any> = {};
+      
+      // Only copy over fields that are not SQL reserved words
+      for (const key in userData) {
+        if (key !== 'where' && key !== 'from' && key !== 'select' && 
+            key !== 'order' && key !== 'group' && key !== 'having' && 
+            key !== 'limit' && key !== 'join') {
+          cleanedUserData[key] = userData[key as keyof typeof userData];
+        }
+      }
+      
+      console.log('Updating user with cleaned data:', Object.keys(cleanedUserData));
       
       const [updatedUser] = await db
         .update(agents)
         .set(cleanedUserData)
         .where(eq(agents.id, id))
         .returning();
+        
       return updatedUser;
+    } catch (error) {
+      console.error('Error in updateUser SQL:', error);
+      throw error;
     }
   }
 

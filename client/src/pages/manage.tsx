@@ -38,14 +38,14 @@ export default function ManagePage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [section, setSection] = useState("agent-profile");
-  
+
   // Estados para la gestión de propiedades y clientes
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  
+
   // Estados para los campos de perfil de agente
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -53,7 +53,7 @@ export default function ManagePage() {
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   const [yearsOfExperience, setYearsOfExperience] = useState<number | undefined>(undefined);
   const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
-  
+
   // Estados para los campos de perfil de agencia
   const [agencyName, setAgencyName] = useState("");
   const [agencyAddress, setAgencyAddress] = useState("");
@@ -67,10 +67,13 @@ export default function ManagePage() {
   const [instagramUrl, setInstagramUrl] = useState("");
   const [twitterUrl, setTwitterUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
-  
+
   // Estado para mostrar indicador de guardado exitoso
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
-  
+  const [hasAgentChanges, setHasAgentChanges] = useState(false); // Added
+  const [hasAgencyChanges, setHasAgencyChanges] = useState(false); // Added
+
+
   // Cargar valores iniciales cuando el usuario cambia
   useEffect(() => {
     if (user) {
@@ -80,7 +83,7 @@ export default function ManagePage() {
       setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
       setYearsOfExperience(user.yearsOfExperience);
       setLanguagesSpoken(user.languagesSpoken || []);
-      
+
       setAgencyName(user.agencyName || "");
       setAgencyAddress(user.agencyAddress || "");
       setAgencyDescription(user.agencyDescription || "");
@@ -89,7 +92,7 @@ export default function ManagePage() {
       setAgencyInfluenceNeighborhoods(user.agencyInfluenceNeighborhoods || []);
       setYearEstablished(user.yearEstablished);
       setAgencyLanguagesSpoken(user.agencyLanguagesSpoken || []);
-      
+
       // Cargar redes sociales si existen
       const socialMedia = user.agencySocialMedia as Record<string, string> | undefined;
       if (socialMedia) {
@@ -194,11 +197,11 @@ export default function ManagePage() {
       setEditingClient(null);
     },
   });
-  
+
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!user) return null;
-      
+
       const response = await apiRequest('PATCH', `/api/users/${user.id}`, data);
       if (!response.ok) {
         const error = await response.json();
@@ -210,11 +213,13 @@ export default function ManagePage() {
       if (updatedUser) {
         setUser(updatedUser);
         setShowSavedIndicator(true);
+        setHasAgencyChanges(false); // Added
+        setHasAgentChanges(false); // Added
         toast({
           title: "Perfil actualizado",
           description: "Los cambios se han guardado correctamente",
         });
-        
+
         setTimeout(() => {
           setShowSavedIndicator(false);
         }, 3000);
@@ -233,7 +238,7 @@ export default function ManagePage() {
   if (!user) {
     return <Redirect to="/" />;
   }
-  
+
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
@@ -282,7 +287,7 @@ export default function ManagePage() {
                   <span>CRM clientes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
+
               <SidebarMenuItem className="ml-6">
                 <SidebarMenuButton
                   isActive={section === "clients"}
@@ -292,7 +297,7 @@ export default function ManagePage() {
                   <span>Clientes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
+
               <SidebarMenuItem className="ml-6">
                 <SidebarMenuButton
                   isActive={section === "appointments"}
@@ -374,7 +379,7 @@ export default function ManagePage() {
                     id="name" 
                     placeholder="Tu nombre" 
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {setName(e.target.value); setHasAgentChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -383,7 +388,7 @@ export default function ManagePage() {
                     id="surname" 
                     placeholder="Tus apellidos" 
                     value={surname}
-                    onChange={(e) => setSurname(e.target.value)}
+                    onChange={(e) => {setSurname(e.target.value); setHasAgentChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -393,7 +398,7 @@ export default function ManagePage() {
                     placeholder="Escribe una breve descripción sobre ti que verán tus clientes"
                     className="min-h-[100px]"
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => {setDescription(e.target.value); setHasAgentChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -413,6 +418,7 @@ export default function ManagePage() {
                           setYearsOfExperience(numValue);
                         }
                       }
+                      setHasAgentChanges(true); // Added change detection
                     }}
                   />
                 </div>
@@ -431,6 +437,7 @@ export default function ManagePage() {
                           } else {
                             setLanguagesSpoken([...languagesSpoken, lang]);
                           }
+                          setHasAgentChanges(true); // Added change detection
                         }}
                       >
                         {lang}
@@ -443,7 +450,7 @@ export default function ManagePage() {
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={influenceNeighborhoods}
-                      onChange={setInfluenceNeighborhoods}
+                      onChange={(e) => {setInfluenceNeighborhoods(e); setHasAgentChanges(true);}} // Added change detection
                       buttonText="Selecciona los barrios donde trabajas habitualmente"
                     />
                   </div>
@@ -465,7 +472,7 @@ export default function ManagePage() {
                     yearsOfExperience,
                     languagesSpoken
                   })}
-                  disabled={updateProfileMutation.isPending}
+                  disabled={updateProfileMutation.isPending || !hasAgentChanges} // Added disable logic
                 >
                   {showSavedIndicator && (
                     <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
@@ -523,7 +530,7 @@ export default function ManagePage() {
                     id="agency-name" 
                     placeholder="Nombre de tu agencia inmobiliaria" 
                     value={agencyName}
-                    onChange={(e) => setAgencyName(e.target.value)}
+                    onChange={(e) => {setAgencyName(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -532,7 +539,7 @@ export default function ManagePage() {
                     id="agency-address" 
                     placeholder="Dirección física completa" 
                     value={agencyAddress}
-                    onChange={(e) => setAgencyAddress(e.target.value)}
+                    onChange={(e) => {setAgencyAddress(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -542,7 +549,7 @@ export default function ManagePage() {
                     placeholder="Describe tu agencia inmobiliaria a clientes potenciales"
                     className="min-h-[120px]"
                     value={agencyDescription}
-                    onChange={(e) => setAgencyDescription(e.target.value)}
+                    onChange={(e) => {setAgencyDescription(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -551,7 +558,7 @@ export default function ManagePage() {
                     id="agency-phone" 
                     placeholder="Teléfono de contacto" 
                     value={agencyPhone}
-                    onChange={(e) => setAgencyPhone(e.target.value)}
+                    onChange={(e) => {setAgencyPhone(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div className="w-full">
@@ -559,7 +566,7 @@ export default function ManagePage() {
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={agencyInfluenceNeighborhoods}
-                      onChange={setAgencyInfluenceNeighborhoods}
+                      onChange={(e) => {setAgencyInfluenceNeighborhoods(e); setHasAgencyChanges(true);}} // Added change detection
                       buttonText="Selecciona los barrios donde opera tu agencia"
                       title="ZONAS DE OPERACIÓN DE LA AGENCIA"
                     />
@@ -568,7 +575,7 @@ export default function ManagePage() {
                     Estos barrios se utilizarán para relacionar tu agencia con las búsquedas de los clientes.
                   </p>
                 </div>
-                
+
                 {/* Componente de gestión de agentes para agencias */}
                 {user && !user.isAgent && (
                   <div className="pt-4 pb-2 border-t border-gray-200">
@@ -611,10 +618,11 @@ export default function ManagePage() {
                           setYearEstablished(numValue);
                         }
                       }
+                      setHasAgencyChanges(true); // Added change detection
                     }}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="agencyLanguagesSpoken">Idiomas que se hablan en la agencia</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -630,6 +638,7 @@ export default function ManagePage() {
                           } else {
                             setAgencyLanguagesSpoken([...agencyLanguagesSpoken, lang]);
                           }
+                          setHasAgencyChanges(true); // Added change detection
                         }}
                       >
                         {lang}
@@ -644,10 +653,10 @@ export default function ManagePage() {
                     id="agency-website" 
                     placeholder="URL de tu sitio web (con https://)" 
                     value={agencyWebsite}
-                    onChange={(e) => setAgencyWebsite(e.target.value)}
+                    onChange={(e) => {setAgencyWebsite(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
-                
+
                 <div>
                   <Label>Enlaces a redes sociales</Label>
                   <div className="space-y-3 mt-2">
@@ -660,10 +669,10 @@ export default function ManagePage() {
                       <Input 
                         placeholder="URL de Facebook" 
                         value={facebookUrl}
-                        onChange={(e) => setFacebookUrl(e.target.value)}
+                        onChange={(e) => {setFacebookUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -675,10 +684,10 @@ export default function ManagePage() {
                       <Input 
                         placeholder="URL de Instagram" 
                         value={instagramUrl}
-                        onChange={(e) => setInstagramUrl(e.target.value)}
+                        onChange={(e) => {setInstagramUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -688,10 +697,10 @@ export default function ManagePage() {
                       <Input 
                         placeholder="URL de Twitter" 
                         value={twitterUrl}
-                        onChange={(e) => setTwitterUrl(e.target.value)}
+                        onChange={(e) => {setTwitterUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
                     </div>
-                    
+
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -703,13 +712,13 @@ export default function ManagePage() {
                       <Input 
                         placeholder="URL de LinkedIn" 
                         value={linkedinUrl}
-                        onChange={(e) => setLinkedinUrl(e.target.value)}
+                        onChange={(e) => {setLinkedinUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
                     </div>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-end mt-4">
                 <Button
                   type="button"
@@ -730,7 +739,7 @@ export default function ManagePage() {
                       linkedin: linkedinUrl
                     }
                   })}
-                  disabled={updateProfileMutation.isPending}
+                  disabled={updateProfileMutation.isPending || !hasAgencyChanges} // Added disable logic
                 >
                   {showSavedIndicator && (
                     <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
@@ -826,20 +835,20 @@ export default function ManagePage() {
                               <Building2 className="h-12 w-12 text-gray-400" />
                             </div>
                           )}
-                          
+
                           {property.operationType && (
                             <div className="absolute top-0 left-0 bg-primary text-white px-2 py-1 text-xs m-2 rounded-sm">
                               {property.operationType === 'Venta' || property.operationType === 'venta' ? 'Venta' : 'Alquiler'}
                             </div>
                           )}
-                          
+
                           {property.reference && (
                             <div className="absolute bottom-0 right-0 bg-black/70 text-white px-2 py-1 text-xs m-2 rounded-sm">
                               Ref: {property.reference}
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="p-4">
                           <div className="flex justify-between items-start">
                             <div>
@@ -850,7 +859,7 @@ export default function ManagePage() {
                               <span className="font-semibold text-lg">{property.price?.toLocaleString('es-ES')}{property.operationType === 'alquiler' ? '€/mes' : '€'}</span>
                             </div>
                           </div>
-                          
+
                           <div className="flex gap-4 mt-2 text-sm text-gray-500">
                             {property.superficie ? (
                               <div>{property.superficie} m²</div>
@@ -864,7 +873,7 @@ export default function ManagePage() {
                               <div>{property.bathrooms} baños</div>
                             )}
                           </div>
-                          
+
                           {property.previousPrice && property.previousPrice > property.price && (
                             <div className="mt-2 text-sm text-red-600">
                               Antes: {property.previousPrice.toLocaleString('es-ES')}€ 
@@ -873,7 +882,7 @@ export default function ManagePage() {
                               </span>
                             </div>
                           )}
-                          
+
                           {property.features && property.features.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1">
                               {property.features.slice(0, 3).map(feature => (
@@ -969,7 +978,7 @@ export default function ManagePage() {
                           <div>
                             <h3 className="text-lg font-medium">{client.name}</h3>
                             <p className="text-sm text-gray-600 mt-1">Email: {client.email} • Teléfono: {client.phone}</p>
-                            
+
                             {client.operationType && (
                               <div className="mt-4 flex flex-wrap gap-2">
                                 <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
@@ -987,7 +996,7 @@ export default function ManagePage() {
                                 )}
                               </div>
                             )}
-                            
+
                             {client.preferredNeighborhoods && client.preferredNeighborhoods.length > 0 && (
                               <div className="mt-2">
                                 <p className="text-xs text-gray-500">Zonas de interés:</p>
@@ -1006,7 +1015,7 @@ export default function ManagePage() {
                               </div>
                             )}
                           </div>
-                          
+
                           <Button 
                             variant="ghost" 
                             size="sm"
@@ -1024,7 +1033,7 @@ export default function ManagePage() {
                   )}
                 </div>
               )}
-              
+
               {isRequestingReview && (
                 <ReviewRequestForm
                   onClose={() => setIsRequestingReview(false)}
@@ -1032,7 +1041,7 @@ export default function ManagePage() {
               )}
             </div>
           )}
-          
+
           {section === "reviews" && (
             <div className="max-w-4xl mx-auto">
               <h2 className="text-2xl font-bold mb-6">Gestión de Reseñas</h2>
@@ -1045,14 +1054,14 @@ export default function ManagePage() {
               </div>
             </div>
           )}
-          
+
           {section === "messages" && (
             <div className="max-w-4xl mx-auto">
               <h2 className="text-2xl font-bold mb-6">Gestión de Mensajes</h2>
               <InquiriesList />
             </div>
           )}
-          
+
           {section === "appointments" && (
             <div className="max-w-4xl mx-auto">
               <CentralAppointmentsManager />
