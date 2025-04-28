@@ -107,12 +107,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, userData: Partial<InsertAgent>): Promise<User> {
-    const [updatedUser] = await db
-      .update(agents)
-      .set(userData)
-      .where(eq(agents.id, id))
-      .returning();
-    return updatedUser;
+    try {
+      const [updatedUser] = await db
+        .update(agents)
+        .set(userData)
+        .where(eq(agents.id, id))
+        .returning();
+      return updatedUser;
+    } catch (error) {
+      console.error('Error in updateUser SQL:', error);
+      // Check if there are any properties that might be causing issues
+      const cleanedUserData = {...userData};
+      // Remove any properties that might contain SQL keywords or invalid characters
+      delete cleanedUserData.where;
+      
+      const [updatedUser] = await db
+        .update(agents)
+        .set(cleanedUserData)
+        .where(eq(agents.id, id))
+        .returning();
+      return updatedUser;
+    }
   }
 
   // Agents
