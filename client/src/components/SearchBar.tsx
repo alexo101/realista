@@ -283,7 +283,6 @@ export function SearchBar() {
           {(searchType === 'agencies' || searchType === 'agents') && (
             <>
               <div className="flex-1 relative" style={{ flex: 2 }}>
-                <RealEstateLoader/>
                 <AutocompleteSearch 
                   type={searchType as 'agencies' | 'agents'} 
                   placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}

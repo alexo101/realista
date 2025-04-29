@@ -111,18 +111,22 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       loadingOverlay.style.alignItems = 'center';
       loadingOverlay.style.zIndex = '9999';
       
-      // Create a real estate themed loader
+      // Create a real estate themed loader using our component
       const loader = document.createElement('div');
       loader.innerHTML = `
         <div style="text-align: center;">
-          <div style="width: 80px; height: 80px; margin: 0 auto; border: 5px solid #f3f3f3; 
-                      border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <div style="width: 80px; height: 80px; margin: 0 auto; display: flex; justify-content: center; align-items: center;">
+            <div style="width: 50px; height: 50px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-color, #3498db); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          </div>
           <p style="margin-top: 15px; font-weight: bold;">Cargando ${type === 'agencies' ? 'agencia' : 'agente'}...</p>
         </div>
         <style>
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+          :root {
+            --primary-color: #3498db;
           }
         </style>
       `;
@@ -282,7 +286,10 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           ref={resultsContainerRef}
         >
           {isLoading ? (
-            <div className="p-4 text-center text-gray-500">Buscando...</div>
+            <div className="p-4 text-center">
+              <RealEstateLoader type={type} className="h-16 w-16 mx-auto" />
+              <p className="text-gray-500 mt-2">Buscando...</p>
+            </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">No se encontraron resultados</div>
           ) : (
