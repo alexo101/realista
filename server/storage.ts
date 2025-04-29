@@ -132,6 +132,8 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error in updateUser SQL:', error);
       throw error;
+    } finally {
+      // Cleanup if needed
     }
   }
 
