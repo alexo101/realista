@@ -26,12 +26,12 @@ export default function NeighborhoodResultsPage() {
   const [, setLocation] = useLocation();
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
-  
+
   // Filtros para cada pestaña
   const [propertiesFilter, setPropertiesFilter] = useState<string>("default");
   const [agenciesFilter, setAgenciesFilter] = useState<string>("default");
   const [agentsFilter, setAgentsFilter] = useState<string>("default");
-  
+
   // Filtros específicos para propiedades
   const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
     operationType: "Venta",
@@ -40,21 +40,21 @@ export default function NeighborhoodResultsPage() {
     bedrooms: null,
     bathrooms: null
   });
-  
+
   // Verificar si estamos en Barcelona general
   const isBarcelonaPage = decodedNeighborhood === 'Barcelona';
-  
+
   // Verificar si el valor seleccionado es un distrito
   const isDistrictPage = isDistrict(decodedNeighborhood);
-  
+
   // Manejo especial para Sant Andreu del Palomar (que es en realidad Sant Andreu barrio)
   const isSantAndreuBarrio = decodedNeighborhood === "Sant Andreu del Palomar";
   // Mantenemos el nombre original para consultas de valoraciones
   const effectiveNeighborhood = decodedNeighborhood;
-  
+
   // Determinar el distrito correspondiente al barrio (solo si no es un distrito o Barcelona)
   const district = !isDistrictPage && !isBarcelonaPage ? findDistrictByNeighborhood(effectiveNeighborhood) : null;
-  
+
   // Determinar la pestaña activa según la ruta
   const getActiveTab = () => {
     if (currentLocation.includes('/properties')) return 'properties';
@@ -65,7 +65,7 @@ export default function NeighborhoodResultsPage() {
   };
 
   const activeTab = getActiveTab();
-  
+
   // Cambiar tab
   const handleTabChange = (value: string) => {
     window.location.href = `/neighborhood/${encodeURIComponent(decodedNeighborhood)}/${value}`;
@@ -86,28 +86,28 @@ export default function NeighborhoodResultsPage() {
       const params = new URLSearchParams();
       params.append('neighborhoods', effectiveNeighborhood);
       params.append('operationType', propertyFilters.operationType);
-      
+
       if (propertyFilters.priceMin !== null) {
         params.append('priceMin', propertyFilters.priceMin.toString());
       }
-      
+
       if (propertyFilters.priceMax !== null) {
         params.append('priceMax', propertyFilters.priceMax.toString());
       }
-      
+
       if (propertyFilters.bedrooms !== null) {
         params.append('bedrooms', propertyFilters.bedrooms.toString());
       }
-      
+
       if (propertyFilters.bathrooms !== null) {
         params.append('bathrooms', propertyFilters.bathrooms.toString());
       }
-      
+
       // Añadir filtros de características si existen
       if (propertyFilters.features && propertyFilters.features.length > 0) {
         params.append('features', propertyFilters.features.join(','));
       }
-      
+
       // Determinar la URL en función del tipo de operación
       const endpoint = propertyFilters.operationType === 'Venta' ? '/api/search/buy' : '/api/search/rent';
       const response = await fetch(`${endpoint}?${params.toString()}`);
@@ -142,17 +142,17 @@ export default function NeighborhoodResultsPage() {
     },
     enabled: activeTab === 'agents',
   });
-  
+
   // Consulta para las valoraciones del barrio
   const { data: ratings, isLoading: ratingsLoading, refetch: refetchRatings } = useQuery({
     queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('neighborhood', effectiveNeighborhood);
-      
+
       // Añadir un parámetro timestamp para evitar caché del navegador
       params.append('_t', Date.now().toString());
-      
+
       const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch ratings for ${effectiveNeighborhood}`);
       const data = await response.json();
@@ -177,7 +177,7 @@ export default function NeighborhoodResultsPage() {
             <ChevronLeft className="h-4 w-4 mr-2" />
             Volver a inicio
           </Button>
-          
+
           {/* Breadcrumb */}
           <div className="flex items-center text-sm text-gray-500 mb-4">
             {/* Barcelona siempre está en el nivel superior */}
@@ -187,7 +187,7 @@ export default function NeighborhoodResultsPage() {
             >
               Barcelona
             </span>
-            
+
             {/* Si es un distrito o tiene distrito, mostrar el siguiente nivel */}
             {(isDistrictPage || district) && (
               <>
@@ -211,15 +211,15 @@ export default function NeighborhoodResultsPage() {
                 )}
               </>
             )}
-            
+
             {/* Si es Barcelona general, no mostrar más niveles */}
             {isBarcelonaPage && (
               <span className="font-medium ml-0">Todos los barrios</span>
             )}
           </div>
-          
-          
-          
+
+
+
           {/* Tabs para diferentes tipos de resultados */}
           <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid grid-cols-4 mb-8">
@@ -243,13 +243,13 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
-              {/* Calculate sorted properties with useMemo outside the conditional rendering */}
+              {/* Pre-calculate all memoized values for all tabs */}
               {/* This ensures hooks are always called in the same order */}
               {useMemo(() => {
                 if (!properties) return [];
-                
+
                 const sortedProperties = [...properties];
-                
+
                 switch (propertiesFilter) {
                   case 'price_asc':
                     return sortedProperties.sort((a, b) => a.price - b.price);
@@ -273,7 +273,7 @@ export default function NeighborhoodResultsPage() {
                     return sortedProperties;
                 }
               }, [properties, propertiesFilter])}
-                
+
               {/* Actual UI rendering based on loading state */}
               {propertiesLoading ? (
                 <div className="min-h-[400px] flex items-center justify-center">
@@ -286,7 +286,7 @@ export default function NeighborhoodResultsPage() {
                 onFilterChange={setPropertyFilters}
                 defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
               />
-              
+
               <div className="mb-4 flex justify-end">
                 <Select
                   value={propertiesFilter}
@@ -307,9 +307,9 @@ export default function NeighborhoodResultsPage() {
               <PropertyResults 
                 results={useMemo(() => {
                   if (!properties || properties.length === 0) return [];
-                  
+
                   const sortedProperties = [...properties];
-                  
+
                   switch (propertiesFilter) {
                     case 'price_asc':
                       return sortedProperties.sort((a, b) => a.price - b.price);
@@ -341,30 +341,13 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
-              {/* Always render all hooks regardless of loading state */}
-              {useMemo(() => {
-                // This ensures hooks are always called in the same order
-                if (!agencies) return [];
-                
-                const sortedAgencies = [...agencies];
-                
-                switch (agenciesFilter) {
-                  case 'best_rating':
-                    return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-                  case 'newest_reviews':
-                    return sortedAgencies.sort((a, b) => 
-                      (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
-                      (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
-                    );
-                  case 'most_reviews':
-                    return sortedAgencies.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-                  case 'most_properties':
-                    return sortedAgencies.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
-                  default:
-                    return sortedAgencies;
-                }
-              }, [agencies, agenciesFilter])}
-                
+              {/* Pre-calculate all memoized values for all tabs */}
+              {/* This ensures hooks are always called in the same order */}
+              {useMemo(() => agencies || [], [agencies])}
+              {useMemo(() => ratings || {}, [ratings])}
+              {useMemo(() => agents || [], [agents])}
+              {useMemo(() => properties || [], [properties])}
+
               {agenciesLoading ? (
                 <div className="min-h-[400px] flex items-center justify-center">
                   <RealEstateLoader type="agencies" />
@@ -391,9 +374,9 @@ export default function NeighborhoodResultsPage() {
               <AgencyResults 
                 results={useMemo(() => {
                   if (!agencies || agencies.length === 0) return [];
-                  
+
                   const sortedAgencies = [...agencies];
-                  
+
                   switch (agenciesFilter) {
                     case 'best_rating':
                       return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -418,30 +401,13 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Agentes */}
             <TabsContent value="agents" className="mt-0">
-              {/* Always render all hooks regardless of loading state */}
-              {useMemo(() => {
-                // This ensures hooks are always called in the same order
-                if (!agents) return [];
-                
-                const sortedAgents = [...agents];
-                
-                switch (agentsFilter) {
-                  case 'best_rating':
-                    return sortedAgents.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-                  case 'newest_reviews':
-                    return sortedAgents.sort((a, b) => 
-                      (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
-                      (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
-                    );
-                  case 'most_reviews':
-                    return sortedAgents.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-                  case 'most_properties':
-                    return sortedAgents.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
-                  default:
-                    return sortedAgents;
-                }
-              }, [agents, agentsFilter])}
-                
+              {/* Pre-calculate all memoized values for all tabs */}
+              {/* This ensures hooks are always called in the same order */}
+              {useMemo(() => agents || [], [agents])}
+              {useMemo(() => ratings || {}, [ratings])}
+              {useMemo(() => agencies || [], [agencies])}
+              {useMemo(() => properties || [], [properties])}
+
               {agentsLoading ? (
                 <div className="min-h-[400px] flex items-center justify-center">
                   <RealEstateLoader type="agents" />
@@ -468,9 +434,9 @@ export default function NeighborhoodResultsPage() {
               <AgentResults 
                 results={useMemo(() => {
                   if (!agents || agents.length === 0) return [];
-                  
+
                   const sortedAgents = [...agents];
-                  
+
                   switch (agentsFilter) {
                     case 'best_rating':
                       return sortedAgents.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -495,10 +461,13 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Overview */}
             <TabsContent value="overview" className="mt-0">
-              {/* Calculate memoized values outside conditional rendering */}
+              {/* Pre-calculate all memoized values for all tabs */}
               {/* This ensures hooks are always called in the same order */}
               {useMemo(() => ratings || {}, [ratings])}
-              
+              {useMemo(() => agencies || [], [agencies])}
+              {useMemo(() => agents || [], [agents])}
+              {useMemo(() => properties || [], [properties])}
+
               {ratingsLoading ? (
                 <div className="min-h-[400px] flex items-center justify-center">
                   <RealEstateLoader type="overview" />
@@ -515,7 +484,7 @@ export default function NeighborhoodResultsPage() {
                 {!isBarcelonaPage && !isDistrictPage && (
                   <h2 className="text-2xl font-bold mb-4">Barrio de {decodedNeighborhood}</h2>
                 )}
-                
+
                 {/* Información de distrito para barrios */}
                 {district && !isDistrictPage && !isBarcelonaPage && (
                   <div className="flex items-center mb-4">
@@ -523,7 +492,7 @@ export default function NeighborhoodResultsPage() {
                     <span>Distrito: <strong>{district}</strong></span>
                   </div>
                 )}
-                
+
                 {/* Información del distrito cuando estamos viendo un distrito */}
                 {isDistrictPage && (
                   <div className="mb-6">
@@ -556,7 +525,7 @@ export default function NeighborhoodResultsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Información de Barcelona cuando estamos en la página general */}
                 {isBarcelonaPage && (
                   <div className="mb-6">
@@ -576,14 +545,14 @@ export default function NeighborhoodResultsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Información genérica del barrio */}
                 {!isBarcelonaPage && !isDistrictPage && (
                   <>
                     <p className="text-gray-600 mb-6">
                       Información general sobre el barrio de {decodedNeighborhood}.
                     </p>
-                    
+
                     {/* Valoraciones del barrio */}
                     {!ratingsLoading && ratings && (
                       <div className="mb-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -596,7 +565,7 @@ export default function NeighborhoodResultsPage() {
                             </span>
                           )}
                         </h3>
-                        
+
                         {ratings.count > 0 && (
                           <div className="flex flex-wrap gap-2 mb-4">
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
@@ -625,7 +594,7 @@ export default function NeighborhoodResultsPage() {
                             </div>
                           </div>
                         )}
-                        
+
                         {ratings.count > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                             <div className="space-y-3">
@@ -636,7 +605,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.security * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Facilidad de aparcar</span>
@@ -644,7 +613,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.parking * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Amigable para peques</span>
@@ -653,7 +622,7 @@ export default function NeighborhoodResultsPage() {
                                 <Progress value={ratings.familyFriendly * 10} className="h-2" />
                               </div>
                             </div>
-                            
+
                             <div className="space-y-3">
                               <div>
                                 <div className="flex justify-between mb-1">
@@ -662,7 +631,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.publicTransport * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Parques y espacios verdes</span>
@@ -670,7 +639,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.greenSpaces * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Disponibilidad de servicios</span>
@@ -700,7 +669,7 @@ export default function NeighborhoodResultsPage() {
                     )}
                   </>
                 )}
-                
+
                 {/* Estadísticas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                   <div className="bg-gray-50 p-4 rounded-lg">

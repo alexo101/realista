@@ -75,11 +75,16 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     }
   };
   
+  const [isNavigating, setIsNavigating] = useState(false);
+  
   const navigateToProfile = (result: SearchResult) => {
     if (onSelect) {
       onSelect(result);
       return;
     }
+    
+    // Set navigating state to show loading indicator
+    setIsNavigating(true);
     
     try {
       // Updated paths to match the application's URL structure with explicit string types
@@ -93,6 +98,38 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         console.log('Navigating to agent profile:', targetPath);
       }
       
+      // Create loading overlay
+      const loadingOverlay = document.createElement('div');
+      loadingOverlay.style.position = 'fixed';
+      loadingOverlay.style.top = '0';
+      loadingOverlay.style.left = '0';
+      loadingOverlay.style.width = '100%';
+      loadingOverlay.style.height = '100%';
+      loadingOverlay.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+      loadingOverlay.style.display = 'flex';
+      loadingOverlay.style.justifyContent = 'center';
+      loadingOverlay.style.alignItems = 'center';
+      loadingOverlay.style.zIndex = '9999';
+      
+      // Create a real estate themed loader
+      const loader = document.createElement('div');
+      loader.innerHTML = `
+        <div style="text-align: center;">
+          <div style="width: 80px; height: 80px; margin: 0 auto; border: 5px solid #f3f3f3; 
+                      border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <p style="margin-top: 15px; font-weight: bold;">Cargando ${type === 'agencies' ? 'agencia' : 'agente'}...</p>
+        </div>
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `;
+      
+      loadingOverlay.appendChild(loader);
+      document.body.appendChild(loadingOverlay);
+      
       // Force a complete page reload to ensure routing works correctly
       window.location.href = targetPath;
       
@@ -103,6 +140,8 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       }, 100);
     } catch (error) {
       console.error('Navigation error:', error);
+      setIsNavigating(false);
+      
       // Last resort - try direct navigation with different path format
       try {
         const fallbackPath = type === 'agencies' 
@@ -211,6 +250,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           onKeyDown={handleKeyDown}
           placeholder={placeholder || `Buscar ${type === 'agencies' ? 'agencias' : 'agentes'}...`}
           className="pr-16"
+          disabled={isNavigating}
         />
         
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-1">
