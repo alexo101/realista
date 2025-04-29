@@ -1,20 +1,11 @@
-import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Home } from "lucide-react";
-import { LoginModal } from "./LoginModal";
 import { UserMenu } from "./UserMenu";
 import { useUser } from "@/contexts/user-context";
 
 export function Navbar() {
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isAgentRegistration, setIsAgentRegistration] = useState(false);
   const { user } = useUser();
-
-  const openLogin = (isAgent: boolean = false) => {
-    setIsAgentRegistration(isAgent);
-    setIsLoginModalOpen(true);
-  };
 
   return (
     <>
@@ -38,31 +29,23 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Button
-                    variant="outline"
-                    onClick={() => openLogin(true)}
-                  >
-                    Registra tu agencia
-                  </Button>
+                  <Link href="/register">
+                    <Button variant="outline">
+                      Registra tu agencia
+                    </Button>
+                  </Link>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => openLogin(false)}
-                  >
-                    Iniciar sesión
-                  </Button>
+                  <Link href="/login">
+                    <Button variant="outline">
+                      Iniciar sesión
+                    </Button>
+                  </Link>
                 </>
               )}
             </div>
           </div>
         </div>
       </nav>
-
-      <LoginModal 
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        isAgentRegistration={isAgentRegistration}
-      />
     </>
   );
 }

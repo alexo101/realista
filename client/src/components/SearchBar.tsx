@@ -18,7 +18,6 @@ import { Search, X, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 import { AutocompleteSearch } from "./AutocompleteSearch";
-import { RealEstateLoader } from "./ui/real-estate-loader";
 import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS, isDistrict } from "@/utils/neighborhoods";
 
 // Definimos rangos de precios para el selector
@@ -96,12 +95,12 @@ export function SearchBar() {
     // Check if we have a type parameter in the URL
     const urlParams = new URLSearchParams(window.location.search);
     const typeParam = urlParams.get('type') as SearchType | null;
-
+    
     // If there's a valid type parameter, use it
     if (typeParam && ['rent', 'buy', 'agencies', 'agents'].includes(typeParam)) {
       return typeParam as SearchType;
     }
-
+    
     // Otherwise, don't select any tab by default
     return 'buy';
   };
@@ -140,10 +139,10 @@ export function SearchBar() {
 
     // Instead of changing URLs for different tabs, we'll use a common URL with search parameters
     const params = new URLSearchParams();
-
+    
     // Add the search type as a parameter
     params.append("type", searchType);
-
+    
     // Add location parameters
     if (selectedNeighborhoods.length > 0) {
       params.append("neighborhoods", selectedNeighborhoods.join(","));
@@ -196,7 +195,7 @@ export function SearchBar() {
     setRoomsFilter([]);
     setAgencyName('');
     setAgentName('');
-
+    
     // We no longer navigate to different URLs when changing tabs
     // Instead, we just stay on the current page and let the parent component
     // handle showing different content based on the searchType state

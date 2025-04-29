@@ -4,12 +4,8 @@ import { type Property } from "@shared/schema";
 import { SearchBar } from "@/components/SearchBar";
 import { NeighborhoodRating } from "@/components/NeighborhoodRating";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RealEstateLoader } from "@/components/ui/real-estate-loader";
-import { useLocation } from "wouter";
 
 export default function Home() {
-  const [location, setLocation] = useLocation();
-
   // Consulta para propiedades más vistas en venta
   const { data: mostViewedSaleProperties, isLoading: isLoadingSales } = useQuery<Property[]>({
     queryKey: ["/api/properties", { mostViewed: true, operationType: "Venta" }],
@@ -36,11 +32,8 @@ export default function Home() {
 
   const isLoading = isLoadingSales || isLoadingRental;
 
-
   return (
     <div className="min-h-screen pt-16">
-      {isLoading && <RealEstateLoader />} {/* Show loader while data is loading */}
-
       <section className="bg-primary/5 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold text-center mb-4">
@@ -59,13 +52,13 @@ export default function Home() {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h2 className="text-2xl font-semibold mb-6">Las más vistas</h2>
-
+        
         <Tabs defaultValue="venta" className="mt-4">
           <TabsList className="mb-4">
             <TabsTrigger value="venta">En Venta</TabsTrigger>
             <TabsTrigger value="alquiler">En Alquiler</TabsTrigger>
           </TabsList>
-
+          
           <TabsContent value="venta">
             {isLoadingSales ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -87,7 +80,7 @@ export default function Home() {
               </div>
             )}
           </TabsContent>
-
+          
           <TabsContent value="alquiler">
             {isLoadingRental ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

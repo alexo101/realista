@@ -46,6 +46,12 @@ export interface IStorage {
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
+  
+  // Multi-agency management
+  getAgenciesByAdmin(adminAgentId: number): Promise<Agency[]>; // Obtener todas las agencias de un administrador
+  createAgency(agency: Partial<InsertAgency>): Promise<Agency>; // Crear una nueva agencia
+  updateAgency(id: number, agency: Partial<InsertAgency>): Promise<Agency>; // Actualizar una agencia existente
+  deleteAgency(id: number): Promise<void>; // Eliminar una agencia
 
   // Agency Agents
   getAgencyAgents(agencyId: number): Promise<AgencyAgent[]>;
@@ -132,8 +138,6 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error in updateUser SQL:', error);
       throw error;
-    } finally {
-      // Cleanup if needed
     }
   }
 
@@ -144,13 +148,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchAgencies(queryString: string): Promise<User[]> {
-    try {
-      const params = new URLSearchParams(queryString);
-      const showAll = params.get('showAll') === 'true';
-      const agencyName = params.get('agencyName');
-      const neighborhoodsStr = params.get('neighborhoods');
+    // Parseamos los parámetros de la URL
+    const params = new URLSearchParams(queryString);
+    const showAll = params.get('showAll') === 'true';
+    const agencyName = params.get('agencyName');
+    const neighborhoodsStr = params.get('neighborhoods');
 
-      let query = db.select().from(agencies);
+    let query = db.select().from(agencies) // Corrected table name
+      .where(eq(agencies.agencyName.valueIsNotNull(), true)); //Simplified where clause
 
     // Filtrar por nombre de agencia si se proporciona
     if (agencyName && agencyName.trim() !== '') {
@@ -334,6 +339,119 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error obteniendo reseñas de la agencia:', error);
       return [];
+    }
+  }
+  
+  // Multi-agency management methods
+  async getAgenciesByAdmin(adminAgentId: number): Promise<Agency[]> {
+    try {
+      console.log(`Fetching agencies for admin with ID: ${adminAgentId}`);
+      
+      const result = await db.select()
+        .from(agencies)
+        .where(eq(agencies.adminAgentId, adminAgentId))
+        .orderBy(agencies.agencyName);
+        
+      console.log(`Found ${result.length} agencies for admin ${adminAgentId}`);
+      return result;
+    } catch (error) {
+      console.error('Error fetching agencies by admin:', error);
+      return [];
+    }
+  }
+  
+  async createAgency(agencyData: Partial<InsertAgency>): Promise<Agency> {
+    try {
+      console.log('Creating agency with data:', agencyData);
+      
+      // Validamos que tengamos un adminAgentId
+      if (!agencyData.adminAgentId) {
+        throw new Error('Missing required adminAgentId field');
+      }
+      
+      // Aseguramos que el nombre de agencia existe
+      if (!agencyData.agencyName) {
+        throw new Error('Missing required agencyName field');
+      }
+      
+      // Insertamos la agencia
+      const [newAgency] = await db.insert(agencies)
+        .values({
+          agencyName: agencyData.agencyName,
+          agencyAddress: agencyData.agencyAddress || null,
+          agencyDescription: agencyData.agencyDescription || null,
+          agencyLogo: agencyData.agencyLogo || null,
+          agencyInfluenceNeighborhoods: agencyData.agencyInfluenceNeighborhoods || [],
+          agencySupportedLanguages: agencyData.agencySupportedLanguages || [],
+          adminAgentId: agencyData.adminAgentId,
+          agencyWebsite: agencyData.agencyWebsite || null,
+          agencySocialMedia: agencyData.agencySocialMedia || null,
+          agencyEmailToDisplay: agencyData.agencyEmailToDisplay || null,
+          agencyActiveSince: agencyData.agencyActiveSince || null,
+        })
+        .returning();
+      
+      console.log('Agency created successfully:', newAgency);
+      return newAgency;
+    } catch (error) {
+      console.error('Error creating agency:', error);
+      throw new Error(`Failed to create agency: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+  
+  async updateAgency(id: number, agencyData: Partial<InsertAgency>): Promise<Agency> {
+    try {
+      console.log(`Updating agency ${id} with data:`, agencyData);
+      
+      // Creamos un objeto con solo los campos que queremos actualizar
+      const updateData: Record<string, any> = {};
+      
+      // Solo copiamos los campos que están definidos en el input
+      for (const [key, value] of Object.entries(agencyData)) {
+        if (value !== undefined) {
+          updateData[key] = value;
+        }
+      }
+      
+      // Actualizamos la agencia
+      const [updatedAgency] = await db.update(agencies)
+        .set(updateData)
+        .where(eq(agencies.id, id))
+        .returning();
+      
+      if (!updatedAgency) {
+        throw new Error(`Agency with ID ${id} not found`);
+      }
+      
+      console.log('Agency updated successfully:', updatedAgency);
+      return updatedAgency;
+    } catch (error) {
+      console.error('Error updating agency:', error);
+      throw new Error(`Failed to update agency: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+  
+  async deleteAgency(id: number): Promise<void> {
+    try {
+      console.log(`Deleting agency ${id}`);
+      
+      // Verificamos que la agencia existe
+      const [agency] = await db.select()
+        .from(agencies)
+        .where(eq(agencies.id, id));
+      
+      if (!agency) {
+        throw new Error(`Agency with ID ${id} not found`);
+      }
+      
+      // Eliminamos la agencia
+      await db.delete(agencies)
+        .where(eq(agencies.id, id));
+      
+      console.log(`Agency ${id} deleted successfully`);
+    } catch (error) {
+      console.error('Error deleting agency:', error);
+      throw new Error(`Failed to delete agency: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

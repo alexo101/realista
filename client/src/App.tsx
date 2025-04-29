@@ -12,11 +12,15 @@ import NeighborhoodResults from "@/pages/neighborhood-results";
 import AgentProfile from "@/pages/agent-profile";
 import AgencyProfile from "@/pages/agency-profile";
 import NotFound from "@/pages/not-found";
+import LoginPage from "@/pages/login";
+import RegisterPage from "@/pages/register";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
       <Route path="/search/buy" component={Search} />
       <Route path="/search/rent" component={Search} />
       <Route path="/search/agencies" component={Search} />

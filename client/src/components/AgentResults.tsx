@@ -1,7 +1,6 @@
 import { UserCircle, MapPin, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { RealEstateLoader } from "./ui/real-estate-loader"; // Added import for RealEstateLoader
 
 // Actualizamos la interfaz para que coincida con la respuesta real del servidor
 interface Agent {
@@ -76,11 +75,11 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
               )}
             </div>
           </div>
-
+          
           {agent.description && (
             <p className="mt-3 text-gray-700 text-sm line-clamp-3">{agent.description}</p>
           )}
-
+          
           <div className="mt-auto pt-4">
             <Button 
               variant="outline" 

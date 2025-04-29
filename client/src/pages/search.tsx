@@ -20,15 +20,9 @@ export default function SearchPage() {
   const { data: results, isLoading } = useQuery({
     queryKey: ['/api/search', searchType, location],
     queryFn: async () => {
-      try {
-        const response = await fetch(`/api${location}`);
-        if (!response.ok) throw new Error('Failed to fetch results');
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
-      } catch (error) {
-        console.error("Error fetching search results:", error);
-        return [];
-      }
+      const response = await fetch(`/api${location}`);
+      if (!response.ok) throw new Error('Failed to fetch results');
+      return response.json();
     },
     staleTime: 0, // No cache entre cambios de tipo de búsqueda
   });
@@ -42,18 +36,18 @@ export default function SearchPage() {
 
         {/* Propiedades en venta */}
         {searchType === 'buy' && (
-          <PropertyResults results={Array.isArray(results) ? results : []} isLoading={isLoading} />
+          <PropertyResults results={results || []} isLoading={isLoading} />
         )}
         
         {/* Propiedades en alquiler */}
         {searchType === 'rent' && (
-          <PropertyResults results={Array.isArray(results) ? results : []} isLoading={isLoading} />
+          <PropertyResults results={results || []} isLoading={isLoading} />
         )}
         {searchType === 'agencies' && (
-          <AgencyResults results={Array.isArray(results) ? results : []} isLoading={isLoading} />
+          <AgencyResults results={results || []} isLoading={isLoading} />
         )}
         {searchType === 'agents' && (
-          <AgentResults results={Array.isArray(results) ? results : []} isLoading={isLoading} />
+          <AgentResults results={results || []} isLoading={isLoading} />
         )}
       </div>
     </div>

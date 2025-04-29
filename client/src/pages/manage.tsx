@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
 import {
@@ -18,6 +18,7 @@ import { ClientForm } from "@/components/ClientForm";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
+import { AgenciesList } from "@/components/AgenciesList";
 import { InquiriesList } from "@/components/InquiriesList";
 import { CentralAppointmentsManager } from "@/components/CentralAppointmentsManager";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,26 @@ export default function ManagePage() {
   const { user, setUser } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [section, setSection] = useState("agent-profile");
+  const [location] = useLocation();
+  
+  // Obtener el parámetro 'tab' de la URL si existe
+  const getInitialSection = () => {
+    const params = new URLSearchParams(location.split('?')[1]);
+    const tabParam = params.get('tab');
+    
+    // Si es un administrador de agencia y hay un parámetro tab=agency-profile, 
+    // o si es un administrador y no hay perfil de agente
+    if ((user?.isAdmin && tabParam === 'agency-profile') || 
+        (user?.isAdmin && !user?.name)) {
+      return 'agency-profile';
+    }
+    
+    // Validar que el tab sea uno de los valores permitidos
+    const validTabs = ['agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'appointments'];
+    return validTabs.includes(tabParam || '') ? tabParam : 'agent-profile';
+  };
+  
+  const [section, setSection] = useState(getInitialSection);
 
   // Estados para la gestión de propiedades y clientes
   const [isAddingProperty, setIsAddingProperty] = useState(false);
@@ -74,9 +94,10 @@ export default function ManagePage() {
   const [hasAgencyChanges, setHasAgencyChanges] = useState(false); // Added
 
 
-  // Cargar valores iniciales cuando el usuario cambia
+  // Cargar valores iniciales cuando el usuario cambia y actualizar sección inicial
   useEffect(() => {
     if (user) {
+      // Cargar datos de perfil
       setName(user.name || "");
       setSurname(user.surname || "");
       setDescription(user.description || "");
@@ -101,8 +122,11 @@ export default function ManagePage() {
         setTwitterUrl(socialMedia.twitter || "");
         setLinkedinUrl(socialMedia.linkedin || "");
       }
+      
+      // Actualizar la sección según la URL y tipo de usuario
+      setSection(getInitialSection());
     }
-  }, [user]);
+  }, [user, location]);
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: ['/api/properties', user?.id],
@@ -483,7 +507,14 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "agency-profile" && (!user?.isAgent || user?.agencyName) && (
+          {section === "agency-profile" && user?.isAdmin && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6">Perfil de Agencia</h2>
+              <AgenciesList />
+            </div>
+          )}
+
+          {section === "agency-profile-old" && (!user?.isAgent || user?.agencyName) && (
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center">
                 <div className="w-48 h-48 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">

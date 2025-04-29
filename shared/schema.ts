@@ -5,17 +5,18 @@ import { z } from "zod";
 // Nueva tabla de agencias
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
-  agencyName: text("agency_name"),
+  agencyName: text("agency_name").notNull(),
   agencyAddress: text("agency_address"),
   agencyDescription: text("agency_description"),
   agencyLogo: text("agency_logo"),
   agencyEmailToDisplay: text("agency_email_to_display"),
   agencyActiveSince: text("agency_active_since"),
-  agencyNeighborhoods: text("agency_neighborhoods"), // Debería ser un array, pero la BD actual no lo permite
-  agencySupportedLanguages: text("agency_supported_languages"), // Debería ser un array, pero la BD actual no lo permite
-  adminAgentId: text("admin_agent_id"),
+  agencyInfluenceNeighborhoods: text("agency_influence_neighborhoods").array(), // Barrios de influencia como array
+  agencySupportedLanguages: text("agency_supported_languages").array(), // Idiomas como array
+  adminAgentId: integer("admin_agent_id").notNull(), // ID del agente administrador que gestiona esta agencia
   agencyWebsite: text("agency_website"),
-  agencySocialMedia: text("agency_social_media"), // Debería ser un jsonb, pero la BD actual no lo permite
+  agencySocialMedia: jsonb("agency_social_media"), // Redes sociales como JSON
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Tabla de agentes (anteriormente users)

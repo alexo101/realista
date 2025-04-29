@@ -1,7 +1,7 @@
+
 import { Building, MapPin, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { RealEstateLoader } from "./ui/real-estate-loader"; // Added import for RealEstateLoader
 
 // Adaptamos el tipo para que coincida con los datos que recibimos de la API
 interface Agency {
@@ -21,7 +21,11 @@ interface AgencyResultsProps {
 export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
   if (isLoading) {
     return (
-      <RealEstateLoader/> // Replaced placeholder loading animation with RealEstateLoader
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array(6).fill(0).map((_, i) => (
+          <div key={i} className="bg-gray-100 animate-pulse h-[240px] rounded-lg" />
+        ))}
+      </div>
     );
   }
 
@@ -60,7 +64,7 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
             <div>
               <h3 className="font-semibold">{agency.agencyName}</h3>
               <p className="text-gray-600">{agency.agencyAddress || 'Sin dirección'}</p>
-
+              
               {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
                 <div className="mt-2">
                   <p className="text-xs text-gray-500">Barrios de influencia:</p>
@@ -81,11 +85,11 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
               )}
             </div>
           </div>
-
+          
           {agency.agencyDescription && (
             <p className="mt-3 text-gray-700 text-sm line-clamp-3">{agency.agencyDescription}</p>
           )}
-
+          
           <div className="mt-auto pt-4">
             <Button 
               variant="outline" 

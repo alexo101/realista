@@ -6,12 +6,15 @@ interface User {
   email: string;
   name: string | null;
   isAgent: boolean;
+  isAdmin?: boolean;
   
   // Campos para perfil de agente
   surname?: string;
   description?: string;
   avatar?: string;
   influenceNeighborhoods?: string[];
+  yearsOfExperience?: number;
+  languagesSpoken?: string[];
   
   // Campos para perfil de agencia
   agencyName?: string;
@@ -21,6 +24,8 @@ interface User {
   agencyWebsite?: string;
   agencyLogo?: string;
   agencyInfluenceNeighborhoods?: string[];
+  yearEstablished?: number;
+  agencyLanguagesSpoken?: string[];
   agencySocialMedia?: {
     facebook?: string;
     instagram?: string;
