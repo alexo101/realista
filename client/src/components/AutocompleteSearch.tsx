@@ -31,18 +31,18 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  
+
   // Referencias a elementos DOM
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Consulta a la API
   const { data: results = [], isLoading } = useQuery<SearchResult[]>({
     queryKey: [`/api/search/${type}`, searchTerm],
     queryFn: async () => {
       if (!searchTerm.trim()) return [];
-      
+
       const params = new URLSearchParams();
       if (type === 'agencies') {
         params.append('agencyName', searchTerm.trim());
@@ -50,7 +50,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         params.append('agentName', searchTerm.trim());
       }
       params.append('showAll', 'true');
-      
+
       const response = await fetch(`/api/search/${type}?${params}`);
       if (!response.ok) throw new Error('Failed to fetch search results');
       return response.json();
@@ -58,7 +58,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     enabled: !!searchTerm.trim(),
     staleTime: 5000,
   });
-  
+
   // Funciones de manejo de eventos
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -66,7 +66,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     setHighlightedIndex(-1);
     setShowResults(value.trim().length > 0);
   };
-  
+
   const handleClearSearch = () => {
     setSearchTerm('');
     setShowResults(false);
@@ -74,22 +74,22 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       inputRef.current.focus();
     }
   };
-  
+
   const [isNavigating, setIsNavigating] = useState(false);
-  
+
   const navigateToProfile = (result: SearchResult) => {
     if (onSelect) {
       onSelect(result);
       return;
     }
-    
+
     // Set navigating state to show loading indicator
     setIsNavigating(true);
-    
+
     try {
       // Updated paths to match the application's URL structure with explicit string types
       let targetPath = '';
-      
+
       if (type === 'agencies') {
         targetPath = `/agencias/${result.id}`;
         console.log('Navigating to agency profile:', targetPath);
@@ -97,7 +97,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         targetPath = `/agentes/${result.id}`;
         console.log('Navigating to agent profile:', targetPath);
       }
-      
+
       // Create loading overlay
       const loadingOverlay = document.createElement('div');
       loadingOverlay.style.position = 'fixed';
@@ -110,7 +110,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       loadingOverlay.style.justifyContent = 'center';
       loadingOverlay.style.alignItems = 'center';
       loadingOverlay.style.zIndex = '9999';
-      
+
       // Create a real estate themed loader using our component
       const loader = document.createElement('div');
       loader.innerHTML = `
@@ -130,19 +130,19 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           }
         </style>
       `;
-      
+
       loadingOverlay.appendChild(loader);
       document.body.appendChild(loadingOverlay);
-      
+
       // Log the navigation for debugging
       console.log('Navigating to:', targetPath);
-      
+
       // Use clean URL path without redirects for cleaner navigation
       window.location.href = targetPath;
     } catch (error) {
       console.error('Navigation error:', error);
       setIsNavigating(false);
-      
+
       // Last resort - try direct navigation with different path format
       try {
         const fallbackPath = type === 'agencies' 
@@ -155,10 +155,10 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       }
     }
   };
-  
+
   const navigateToSearch = () => {
     if (!searchTerm.trim()) return;
-    
+
     const params = new URLSearchParams();
     if (type === 'agencies') {
       params.append('agencyName', searchTerm.trim());
@@ -166,13 +166,13 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       params.append('agentName', searchTerm.trim());
     }
     params.append('showAll', 'true');
-    
+
     window.location.href = `/search/${type}?${params}`;
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!results.length) return;
-    
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -180,14 +180,14 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           prev < results.length - 1 ? prev + 1 : prev
         );
         break;
-        
+
       case 'ArrowUp':
         e.preventDefault();
         setHighlightedIndex(prev => 
           prev > 0 ? prev - 1 : 0
         );
         break;
-        
+
       case 'Enter':
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < results.length) {
@@ -196,13 +196,13 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           navigateToSearch();
         }
         break;
-        
+
       case 'Escape':
         setShowResults(false);
         break;
     }
   };
-  
+
   // Efecto para cerrar al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -210,25 +210,25 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         setShowResults(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  
+
   // Efecto para hacer scroll al elemento resaltado
   useEffect(() => {
     if (resultsContainerRef.current && highlightedIndex >= 0) {
       const container = resultsContainerRef.current;
       const highlightedItem = container.children[highlightedIndex] as HTMLElement;
-      
+
       if (highlightedItem) {
         const containerTop = container.scrollTop;
         const containerBottom = containerTop + container.clientHeight;
         const itemTop = highlightedItem.offsetTop;
         const itemBottom = itemTop + highlightedItem.clientHeight;
-        
+
         if (itemTop < containerTop) {
           container.scrollTop = itemTop;
         } else if (itemBottom > containerBottom) {
@@ -237,7 +237,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       }
     }
   }, [highlightedIndex]);
-  
+
   // Renderizado
   return (
     <div className="relative w-full" ref={containerRef}>
@@ -253,7 +253,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           className="pr-16"
           disabled={isNavigating}
         />
-        
+
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-1">
           {searchTerm && (
             <Button
@@ -266,7 +266,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
               <X className="h-4 w-4" />
             </Button>
           )}
-          
+
           <Button
             size="icon"
             variant="ghost"
@@ -278,7 +278,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           </Button>
         </div>
       </div>
-      
+
       {showResults && (
         <div 
           className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto"
@@ -326,18 +326,18 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                     </div>
                   )}
                 </Avatar>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">
                     {type === 'agents' 
                       ? `${result.name || ''} ${result.surname || ''}` 
                       : result.agencyName || ''}
                   </div>
-                  
+
                   {type === 'agents' && result.agencyName && (
                     <div className="text-sm text-gray-500 truncate">{result.agencyName}</div>
                   )}
-                  
+
                   {type === 'agencies' && (
                     <div className="text-sm text-gray-500 truncate">
                       {result.agencyDescription || result.description || 'Agencia inmobiliaria'}

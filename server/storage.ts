@@ -142,14 +142,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchAgencies(queryString: string): Promise<User[]> {
-    // Parseamos los parámetros de la URL
-    const params = new URLSearchParams(queryString);
-    const showAll = params.get('showAll') === 'true';
-    const agencyName = params.get('agencyName');
-    const neighborhoodsStr = params.get('neighborhoods');
+    try {
+      const params = new URLSearchParams(queryString);
+      const showAll = params.get('showAll') === 'true';
+      const agencyName = params.get('agencyName');
+      const neighborhoodsStr = params.get('neighborhoods');
 
-    let query = db.select().from(agencies) // Corrected table name
-      .where(eq(agencies.agencyName.valueIsNotNull(), true)); //Simplified where clause
+      let query = db.select().from(agencies);
 
     // Filtrar por nombre de agencia si se proporciona
     if (agencyName && agencyName.trim() !== '') {
