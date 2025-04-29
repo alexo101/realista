@@ -243,10 +243,9 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
-              {/* Always render all hooks regardless of loading state */}
-              {/* Store memoized sorted results */}
+              {/* Calculate sorted properties with useMemo outside the conditional rendering */}
+              {/* This ensures hooks are always called in the same order */}
               {useMemo(() => {
-                // This ensures hooks are always called in the same order
                 if (!properties) return [];
                 
                 const sortedProperties = [...properties];
@@ -306,36 +305,34 @@ export default function NeighborhoodResultsPage() {
                 </Select>
               </div>
               <PropertyResults 
-                results={(properties || []).length > 0 ? 
-                  useMemo(() => {
-                    if (!properties) return [];
-                    
-                    const sortedProperties = [...properties];
-                    
-                    switch (propertiesFilter) {
-                      case 'price_asc':
-                        return sortedProperties.sort((a, b) => a.price - b.price);
-                      case 'newest':
-                        return sortedProperties.sort((a, b) => 
-                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                        );
-                      case 'price_m2':
-                        return sortedProperties.sort((a, b) => {
-                          const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
-                          const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
-                          return pricePerM2A - pricePerM2B;
-                        });
-                      case 'price_drop':
-                        return sortedProperties.sort((a, b) => {
-                          const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
-                          const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
-                          return dropB - dropA; // Mayor a menor
-                        });
-                      default:
-                        return sortedProperties;
-                    }
-                  }, [properties, propertiesFilter]) : []
-                } 
+                results={useMemo(() => {
+                  if (!properties || properties.length === 0) return [];
+                  
+                  const sortedProperties = [...properties];
+                  
+                  switch (propertiesFilter) {
+                    case 'price_asc':
+                      return sortedProperties.sort((a, b) => a.price - b.price);
+                    case 'newest':
+                      return sortedProperties.sort((a, b) => 
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                      );
+                    case 'price_m2':
+                      return sortedProperties.sort((a, b) => {
+                        const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
+                        const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
+                        return pricePerM2A - pricePerM2B;
+                      });
+                    case 'price_drop':
+                      return sortedProperties.sort((a, b) => {
+                        const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
+                        const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
+                        return dropB - dropA; // Mayor a menor
+                      });
+                    default:
+                      return sortedProperties;
+                  }
+                }, [properties, propertiesFilter])}
                 isLoading={false} 
               />
               </>
@@ -392,29 +389,27 @@ export default function NeighborhoodResultsPage() {
                 </Select>
               </div>
               <AgencyResults 
-                results={(agencies || []).length > 0 ? 
-                  useMemo(() => {
-                    if (!agencies) return [];
-                    
-                    const sortedAgencies = [...agencies];
-                    
-                    switch (agenciesFilter) {
-                      case 'best_rating':
-                        return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-                      case 'newest_reviews':
-                        return sortedAgencies.sort((a, b) => 
-                          (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
-                          (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
-                        );
-                      case 'most_reviews':
-                        return sortedAgencies.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-                      case 'most_properties':
-                        return sortedAgencies.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
-                      default:
-                        return sortedAgencies;
-                    }
-                  }, [agencies, agenciesFilter]) : []
-                } 
+                results={useMemo(() => {
+                  if (!agencies || agencies.length === 0) return [];
+                  
+                  const sortedAgencies = [...agencies];
+                  
+                  switch (agenciesFilter) {
+                    case 'best_rating':
+                      return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    case 'newest_reviews':
+                      return sortedAgencies.sort((a, b) => 
+                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
+                        (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
+                      );
+                    case 'most_reviews':
+                      return sortedAgencies.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+                    case 'most_properties':
+                      return sortedAgencies.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
+                    default:
+                      return sortedAgencies;
+                  }
+                }, [agencies, agenciesFilter])}
                 isLoading={false} 
               />
               </>
@@ -471,29 +466,27 @@ export default function NeighborhoodResultsPage() {
                 </Select>
               </div>
               <AgentResults 
-                results={(agents || []).length > 0 ? 
-                  useMemo(() => {
-                    if (!agents) return [];
-                    
-                    const sortedAgents = [...agents];
-                    
-                    switch (agentsFilter) {
-                      case 'best_rating':
-                        return sortedAgents.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-                      case 'newest_reviews':
-                        return sortedAgents.sort((a, b) => 
-                          (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
-                          (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
-                        );
-                      case 'most_reviews':
-                        return sortedAgents.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-                      case 'most_properties':
-                        return sortedAgents.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
-                      default:
-                        return sortedAgents;
-                    }
-                  }, [agents, agentsFilter]) : []
-                } 
+                results={useMemo(() => {
+                  if (!agents || agents.length === 0) return [];
+                  
+                  const sortedAgents = [...agents];
+                  
+                  switch (agentsFilter) {
+                    case 'best_rating':
+                      return sortedAgents.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    case 'newest_reviews':
+                      return sortedAgents.sort((a, b) => 
+                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
+                        (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
+                      );
+                    case 'most_reviews':
+                      return sortedAgents.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+                    case 'most_properties':
+                      return sortedAgents.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
+                    default:
+                      return sortedAgents;
+                  }
+                }, [agents, agentsFilter])}
                 isLoading={false} 
               />
               </>
@@ -502,11 +495,9 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Overview */}
             <TabsContent value="overview" className="mt-0">
-              {/* Always render required hooks */}
-              {useMemo(() => {
-                // This ensures hooks are always called in the same order
-                return ratings || {};
-              }, [ratings])}
+              {/* Calculate memoized values outside conditional rendering */}
+              {/* This ensures hooks are always called in the same order */}
+              {useMemo(() => ratings || {}, [ratings])}
               
               {ratingsLoading ? (
                 <div className="min-h-[400px] flex items-center justify-center">
