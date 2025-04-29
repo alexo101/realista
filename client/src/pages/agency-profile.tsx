@@ -137,21 +137,11 @@ export default function AgencyProfile() {
     window.scrollTo(0, 0);
   }, [id]);
 
-  // Si los datos están cargando, mostramos un esqueleto de carga
+  // Si los datos están cargando, mostramos un loader de agencias inmobiliarias
   if (isLoading) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row gap-8 mb-8">
-          <Skeleton className="h-36 w-36 rounded-lg" />
-          <div className="flex-1 space-y-4">
-            <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-6 w-48" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-          </div>
-        </div>
+        <RealEstateLoader type="agencies" className="py-16" />
       </div>
     );
   }

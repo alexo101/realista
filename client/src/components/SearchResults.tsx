@@ -1,4 +1,5 @@
 import { Building2, UserX, Search } from "lucide-react";
+import { RealEstateLoader } from "./ui/real-estate-loader"; // Added import for RealEstateLoader
 
 interface ResultsProps {
   type: 'properties' | 'agencies' | 'agents';
@@ -10,7 +11,7 @@ export function SearchResults({ type, results, isLoading }: ResultsProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" />
+        <RealEstateLoader /> {/* Replaced the simple spinner with RealEstateLoader */}
       </div>
     );
   }
