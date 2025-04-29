@@ -130,14 +130,11 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       loadingOverlay.appendChild(loader);
       document.body.appendChild(loadingOverlay);
       
-      // Force a complete page reload to ensure routing works correctly
-      window.location.href = targetPath;
+      // Log the navigation for debugging
+      console.log('Navigating to:', targetPath);
       
-      // Add a fallback in case the primary navigation doesn't work
-      setTimeout(() => {
-        console.log('Fallback navigation to:', targetPath);
-        window.location.replace(targetPath);
-      }, 100);
+      // Use clean URL path without redirects for cleaner navigation
+      window.location.href = targetPath;
     } catch (error) {
       console.error('Navigation error:', error);
       setIsNavigating(false);
