@@ -285,11 +285,8 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           style={{ maxHeight: '300px' }}
           ref={resultsContainerRef}
         >
-          {isLoading ? (
-            <div className="p-4 text-center">
-              <RealEstateLoader type={type} className="h-16 w-16 mx-auto" />
-              <p className="text-gray-500 mt-2">Buscando...</p>
-            </div>
+          {isLoading && searchTerm ? (
+            <div className="p-4 text-center text-gray-500">Buscando...</div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">No se encontraron resultados</div>
           ) : (

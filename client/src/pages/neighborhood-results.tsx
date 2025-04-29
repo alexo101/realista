@@ -275,11 +275,13 @@ export default function NeighborhoodResultsPage() {
               }, [properties, propertiesFilter])}
 
               {/* Actual UI rendering based on loading state */}
-              {propertiesLoading ? (
+              {propertiesLoading && (
                 <div className="min-h-[400px] flex items-center justify-center">
-                  <RealEstateLoader type="properties" />
+                  <RealEstateLoader />
+                  <p className="text-gray-500 mt-4">Cargando propiedades...</p>
                 </div>
-              ) : (
+              )}
+              {!propertiesLoading && (
               <>
               {/* Filtros de propiedades */}
               <PropertyFilters 
