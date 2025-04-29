@@ -2,7 +2,7 @@ import { Building2, UserX, Search } from "lucide-react";
 
 interface ResultsProps {
   type: 'properties' | 'agencies' | 'agents';
-  results: any[];
+  results: any[] | null;
   isLoading: boolean;
 }
 
@@ -15,7 +15,8 @@ export function SearchResults({ type, results, isLoading }: ResultsProps) {
     );
   }
 
-  if (results.length === 0) {
+  // Ensure results is an array before checking length
+  if (!results || results.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center px-4">
         <UserX className="h-16 w-16 text-gray-400 mb-4" />

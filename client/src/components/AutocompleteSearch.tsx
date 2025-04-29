@@ -115,6 +115,17 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       const loader = document.createElement('div');
       loader.innerHTML = `
         <div style="text-align: center;">
+          <div style="width: 60px; height: 60px; margin: 0 auto; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <p style="margin-top: 10px; font-weight: bold;">Cargando perfil...</p>
+        </div>
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `; `
+        <div style="text-align: center;">
           <div style="width: 80px; height: 80px; margin: 0 auto; border: 5px solid #f3f3f3; 
                       border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
           <p style="margin-top: 15px; font-weight: bold;">Cargando ${type === 'agencies' ? 'agencia' : 'agente'}...</p>
