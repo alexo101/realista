@@ -12,15 +12,15 @@ export function AgenciesList() {
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
   const [isAddingAgency, setIsAddingAgency] = useState(false);
 
   // Obtener la lista de agencias del usuario
   const { data: agencies, isLoading } = useQuery<Agency[]>({
-    queryKey: ['/api/agencies'],
+    queryKey: ['/api/agencies', user?.id],
     queryFn: async () => {
-      const response = await fetch('/api/agencies');
+      const response = await fetch(`/api/agencies?adminAgentId=${user?.id}`);
       if (!response.ok) throw new Error('Failed to fetch agencies');
       return response.json();
     },
@@ -41,7 +41,7 @@ export function AgenciesList() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agencies', user?.id] });
       setIsAddingAgency(false);
       toast({
         title: "Agencia creada",
@@ -69,7 +69,7 @@ export function AgenciesList() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agencies', user?.id] });
       setEditingAgency(null);
       toast({
         title: "Agencia actualizada",
@@ -96,7 +96,7 @@ export function AgenciesList() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/agencies', user?.id] });
       toast({
         title: "Agencia eliminada",
         description: "La agencia se ha eliminado correctamente",
