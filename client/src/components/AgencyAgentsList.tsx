@@ -22,12 +22,12 @@ type AgencyAgent = {
 
 type AgencyAgentsListProps = {
   hideAddButton?: boolean;
+  agencyId: number;
 };
 
-export function AgencyAgentsList({ hideAddButton = false }: AgencyAgentsListProps) {
+export function AgencyAgentsList({ hideAddButton = false, agencyId }: AgencyAgentsListProps) {
   const { user } = useUser();
   const queryClient = useQueryClient();
-  const agencyId = user?.id;
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Consultar la lista de agentes de la agencia
@@ -38,7 +38,7 @@ export function AgencyAgentsList({ hideAddButton = false }: AgencyAgentsListProp
       const response = await apiRequest("GET", `/api/agency-agents/${agencyId}`);
       return response.json();
     },
-    enabled: !!agencyId && !user?.isAgent, // Solo hacer la consulta si el usuario es una agencia
+    enabled: !!agencyId, // Solo hacer la consulta si hay un ID de agencia
   });
 
   // Mutación para eliminar un agente
@@ -68,8 +68,8 @@ export function AgencyAgentsList({ hideAddButton = false }: AgencyAgentsListProp
     }
   };
 
-  // Si el usuario no está autenticado o no es una agencia, no mostrar nada
-  if (!user || user.isAgent) {
+  // Si el usuario no está autenticado, no mostrar nada
+  if (!user) {
     return null;
   }
 

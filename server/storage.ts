@@ -155,7 +155,7 @@ export class DatabaseStorage implements IStorage {
     const neighborhoodsStr = params.get('neighborhoods');
 
     let query = db.select().from(agencies) // Corrected table name
-      .where(eq(agencies.agencyName.valueIsNotNull(), true)); //Simplified where clause
+      .where(eq(agencies.agencyName.valueIsNotNull(), true)) as any; //Simplified where clause
 
     // Filtrar por nombre de agencia si se proporciona
     if (agencyName && agencyName.trim() !== '') {
@@ -206,8 +206,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Función auxiliar para procesar campos de array en formato PostgreSQL
-  private parseArrayField(value: string | null | undefined): string[] {
+  private parseArrayField(value: string | string[] | null | undefined): string[] {
+    // Si es null o undefined, devolver array vacío
     if (!value) return [];
+    
+    // Si ya es un array, simplemente devolverlo
+    if (Array.isArray(value)) return value;
 
     // Quitar las llaves { } y dividir por comas
     try {
@@ -245,13 +249,17 @@ export class DatabaseStorage implements IStorage {
       );
     } catch (error) {
       console.error('Error al parsear campo de array:', error);
-      return value ? [value] : [];
+      return typeof value === 'string' ? [value] : [];
     }
   }
 
-  // Función auxiliar para procesar campos JSON en formato string
-  private parseJsonField(value: string | null | undefined): any {
+  // Función auxiliar para procesar campos JSON en formato string o objeto
+  private parseJsonField(value: string | object | null | undefined): any {
+    // Si es null o undefined, devolver objeto vacío
     if (!value) return {};
+    
+    // Si ya es un objeto, simplemente devolverlo
+    if (typeof value === 'object') return value;
 
     try {
       return JSON.parse(value);
@@ -268,9 +276,11 @@ export class DatabaseStorage implements IStorage {
     if (!agency) return undefined;
 
     // Procesar los campos que deberían ser arrays
-    const neighborhoods = this.parseArrayField(agency.agencyNeighborhoods);
+    const neighborhoods = this.parseArrayField(agency.agencyInfluenceNeighborhoods);
     const languages = this.parseArrayField(agency.agencySupportedLanguages);
-    const socialMedia = this.parseJsonField(agency.agencySocialMedia);
+    
+    // Asegurarnos de que agencySocialMedia sea un objeto o string antes de procesarlo
+    const socialMedia = agency.agencySocialMedia ? this.parseJsonField(agency.agencySocialMedia as object | string) : {};
 
     // Convertir formato agencia a agente para mantener compatibilidad
     const agentFormat = {
@@ -288,8 +298,8 @@ export class DatabaseStorage implements IStorage {
       yearsOfExperience: null,
       // Idiomas soportados
       languagesSpoken: languages,
-      // ID de administrador de la agencia
-      agencyId: agency.adminAgentId,
+      // ID de administrador de la agencia (casteado a string para mantener compatibilidad)
+      agencyId: String(agency.adminAgentId),
       isAdmin: false,
       // Campos adicionales específicos de agencias para frontend
       agencyName: agency.agencyName,
@@ -585,7 +595,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNeighborhoodRating(rating: InsertNeighborhoodRating): Promise<NeighborhoodRating> {
-    const [newRating] = await db.insert(neighborhoodRatings).values(rating).returning();
+    // Convertir números a strings para los campos decimal
+    const convertedRating = {
+      neighborhood: rating.neighborhood,
+      security: String(rating.security),
+      parking: String(rating.parking),
+      familyFriendly: String(rating.familyFriendly),
+      publicTransport: String(rating.publicTransport),
+      greenSpaces: String(rating.greenSpaces),
+      services: String(rating.services),
+      userId: rating.userId
+    };
+    
+    const [newRating] = await db.insert(neighborhoodRatings).values(convertedRating).returning();
     return newRating;
   }
 

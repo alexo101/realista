@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Building } from "lucide-react";
+import { Edit, Trash2, Plus, Building, Users } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { AgencyForm, type Agency } from "./AgencyForm";
+import { AgencyAgentsList } from "./AgencyAgentsList";
 
 export function AgenciesList() {
   const { user } = useUser();
@@ -173,55 +174,141 @@ export function AgenciesList() {
       {isLoading ? (
         <div className="text-center p-4">Cargando agencias...</div>
       ) : agencies && agencies.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-8">
           {agencies.map((agency) => (
             <Card key={agency.id} className="overflow-hidden">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg truncate">{agency.agencyName}</CardTitle>
-              </CardHeader>
-              <CardContent className="pb-2">
-                {agency.agencyAddress && (
-                  <p className="text-sm text-gray-500 mb-2 truncate">{agency.agencyAddress}</p>
-                )}
-                {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
+                <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Barrios: </p>
-                    <div className="flex flex-wrap gap-1">
-                      {agency.agencyInfluenceNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
-                        <span key={idx} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
-                          {neighborhood}
-                        </span>
-                      ))}
-                      {agency.agencyInfluenceNeighborhoods.length > 3 && (
-                        <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
-                          +{agency.agencyInfluenceNeighborhoods.length - 3} más
-                        </span>
-                      )}
+                    <CardTitle className="text-xl">{agency.agencyName}</CardTitle>
+                    {agency.agencyAddress && (
+                      <CardDescription>{agency.agencyAddress}</CardDescription>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingAgency(agency)}
+                      disabled={!!editingAgency || isAddingAgency}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive/90"
+                      onClick={() => handleDeleteAgency(agency.id)}
+                      disabled={deleteAgencyMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Eliminar
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="pb-2 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    {/* Logo y descripción */}
+                    <div className="flex gap-4 items-start">
+                      <div className="w-20 h-20 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+                        {agency.agencyLogo ? (
+                          <img
+                            src={agency.agencyLogo}
+                            alt={agency.agencyName}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <Building className="w-10 h-10 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        {agency.agencyDescription ? (
+                          <p className="text-sm text-gray-600">{agency.agencyDescription}</p>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">Sin descripción</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Datos de contacto */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Contacto:</h4>
+                      <div className="grid grid-cols-1 gap-2 text-sm">
+                        {agency.agencyPhone && (
+                          <p className="flex items-center">
+                            <span className="inline-block w-20 text-gray-500">Teléfono:</span>
+                            <span>{agency.agencyPhone}</span>
+                          </p>
+                        )}
+                        {agency.agencyEmailToDisplay && (
+                          <p className="flex items-center">
+                            <span className="inline-block w-20 text-gray-500">Email:</span>
+                            <span>{agency.agencyEmailToDisplay}</span>
+                          </p>
+                        )}
+                        {agency.agencyWebsite && (
+                          <p className="flex items-center">
+                            <span className="inline-block w-20 text-gray-500">Web:</span>
+                            <span className="truncate">{agency.agencyWebsite}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Barrios de influencia */}
+                    {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Barrios de influencia:</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {agency.agencyInfluenceNeighborhoods.slice(0, 5).map((neighborhood, idx) => (
+                            <span key={idx} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
+                              {neighborhood}
+                            </span>
+                          ))}
+                          {agency.agencyInfluenceNeighborhoods.length > 5 && (
+                            <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
+                              +{agency.agencyInfluenceNeighborhoods.length - 5} más
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="border-t lg:border-t-0 lg:border-l border-gray-200 lg:pl-6 pt-4 lg:pt-0">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-sm font-medium flex items-center">
+                        <Users className="h-4 w-4 mr-2" />
+                        Agentes de la agencia
+                      </h4>
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Simular clic en el botón de añadir agente
+                          const agencyAgentsListButton = document.querySelector(`.agency-${agency.id}-agents-list-button`);
+                          agencyAgentsListButton?.dispatchEvent(new MouseEvent('click', {
+                            bubbles: true,
+                            cancelable: true,
+                            view: window
+                          }));
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Añadir
+                      </Button>
+                    </div>
+                    
+                    {/* Lista de agentes de la agencia */}
+                    <div className={`agency-${agency.id}-agents-list`}>
+                      <AgencyAgentsList agencyId={agency.id} hideAddButton={true} />
                     </div>
                   </div>
-                )}
+                </div>
               </CardContent>
-              <CardFooter className="flex justify-between pt-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingAgency(agency)}
-                  disabled={!!editingAgency || isAddingAgency}
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive/90"
-                  onClick={() => handleDeleteAgency(agency.id)}
-                  disabled={deleteAgencyMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Eliminar
-                </Button>
-              </CardFooter>
             </Card>
           ))}
         </div>

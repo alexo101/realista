@@ -58,8 +58,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Usuario creado:', user);
 
       // Enviar email de bienvenida
-      const userName = user.name || user.agencyName || 'Usuario';
-      const isAgentOrAgency = user.isAgent || !!user.agencyName;
+      const userName = user.name || 'Usuario';
+      const isAgentOrAgency = true; // En este punto todos son agentes
 
       try {
         await sendWelcomeEmail(user.email, userName, isAgentOrAgency);
@@ -93,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         email: user.email,
         name: user.name,
-        isAgent: user.isAgent
+        isAdmin: user.isAdmin
       });
 
       res.json(user);
@@ -138,8 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let properties;
       if (mostViewed) {
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
-        const operationType = req.query.operationType as string | undefined;
-        properties = await storage.getMostViewedProperties(limit, operationType);
+        // Solo usamos el límite, ignoramos el operationType por ahora
+        properties = await storage.getMostViewedProperties(limit);
       } else if (agentId) {
         properties = await storage.getPropertiesByAgent(agentId);
       } else {
@@ -401,10 +401,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const processedResults = agencies.map(agency => {
         return {
           ...agency,
-          // Aseguramos que se usa el logo específico de la agencia en lugar del avatar del administrador
-          avatar: agency.agencyLogo || agency.avatar,
-          // Aseguramos que se usa la descripción específica de la agencia
-          description: agency.agencyDescription || agency.description
+          // Usamos el avatar del administrador
+          avatar: agency.avatar,
+          // Usamos la descripción del agente
+          description: agency.description
         };
       });
 
@@ -1037,6 +1037,47 @@ Gracias!
     } catch (error) {
       console.error('Error deleting agency:', error);
       res.status(500).json({ message: "Failed to delete agency" });
+    }
+  });
+
+  // API para gestionar agentes en agencias
+  app.get("/api/agency-agents/:agencyId", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.params.agencyId);
+      console.log(`Getting agents for agency ${agencyId}`);
+      const agents = await storage.getAgencyAgents(agencyId);
+      res.json(agents);
+    } catch (error) {
+      console.error('Error fetching agency agents:', error);
+      res.status(500).json({ message: "Failed to fetch agency agents" });
+    }
+  });
+
+  app.post("/api/agency-agents", async (req, res) => {
+    try {
+      console.log('Creating agency agent with data:', req.body);
+      
+      // Validar los datos con el esquema
+      const agentData = insertAgencyAgentSchema.parse(req.body);
+      
+      const result = await storage.createAgencyAgent(agentData);
+      console.log('Agency agent created successfully:', result);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Error creating agency agent:', error);
+      res.status(400).json({ message: "Invalid agency agent data" });
+    }
+  });
+
+  app.delete("/api/agency-agents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`Deleting agency agent ${id}`);
+      await storage.deleteAgencyAgent(id);
+      res.status(200).json({ message: "Agency agent deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting agency agent:', error);
+      res.status(500).json({ message: "Failed to delete agency agent" });
     }
   });
 

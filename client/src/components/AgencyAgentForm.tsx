@@ -1,23 +1,40 @@
-import React from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
-// Esquema para validar el formulario
-const formSchema = z.object({
-  agentName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  agentSurname: z.string().min(2, "El apellido debe tener al menos 2 caracteres"),
-  agentEmail: z.string().email("Email inválido"),
-  agencyId: z.number(),
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+
+// Esquema de validación para el formulario de agente
+const agentFormSchema = z.object({
+  agentName: z.string().min(2, { message: "El nombre es obligatorio" }),
+  agentSurname: z.string().min(2, { message: "El apellido es obligatorio" }),
+  agentEmail: z.string().email({ message: "Email no válido" }),
+  agencyId: z.number().int().positive(),
 });
+
+type AgentFormValues = z.infer<typeof agentFormSchema>;
 
 type AgencyAgentFormProps = {
   isOpen: boolean;
@@ -26,11 +43,12 @@ type AgencyAgentFormProps = {
 };
 
 export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormProps) {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  // Configuración del formulario
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+
+  // Configurar el formulario con react-hook-form y zod
+  const form = useForm<AgentFormValues>({
+    resolver: zodResolver(agentFormSchema),
     defaultValues: {
       agentName: "",
       agentSurname: "",
@@ -39,31 +57,37 @@ export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormPr
     },
   });
 
-  // Mutación para crear un nuevo agente
+  // Mutación para crear el agente
   const createAgentMutation = useMutation({
-    mutationFn: (data: z.infer<typeof formSchema>) => 
-      apiRequest("POST", "/api/agency-agents", data),
+    mutationFn: async (data: AgentFormValues) => {
+      const response = await apiRequest("POST", "/api/agency-agents", data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al crear el agente");
+      }
+      return response.json();
+    },
     onSuccess: () => {
-      // Invalidar la consulta para refrescar la lista de agentes
+      // Invalidar la consulta para actualizar la lista de agentes
       queryClient.invalidateQueries({ queryKey: ["/api/agency-agents", agencyId] });
       toast({
         title: "Agente añadido",
-        description: "El agente ha sido añadido a la agencia y se ha enviado un correo de invitación",
+        description: "El agente ha sido añadido correctamente a la agencia",
       });
       form.reset();
       onClose();
     },
     onError: (error) => {
-      console.error("Error al crear agente:", error);
       toast({
         title: "Error",
-        description: "No se pudo añadir el agente. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "No se pudo crear el agente",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
+  // Manejar el envío del formulario
+  const onSubmit = (data: AgentFormValues) => {
     createAgentMutation.mutate(data);
   };
 
@@ -71,10 +95,19 @@ export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormPr
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Añadir Agente a la Agencia</DialogTitle>
+          <DialogTitle className="flex justify-between items-center">
+            <span>Añadir agente a la agencia</span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose}
+              className="h-6 w-6"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
           <DialogDescription>
-            Introduce los datos del agente que deseas añadir a tu agencia.
-            El agente recibirá un correo de invitación para unirse a la plataforma.
+            Completa los datos del agente que quieres añadir a tu agencia
           </DialogDescription>
         </DialogHeader>
 
@@ -99,9 +132,9 @@ export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormPr
               name="agentSurname"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Apellido</FormLabel>
+                  <FormLabel>Apellidos</FormLabel>
                   <FormControl>
-                    <Input placeholder="Apellido del agente" {...field} />
+                    <Input placeholder="Apellidos del agente" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -126,20 +159,32 @@ export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormPr
               )}
             />
 
-            <DialogFooter className="pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+            <FormField
+              control={form.control}
+              name="agencyId"
+              render={({ field }) => (
+                <FormItem className="hidden">
+                  <FormControl>
+                    <Input type="hidden" {...field} value={agencyId} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
-                className="mr-2"
+                disabled={createAgentMutation.isPending}
               >
                 Cancelar
               </Button>
               <Button 
-                type="submit" 
+                type="submit"
                 disabled={createAgentMutation.isPending}
               >
-                {createAgentMutation.isPending ? "Añadiendo..." : "Añadir Agente"}
+                {createAgentMutation.isPending ? "Añadiendo..." : "Añadir agente"}
               </Button>
             </DialogFooter>
           </form>
