@@ -280,7 +280,7 @@ export default function ManagePage() {
               </SidebarMenuItem>
 
               {/* Only show agency profile option for agency admins */}
-              {!user?.isAgent || user?.agencyName ? (
+              {user?.isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={section === "agency-profile"}
@@ -290,7 +290,7 @@ export default function ManagePage() {
                     <span>Perfil agencia</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ) : null}
+              )}
 
               <SidebarMenuItem>
                 <SidebarMenuButton

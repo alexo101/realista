@@ -974,6 +974,68 @@ Gracias!
     }
   });
 
+  // Rutas para gestión multi-agencia desde el frontend
+  app.get("/api/agencies", async (req, res) => {
+    try {
+      const adminAgentId = req.query.adminAgentId ? parseInt(req.query.adminAgentId as string) : undefined;
+      
+      // Si se proporciona adminAgentId, obtener solo las agencias de ese administrador
+      const agencies = adminAgentId 
+        ? await storage.getAgenciesByAdmin(adminAgentId)
+        : await storage.getAgenciesByAdmin(req.user?.id || 0);
+      
+      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || req.user?.id}`);
+      res.json(agencies);
+    } catch (error) {
+      console.error('Error fetching agencies:', error);
+      res.status(500).json({ message: "Failed to fetch agencies" });
+    }
+  });
+
+  app.post("/api/agencies", async (req, res) => {
+    try {
+      console.log('Creating agency with data:', req.body);
+      
+      // Validar los datos con el esquema
+      const agencyData = insertAgencySchema.parse({
+        ...req.body,
+        adminAgentId: req.body.adminAgentId || req.user?.id
+      });
+      
+      const result = await storage.createAgency(agencyData);
+      console.log('Agency created successfully:', result);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Error creating agency:', error);
+      res.status(400).json({ message: "Invalid agency data" });
+    }
+  });
+
+  app.patch("/api/agencies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`Updating agency ${id} with data:`, req.body);
+      const result = await storage.updateAgency(id, req.body);
+      console.log('Agency updated successfully:', result);
+      res.json(result);
+    } catch (error) {
+      console.error('Error updating agency:', error);
+      res.status(500).json({ message: "Failed to update agency" });
+    }
+  });
+
+  app.delete("/api/agencies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`Deleting agency ${id}`);
+      await storage.deleteAgency(id);
+      res.status(200).json({ message: "Agency deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting agency:', error);
+      res.status(500).json({ message: "Failed to delete agency" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
