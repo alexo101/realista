@@ -603,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get agent details" });
     }
   });
-  
+
   // Obtener propiedades por agente
   app.get("/api/agents/:id/properties", async (req, res) => {
     try {
@@ -640,7 +640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get agency details" });
     }
   });
-  
+
   // Obtener propiedades por agencia
   app.get("/api/agencies/:id/properties", async (req, res) => {
     try {
@@ -872,7 +872,7 @@ Gracias!
       res.status(500).json({ message: "Failed to get reviews" });
     }
   });
-  
+
   app.get("/api/agencies/:id/reviews", async (req, res) => {
     try {
       const agencyId = parseInt(req.params.id);
@@ -899,7 +899,7 @@ Gracias!
       res.status(500).json({ message: "Failed to create review" });
     }
   });
-  
+
   app.post("/api/agencies/:id/reviews", async (req, res) => {
     try {
       const agencyId = parseInt(req.params.id);
@@ -920,11 +920,11 @@ Gracias!
   app.get("/api/admin/agencies", async (req, res) => {
     try {
       const adminAgentId = req.query.adminAgentId ? parseInt(req.query.adminAgentId as string) : undefined;
-      
+
       if (!adminAgentId) {
         return res.status(400).json({ message: "Missing adminAgentId parameter" });
       }
-      
+
       const agencies = await storage.getAgenciesByAdmin(adminAgentId);
       res.json(agencies);
     } catch (error) {
@@ -932,7 +932,7 @@ Gracias!
       res.status(500).json({ message: "Failed to fetch agencies" });
     }
   });
-  
+
   app.post("/api/admin/agencies", async (req, res) => {
     try {
       console.log('Creating agency with data:', req.body);
@@ -948,7 +948,7 @@ Gracias!
       res.status(400).json({ message: "Invalid agency data" });
     }
   });
-  
+
   app.patch("/api/admin/agencies/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -961,7 +961,7 @@ Gracias!
       res.status(500).json({ message: "Failed to update agency" });
     }
   });
-  
+
   app.delete("/api/admin/agencies/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -978,12 +978,12 @@ Gracias!
   app.get("/api/agencies", async (req, res) => {
     try {
       const adminAgentId = req.query.adminAgentId ? parseInt(req.query.adminAgentId as string) : undefined;
-      
+
       // Si se proporciona adminAgentId, obtener solo las agencias de ese administrador
       const agencies = adminAgentId 
         ? await storage.getAgenciesByAdmin(adminAgentId)
         : await storage.getAgenciesByAdmin(req.user?.id || 0);
-      
+
       console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || req.user?.id}`);
       res.json(agencies);
     } catch (error) {
@@ -995,19 +995,23 @@ Gracias!
   app.post("/api/agencies", async (req, res) => {
     try {
       console.log('Creating agency with data:', req.body);
-      
-      // Validar los datos con el esquema
-      const agencyData = insertAgencySchema.parse({
+      if (!req.body.adminAgentId && !req.user?.id) {
+        return res.status(400).json({ message: "Missing adminAgentId" });
+      }
+
+      const agencyData = {
         ...req.body,
         adminAgentId: req.body.adminAgentId || req.user?.id
-      });
-      
+      };
+
       const result = await storage.createAgency(agencyData);
       console.log('Agency created successfully:', result);
-      res.status(201).json(result);
+      return res.status(201).json(result);
     } catch (error) {
       console.error('Error creating agency:', error);
-      res.status(400).json({ message: "Invalid agency data" });
+      return res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Invalid agency data" 
+      });
     }
   });
 
