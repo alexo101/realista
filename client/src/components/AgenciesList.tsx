@@ -225,7 +225,7 @@ export function AgenciesList() {
             </Card>
           ))}
         </div>
-      ) : (
+      ) : !isAddingAgency ? (
         <div className="text-center p-8 border rounded-md bg-muted/20">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/30 mb-4">
             <Building className="h-8 w-8 text-muted-foreground" />
