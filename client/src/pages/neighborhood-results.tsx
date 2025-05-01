@@ -79,12 +79,14 @@ export default function NeighborhoodResultsPage() {
       priceMax: propertyFilters.priceMax,
       bedrooms: propertyFilters.bedrooms,
       bathrooms: propertyFilters.bathrooms,
-      features: propertyFilters.features
+      features: propertyFilters.features,
+      mostViewed: false
     }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('neighborhoods', effectiveNeighborhood);
       params.append('operationType', propertyFilters.operationType);
+      params.append('mostViewed', 'false');
       
       if (propertyFilters.priceMin !== null) {
         params.append('priceMin', propertyFilters.priceMin.toString());
