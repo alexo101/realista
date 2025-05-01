@@ -263,7 +263,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bathrooms?.toString() || "any"}
               onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-8 text-xs w-1/4">
+              <SelectTrigger className="h-8 text-xs w-1/2">
                 <SelectValue placeholder="Baños" />
               </SelectTrigger>
               <SelectContent>
