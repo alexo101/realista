@@ -240,7 +240,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bedrooms?.toString() || "any"}
               onValueChange={(value) => setBedrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-9 text-sm w-1/2">
+              <SelectTrigger className="h-9 text-sm w-full justify-start">
                 <SelectValue placeholder="Habitaciones" />
               </SelectTrigger>
               <SelectContent>
@@ -264,7 +264,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bathrooms?.toString() || "any"}
               onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-9 text-sm w-1/2">
+              <SelectTrigger className="h-9 text-sm w-full justify-start">
                 <SelectValue placeholder="Baños" />
               </SelectTrigger>
               <SelectContent>
@@ -287,7 +287,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   variant="outline"
                   role="combobox"
                   aria-expanded={openFeatures}
-                  className="w-2/3 justify-between h-9 text-sm"
+                  className="w-full justify-start h-9 text-sm"
                 >
                   {selectedFeatures.length === 0
                     ? "Seleccionar"
