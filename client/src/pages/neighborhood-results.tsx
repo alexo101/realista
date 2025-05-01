@@ -108,7 +108,7 @@ export default function NeighborhoodResultsPage() {
       }
       
       // Determinar la URL en función del tipo de operación
-      const endpoint = propertyFilters.operationType === 'Venta' ? '/api/search/buy' : '/api/search/rent';
+      const endpoint = '/api/search/properties';
       const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();

@@ -139,9 +139,16 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               )}
               onClick={() => {
                 setOperationType("Venta");
-                // Reset price filters when changing operation type
                 setPriceMin(null);
                 setPriceMax(null);
+                onFilterChange({
+                  operationType: "Venta",
+                  priceMin: null,
+                  priceMax: null,
+                  bedrooms,
+                  bathrooms,
+                  features: selectedFeatures
+                });
               }}
             >
               Comprar
@@ -154,9 +161,16 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               )}
               onClick={() => {
                 setOperationType("Alquiler");
-                // Reset price filters when changing operation type
                 setPriceMin(null);
                 setPriceMax(null);
+                onFilterChange({
+                  operationType: "Alquiler",
+                  priceMin: null,
+                  priceMax: null,
+                  bedrooms,
+                  bathrooms,
+                  features: selectedFeatures
+                });
               }}
             >
               Alquilar
