@@ -28,7 +28,6 @@ export interface PropertyFilters {
   bedrooms: number | null;
   bathrooms: number | null;
   features?: string[];
-  sorting: string;
 }
 
 // Lista de características disponibles
@@ -56,8 +55,6 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   const [bathrooms, setBathrooms] = useState<number | null | string>(null);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [openFeatures, setOpenFeatures] = useState(false);
-  const [sorting, setSorting] = useState<string>("default");
-  const [debouncedSorting, setDebouncedSorting] = useState<string>("default");
 
   // Opciones para los rangos de precios según el tipo de operación
   const priceOptions = {
@@ -113,11 +110,10 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
       bedrooms: bedrooms === "any" || bedrooms === "" ? null : parseInt(bedrooms as string),
       bathrooms: bathrooms === "any" || bathrooms === "" ? null : parseInt(bathrooms as string),
       features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
-      sorting
     };
 
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, bedrooms, bathrooms, selectedFeatures, debouncedFilterChange, sorting]);
+  }, [operationType, priceMin, priceMax, bedrooms, bathrooms, selectedFeatures, debouncedFilterChange]);
 
   // Añadir o eliminar características
   const toggleFeature = (featureId: string) => {
@@ -152,8 +148,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   priceMax: null,
                   bedrooms: bedrooms === "any" ? null : Number(bedrooms),
                   bathrooms: bathrooms === "any" ? null : Number(bathrooms),
-                  features: selectedFeatures,
-                  sorting: "default"
+                  features: selectedFeatures
                 });
               }}
             >
@@ -176,8 +171,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   priceMax: null,
                   bedrooms: bedrooms === "any" ? null : Number(bedrooms),
                   bathrooms: bathrooms === "any" ? null : Number(bathrooms),
-                  features: selectedFeatures,
-                  sorting: "default"
+                  features: selectedFeatures
                 });
               }}
             >
@@ -265,14 +259,13 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bathrooms?.toString() || "any"}
               onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-9 text-sm w-1/2"> {/* Increased height to h-9 */}
+              <SelectTrigger className="h-8 text-xs w-1/2">
                 <SelectValue placeholder="Baños" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Cualquiera</SelectItem>
                 <SelectItem value="1">1+</SelectItem>
                 <SelectItem value="2">2+</SelectItem>
-                <SelectItem value="3">3+</SelectItem> {/* Added +3 option */}
               </SelectContent>
             </Select>
           </div>
