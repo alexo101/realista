@@ -137,7 +137,12 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                 "rounded-full text-sm h-9 px-5",
                 operationType === "Venta" ? "bg-white shadow-sm" : "hover:bg-gray-200"
               )}
-              onClick={() => setOperationType("Venta")}
+              onClick={() => {
+                setOperationType("Venta");
+                // Reset price filters when changing operation type
+                setPriceMin(null);
+                setPriceMax(null);
+              }}
             >
               Comprar
             </Button>
@@ -147,7 +152,12 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                 "rounded-full text-sm h-9 px-5",
                 operationType === "Alquiler" ? "bg-white shadow-sm" : "hover:bg-gray-200"
               )}
-              onClick={() => setOperationType("Alquiler")}
+              onClick={() => {
+                setOperationType("Alquiler");
+                // Reset price filters when changing operation type
+                setPriceMin(null);
+                setPriceMax(null);
+              }}
             >
               Alquilar
             </Button>
