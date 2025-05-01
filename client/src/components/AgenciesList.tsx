@@ -210,12 +210,6 @@ export function AgenciesList() {
               </CardHeader>
               
               <CardContent className="pb-2 space-y-4">
-                <div className="space-y-2">
-                  <div className="text-lg font-medium">{agency.agencyName}</div>
-                  {agency.agencyAddress && (
-                    <p className="text-sm text-gray-600">{agency.agencyAddress}</p>
-                  )}
-                </div>
                 
                 {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
                   <div>
