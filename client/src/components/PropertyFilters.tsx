@@ -135,7 +135,9 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               variant={operationType === "Venta" ? "default" : "ghost"}
               className={cn(
                 "rounded-full text-sm h-9 px-5",
-                operationType === "Venta" ? "bg-white shadow-sm" : "hover:bg-gray-200"
+                operationType === "Venta" 
+                  ? "bg-primary text-primary-foreground shadow-sm" 
+                  : "bg-white hover:bg-gray-200"
               )}
               onClick={() => {
                 setOperationType("Venta");
@@ -158,7 +160,9 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               variant={operationType === "Alquiler" ? "default" : "ghost"}
               className={cn(
                 "rounded-full text-sm h-9 px-5",
-                operationType === "Alquiler" ? "bg-white shadow-sm" : "hover:bg-gray-200"
+                operationType === "Alquiler" 
+                  ? "bg-primary text-primary-foreground shadow-sm" 
+                  : "bg-white hover:bg-gray-200"
               )}
               onClick={() => {
                 setOperationType("Alquiler");
