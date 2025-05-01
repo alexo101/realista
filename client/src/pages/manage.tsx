@@ -509,7 +509,6 @@ export default function ManagePage() {
 
           {section === "agency-profile" && user?.isAdmin && (
             <div>
-              <h2 className="text-2xl font-bold mb-6">Perfil de Agencia</h2>
               <AgenciesList />
             </div>
           )}
