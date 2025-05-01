@@ -347,6 +347,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             </Select>
           </div>
         </div>
+        </div>
 
         {/* Mostrar etiquetas de características seleccionadas */}
         {selectedFeatures.length > 0 && (
