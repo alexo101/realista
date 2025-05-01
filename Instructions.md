@@ -1,4 +1,3 @@
-
 # Autocomplete Redirection Issue - Analysis and Solution
 
 ## Problem Summary
@@ -144,3 +143,78 @@ To verify the fix:
 3. Complete all steps of the review flow
 4. Submit the review with the "Validar reseña" button
 5. Verify that the review is saved without errors
+
+
+# Analysis: Property Filters Issue in Neighborhood Results
+
+## Current Situation
+- "Comprar" (Buy) filter works correctly, showing only properties for sale
+- "Alquilar" (Rent) filter is not displaying existing rental properties
+
+## Code Investigation
+
+### Key Files Involved
+1. `client/src/pages/neighborhood-results.tsx`: Contains the main filtering logic
+2. `client/src/components/PropertyFilters.tsx`: Handles filter UI and state
+3. `server/routes.ts`: Contains API endpoints for property search
+4. `server/storage.ts`: Handles database queries
+
+### Issue Analysis
+
+The issue appears to stem from how we handle the operationType in our query chain. Looking at the API endpoint in server/routes.ts, I found that:
+
+1. The `searchProperties` function is properly setting up filters for both operation types
+2. The `PropertyFilters` component correctly sends the operationType
+3. However, the endpoint selection in neighborhood-results.tsx might be causing the issue
+
+The key issue is in how we determine the endpoint based on operation type. Currently, we're using separate endpoints (/api/search/buy and /api/search/rent) which may be causing inconsistency in how filters are applied.
+
+## Solution Plan
+
+1. First, modify the endpoint usage in neighborhood-results.tsx to use a single unified endpoint that correctly handles both operation types.
+
+2. Update how we handle the operationType parameter in the search endpoint.
+
+3. Update the logs to help track filter application.
+
+### Code Changes Required
+
+1. Update neighborhood-results.tsx to use a single endpoint and properly handle operation type:
+- Remove the conditional endpoint selection
+- Use a single '/api/search/properties' endpoint
+- Pass operationType as a query parameter
+
+2. Update server-side handling in routes.ts:
+- Create a new unified endpoint that handles both operation types
+- Ensure proper filter application for both buy and rent operations
+
+### Implementation Steps
+
+1. Update neighborhood-results.tsx to use the unified endpoint
+2. Modify the server routes to properly handle the operation type filter
+3. Add proper logging to verify filter application
+4. Test both operation types to ensure proper filtering
+
+## Expected Outcome
+
+After implementing these changes:
+- Both "Comprar" and "Alquilar" filters should work correctly
+- Properties should be filtered based on their operation type
+- The application should maintain consistent behavior across both filters
+
+## Verification Steps
+
+1. Test the "Comprar" filter to ensure it still works correctly
+2. Test the "Alquilar" filter with known rental properties
+3. Verify that switching between filters shows the correct properties
+4. Check server logs to confirm proper filter application
+
+## Implementation Plan
+
+I will propose changes to implement this solution in the following order:
+
+1. Update neighborhood-results.tsx to use the unified endpoint
+2. Add proper logging for debugging
+3. Test the changes to ensure both filters work as expected
+
+This should resolve the issue while maintaining the existing functionality that's working correctly.
