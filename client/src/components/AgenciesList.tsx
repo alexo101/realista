@@ -140,7 +140,7 @@ export function AgenciesList() {
     <div className="space-y-6">
       {/* Botón para añadir una nueva agencia */}
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-medium">Mis agencias</h3>
+        <h3 className="text-xl font-medium">Agencias</h3>
         <Button
           onClick={() => setIsAddingAgency(true)}
           disabled={isAddingAgency || !!editingAgency}
@@ -210,54 +210,17 @@ export function AgenciesList() {
               </CardHeader>
               
               <CardContent className="pb-2 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-4">
-                    {/* Logo y descripción */}
-                    <div className="flex gap-4 items-start">
-                      <div className="w-20 h-20 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-primary/20">
-                        {agency.agencyLogo ? (
-                          <img
-                            src={agency.agencyLogo}
-                            alt={agency.agencyName}
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <Building className="w-10 h-10 text-gray-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        {agency.agencyDescription ? (
-                          <p className="text-sm text-gray-600">{agency.agencyDescription}</p>
-                        ) : (
-                          <p className="text-sm text-gray-400 italic">Sin descripción</p>
-                        )}
-                      </div>
+                    {/* Nombre y dirección */}
+                    <div className="space-y-2">
+                      <div className="text-lg font-medium">{agency.agencyName}</div>
+                      {agency.agencyAddress && (
+                        <p className="text-sm text-gray-600">{agency.agencyAddress}</p>
+                      )}
                     </div>
                     
-                    {/* Datos de contacto */}
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Contacto:</h4>
-                      <div className="grid grid-cols-1 gap-2 text-sm">
-                        {agency.agencyPhone && (
-                          <p className="flex items-center">
-                            <span className="inline-block w-20 text-gray-500">Teléfono:</span>
-                            <span>{agency.agencyPhone}</span>
-                          </p>
-                        )}
-                        {agency.agencyEmailToDisplay && (
-                          <p className="flex items-center">
-                            <span className="inline-block w-20 text-gray-500">Email:</span>
-                            <span>{agency.agencyEmailToDisplay}</span>
-                          </p>
-                        )}
-                        {agency.agencyWebsite && (
-                          <p className="flex items-center">
-                            <span className="inline-block w-20 text-gray-500">Web:</span>
-                            <span className="truncate">{agency.agencyWebsite}</span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                    {/* Barrios de influencia */}
                     
                     {/* Barrios de influencia */}
                     {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
