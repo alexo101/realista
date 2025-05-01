@@ -321,31 +321,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             </Popover>
           </div>
           
-          {/* Ordenar por */}
-          <div className="min-w-[200px]">
-            <Label className="font-medium mb-1.5 block text-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 inline-block mr-1.5">
-                <path d="m3 16 4 4 4-4"/>
-                <path d="M7 20V4"/>
-                <path d="M21 8h-8"/>
-                <path d="M21 12h-8"/>
-                <path d="M21 16h-8"/>
-              </svg>
-              Ordenar por
-            </Label>
-            <Select>
-              <SelectTrigger className="h-9 text-sm w-full">
-                <SelectValue placeholder="Relevancia" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevancia</SelectItem>
-                <SelectItem value="price_asc">Precio: menor a mayor</SelectItem>
-                <SelectItem value="price_desc">Precio: mayor a menor</SelectItem>
-                <SelectItem value="newest">Más recientes</SelectItem>
-                <SelectItem value="price_m2">Precio por m²</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          
         </div>
         </div>
 
