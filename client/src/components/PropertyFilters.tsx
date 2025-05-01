@@ -181,9 +181,9 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
         </div>
 
         {/* Fila de filtros - Precio, habitaciones, baños, características */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-4 lg:grid-cols-8 gap-4">
           {/* Filtro de precio */}
-          <div>
+          <div className="sm:col-span-2 lg:col-span-3">
             <Label className="font-medium mb-1.5 block text-sm">
               <Euro className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Precio {operationType === "Alquiler" ? "/mes" : ""}
@@ -226,7 +226,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtro de habitaciones */}
-          <div>
+          <div className="sm:col-span-1 lg:col-span-1">
             <Label className="font-medium mb-1.5 block text-sm">
               <BedDouble className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Habitaciones
@@ -235,7 +235,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bedrooms?.toString() || "any"}
               onValueChange={(value) => setBedrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-9 text-sm">
+              <SelectTrigger className="h-9 text-sm w-1/2">
                 <SelectValue placeholder="Habitaciones" />
               </SelectTrigger>
               <SelectContent>
@@ -250,7 +250,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtro de baños */}
-          <div>
+          <div className="sm:col-span-1 lg:col-span-1">
             <Label className="font-medium mb-1.5 block text-sm">
               <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Baños
@@ -259,19 +259,20 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bathrooms?.toString() || "any"}
               onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-8 text-xs w-1/2">
+              <SelectTrigger className="h-9 text-sm w-1/2">
                 <SelectValue placeholder="Baños" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="any">Cualquiera</SelectItem>
                 <SelectItem value="1">1+</SelectItem>
                 <SelectItem value="2">2+</SelectItem>
+                <SelectItem value="3">3+</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Filtro de características */}
-          <div>
+          <div className="sm:col-span-4 lg:col-span-3">
             <Label className="font-medium mb-1.5 block text-sm">
               <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Características

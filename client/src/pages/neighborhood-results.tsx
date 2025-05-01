@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { findDistrictByNeighborhood, isDistrict, BARCELONA_DISTRICTS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 
 export default function NeighborhoodResultsPage() {
@@ -243,28 +244,35 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
-              {/* Filtros de propiedades */}
-              <PropertyFilters 
-                onFilterChange={setPropertyFilters}
-                defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
-              />
-              
-              <div className="mb-4 flex justify-end">
-                <Select
-                  value={propertiesFilter}
-                  onValueChange={setPropertiesFilter}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Predeterminado</SelectItem>
-                    <SelectItem value="price_asc">Más baratos</SelectItem>
-                    <SelectItem value="newest">Más recientes</SelectItem>
-                    <SelectItem value="price_m2">Más baratos €/m2</SelectItem>
-                    <SelectItem value="price_drop">Mayores bajadas de precio</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="bg-white rounded-lg shadow p-4 mb-4">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                  <div className="flex-grow">
+                    <PropertyFilters 
+                      onFilterChange={setPropertyFilters}
+                      defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
+                    />
+                  </div>
+                  <div className="mt-4 lg:mt-0 lg:ml-4 flex-shrink-0">
+                    <Label className="font-medium mb-1.5 block text-sm">
+                      Ordenar por
+                    </Label>
+                    <Select
+                      value={propertiesFilter}
+                      onValueChange={setPropertiesFilter}
+                    >
+                      <SelectTrigger className="w-[200px] h-9">
+                        <SelectValue placeholder="Ordenar por" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Predeterminado</SelectItem>
+                        <SelectItem value="price_asc">Más baratos</SelectItem>
+                        <SelectItem value="newest">Más recientes</SelectItem>
+                        <SelectItem value="price_m2">Más baratos €/m2</SelectItem>
+                        <SelectItem value="price_drop">Mayores bajadas de precio</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               <PropertyResults 
                 results={useMemo(() => {
