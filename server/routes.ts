@@ -1056,10 +1056,10 @@ Gracias!
   app.post("/api/agency-agents", async (req, res) => {
     try {
       console.log('Creating agency agent with data:', req.body);
-      
+
       // Validar los datos con el esquema
       const agentData = insertAgencyAgentSchema.parse(req.body);
-      
+
       const result = await storage.createAgencyAgent(agentData);
       console.log('Agency agent created successfully:', result);
       res.status(201).json(result);
