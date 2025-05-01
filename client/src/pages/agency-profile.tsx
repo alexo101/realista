@@ -255,33 +255,19 @@ export default function AgencyProfile() {
             
             <Card>
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Información de contacto</h2>
+                <h2 className="text-xl font-semibold mb-4">Información de la agencia</h2>
                 <div className="space-y-4">
                   <div className="flex">
-                    <Mail className="h-5 w-5 mr-3 text-gray-500" />
+                    <Building2 className="h-5 w-5 mr-3 text-gray-500" />
                     <div>
-                      <div className="font-medium">Email</div>
-                      <a href={`mailto:${agency.email}`} className="text-blue-600 hover:underline">
-                        {agency.email}
-                      </a>
+                      <div className="font-medium">Nombre</div>
+                      <div>{agency.agencyName}</div>
                     </div>
                   </div>
                   
-                  {agency.agencyPhone && (
-                    <div className="flex">
-                      <Phone className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <div className="font-medium">Teléfono</div>
-                        <a href={`tel:${agency.agencyPhone}`} className="text-blue-600 hover:underline">
-                          {agency.agencyPhone}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  
                   {agency.agencyAddress && (
                     <div className="flex">
-                      <Building2 className="h-5 w-5 mr-3 text-gray-500" />
+                      <MapPin className="h-5 w-5 mr-3 text-gray-500" />
                       <div>
                         <div className="font-medium">Dirección</div>
                         <address className="not-italic">
@@ -291,77 +277,18 @@ export default function AgencyProfile() {
                     </div>
                   )}
                   
-                  {agency.agencyWebsite && (
+                  {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
                     <div className="flex">
-                      <Globe className="h-5 w-5 mr-3 text-gray-500" />
+                      <Building className="h-5 w-5 mr-3 text-gray-500" />
                       <div>
-                        <div className="font-medium">Sitio web</div>
-                        <a 
-                          href={agency.agencyWebsite.startsWith('http') ? agency.agencyWebsite : `https://${agency.agencyWebsite}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-blue-600 hover:underline"
-                        >
-                          {agency.agencyWebsite}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {agency.yearEstablished && (
-                    <div className="flex">
-                      <Calendar className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <div className="font-medium">Año de fundación</div>
-                        <div>{agency.yearEstablished}</div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {agency.agencyLanguagesSpoken && agency.agencyLanguagesSpoken.length > 0 && (
-                    <div className="flex">
-                      <div className="h-5 w-5 mr-3 text-gray-500">🌍</div>
-                      <div>
-                        <div className="font-medium">Idiomas</div>
-                        <div>{agency.agencyLanguagesSpoken.join(', ')}</div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {agency.agencySocialMedia && Object.values(agency.agencySocialMedia).some(x => x) && (
-                    <div>
-                      <div className="font-medium mb-2">Redes sociales</div>
-                      <div className="flex gap-3">
-                        {agency.agencySocialMedia.facebook && (
-                          <a 
-                            href={agency.agencySocialMedia.facebook} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Facebook className="h-5 w-5" />
-                          </a>
-                        )}
-                        {agency.agencySocialMedia.instagram && (
-                          <a 
-                            href={agency.agencySocialMedia.instagram} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-pink-600 hover:text-pink-700"
-                          >
-                            <Instagram className="h-5 w-5" />
-                          </a>
-                        )}
-                        {agency.agencySocialMedia.twitter && (
-                          <a 
-                            href={agency.agencySocialMedia.twitter} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-blue-400 hover:text-blue-500"
-                          >
-                            <Twitter className="h-5 w-5" />
-                          </a>
-                        )}
+                        <div className="font-medium">Barrios de influencia</div>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
+                            <Badge key={neighborhood} variant="secondary">
+                              {neighborhood}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
