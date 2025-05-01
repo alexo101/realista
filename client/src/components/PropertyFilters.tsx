@@ -287,7 +287,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   variant="outline"
                   role="combobox"
                   aria-expanded={openFeatures}
-                  className="w-full justify-between h-9 text-sm"
+                  className="w-1/3 justify-between h-9 text-sm"
                 >
                   {selectedFeatures.length === 0
                     ? "Seleccionar"
