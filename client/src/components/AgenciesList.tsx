@@ -209,68 +209,31 @@ export function AgenciesList() {
                 </div>
               </CardHeader>
               
-              <CardContent className="pb-2 space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="space-y-4">
-                    {/* Nombre y dirección */}
-                    <div className="space-y-2">
-                      <div className="text-lg font-medium">{agency.agencyName}</div>
-                      {agency.agencyAddress && (
-                        <p className="text-sm text-gray-600">{agency.agencyAddress}</p>
+              <CardContent className="pb-2 space-y-4">
+                <div className="space-y-2">
+                  <div className="text-lg font-medium">{agency.agencyName}</div>
+                  {agency.agencyAddress && (
+                    <p className="text-sm text-gray-600">{agency.agencyAddress}</p>
+                  )}
+                </div>
+                
+                {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Barrios de influencia:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {agency.agencyInfluenceNeighborhoods.slice(0, 5).map((neighborhood, idx) => (
+                        <span key={idx} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
+                          {neighborhood}
+                        </span>
+                      ))}
+                      {agency.agencyInfluenceNeighborhoods.length > 5 && (
+                        <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
+                          +{agency.agencyInfluenceNeighborhoods.length - 5} más
+                        </span>
                       )}
                     </div>
-                    
-                    {/* Barrios de influencia */}
-                    
-                    {/* Barrios de influencia */}
-                    {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Barrios de influencia:</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {agency.agencyInfluenceNeighborhoods.slice(0, 5).map((neighborhood, idx) => (
-                            <span key={idx} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
-                              {neighborhood}
-                            </span>
-                          ))}
-                          {agency.agencyInfluenceNeighborhoods.length > 5 && (
-                            <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
-                              +{agency.agencyInfluenceNeighborhoods.length - 5} más
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
-                  
-                  <div className="border-t lg:border-t-0 lg:border-l border-gray-200 lg:pl-6 pt-4 lg:pt-0">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-sm font-medium flex items-center">
-                        <Users className="h-4 w-4 mr-2" />
-                        Agentes de la agencia
-                      </h4>
-                      <Button 
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Simular clic en el botón de añadir agente
-                          const agencyAgentsListButton = document.querySelector(`.agency-${agency.id}-agents-list-button`);
-                          agencyAgentsListButton?.dispatchEvent(new MouseEvent('click', {
-                            bubbles: true,
-                            cancelable: true,
-                            view: window
-                          }));
-                        }}
-                      >
-                        <Plus className="h-3 w-3 mr-1" /> Añadir
-                      </Button>
-                    </div>
-                    
-                    {/* Lista de agentes de la agencia */}
-                    <div className={`agency-${agency.id}-agents-list`}>
-                      <AgencyAgentsList agencyId={agency.id} hideAddButton={true} />
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           ))}
