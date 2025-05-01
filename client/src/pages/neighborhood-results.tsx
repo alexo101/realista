@@ -72,7 +72,7 @@ export default function NeighborhoodResultsPage() {
 
   // Consultas para propiedades
   const { data: properties, isLoading: propertiesLoading } = useQuery({
-    queryKey: [propertyFilters.operationType === 'Venta' ? '/api/search/buy' : '/api/search/rent', { 
+    queryKey: ['/api/properties', { 
       neighborhoods: effectiveNeighborhood,
       operationType: propertyFilters.operationType,
       priceMin: propertyFilters.priceMin,
@@ -102,17 +102,13 @@ export default function NeighborhoodResultsPage() {
         params.append('bathrooms', propertyFilters.bathrooms.toString());
       }
       
-      // Añadir filtros de características si existen
+      // Add feature filters if they exist
       if (propertyFilters.features && propertyFilters.features.length > 0) {
         params.append('features', propertyFilters.features.join(','));
       }
       
-      // Determinar la URL en función del tipo de operación
-      const endpoint = propertyFilters.operationType === 'Venta' 
-        ? '/api/search/buy' 
-        : '/api/search/rent';
-      console.log(`Usando endpoint: ${endpoint} para tipo de operación: ${propertyFilters.operationType}`);
-      const response = await fetch(`${endpoint}?${params.toString()}`);
+      console.log(`Fetching properties with operationType: ${propertyFilters.operationType}`);
+      const response = await fetch(`/api/properties?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();
     },

@@ -138,12 +138,12 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                 operationType === "Venta" ? "bg-white shadow-sm" : "hover:bg-gray-200"
               )}
               onClick={() => {
-                const newOperationType = "Venta";
-                setOperationType(newOperationType);
+                setOperationType("Venta");
+                // Reset price filters when changing operation type
                 setPriceMin(null);
                 setPriceMax(null);
                 onFilterChange({
-                  operationType: newOperationType,
+                  operationType: "Venta",
                   priceMin: null,
                   priceMax: null,
                   bedrooms: bedrooms === "any" ? null : Number(bedrooms),
@@ -161,12 +161,12 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                 operationType === "Alquiler" ? "bg-white shadow-sm" : "hover:bg-gray-200"
               )}
               onClick={() => {
-                const newOperationType = "Alquiler";
-                setOperationType(newOperationType);
+                setOperationType("Alquiler");
+                // Reset price filters when changing operation type
                 setPriceMin(null);
                 setPriceMax(null);
                 onFilterChange({
-                  operationType: newOperationType,
+                  operationType: "Alquiler",
                   priceMin: null,
                   priceMax: null,
                   bedrooms: bedrooms === "any" ? null : Number(bedrooms),
