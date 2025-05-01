@@ -240,7 +240,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bedrooms?.toString() || "any"}
               onValueChange={(value) => setBedrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-9 text-sm w-full">
+              <SelectTrigger className="h-9 text-sm w-1/2">
                 <SelectValue placeholder="Habitaciones" />
               </SelectTrigger>
               <SelectContent>
@@ -264,7 +264,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               value={bathrooms?.toString() || "any"}
               onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
             >
-              <SelectTrigger className="h-9 text-sm w-full">
+              <SelectTrigger className="h-9 text-sm w-1/2">
                 <SelectValue placeholder="Baños" />
               </SelectTrigger>
               <SelectContent>
@@ -334,7 +334,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               Ordenar por
             </Label>
             <Select>
-              <SelectTrigger className="h-9 text-sm w-full text-left">
+              <SelectTrigger className="h-9 text-sm w-full">
                 <SelectValue placeholder="Relevancia" />
               </SelectTrigger>
               <SelectContent>
