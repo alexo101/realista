@@ -494,11 +494,20 @@ export class DatabaseStorage implements IStorage {
     return property;
   }
 
-  async getMostViewedProperties(limit: number = 6): Promise<Property[]> {
-    return await db.select()
+  async getMostViewedProperties(limit: number = 6, operationType?: string): Promise<Property[]> {
+    // Construir la consulta base
+    let query = db.select()
       .from(properties)
-      .orderBy(sql`${properties.viewCount} DESC`)
-      .limit(limit);
+      .orderBy(sql`${properties.viewCount} DESC`);
+    
+    // Si se especifica un tipo de operación, añadir el filtro
+    if (operationType) {
+      console.log(`Filtrando propiedades más vistas por tipo de operación: ${operationType}`);
+      query = query.where(eq(properties.operationType, operationType));
+    }
+    
+    // Aplicar el límite y ejecutar la consulta
+    return await query.limit(limit);
   }
 
   async incrementPropertyViewCount(id: number): Promise<void> {

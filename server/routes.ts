@@ -134,12 +134,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
       const mostViewed = req.query.mostViewed === 'true';
+      const operationType = req.query.operationType as string | undefined;
+
+      console.log(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}`);
 
       let properties;
       if (mostViewed) {
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
-        // Solo usamos el límite, ignoramos el operationType por ahora
-        properties = await storage.getMostViewedProperties(limit);
+        // Usamos el tipo de operación para filtrar las propiedades más vistas
+        properties = await storage.getMostViewedProperties(limit, operationType);
+        console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
         properties = await storage.getPropertiesByAgent(agentId);
       } else {
