@@ -66,13 +66,13 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
               <h3 className="font-semibold">{agency.agencyName}</h3>
               <p className="text-gray-600">{agency.agencyAddress || 'Sin dirección'}</p>
 
-              {/* Get neighborhoods from either field with enhanced handling */}
+              {/* Get neighborhoods from any available field with enhanced handling */}
               {(() => {
                 // Normalize neighborhood data with robust handling
                 let neighborhoods = [];
 
-                // Try to get neighborhoods from either field
-                const rawNeighborhoods = agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods;
+                // Try to get neighborhoods from any available field
+                const rawNeighborhoods = agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || agency.agency_neighborhoodss;
 
                 if (rawNeighborhoods) {
                   // Convert to array if it's a string (handles both JSON string and regular string)

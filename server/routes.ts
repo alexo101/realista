@@ -418,17 +418,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
         console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
-        console.log('- Original neighborhoods:', agency.agencyNeighborhoods);
-        console.log('- Type of agencyNeighborhoods:', typeof agency.agencyNeighborhoods);
+        
+        // Get the agency neighborhoods from any available field
+        const rawNeighborhoods = agency.agency_neighborhoods || agency.agencyNeighborhoods;
+        console.log('- Original neighborhoods:', rawNeighborhoods);
+        console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
         
         // Initialize array to store neighborhood values
         let neighborhoodsArray = [];
         
         // Handle PostgreSQL array format: "{\"La Sagrera\",\"Sant Andreu del Palomar\"}"
-        if (typeof agency.agencyNeighborhoods === 'string') {
+        if (typeof rawNeighborhoods === 'string') {
           try {
             // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
-            const cleaned = agency.agencyNeighborhoods.replace(/^\{|\}$/g, '');
+            const cleaned = rawNeighborhoods.replace(/^\{|\}$/g, '');
             
             // Check if it's wrapped in quotes and contains commas
             if (cleaned.includes(',') && cleaned.includes('"')) {
@@ -444,18 +447,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
             }
             
-            console.log('- Parsed agencyNeighborhoods into array:', neighborhoodsArray);
+            console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
           } catch (e) {
-            console.log('- Failed to parse agencyNeighborhoods:', e.message);
+            console.log('- Failed to parse neighborhoods:', e.message);
             neighborhoodsArray = [];
           }
-        } else if (Array.isArray(agency.agencyNeighborhoods)) {
-          neighborhoodsArray = agency.agencyNeighborhoods;
+        } else if (Array.isArray(rawNeighborhoods)) {
+          neighborhoodsArray = rawNeighborhoods;
         }
         
-        // Ensure we're always using agencyInfluenceNeighborhoods as the canonical field name
+        // Ensure all neighborhood-related fields are consistent
         agency.agencyNeighborhoods = neighborhoodsArray;
         agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
+        agency.agency_neighborhoods = neighborhoodsArray;
         
         console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
         return agency;

@@ -169,32 +169,27 @@ export class DatabaseStorage implements IStorage {
       console.log(`Filtrando por barrios: ${neighborhoodsStr}`);
       const neighborhoods = neighborhoodsStr.split(',');
 
-      // Para cada barrio, comprobamos si está en el array de barrios de influencia
-      // El campo agency_neighborhoods es un array de texto, por lo que debemos usar el operador @> que significa "contains"
-      query = query.where(
-        or(...neighborhoods.map(neighborhood => 
-          sql`${agencies.agencyInfluenceNeighborhoods} @> ARRAY[${neighborhood}]::text[]`
-        ))
-      );
+      try {
+        // For each neighborhood, check if it's in the agency's neighborhood list
+        // We need to check in the agency_neighborhoods column which is a text field in PostgreSQL format
+        // The format looks like: {"La Sagrera","Sant Andreu del Palomar"}
+        query = query.where(
+          or(...neighborhoods.map(neighborhood => 
+            sql`agencies.agency_neighborhoods::text LIKE ${`%${neighborhood}%`}`
+          ))
+        );
+      } catch (error) {
+        console.error('Error building neighborhood filter:', error);
+        // If there's an error with the filter, continue without it
+      }
     }
 
     // Ejecutamos la consulta
     console.log(`Ejecutando búsqueda de agencias...`);
-    const agencies = await query;
+    const agencyResults = await query;
+    console.log(`Found ${agencyResults.length} agencies in the database`);
 
-    // Verificación adicional para filtrar resultados  (This is redundant given the where clause above. Remove if agencyNeighborhoods is a properly formatted array in the database)
-    // if (neighborhoodsStr && neighborhoodsStr.trim() !== '') {
-    //   const neighborhoods = neighborhoodsStr.split(',');
-    //   // Filtramos manualmente para asegurar que solo se muestran agencias con el barrio seleccionado
-    //   return agencies.filter(agency => {
-    //     if (!agency.agencyNeighborhoods) return false;
-    //     return neighborhoods.some(n => 
-    //       agency.agencyNeighborhoods.includes(n) //Assumes agencyNeighborhoods is an array. Adjust if it's a different format.
-    //     );
-    //   });
-    // }
-
-    return agencies;
+    return agencyResults;
   }
 
   async getAgentById(id: number): Promise<User | undefined> {
