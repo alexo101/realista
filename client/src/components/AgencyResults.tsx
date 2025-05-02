@@ -9,8 +9,8 @@ interface Agency {
   agencyName: string;
   agencyAddress?: string;
   agencyLogo?: string;
-  agencyInfluenceNeighborhoods?: string[];
-  agencyNeighborhoods?: string[]; // Alternative field name used in some API responses
+  agencyInfluenceNeighborhoods?: string[] | any;
+  agencyNeighborhoods?: string[] | any; // Alternative field name used in some API responses
   agencyDescription?: string;
   description?: string; // Alternative description field
 }
@@ -67,10 +67,31 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
               <h3 className="font-semibold">{agency.agencyName}</h3>
               <p className="text-gray-600">{agency.agencyAddress || 'Sin dirección'}</p>
               
-              {/* Get neighborhoods from either field */}
+              {/* Get neighborhoods from either field with enhanced normalization */}
               {(() => {
-                // Determine which neighborhoods array to use, with fallback logic
-                const neighborhoods = agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || [];
+                // Normalize and determine which neighborhoods array to use
+                let neighborhoods = [];
+                
+                // Try agencyInfluenceNeighborhoods first
+                if (agency.agencyInfluenceNeighborhoods) {
+                  neighborhoods = Array.isArray(agency.agencyInfluenceNeighborhoods) 
+                    ? agency.agencyInfluenceNeighborhoods 
+                    : (typeof agency.agencyInfluenceNeighborhoods === 'string' 
+                      ? [agency.agencyInfluenceNeighborhoods] 
+                      : []);
+                }
+                
+                // Fall back to agencyNeighborhoods if needed
+                if ((!neighborhoods || neighborhoods.length === 0) && agency.agencyNeighborhoods) {
+                  neighborhoods = Array.isArray(agency.agencyNeighborhoods) 
+                    ? agency.agencyNeighborhoods 
+                    : (typeof agency.agencyNeighborhoods === 'string' 
+                      ? [agency.agencyNeighborhoods] 
+                      : []);
+                }
+                
+                // Filter out any non-string values just to be safe
+                neighborhoods = neighborhoods.filter(n => typeof n === 'string');
                 
                 return neighborhoods.length > 0 ? (
                   <div className="mt-2">

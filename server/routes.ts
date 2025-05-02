@@ -412,18 +412,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
+      // Add detailed logging to see what's coming from the database
+      console.log('Agency results before normalization:', JSON.stringify(processedResults, null, 2));
+      
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
+        console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
+        console.log('- Original neighborhoods:', agency.agencyNeighborhoods);
+        console.log('- Original influenceNeighborhoods:', agency.agencyInfluenceNeighborhoods);
+        
+        // Make sure we have arrays for both fields
+        if (!Array.isArray(agency.agencyNeighborhoods) && agency.agencyNeighborhoods) {
+          try {
+            // Handle case where it might be a string that needs parsing
+            agency.agencyNeighborhoods = Array.isArray(agency.agencyNeighborhoods) 
+              ? agency.agencyNeighborhoods 
+              : JSON.parse(agency.agencyNeighborhoods);
+            console.log('- Parsed agencyNeighborhoods:', agency.agencyNeighborhoods);
+          } catch (e) {
+            console.log('- Failed to parse agencyNeighborhoods, setting to empty array');
+            agency.agencyNeighborhoods = [];
+          }
+        }
+        
         // Ensure we're always using agencyInfluenceNeighborhoods as the canonical field name
-        if (agency.agencyNeighborhoods) {
+        if (agency.agencyNeighborhoods && agency.agencyNeighborhoods.length) {
           agency.agencyInfluenceNeighborhoods = agency.agencyNeighborhoods;
+          console.log('- Set agencyInfluenceNeighborhoods from agencyNeighborhoods:', agency.agencyInfluenceNeighborhoods);
         }
+        
         // Make sure we always have an array even if empty
-        if (!agency.agencyInfluenceNeighborhoods) {
+        if (!Array.isArray(agency.agencyInfluenceNeighborhoods)) {
           agency.agencyInfluenceNeighborhoods = [];
+          console.log('- Set empty agencyInfluenceNeighborhoods array');
         }
+        
         return agency;
       });
+      
+      console.log('Agency results after normalization:', JSON.stringify(normalizedResults, null, 2));
       
       console.log('Search agencies results:', normalizedResults.length);
       res.json(normalizedResults);
