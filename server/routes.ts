@@ -415,8 +415,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
         // Ensure we're always using agencyInfluenceNeighborhoods as the canonical field name
-        if (agency.agencyNeighborhoods && !agency.agencyInfluenceNeighborhoods) {
+        if (agency.agencyNeighborhoods) {
           agency.agencyInfluenceNeighborhoods = agency.agencyNeighborhoods;
+        }
+        // Make sure we always have an array even if empty
+        if (!agency.agencyInfluenceNeighborhoods) {
+          agency.agencyInfluenceNeighborhoods = [];
         }
         return agency;
       });

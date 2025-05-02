@@ -12,6 +12,7 @@ interface Agency {
   agencyInfluenceNeighborhoods?: string[];
   agencyNeighborhoods?: string[]; // Alternative field name used in some API responses
   agencyDescription?: string;
+  description?: string; // Alternative description field
 }
 
 interface AgencyResultsProps {
@@ -66,31 +67,35 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
               <h3 className="font-semibold">{agency.agencyName}</h3>
               <p className="text-gray-600">{agency.agencyAddress || 'Sin dirección'}</p>
               
-              {/* Use either agencyInfluenceNeighborhoods or agencyNeighborhoods based on what's available */}
-              {(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods) && (
-                <div className="mt-2">
-                  <p className="text-xs text-gray-500">Barrios de influencia:</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {/* Use whichever property is available */}
-                    {(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || []).slice(0, 2).map((neighborhood) => (
-                      <span key={neighborhood} className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5 flex items-center">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        {neighborhood}
-                      </span>
-                    ))}
-                    {(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || []).length > 2 && (
-                      <span className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">
-                        +{(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || []).length - 2}
-                      </span>
-                    )}
+              {/* Get neighborhoods from either field */}
+              {(() => {
+                // Determine which neighborhoods array to use, with fallback logic
+                const neighborhoods = agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || [];
+                
+                return neighborhoods.length > 0 ? (
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-500">Barrios de influencia:</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {neighborhoods.slice(0, 2).map((neighborhood) => (
+                        <span key={neighborhood} className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5 flex items-center">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          {neighborhood}
+                        </span>
+                      ))}
+                      {neighborhoods.length > 2 && (
+                        <span className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">
+                          +{neighborhoods.length - 2}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
           </div>
           
-          {agency.agencyDescription && (
-            <p className="mt-3 text-gray-700 text-sm line-clamp-3">{agency.agencyDescription}</p>
+          {(agency.agencyDescription || agency.description) && (
+            <p className="mt-3 text-gray-700 text-sm line-clamp-3">{agency.agencyDescription || agency.description}</p>
           )}
           
           <div className="mt-auto pt-4">
