@@ -10,6 +10,7 @@ interface Agency {
   agencyAddress?: string;
   agencyLogo?: string;
   agencyInfluenceNeighborhoods?: string[];
+  agencyNeighborhoods?: string[]; // Alternative field name used in some API responses
   agencyDescription?: string;
 }
 
@@ -65,19 +66,21 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
               <h3 className="font-semibold">{agency.agencyName}</h3>
               <p className="text-gray-600">{agency.agencyAddress || 'Sin dirección'}</p>
               
-              {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
+              {/* Use either agencyInfluenceNeighborhoods or agencyNeighborhoods based on what's available */}
+              {(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods) && (
                 <div className="mt-2">
                   <p className="text-xs text-gray-500">Barrios de influencia:</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {agency.agencyInfluenceNeighborhoods.slice(0, 2).map((neighborhood) => (
+                    {/* Use whichever property is available */}
+                    {(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || []).slice(0, 2).map((neighborhood) => (
                       <span key={neighborhood} className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5 flex items-center">
                         <MapPin className="w-3 h-3 mr-1" />
                         {neighborhood}
                       </span>
                     ))}
-                    {agency.agencyInfluenceNeighborhoods.length > 2 && (
+                    {(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || []).length > 2 && (
                       <span className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">
-                        +{agency.agencyInfluenceNeighborhoods.length - 2}
+                        +{(agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods || []).length - 2}
                       </span>
                     )}
                   </div>

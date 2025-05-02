@@ -412,8 +412,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      console.log('Search agencies results:', processedResults.length);
-      res.json(processedResults);
+      // Normalize field names to ensure consistent API responses
+      const normalizedResults = processedResults.map(agency => {
+        // Ensure we're always using agencyInfluenceNeighborhoods as the canonical field name
+        if (agency.agencyNeighborhoods && !agency.agencyInfluenceNeighborhoods) {
+          agency.agencyInfluenceNeighborhoods = agency.agencyNeighborhoods;
+        }
+        return agency;
+      });
+      
+      console.log('Search agencies results:', normalizedResults.length);
+      res.json(normalizedResults);
     } catch (error) {
       console.error('Error searching agencies:', error);
       res.status(500).json({ message: "Failed to search agencies" });
