@@ -218,3 +218,50 @@ I will propose changes to implement this solution in the following order:
 3. Test the changes to ensure both filters work as expected
 
 This should resolve the issue while maintaining the existing functionality that's working correctly.
+
+# Agency Neighborhood Display Issue Analysis
+
+## Problem Statement
+The agency with id=2 in the agencies table has "La Sagrera" and "Sant Andreu del Palomar" listed in its agency_neighborhoods column as areas of influence. However, it does not appear in the Agencias tab of the results page when viewing these neighborhoods.
+
+## Root Cause Analysis
+
+After reviewing the codebase, the issue appears to stem from inconsistent field naming and data handling between the server and client sides:
+
+1. **Inconsistent Field Naming**: The database uses `agency_neighborhoods` but the API response contains either `agencyNeighborhoods` or `agencyInfluenceNeighborhoods` depending on the endpoint.
+
+2. **Field Access in Components**: The `AgencyResults` component was primarily looking for `agencyInfluenceNeighborhoods` but not properly falling back to `agencyNeighborhoods` when the former isn't available.
+
+3. **API Response Handling**: The server's normalization of response fields in `/api/search/agencies` route was only conditionally applying the neighborhood field normalization.
+
+## Solution Implemented
+
+1. **Updated Agency Interface**: Modified the Agency interface in `AgencyResults.tsx` to handle both field name formats.
+
+2. **Component Logic Enhancement**: Updated the component to properly check for both field names and use whichever is available.
+
+3. **Server-side Normalization**: Improved the server's field normalization to ensure consistent response format for agency neighborhood data.
+
+## Technical Implementation Details
+
+### Client-side Changes
+- Added support for both field names in the Agency interface in `AgencyResults.tsx`
+- Modified the rendering logic to check for either field name and use whichever is available
+- Ensured consistent UI display regardless of which field name is used
+
+### Server-side Changes
+- Enhanced the normalization logic in the `/api/search/agencies` endpoint in `routes.ts`
+- Made sure that `agencyInfluenceNeighborhoods` is consistently populated with data from `agencyNeighborhoods` when needed
+
+## Verification
+To verify the fix:
+1. Navigate to the neighborhood results page for "La Sagrera" or "Sant Andreu del Palomar"
+2. Check the "Agencias" tab to confirm agency id=2 now appears in the results
+3. Ensure the agency's influence neighborhoods are correctly displayed in the UI
+
+## Future Recommendations
+
+To prevent similar issues in the future:
+1. **Field Name Standardization**: Standardize on a single field name (preferably `agencyInfluenceNeighborhoods`) throughout the application
+2. **Type Safety**: Enhance TypeScript interfaces to better represent data structures
+3. **Data Validation**: Add more robust validation to ensure data consistency between server and client
