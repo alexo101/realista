@@ -419,34 +419,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const normalizedResults = processedResults.map(agency => {
         console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
         console.log('- Original neighborhoods:', agency.agencyNeighborhoods);
-        console.log('- Original influenceNeighborhoods:', agency.agencyInfluenceNeighborhoods);
+        console.log('- Type of agencyNeighborhoods:', typeof agency.agencyNeighborhoods);
         
-        // Make sure we have arrays for both fields
-        if (!Array.isArray(agency.agencyNeighborhoods) && agency.agencyNeighborhoods) {
+        // Initialize array to store neighborhood values
+        let neighborhoodsArray = [];
+        
+        // Handle PostgreSQL array format: "{\"La Sagrera\",\"Sant Andreu del Palomar\"}"
+        if (typeof agency.agencyNeighborhoods === 'string') {
           try {
-            // Handle case where it might be a string that needs parsing
-            agency.agencyNeighborhoods = Array.isArray(agency.agencyNeighborhoods) 
-              ? agency.agencyNeighborhoods 
-              : JSON.parse(agency.agencyNeighborhoods);
-            console.log('- Parsed agencyNeighborhoods:', agency.agencyNeighborhoods);
+            // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
+            const cleaned = agency.agencyNeighborhoods.replace(/^\{|\}$/g, '');
+            
+            // Check if it's wrapped in quotes and contains commas
+            if (cleaned.includes(',') && cleaned.includes('"')) {
+              // Split by "," but respect quotes
+              neighborhoodsArray = cleaned.split(/","|,/)
+                .map(n => n.replace(/^"|"$/g, '').trim())
+                .filter(Boolean);
+            } else if (cleaned.includes(',')) {
+              // Simple comma split if no quotes
+              neighborhoodsArray = cleaned.split(',').map(n => n.trim()).filter(Boolean);
+            } else {
+              // Single value
+              neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
+            }
+            
+            console.log('- Parsed agencyNeighborhoods into array:', neighborhoodsArray);
           } catch (e) {
-            console.log('- Failed to parse agencyNeighborhoods, setting to empty array');
-            agency.agencyNeighborhoods = [];
+            console.log('- Failed to parse agencyNeighborhoods:', e.message);
+            neighborhoodsArray = [];
           }
+        } else if (Array.isArray(agency.agencyNeighborhoods)) {
+          neighborhoodsArray = agency.agencyNeighborhoods;
         }
         
         // Ensure we're always using agencyInfluenceNeighborhoods as the canonical field name
-        if (agency.agencyNeighborhoods && agency.agencyNeighborhoods.length) {
-          agency.agencyInfluenceNeighborhoods = agency.agencyNeighborhoods;
-          console.log('- Set agencyInfluenceNeighborhoods from agencyNeighborhoods:', agency.agencyInfluenceNeighborhoods);
-        }
+        agency.agencyNeighborhoods = neighborhoodsArray;
+        agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
         
-        // Make sure we always have an array even if empty
-        if (!Array.isArray(agency.agencyInfluenceNeighborhoods)) {
-          agency.agencyInfluenceNeighborhoods = [];
-          console.log('- Set empty agencyInfluenceNeighborhoods array');
-        }
-        
+        console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
         return agency;
       });
       

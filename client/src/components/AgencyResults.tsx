@@ -1,4 +1,3 @@
-
 import { Building, MapPin, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -66,33 +65,42 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
             <div>
               <h3 className="font-semibold">{agency.agencyName}</h3>
               <p className="text-gray-600">{agency.agencyAddress || 'Sin dirección'}</p>
-              
-              {/* Get neighborhoods from either field with enhanced normalization */}
+
+              {/* Get neighborhoods from either field with enhanced handling */}
               {(() => {
-                // Normalize and determine which neighborhoods array to use
+                // Normalize neighborhood data with robust handling
                 let neighborhoods = [];
-                
-                // Try agencyInfluenceNeighborhoods first
-                if (agency.agencyInfluenceNeighborhoods) {
-                  neighborhoods = Array.isArray(agency.agencyInfluenceNeighborhoods) 
-                    ? agency.agencyInfluenceNeighborhoods 
-                    : (typeof agency.agencyInfluenceNeighborhoods === 'string' 
-                      ? [agency.agencyInfluenceNeighborhoods] 
-                      : []);
+
+                // Try to get neighborhoods from either field
+                const rawNeighborhoods = agency.agencyInfluenceNeighborhoods || agency.agencyNeighborhoods;
+
+                if (rawNeighborhoods) {
+                  // Convert to array if it's a string (handles both JSON string and regular string)
+                  if (typeof rawNeighborhoods === 'string') {
+                    try {
+                      // Try to parse as JSON first
+                      neighborhoods = JSON.parse(rawNeighborhoods);
+                    } catch {
+                      // If not valid JSON, handle PostgreSQL array format or comma-separated
+                      if (rawNeighborhoods.startsWith('{') && rawNeighborhoods.endsWith('}')) {
+                        // PostgreSQL array format
+                        const cleaned = rawNeighborhoods.slice(1, -1);
+                        neighborhoods = cleaned.split(/","|,/)
+                          .map(n => n.replace(/^"|"$/g, '').trim())
+                          .filter(Boolean);
+                      } else {
+                        // Regular string - treat as a single neighborhood or comma-separated list
+                        neighborhoods = rawNeighborhoods.split(',').map(n => n.trim()).filter(Boolean);
+                      }
+                    }
+                  } else if (Array.isArray(rawNeighborhoods)) {
+                    neighborhoods = rawNeighborhoods;
+                  }
                 }
-                
-                // Fall back to agencyNeighborhoods if needed
-                if ((!neighborhoods || neighborhoods.length === 0) && agency.agencyNeighborhoods) {
-                  neighborhoods = Array.isArray(agency.agencyNeighborhoods) 
-                    ? agency.agencyNeighborhoods 
-                    : (typeof agency.agencyNeighborhoods === 'string' 
-                      ? [agency.agencyNeighborhoods] 
-                      : []);
-                }
-                
-                // Filter out any non-string values just to be safe
+
+                // Filter out any non-string values
                 neighborhoods = neighborhoods.filter(n => typeof n === 'string');
-                
+
                 return neighborhoods.length > 0 ? (
                   <div className="mt-2">
                     <p className="text-xs text-gray-500">Barrios de influencia:</p>
@@ -114,11 +122,11 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
               })()}
             </div>
           </div>
-          
+
           {(agency.agencyDescription || agency.description) && (
             <p className="mt-3 text-gray-700 text-sm line-clamp-3">{agency.agencyDescription || agency.description}</p>
           )}
-          
+
           <div className="mt-auto pt-4">
             <Button 
               variant="outline" 
