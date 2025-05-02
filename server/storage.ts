@@ -154,28 +154,32 @@ export class DatabaseStorage implements IStorage {
     const agencyName = params.get('agencyName');
     const neighborhoodsStr = params.get('neighborhoods');
 
-    let query = db.select().from(agencies) // Corrected table name
-      .where(eq(agencies.agencyName.valueIsNotNull(), true)) as any; //Simplified where clause
+    console.log(`Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}`);
+
+    let query = db.select().from(agencies)
+      .where(eq(agencies.agencyName.valueIsNotNull(), true)) as any;
 
     // Filtrar por nombre de agencia si se proporciona
     if (agencyName && agencyName.trim() !== '') {
-      query = query.where(sql`agencies.agencyName LIKE ${`%${agencyName}%`}`); //Corrected table name
+      query = query.where(sql`agencies.agency_name ILIKE ${`%${agencyName}%`}`);
     }
 
     // Filtrar por barrios de influencia si se proporcionan
     if (neighborhoodsStr && neighborhoodsStr.trim() !== '') {
+      console.log(`Filtrando por barrios: ${neighborhoodsStr}`);
       const neighborhoods = neighborhoodsStr.split(',');
 
-      // Aplicamos un filtro más estricto para que solo devuelva agencias
-      // que tengan explícitamente los barrios seleccionados en su array de influencia
+      // Para cada barrio, comprobamos si está en el array de barrios de influencia
+      // El campo agency_neighborhoods es un array de texto, por lo que debemos usar el operador @> que significa "contains"
       query = query.where(
         or(...neighborhoods.map(neighborhood => 
-          sql`agencies.agencyNeighborhoods LIKE ${`%"${neighborhood}"%`}` //Corrected table name and field name. Assumes agencyNeighborhoods is a stringified array or contains the neighborhood as a substring.  Adjust as needed based on your database schema.
+          sql`${agencies.agencyInfluenceNeighborhoods} @> ARRAY[${neighborhood}]::text[]`
         ))
       );
     }
 
     // Ejecutamos la consulta
+    console.log(`Ejecutando búsqueda de agencias...`);
     const agencies = await query;
 
     // Verificación adicional para filtrar resultados  (This is redundant given the where clause above. Remove if agencyNeighborhoods is a properly formatted array in the database)
