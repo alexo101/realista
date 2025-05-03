@@ -38,7 +38,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   
   // Consulta a la API
-  const { data: results = [], isLoading } = useQuery<SearchResult[]>({
+  const { data: results = [], isLoading, isError, error } = useQuery<SearchResult[]>({
     queryKey: [`/api/search/${type}`, searchTerm],
     queryFn: async () => {
       if (!searchTerm.trim()) return [];
@@ -51,12 +51,27 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       }
       params.append('showAll', 'true');
       
-      const response = await fetch(`/api/search/${type}?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch search results');
-      return response.json();
+      try {
+        console.log(`Searching ${type} with query:`, searchTerm);
+        const response = await fetch(`/api/search/${type}?${params}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Search error (${response.status}):`, errorText);
+          throw new Error(`Failed to fetch search results: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`Found ${data.length} ${type} results`);
+        return data;
+      } catch (error) {
+        console.error('Search error:', error);
+        throw error;
+      }
     },
-    enabled: !!searchTerm.trim(),
+    enabled: searchTerm.trim().length > 1,
     staleTime: 5000,
+    retry: 1,
   });
   
   // Funciones de manejo de eventos
@@ -246,6 +261,10 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         >
           {isLoading ? (
             <div className="p-4 text-center text-gray-500">Buscando...</div>
+          ) : isError ? (
+            <div className="p-4 text-center text-red-500">
+              Error en la búsqueda. Por favor, inténtelo de nuevo.
+            </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">No se encontraron resultados</div>
           ) : (

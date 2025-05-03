@@ -173,8 +173,33 @@ export class DatabaseStorage implements IStorage {
 
   // Agents
   async searchAgents(query: string): Promise<User[]> {
-    // Versión simplificada para probar la conexión
-    return await db.select().from(agents).limit(10);
+    // Parseamos los parámetros de la URL
+    const params = new URLSearchParams(query);
+    const showAll = params.get("showAll") === "true";
+    const agentName = params.get("agentName");
+    
+    console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}`);
+    
+    let query = db.select().from(agents);
+    
+    // Filtrar por nombre o apellido de agente si se proporciona
+    if (agentName && agentName.trim() !== "") {
+      query = query.where(
+        or(
+          sql`${agents.name} ILIKE ${`%${agentName}%`}`,
+          sql`${agents.surname} ILIKE ${`%${agentName}%`}`
+        )
+      );
+    }
+    
+    // Limitamos los resultados para evitar sobrecargar la respuesta
+    query = query.limit(10);
+    
+    console.log(`Ejecutando búsqueda de agentes...`);
+    const agentResults = await query;
+    console.log(`Found ${agentResults.length} agents in the database`);
+    
+    return agentResults;
   }
 
   async searchAgencies(queryString: string): Promise<User[]> {
