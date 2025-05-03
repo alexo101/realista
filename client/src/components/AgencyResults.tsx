@@ -84,10 +84,7 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
                 let neighborhoods = [];
 
                 // Try to get neighborhoods from any available field
-                const rawNeighborhoods =
-                  agency.agencyInfluenceNeighborhoods ||
-                  agency.agencyNeighborhoods ||
-                  agency.agency_neighborhoods;
+                const rawNeighborhoods = agency.agencyInfluenceNeighborhoodss;
 
                 if (rawNeighborhoods) {
                   // Convert to array if it's a string (handles both JSON string and regular string)

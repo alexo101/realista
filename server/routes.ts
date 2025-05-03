@@ -419,8 +419,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const normalizedResults = processedResults.map(agency => {
         console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
         
-        // Get the agency neighborhoods from any available field
-        const rawNeighborhoods = agency.agency_neighborhoods || agency.agencyNeighborhoods;
+        // Get the agency neighborhoods from the standardized field
+        const rawNeighborhoods = agency.agency_influence_neighborhoods || agency.agencyInfluenceNeighborhoods;
         console.log('- Original neighborhoods:', rawNeighborhoods);
         console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
         
@@ -456,10 +456,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           neighborhoodsArray = rawNeighborhoods;
         }
         
-        // Ensure all neighborhood-related fields are consistent
-        agency.agencyNeighborhoods = neighborhoodsArray;
+        // Set field to standardized name
         agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
-        agency.agency_neighborhoods = neighborhoodsArray;
         
         console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
         return agency;

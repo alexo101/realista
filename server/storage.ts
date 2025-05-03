@@ -175,7 +175,7 @@ export class DatabaseStorage implements IStorage {
         // The format looks like: {"La Sagrera","Sant Andreu del Palomar"}
         query = query.where(
           or(...neighborhoods.map(neighborhood => 
-            sql`agencies.agency_neighborhoods::text LIKE ${`%${neighborhood}%`}`
+            sql`agencies.agency_influence_neighborhoods::text LIKE ${`%${neighborhood}%`}`
           ))
         );
       } catch (error) {
