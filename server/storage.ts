@@ -241,15 +241,12 @@ export class DatabaseStorage implements IStorage {
 
       try {
         // For each neighborhood, check if it's in the agency's neighborhood list
-        // Using the correct column name: agencyInfluenceNeighborhoods (camelCase according to schema.ts)
-        console.log('Using correct column name: agencyInfluenceNeighborhoods');
+        // Using arrayOverlaps for array comparison against agency's influence neighborhoods
         query = query.where(
-          or(
-            ...neighborhoods.map(
-              (neighborhood) =>
-                sql`${agencies.agencyInfluenceNeighborhoods}::text LIKE ${`%${neighborhood}%`}`,
-            ),
-          ),
+          arrayOverlaps(
+            agencies.agencyInfluenceNeighborhoods,
+            sql.array(neighborhoods, 'text')
+          )
         );
       } catch (error) {
         console.error("Error building neighborhood filter:", error);
