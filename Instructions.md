@@ -265,3 +265,56 @@ To prevent similar issues in the future:
 1. **Field Name Standardization**: Standardize on a single field name (preferably `agencyInfluenceNeighborhoods`) throughout the application
 2. **Type Safety**: Enhance TypeScript interfaces to better represent data structures
 3. **Data Validation**: Add more robust validation to ensure data consistency between server and client
+# Agent Search Functionality Error Analysis
+
+## Problem Description
+
+When searching for agents, the application encounters a SQL error:
+
+```
+Error searching agents: error: column "influence_neighborhoods" does not exist
+```
+
+This indicates that the SQL query is looking for a database column named `influence_neighborhoods` when trying to filter agents by neighborhoods, but this column doesn't exist in the database.
+
+## Root Cause Analysis
+
+After reviewing the codebase, I identified the following issues:
+
+1. **Schema Definition vs Query Mismatch**: In `shared/schema.ts`, the agents table defines the column as `influenceNeighborhoods` (camelCase), but the SQL query in `storage.ts` is attempting to use `influence_neighborhoods` (snake_case).
+
+2. **Fixed in Previous PR but Still Occurring**: This issue was previously addressed for one part of the code, but the fix wasn't comprehensive. The previous change corrected the search functionality by correctly using `agents.influenceNeighborhoods` in some parts, but missed others.
+
+3. **Drizzle ORM Column References**: The issue occurs within the filtering code in `searchAgents` function in `server/storage.ts`. When using the `arrayOverlaps` function to filter neighborhoods, the incorrect column name is being used.
+
+## Fix Implementation
+
+The solution needs to ensure that all references to the influenceNeighborhoods column use the camelCase version as defined in the schema:
+
+1. Modify the `searchAgents` function in `server/storage.ts` to use the correct column reference:
+   - Change any reference to `influence_neighborhoods` to `influenceNeighborhoods`
+   - Ensure all ORM query conditions properly reference the column using `agents.influenceNeighborhoods`
+
+2. In the `searchAgencies` function, ensure similar consistency for agency neighborhood filtering using `agencyInfluenceNeighborhoods`
+
+## Expected Outcome
+
+After applying these changes:
+
+1. Agent searches should properly filter by neighborhood without SQL errors
+2. The autocomplete functionality for agents with neighborhood filtering should work correctly
+3. Search by name functionality will continue to work as expected
+
+## Testing Strategy
+
+To verify the fix:
+1. Try searching for agents with different name queries
+2. Test agent searches with neighborhood filtering
+3. Ensure both backend filtering and frontend display properly handle the neighborhood data
+
+## Future Recommendations
+
+To prevent similar issues in the future:
+1. Standardize on either camelCase or snake_case for database column names throughout the application
+2. Consider using TypeScript's strong typing to catch column name mismatches at compile time
+3. Add comprehensive tests for search functionality to catch regressions

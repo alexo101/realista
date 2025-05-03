@@ -226,12 +226,11 @@ export class DatabaseStorage implements IStorage {
 
     let query = db
       .select()
-      .from(agencies)
-      .where(eq(agencies.agencyName.valueIsNotNull(), true)) as any;
+      .from(agencies) as any;
 
     // Filtrar por nombre de agencia si se proporciona
     if (agencyName && agencyName.trim() !== "") {
-      query = query.where(sql`agencies.agency_name ILIKE ${`%${agencyName}%`}`);
+      query = query.where(sql`${agencies.agencyName} ILIKE ${`%${agencyName}%`}`);
     }
 
     // Filtrar por barrios de influencia si se proporcionan
@@ -247,7 +246,7 @@ export class DatabaseStorage implements IStorage {
           or(
             ...neighborhoods.map(
               (neighborhood) =>
-                sql`agencies.agencInfluenceNeighborhoods::text LIKE ${`%${neighborhood}%`}`,
+                sql`${agencies.agencyInfluenceNeighborhoods}::text LIKE ${`%${neighborhood}%`}`,
             ),
           ),
         );
