@@ -177,8 +177,9 @@ export class DatabaseStorage implements IStorage {
     const params = new URLSearchParams(queryString);
     const showAll = params.get("showAll") === "true";
     const agentName = params.get("agentName");
+    const neighborhoodsStr = params.get("neighborhoods");
     
-    console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}`);
+    console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
     
     let dbQuery = db.select().from(agents);
     
@@ -189,6 +190,16 @@ export class DatabaseStorage implements IStorage {
           sql`${agents.name} ILIKE ${`%${agentName}%`}`,
           sql`${agents.surname} ILIKE ${`%${agentName}%`}`
         )
+      );
+    }
+    
+    // Filtrar por barrios si se proporcionan
+    if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
+      const neighborhoods = neighborhoodsStr.split(",");
+      
+      // Usamos la columna correcta: influenceNeighborhoods
+      dbQuery = dbQuery.where(
+        arrayOverlaps(agents.influenceNeighborhoods, neighborhoods)
       );
     }
     
