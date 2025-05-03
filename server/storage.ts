@@ -178,11 +178,11 @@ export class DatabaseStorage implements IStorage {
     const showAll = params.get("showAll") === "true";
     const agentName = params.get("agentName");
     const neighborhoodsStr = params.get("neighborhoods");
-    
+
     console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
-    
+
     let dbQuery = db.select().from(agents);
-    
+
     // Filtrar por nombre o apellido de agente si se proporciona
     if (agentName && agentName.trim() !== "") {
       dbQuery = dbQuery.where(
@@ -192,24 +192,25 @@ export class DatabaseStorage implements IStorage {
         )
       );
     }
-    
+
     // Filtrar por barrios si se proporcionan
     if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
       const neighborhoods = neighborhoodsStr.split(",");
-      
-      // Usamos la columna correcta: influenceNeighborhoods (camelCase según schema.ts)
+
+      // Construimos una consulta SQL directa en lugar de usar arrayOverlaps
+      // para asegurarnos de que usa el nombre correcto de la columna
       dbQuery = dbQuery.where(
-        arrayOverlaps(agents.influenceNeighborhoods, neighborhoods)
+        sql`${agents.influenceNeighborhoods} && ${sql.array(neighborhoods, 'text')}::text[]`
       );
     }
-    
+
     // Limitamos los resultados para evitar sobrecargar la respuesta
     dbQuery = dbQuery.limit(10);
-    
+
     console.log(`Ejecutando búsqueda de agentes...`);
     const agentResults = await dbQuery;
     console.log(`Found ${agentResults.length} agents in the database`);
-    
+
     return agentResults;
   }
 
