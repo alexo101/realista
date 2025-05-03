@@ -231,40 +231,34 @@ export class DatabaseStorage implements IStorage {
       const agencyName = params.get("agencyName");
       const neighborhoodsStr = params.get("neighborhoods");
 
-      console.log(
-        `Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}`,
-      );
+      console.log(`Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}`);
 
-      let query = db
-        .select()
-        .from(agencies);
+      let dbQuery = db.select().from(agencies);
 
-      // Filtrar por nombre de agencia si se proporciona
+      // Filtrar por nombre o apellido de agente si se proporciona
       if (agencyName && agencyName.trim() !== "") {
-        query = query.where(sql`${agencies.agencyName} ILIKE ${`%${agencyName}%`}`);
+        dbQuery = dbQuery.where(
+          sql`${agencies.agencyName} ILIKE ${`%${agencyName}%`}`
+        );
       }
 
-      // Filtrar por barrios de influencia si se proporcionan
+      // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-        console.log(`Filtrando agencias por barrios: ${neighborhoodsStr}`);
         const neighborhoods = neighborhoodsStr.split(",");
+        console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
 
-        // Usamos arrayOverlaps para una correcta comparación de arrays
-        query = query.where(
-          arrayOverlaps(
-            agencies.agencyInfluenceNeighborhoods,
-            // Convertimos el array JavaScript a un array SQL
-            sql`ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
-          )
+        // Use the correct column name from the schema
+        dbQuery = dbQuery.where(
+          sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
         );
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
-      query = query.limit(10);
+      dbQuery = dbQuery.limit(10);
 
       // Ejecutamos la consulta
       console.log(`Ejecutando búsqueda de agencias...`);
-      const agencyResults = await query;
+      const agencyResults = await dbQuery;
       console.log(`Found ${agencyResults.length} agencies in the database`);
 
       // Convertimos los resultados al formato esperado por el frontend
@@ -272,7 +266,7 @@ export class DatabaseStorage implements IStorage {
         // Procesar los campos que deberían ser arrays
         const neighborhoods = this.parseArrayField(agency.agencyInfluenceNeighborhoods);
         const languages = this.parseArrayField(agency.agencySupportedLanguages);
-        
+
         // Asegurarnos de que agencySocialMedia sea un objeto
         const socialMedia = agency.agencySocialMedia
           ? this.parseJsonField(agency.agencySocialMedia as object | string)
