@@ -18,7 +18,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
 import { Building, Home, Lock, Mail } from "lucide-react";
 
-// Esquema de validación para el formulario
 const formSchema = z.object({
   email: z.string().email("Por favor introduce un correo electrónico válido"),
   password: z.string().min(1, "La contraseña es obligatoria"),
@@ -31,10 +30,7 @@ export default function LoginPage() {
   const { setUser } = useUser();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [emailExists, setEmailExists] = useState<boolean | null>(null);
-  const [userName, setUserName] = useState("");
 
-  // Configuración del formulario
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -43,71 +39,30 @@ export default function LoginPage() {
     },
   });
 
-  // Verificar si el email existe cuando el usuario lo introduce
-  const checkEmail = async (email: string) => {
-    try {
-      const response = await apiRequest("GET", `/api/users/check-email?email=${email}`);
-      if (response.ok) {
-        const data = await response.json();
-        setEmailExists(data.exists);
-        setUserName(data.name || email.split('@')[0]);
-      }
-    } catch (error) {
-      console.error("Error al verificar email:", error);
-    }
-  };
-
-  // Observar cambios en el campo de email
-  const email = form.watch("email");
-  if (email && email.includes("@") && email.includes(".")) {
-    // Solo verificar cuando parece un email válido
-    if (emailExists === null) {
-      checkEmail(email);
-    }
-  } else if (emailExists !== null) {
-    // Resetear estado si el email se borra o modifica
-    setEmailExists(null);
-    setUserName("");
-  }
-
-  // Manejar envío del formulario
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
-    try {
-      const endpoint = emailExists ? "/api/auth/login" : "/api/auth/register";
-      
-      const payload = {
-        email: data.email,
-        password: data.password,
-      };
-
-      console.log("Enviando datos de autenticación:", payload);
-      
-      const response = await apiRequest("POST", endpoint, payload);
+    try {      
+      const response = await apiRequest("POST", "/api/auth/login", data);
 
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        
+
         toast({
-          title: emailExists ? "Inicio de sesión exitoso" : "Registro exitoso",
-          description: emailExists 
-            ? "Has iniciado sesión correctamente" 
-            : "Tu cuenta ha sido creada correctamente",
+          title: "¡Bienvenido de nuevo!",
+          duration: 3000,
         });
-        
-        // Redirigir a la página principal o de gestión
+
         navigate("/");
       } else {
         const error = await response.json();
         toast({
-          title: emailExists ? "Error al iniciar sesión" : "Error al registrarse",
-          description: error.message || "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+          title: "Error",
+          description: error.message || "Credenciales inválidas",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error durante la autenticación:", error);
       toast({
         title: "Error",
         description: "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
@@ -121,15 +76,8 @@ export default function LoginPage() {
   return (
     <div className="container mx-auto pt-24 pb-12">
       <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto">
-        {/* Columna de formulario */}
         <div className="lg:w-1/2 bg-white p-8 rounded-lg shadow">
-          <h1 className="text-3xl font-bold mb-6">
-            {emailExists === true 
-              ? `Bienvenido de nuevo, ${userName}` 
-              : emailExists === false 
-                ? "Regístrate en Realista" 
-                : "Iniciar sesión o registrarse"}
-          </h1>
+          <h1 className="text-3xl font-bold mb-6">Iniciar sesión</h1>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -154,65 +102,49 @@ export default function LoginPage() {
                 )}
               />
 
-              {form.watch("email") && (
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {emailExists ? "Contraseña" : "Crea tu contraseña"}
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            placeholder={emailExists ? "Tu contraseña" : "Crea una contraseña segura"}
-                            type="password"
-                            className="pl-10"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      {!emailExists && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          La contraseña debe tener al menos 8 caracteres. Se recomienda incluir letras, números y símbolos.
-                        </p>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          placeholder="Tu contraseña"
+                          type="password"
+                          className="pl-10"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <Button
                 type="submit"
                 className="w-full"
                 disabled={isSubmitting}
               >
-                {isSubmitting 
-                  ? "Procesando..." 
-                  : emailExists 
-                    ? "Iniciar sesión" 
-                    : "Crear cuenta"}
+                {isSubmitting ? "Procesando..." : "Iniciar sesión"}
               </Button>
 
-              {emailExists === false && (
-                <p className="text-center text-sm text-gray-500 mt-4">
-                  ¿Quieres registrarte como agencia?{" "}
-                  <a
-                    href="/register"
-                    className="text-primary hover:underline"
-                  >
-                    Registra tu agencia
-                  </a>
-                </p>
-              )}
+              <p className="text-center text-sm text-gray-500 mt-4">
+                ¿No tienes una cuenta?{" "}
+                <a
+                  href="/register"
+                  className="text-primary hover:underline"
+                >
+                  Regístrate aquí
+                </a>
+              </p>
             </form>
           </Form>
         </div>
 
-        {/* Columna de hero/información */}
         <div className="lg:w-1/2 bg-primary/5 p-8 rounded-lg">
           <h2 className="text-2xl font-bold mb-4">La plataforma inmobiliaria de referencia</h2>
           <p className="mb-6 text-gray-700">

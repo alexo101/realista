@@ -14,16 +14,7 @@ import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhood
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
-  app.get("/api/users/check-email", async (req, res) => {
-    try {
-      const { email } = req.query;
-      const user = await storage.getUserByEmail(email as string);
-      res.json({ exists: !!user, name: user?.name });
-    } catch (error) {
-      console.error('Error checking email:', error);
-      res.status(500).json({ message: "Failed to check email" });
-    }
-  });
+  
 
   // Nueva ruta para validar si un email está asociado a un agente invitado
   app.get("/api/agency-agents/check-email", async (req, res) => {
