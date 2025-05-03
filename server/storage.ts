@@ -241,8 +241,8 @@ export class DatabaseStorage implements IStorage {
 
       try {
         // For each neighborhood, check if it's in the agency's neighborhood list
-        // We need to check in the agencyInfluenceNeighborhoods column which is a text field in PostgreSQL format
-        // The format looks like: {"La Sagrera","Sant Andreu del Palomar"}
+        // Using the correct column name: agencyInfluenceNeighborhoods (camelCase according to schema.ts)
+        console.log('Using correct column name: agencyInfluenceNeighborhoods');
         query = query.where(
           or(
             ...neighborhoods.map(
