@@ -197,7 +197,7 @@ export class DatabaseStorage implements IStorage {
     if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
       const neighborhoods = neighborhoodsStr.split(",");
       
-      // Usamos la columna correcta: influenceNeighborhoods
+      // Usamos la columna correcta: influenceNeighborhoods (camelCase según schema.ts)
       dbQuery = dbQuery.where(
         arrayOverlaps(agents.influenceNeighborhoods, neighborhoods)
       );
