@@ -1,0 +1,63 @@
+}
+2:02:25 PM [express] GET /api/search/agents 500 in 302ms :: {"message":"Failed to search agents"}
+Search agencies params: { agencyName: 'alex g', showAll: 'true' }
+Search agencies queryString: agencyName=alex+g&showAll=true
+Buscando agencias con params: showAll=true, agencyName=alex g, neighborhoods=null
+Ejecutando búsqueda de agencias...
+Error searching agencies: error: column "agency_influence_neighborhoods" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.searchAgencies (/home/runner/workspace/server/storage.ts:262:27)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:402:24) {
+  length: 131,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '134',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
+2:03:32 PM [express] GET /api/search/agencies 500 in 387ms :: {"message":"Failed to search agencies"}
+Search agencies params: { agencyName: 'alex g', showAll: 'true' }
+Search agencies queryString: agencyName=alex+g&showAll=true
+Buscando agencias con params: showAll=true, agencyName=alex g, neighborhoods=null
+Ejecutando búsqueda de agencias...
+Search agencies params: { agencyName: 'alex', showAll: 'true' }
+Search agencies queryString: agencyName=alex&showAll=true
+Buscando agencias con params: showAll=true, agencyName=alex, neighborhoods=null
+Ejecutando búsqueda de agencias...
+Error searching agencies: error: column "agency_influence_neighborhoods" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorage.searchAgencies (/home/runner/workspace/server/storage.ts:262:27)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:402:24) {
+  length: 131,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '134',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3722',
+  routine: 'errorMissingColumn'
+}
