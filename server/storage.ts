@@ -173,93 +173,141 @@ export class DatabaseStorage implements IStorage {
 
   // Agents
   async searchAgents(queryString: string): Promise<User[]> {
-    // Parseamos los parámetros de la URL
-    const params = new URLSearchParams(queryString);
-    const showAll = params.get("showAll") === "true";
-    const agentName = params.get("agentName");
-    const neighborhoodsStr = params.get("neighborhoods");
+    try {
+      // Parseamos los parámetros de la URL
+      const params = new URLSearchParams(queryString);
+      const showAll = params.get("showAll") === "true";
+      const agentName = params.get("agentName");
+      const neighborhoodsStr = params.get("neighborhoods");
 
-    console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
+      console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
 
-    let dbQuery = db.select().from(agents);
+      let dbQuery = db.select().from(agents);
 
-    // Filtrar por nombre o apellido de agente si se proporciona
-    if (agentName && agentName.trim() !== "") {
-      dbQuery = dbQuery.where(
-        or(
-          sql`${agents.name} ILIKE ${`%${agentName}%`}`,
-          sql`${agents.surname} ILIKE ${`%${agentName}%`}`
-        )
-      );
+      // Filtrar por nombre o apellido de agente si se proporciona
+      if (agentName && agentName.trim() !== "") {
+        dbQuery = dbQuery.where(
+          or(
+            sql`${agents.name} ILIKE ${`%${agentName}%`}`,
+            sql`${agents.surname} ILIKE ${`%${agentName}%`}`
+          )
+        );
+      }
+
+      // Filtrar por barrios si se proporcionan
+      if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
+        const neighborhoods = neighborhoodsStr.split(",");
+        console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
+
+        // Usamos arrayOverlaps para una correcta comparación de arrays
+        dbQuery = dbQuery.where(
+          arrayOverlaps(
+            agents.influenceNeighborhoods,
+            // Convertimos el array JavaScript a un array SQL
+            sql`ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
+          )
+        );
+      }
+
+      // Limitamos los resultados para evitar sobrecargar la respuesta
+      dbQuery = dbQuery.limit(10);
+
+      console.log(`Ejecutando búsqueda de agentes...`);
+      const agentResults = await dbQuery;
+      console.log(`Found ${agentResults.length} agents in the database`);
+
+      return agentResults;
+    } catch (error) {
+      console.error("Error en searchAgents:", error);
+      throw error;
     }
-
-    // Filtrar por barrios si se proporcionan
-    if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-      const neighborhoods = neighborhoodsStr.split(",");
-
-      // Construimos una consulta SQL directa en lugar de usar arrayOverlaps
-      // para asegurarnos de que usa el nombre correcto de la columna
-      dbQuery = dbQuery.where(
-        sql`${agents.influenceNeighborhoods} && ${sql.array(neighborhoods, 'text')}::text[]`
-      );
-    }
-
-    // Limitamos los resultados para evitar sobrecargar la respuesta
-    dbQuery = dbQuery.limit(10);
-
-    console.log(`Ejecutando búsqueda de agentes...`);
-    const agentResults = await dbQuery;
-    console.log(`Found ${agentResults.length} agents in the database`);
-
-    return agentResults;
   }
 
   async searchAgencies(queryString: string): Promise<User[]> {
-    // Parseamos los parámetros de la URL
-    const params = new URLSearchParams(queryString);
-    const showAll = params.get("showAll") === "true";
-    const agencyName = params.get("agencyName");
-    const neighborhoodsStr = params.get("neighborhoods");
+    try {
+      // Parseamos los parámetros de la URL
+      const params = new URLSearchParams(queryString);
+      const showAll = params.get("showAll") === "true";
+      const agencyName = params.get("agencyName");
+      const neighborhoodsStr = params.get("neighborhoods");
 
-    console.log(
-      `Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}`,
-    );
+      console.log(
+        `Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}`,
+      );
 
-    let query = db
-      .select()
-      .from(agencies) as any;
+      let query = db
+        .select()
+        .from(agencies);
 
-    // Filtrar por nombre de agencia si se proporciona
-    if (agencyName && agencyName.trim() !== "") {
-      query = query.where(sql`${agencies.agencyName} ILIKE ${`%${agencyName}%`}`);
-    }
+      // Filtrar por nombre de agencia si se proporciona
+      if (agencyName && agencyName.trim() !== "") {
+        query = query.where(sql`${agencies.agencyName} ILIKE ${`%${agencyName}%`}`);
+      }
 
-    // Filtrar por barrios de influencia si se proporcionan
-    if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-      console.log(`Filtrando por barrios: ${neighborhoodsStr}`);
-      const neighborhoods = neighborhoodsStr.split(",");
+      // Filtrar por barrios de influencia si se proporcionan
+      if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
+        console.log(`Filtrando agencias por barrios: ${neighborhoodsStr}`);
+        const neighborhoods = neighborhoodsStr.split(",");
 
-      try {
-        // For each neighborhood, check if it's in the agency's neighborhood list
-        // Using arrayOverlaps for array comparison against agency's influence neighborhoods
+        // Usamos arrayOverlaps para una correcta comparación de arrays
         query = query.where(
           arrayOverlaps(
             agencies.agencyInfluenceNeighborhoods,
-            sql.array(neighborhoods, 'text')
+            // Convertimos el array JavaScript a un array SQL
+            sql`ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
           )
         );
-      } catch (error) {
-        console.error("Error building neighborhood filter:", error);
-        // If there's an error with the filter, continue without it
       }
+
+      // Limitamos los resultados para evitar sobrecargar la respuesta
+      query = query.limit(10);
+
+      // Ejecutamos la consulta
+      console.log(`Ejecutando búsqueda de agencias...`);
+      const agencyResults = await query;
+      console.log(`Found ${agencyResults.length} agencies in the database`);
+
+      // Convertimos los resultados al formato esperado por el frontend
+      const processedResults = agencyResults.map(agency => {
+        // Procesar los campos que deberían ser arrays
+        const neighborhoods = this.parseArrayField(agency.agencyInfluenceNeighborhoods);
+        const languages = this.parseArrayField(agency.agencySupportedLanguages);
+        
+        // Asegurarnos de que agencySocialMedia sea un objeto
+        const socialMedia = agency.agencySocialMedia
+          ? this.parseJsonField(agency.agencySocialMedia as object | string)
+          : {};
+
+        // Formato compatible con User
+        return {
+          id: agency.id,
+          email: agency.agencyEmailToDisplay || "agency@example.com",
+          password: "",
+          name: agency.agencyName,
+          surname: null,
+          description: agency.agencyDescription,
+          avatar: agency.agencyLogo,
+          createdAt: agency.createdAt || new Date(),
+          influenceNeighborhoods: neighborhoods,
+          yearsOfExperience: null,
+          languagesSpoken: languages,
+          agencyId: String(agency.adminAgentId),
+          isAdmin: false,
+          agencyName: agency.agencyName,
+          agencyWebsite: agency.agencyWebsite,
+          agencySocialMedia: socialMedia,
+          agencyActiveSince: agency.agencyActiveSince,
+          agencyAddress: agency.agencyAddress,
+          isAgent: false,
+          isAgency: true,
+        } as User;
+      });
+
+      return processedResults;
+    } catch (error) {
+      console.error("Error en searchAgencies:", error);
+      throw error;
     }
-
-    // Ejecutamos la consulta
-    console.log(`Ejecutando búsqueda de agencias...`);
-    const agencyResults = await query;
-    console.log(`Found ${agencyResults.length} agencies in the database`);
-
-    return agencyResults;
   }
 
   async getAgentById(id: number): Promise<User | undefined> {
