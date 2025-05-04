@@ -287,7 +287,7 @@ export default function ManagePage() {
                     onClick={() => setSection("agency-profile")}
                   >
                     <Building className="h-4 w-4" />
-                    <span>Perfil agencia</span>
+                    <span>Gestionar agencia</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
