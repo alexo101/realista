@@ -396,17 +396,56 @@ export default function AgencyProfile() {
         <TabsContent value="agents" className="mt-6">
           <h2 className="text-2xl font-semibold mb-6">Equipo de {agency.agencyName}</h2>
           
-          {!agency.agents || agency.agents.length === 0 ? (
-            <div className="text-center py-8">
-              <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium mb-2">Sin agentes registrados</h3>
-              <p className="text-gray-500">
-                Esta agencia no tiene agentes registrados actualmente.
-              </p>
+          {/* Admin Agent Section */}
+          {agency.adminAgentId && (
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-4">Administrador de la Agencia</h3>
+              <div className="grid grid-cols-1 gap-6">
+                <Link href={`/agentes/${agency.adminAgentId}`}>
+                  <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col items-center text-center">
+                        <Avatar className="h-24 w-24 mb-4">
+                          <AvatarImage src={agency.adminAvatar || undefined} />
+                          <AvatarFallback className="text-2xl bg-primary/10">
+                            {agency.adminName?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <h3 className="font-semibold text-lg mb-1">
+                          {agency.adminName} {agency.adminSurname}
+                        </h3>
+                        <div className="text-sm text-gray-500 mb-2">{agency.adminEmail}</div>
+                        <Badge className="mb-3">Administrador</Badge>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline">
+                            <Mail className="h-4 w-4 mr-1" /> Contactar
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            Ver perfil
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {agency.agents.map(agent => (
+          )}
+
+          {/* Agency Agents Section */}
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Agentes</h3>
+            {!agency.agents || agency.agents.length === 0 ? (
+              <div className="text-center py-8">
+                <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium mb-2">Sin agentes registrados</h3>
+                <p className="text-gray-500">
+                  Esta agencia no tiene agentes registrados actualmente.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {agency.agents.map(agent => (
                 <Link key={agent.id} href={`/agents/${agent.id}`}>
                   <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
@@ -445,8 +484,9 @@ export default function AgencyProfile() {
                   </Card>
                 </Link>
               ))}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="reviews" className="mt-6">
