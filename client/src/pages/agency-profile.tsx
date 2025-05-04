@@ -191,9 +191,6 @@ export default function AgencyProfile() {
           <div className="flex items-center text-sm text-gray-500 mb-4">
             <Badge variant="outline" className="mr-2">Agencia inmobiliaria</Badge>
           </div>
-          <p className="text-gray-700 mb-4">
-            {agency.agencyDescription || "Esta agencia aún no ha añadido una descripción."}
-          </p>
           <div className="flex flex-wrap gap-3">
             {agency.agencyPhone && (
               <Button size="sm">
@@ -204,7 +201,7 @@ export default function AgencyProfile() {
               <Mail className="mr-2 h-4 w-4" /> Contactar
             </Button>
             <Button size="sm" variant="outline">
-              <Calendar className="mr-2 h-4 w-4" /> Solicitar información
+              <Phone className="mr-2 h-4 w-4" /> Contactar agencia
             </Button>
           </div>
         </div>
