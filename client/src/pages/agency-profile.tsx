@@ -179,12 +179,17 @@ export default function AgencyProfile() {
       {/* Header del Perfil */}
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="md:w-36 lg:w-48">
-          <Avatar className="h-36 w-36 lg:h-48 lg:w-48 rounded-lg">
-            <AvatarImage src={agency.agencyLogo} />
-            <AvatarFallback className="text-4xl rounded-lg">
-              {agency.agencyName.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
+          <div className="h-36 w-36 lg:h-48 lg:w-48 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+            {agency.agencyLogo ? (
+              <img
+                src={agency.agencyLogo}
+                alt={agency.agencyName}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <Building className="w-16 h-16 text-gray-400" />
+            )}
+          </div>
         </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">{agency.agencyName}</h1>
