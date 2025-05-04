@@ -411,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
         
         // Get the agency neighborhoods from the standardized field
-        const rawNeighborhoods = agency.agency_influence_neighborhoods || agency.agencyInfluenceNeighborhoods;
+        const rawNeighborhoods = agency.agencyInfluenceNeighborhoods;
         console.log('- Original neighborhoods:', rawNeighborhoods);
         console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
         

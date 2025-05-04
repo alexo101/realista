@@ -1,4 +1,14 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, decimal, primaryKey } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  jsonb,
+  timestamp,
+  decimal,
+  primaryKey,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -11,7 +21,7 @@ export const agencies = pgTable("agencies", {
   agencyLogo: text("agency_logo"),
   agencyEmailToDisplay: text("agency_email_to_display"),
   agencyActiveSince: text("agency_active_since"),
-  agencyInfluenceNeighborhoods: text("agency_influence_neighborhoods").array(), // Barrios de influencia como array
+  agencyInfluenceNeighborhoods: text("agencyInfluenceNeighborhoods").array(), // Barrios de influencia como array
   agencySupportedLanguages: text("agency_supported_languages").array(), // Idiomas como array
   adminAgentId: integer("admin_agent_id").notNull(), // ID del agente administrador que gestiona esta agencia
   agencyWebsite: text("agency_website"),
@@ -126,10 +136,21 @@ export const inquiries = pgTable("inquiries", {
 });
 
 // Esquemas de inserción
-export const insertAgentSchema = createInsertSchema(agents).omit({ id: true, createdAt: true });
-export const insertAgencySchema = createInsertSchema(agencies).omit({ id: true });
-export const insertPropertySchema = createInsertSchema(properties).omit({ id: true, createdAt: true });
-export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
+export const insertAgentSchema = createInsertSchema(agents).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertAgencySchema = createInsertSchema(agencies).omit({
+  id: true,
+});
+export const insertPropertySchema = createInsertSchema(properties).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
+  createdAt: true,
+});
 // Para valoraciones, usamos un esquema personalizado para asegurar que los valores sean numéricos
 export const insertNeighborhoodRatingSchema = z.object({
   neighborhood: z.string(),
@@ -141,9 +162,18 @@ export const insertNeighborhoodRatingSchema = z.object({
   services: z.number().min(1).max(10),
   userId: z.number().int(), // Permitimos IDs negativos para usuarios anónimos
 });
-export const insertAgencyAgentSchema = createInsertSchema(agencyAgents).omit({ id: true, createdAt: true });
-export const insertAppointmentSchema = createInsertSchema(appointments).omit({ id: true, createdAt: true });
-export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true, createdAt: true });
+export const insertAgencyAgentSchema = createInsertSchema(agencyAgents).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertInquirySchema = createInsertSchema(inquiries).omit({
+  id: true,
+  createdAt: true,
+});
 
 // Tipos de selección
 export type Agent = typeof agents.$inferSelect;
@@ -160,7 +190,9 @@ export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type InsertAgency = z.infer<typeof insertAgencySchema>;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
-export type InsertNeighborhoodRating = z.infer<typeof insertNeighborhoodRatingSchema>;
+export type InsertNeighborhoodRating = z.infer<
+  typeof insertNeighborhoodRatingSchema
+>;
 export type InsertAgencyAgent = z.infer<typeof insertAgencyAgentSchema>;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
@@ -175,16 +207,28 @@ export const reviews = pgTable("reviews", {
   propertyId: integer("property_id"),
   verified: boolean("verified").notNull().default(false),
   comment: text("comment"), // Campo para los comentarios
-  areaKnowledge: decimal("area_knowledge", { precision: 2, scale: 1 }).notNull(),
-  priceNegotiation: decimal("price_negotiation", { precision: 2, scale: 1 }).notNull(),
+  areaKnowledge: decimal("area_knowledge", {
+    precision: 2,
+    scale: 1,
+  }).notNull(),
+  priceNegotiation: decimal("price_negotiation", {
+    precision: 2,
+    scale: 1,
+  }).notNull(),
   treatment: decimal("treatment", { precision: 2, scale: 1 }).notNull(),
   punctuality: decimal("punctuality", { precision: 2, scale: 1 }).notNull(),
-  propertyKnowledge: decimal("property_knowledge", { precision: 2, scale: 1 }).notNull(),
+  propertyKnowledge: decimal("property_knowledge", {
+    precision: 2,
+    scale: 1,
+  }).notNull(),
   rating: decimal("rating", { precision: 2, scale: 1 }).notNull(),
   author: text("author"),
   date: timestamp("date").notNull().defaultNow(),
 });
 
-export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, date: true });
+export const insertReviewSchema = createInsertSchema(reviews).omit({
+  id: true,
+  date: true,
+});
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;
