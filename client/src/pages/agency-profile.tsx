@@ -206,6 +206,12 @@ export default function AgencyProfile() {
               ({agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0} reseñas)
             </span>
           </div>
+          {agency.agencyAddress && (
+            <div className="flex items-center text-sm text-gray-600 mb-4">
+              <MapPin className="h-4 w-4 mr-1" />
+              {agency.agencyAddress}
+            </div>
+          )}
           <div className="flex flex-wrap gap-3">
             {agency.agencyPhone && (
               <Button size="sm">
