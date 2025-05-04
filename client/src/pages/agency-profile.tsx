@@ -188,8 +188,23 @@ export default function AgencyProfile() {
         </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">{agency.agencyName}</h1>
-          <div className="flex items-center text-sm text-gray-500 mb-4">
+          <div className="flex items-center text-sm text-gray-500 mb-2">
             <Badge variant="outline" className="mr-2">Agencia inmobiliaria</Badge>
+          </div>
+
+          <div className="flex items-center mb-4">
+            <span className="text-xl font-bold mr-2">
+              {agency.agents && agency.agents.length > 0 ? 
+                (() => {
+                  const totalReviews = agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0);
+                  const totalRating = agency.agents.reduce((acc, agent) => acc + ((agent.reviewAverage || 0) * (agent.reviewCount || 0)), 0);
+                  return totalReviews > 0 ? (totalRating / totalReviews).toFixed(1) : "0.0";
+                })() :
+                "0.0"}
+            </span>
+            <span className="text-sm text-gray-500">
+              ({agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0} reseñas)
+            </span>
           </div>
           <div className="flex flex-wrap gap-3">
             {agency.agencyPhone && (
