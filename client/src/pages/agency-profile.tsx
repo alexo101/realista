@@ -250,14 +250,22 @@ export default function AgencyProfile() {
                       Barrios de influencia
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 ? (
+                      {agency.agencyInfluenceNeighborhoods && Array.isArray(agency.agencyInfluenceNeighborhoods) && agency.agencyInfluenceNeighborhoods.length > 0 ? (
                         agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
                           <Badge key={neighborhood} variant="secondary" className="text-sm">
                             {neighborhood}
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-gray-500 text-sm">No hay barrios especificados</span>
+                        agency.influenceNeighborhoods && Array.isArray(agency.influenceNeighborhoods) && agency.influenceNeighborhoods.length > 0 ? (
+                          agency.influenceNeighborhoods.map((neighborhood) => (
+                            <Badge key={neighborhood} variant="secondary" className="text-sm">
+                              {neighborhood}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-gray-500 text-sm">No hay barrios especificados</span>
+                        )
                       )}
                     </div>
                   </div>
