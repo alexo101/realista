@@ -244,21 +244,23 @@ export default function AgencyProfile() {
                      personalizado para cada cliente.`}
                   </p>
                   
-                  {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="font-medium mb-2 flex items-center">
-                        <MapPin className="h-5 w-5 mr-2 text-gray-500" />
-                        Zonas de operación
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
-                          <Badge key={neighborhood} variant="secondary">
+                  <div className="mt-6">
+                    <h3 className="font-medium mb-3 flex items-center">
+                      <MapPin className="h-5 w-5 mr-2 text-gray-500" />
+                      Barrios de influencia
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 ? (
+                        agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
+                          <Badge key={neighborhood} variant="secondary" className="text-sm">
                             {neighborhood}
                           </Badge>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <span className="text-gray-500 text-sm">No hay barrios especificados</span>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
                 
                 
