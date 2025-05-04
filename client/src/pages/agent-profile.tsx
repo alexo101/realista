@@ -48,7 +48,7 @@ interface Agent {
   description?: string;
   avatar?: string;
   agencyName?: string | null;
-  influenceNeighborhoods?: string[];
+  influence_neighborhoods?: string[];
   isAgent: boolean;
   properties?: Property[];
   reviewCount?: number;
@@ -281,14 +281,14 @@ export default function AgentProfile() {
                      y dedicado a cada cliente.`}
                   </p>
 
-                  {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
+                  {agent.influence_neighborhoods && agent.influence_neighborhoods.length > 0 && (
                     <div className="mt-4">
                       <h3 className="font-medium mb-2 flex items-center">
                         <MapPin className="h-5 w-5 mr-2 text-gray-500" />
                         Zonas de especialidad
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {agent.influenceNeighborhoods.map((neighborhood) => (
+                        {agent.influence_neighborhoods.map((neighborhood) => (
                           <Badge key={neighborhood} variant="secondary">
                             {neighborhood}
                           </Badge>
