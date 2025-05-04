@@ -288,8 +288,12 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                         className="h-full w-full object-contain"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-600">
-                        <Building className="h-6 w-6" />
+                      <div className="h-full w-full flex items-center justify-center bg-gray-200">
+                        <img 
+                          src={result.agencyLogo} 
+                          alt={result.agencyName || ''}
+                          className="h-full w-full object-contain"
+                        />
                       </div>
                     )
                   ) : result.avatar ? (
