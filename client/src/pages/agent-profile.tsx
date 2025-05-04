@@ -239,10 +239,6 @@ export default function AgentProfile() {
             <span className="text-sm text-gray-500">({reviews ? reviews.filter(rev => rev.verified === true).length : 0} reseñas verificadas)</span>
           </div>
 
-          <p className="text-gray-700 mb-4">
-            {agent.description || `${fullName} es un agente inmobiliario con experiencia en el mercado de Barcelona, especializado en ayudar a sus clientes a encontrar la propiedad perfecta.`}
-          </p>
-
           <div className="flex flex-wrap gap-3">
             {agent.phone && (
               <Button size="sm">
@@ -253,7 +249,7 @@ export default function AgentProfile() {
               <Mail className="mr-2 h-4 w-4" /> Contactar
             </Button>
             <Button size="sm" variant="outline">
-              <Calendar className="mr-2 h-4 w-4" /> Solicitar una cita
+              <Phone className="mr-2 h-4 w-4" /> Contactar agente
             </Button>
           </div>
         </div>
