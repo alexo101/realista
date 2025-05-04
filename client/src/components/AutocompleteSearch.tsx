@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { Search, X, Building } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
@@ -285,11 +285,11 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                       <img 
                         src={result.agencyLogo} 
                         alt={result.agencyName || ''} 
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-600">
-                        {(result.agencyName?.[0] || '')}
+                        <Building className="h-6 w-6" />
                       </div>
                     )
                   ) : result.avatar ? (
