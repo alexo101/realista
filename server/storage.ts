@@ -249,7 +249,7 @@ export class DatabaseStorage implements IStorage {
 
         // Use the correct column name from the schema
         dbQuery = dbQuery.where(
-          sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
+          sql`${agencies.agencnfluenceNeighborhoods} && ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
         );
       }
 
