@@ -342,7 +342,7 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem>
+              <SidebarMenuItem className="ml-6">
                 <SidebarMenuButton
                   isActive={section === "messages"}
                   onClick={() => setSection("messages")}
