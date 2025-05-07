@@ -39,24 +39,24 @@ export default function ManagePage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [location] = useLocation();
-  
+
   // Obtener el parámetro 'tab' de la URL si existe
   const getInitialSection = () => {
     const params = new URLSearchParams(location.split('?')[1]);
     const tabParam = params.get('tab');
-    
+
     // Si es un administrador de agencia y hay un parámetro tab=agency-profile, 
     // o si es un administrador y no hay perfil de agente
     if ((user?.isAdmin && tabParam === 'agency-profile') || 
         (user?.isAdmin && !user?.name)) {
       return 'agency-profile';
     }
-    
+
     // Validar que el tab sea uno de los valores permitidos
     const validTabs = ['agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'appointments'];
     return validTabs.includes(tabParam || '') ? tabParam : 'agent-profile';
   };
-  
+
   const [section, setSection] = useState(getInitialSection);
 
   // Estados para la gestión de propiedades y clientes
@@ -122,7 +122,7 @@ export default function ManagePage() {
         setTwitterUrl(socialMedia.twitter || "");
         setLinkedinUrl(socialMedia.linkedin || "");
       }
-      
+
       // Actualizar la sección según la URL y tipo de usuario
       setSection(getInitialSection());
     }
@@ -341,7 +341,6 @@ export default function ManagePage() {
                   <span>Gestionar reseñas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
               <SidebarMenuItem className="ml-6">
                 <SidebarMenuButton
                   isActive={section === "messages"}
