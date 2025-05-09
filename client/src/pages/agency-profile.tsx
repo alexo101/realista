@@ -21,6 +21,7 @@ interface AgencyAgent {
   avatar?: string;
   rating?: number;
   reviewCount?: number;
+  reviewAverage?: number; // Añadido para el cálculo del promedio de reseñas
 }
 
 interface Property {
@@ -103,6 +104,20 @@ export default function AgencyProfile() {
       }
       return response.json();
     },
+  });
+  
+  // Consulta para obtener las reseñas directas de la agencia
+  const { data: agencyReviews = [] } = useQuery({
+    queryKey: [`/api/agencies/${id}/reviews`],
+    queryFn: async () => {
+      const response = await fetch(`/api/agencies/${id}/reviews`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch agency reviews");
+      }
+      return response.json();
+    },
+    // Solo ejecutar cuando tenemos un id de agencia
+    enabled: !!id,
   });
   
   // Consulta para obtener las propiedades de los agentes de la agencia
@@ -199,16 +214,45 @@ export default function AgencyProfile() {
 
           <div className="flex items-center mb-4">
             <span className="text-xl font-bold mr-2">
-              {agency.agents && agency.agents.length > 0 ? 
-                (() => {
+              {(() => {
+                // Calcular puntuación promedio de agentes
+                const agentsScore = (() => {
+                  if (!agency.agents || agency.agents.length === 0) return 0;
                   const totalReviews = agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0);
                   const totalRating = agency.agents.reduce((acc, agent) => acc + ((agent.reviewAverage || 0) * (agent.reviewCount || 0)), 0);
-                  return totalReviews > 0 ? (totalRating / totalReviews).toFixed(1) : "0.0";
-                })() :
-                "0.0"}
+                  return totalReviews > 0 ? totalRating / totalReviews : 0;
+                })();
+                
+                // Calcular puntuación promedio de la agencia
+                const agencyScore = (() => {
+                  if (!agencyReviews || agencyReviews.length === 0) return 0;
+                  const sum = agencyReviews.reduce((acc, review) => acc + review.rating, 0);
+                  return sum / agencyReviews.length;
+                })();
+                
+                // Calcular total de reseñas
+                const totalAgentReviews = agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0;
+                const totalReviews = totalAgentReviews + agencyReviews.length;
+
+                // Si no hay reseñas, devolver 0
+                if (totalReviews === 0) return "0.0";
+                
+                // Calcular el promedio ponderado final
+                // Si hay ambos tipos de reseñas, promediar los promedios
+                let finalScore;
+                if (agencyScore > 0 && agentsScore > 0) {
+                  finalScore = (agencyScore + agentsScore) / 2;
+                } else if (agencyScore > 0) {
+                  finalScore = agencyScore;
+                } else {
+                  finalScore = agentsScore;
+                }
+                
+                return finalScore.toFixed(1);
+              })()}
             </span>
             <span className="text-sm text-gray-500">
-              ({agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0} reseñas)
+              ({agencyReviews.length + (agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0)} reseñas)
             </span>
           </div>
           {agency.agencyAddress && (
@@ -495,18 +539,167 @@ export default function AgencyProfile() {
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-4">Valoración general</h2>
-                  <div className="text-center py-8">
-                    <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No hay reseñas disponibles</h3>
-                    <p className="text-gray-500 max-w-md mx-auto">
-                      Esta agencia aún no tiene reseñas.
-                    </p>
-                    <Button className="mt-4">
-                      Escribir una reseña
-                    </Button>
-                  </div>
+                  
+                  {/* Cálculo de puntuaciones */}
+                  {(() => {
+                    // Calcular puntuación promedio de agentes
+                    const agentsScore = (() => {
+                      if (!agency.agents || agency.agents.length === 0) return 0;
+                      const totalReviews = agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0);
+                      const totalRating = agency.agents.reduce((acc, agent) => acc + ((agent.reviewAverage || 0) * (agent.reviewCount || 0)), 0);
+                      return totalReviews > 0 ? totalRating / totalReviews : 0;
+                    })();
+                    
+                    // Calcular puntuación promedio de la agencia
+                    const agencyScore = (() => {
+                      if (!agencyReviews || agencyReviews.length === 0) return 0;
+                      const sum = agencyReviews.reduce((acc, review) => acc + review.rating, 0);
+                      return sum / agencyReviews.length;
+                    })();
+                    
+                    // Calcular total de reseñas
+                    const totalAgentReviews = agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0;
+                    const totalReviews = totalAgentReviews + agencyReviews.length;
+                    
+                    // Si no hay reseñas, mostrar mensaje de sin reseñas
+                    if (totalReviews === 0) {
+                      return (
+                        <div className="text-center py-8">
+                          <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                          <h3 className="text-lg font-medium mb-2">No hay reseñas disponibles</h3>
+                          <p className="text-gray-500 max-w-md mx-auto">
+                            Esta agencia aún no tiene reseñas.
+                          </p>
+                          <Button className="mt-4">
+                            Escribir una reseña
+                          </Button>
+                        </div>
+                      );
+                    }
+                    
+                    // Calcular el promedio ponderado final
+                    // Si hay ambos tipos de reseñas, promediar los promedios
+                    let finalScore;
+                    if (agencyScore > 0 && agentsScore > 0) {
+                      finalScore = (agencyScore + agentsScore) / 2;
+                    } else if (agencyScore > 0) {
+                      finalScore = agencyScore;
+                    } else {
+                      finalScore = agentsScore;
+                    }
+                    
+                    return (
+                      <div className="space-y-6">
+                        <div className="text-center">
+                          <div className="text-4xl font-bold mb-2">{finalScore.toFixed(1)}</div>
+                          <div className="flex justify-center mb-2">
+                            {Array(5).fill(0).map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`h-6 w-6 ${i < Math.round(finalScore) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            Basado en {totalReviews} {totalReviews === 1 ? 'reseña' : 'reseñas'}
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-4 border-t pt-4">
+                          <h3 className="font-medium text-lg">Desglose de valoraciones</h3>
+                          
+                          {agencyScore > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Valoraciones directas de la agencia:</span>
+                              <span className="font-medium flex items-center">
+                                {agencyScore.toFixed(1)}
+                                <Star className="h-4 w-4 ml-1 text-yellow-500 fill-yellow-500" />
+                                <span className="text-xs text-gray-500 ml-1">
+                                  ({agencyReviews.length})
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                          
+                          {agentsScore > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Promedio de agentes:</span>
+                              <span className="font-medium flex items-center">
+                                {agentsScore.toFixed(1)}
+                                <Star className="h-4 w-4 ml-1 text-yellow-500 fill-yellow-500" />
+                                <span className="text-xs text-gray-500 ml-1">
+                                  ({totalAgentReviews})
+                                </span>
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center font-medium mt-2 pt-2 border-t">
+                            <span>Puntuación combinada:</span>
+                            <span className="flex items-center">
+                              {finalScore.toFixed(1)}
+                              <Star className="h-4 w-4 ml-1 text-yellow-500 fill-yellow-500" />
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <Button className="w-full">
+                          Escribir una reseña
+                        </Button>
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
+            </div>
+            
+            <div className="md:w-2/3">
+              <h2 className="text-xl font-semibold mb-4">Reseñas recientes</h2>
+              
+              {agencyReviews && agencyReviews.length > 0 ? (
+                <div className="space-y-4">
+                  {agencyReviews.map((review: any) => (
+                    <Card key={review.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarFallback>
+                                {review.authorName?.charAt(0) || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{review.authorName || "Usuario"}</div>
+                              <div className="text-sm text-gray-500">
+                                {new Date(review.date).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex">
+                            {Array(5).fill(0).map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`h-4 w-4 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-gray-700 mt-2">{review.comment}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <MessageCircle className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+                    <h3 className="text-base font-medium mb-1">No hay reseñas directas</h3>
+                    <p className="text-gray-500 text-sm">
+                      Esta agencia aún no tiene reseñas directas. Sé el primero en escribir una reseña.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>
