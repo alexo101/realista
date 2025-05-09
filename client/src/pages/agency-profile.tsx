@@ -128,47 +128,44 @@ export default function AgencyProfile() {
       if (!response.ok) {
         throw new Error("Failed to fetch linked agents");
       }
-      return response.json();
+      // Transformamos los agentes para que tengan el formato esperado
+      const agents = await response.json();
+      return agents.map(agent => ({
+        id: agent.id,
+        agentName: agent.name || '',
+        agentSurname: agent.surname || '',
+        agentEmail: agent.email,
+        avatar: agent.avatar,
+        rating: agent.reviewAverage || 0,
+        reviewCount: agent.reviewCount || 0,
+        reviewAverage: agent.reviewAverage || 0,
+        createdAt: agent.createdAt
+      }));
     },
     // Solo ejecutar cuando tenemos un id de agencia
     enabled: !!id,
   });
   
-  // Consulta para obtener las propiedades de los agentes de la agencia
+  // Consulta para obtener las propiedades de la agencia
   const { data: agencyProperties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: [`/api/agencies/${id}/properties`],
     queryFn: async () => {
-      // Si no hay agencia o no hay agentes vinculados, no hay propiedades
-      if (!id || !linkedAgents || linkedAgents.length === 0) {
+      if (!id) {
         return [];
       }
       
-      // Primero intentamos obtener las propiedades directamente vinculadas a la agencia
-      const agencyResponse = await fetch(`/api/properties?agencyId=${id}`);
-      const agencyProps = agencyResponse.ok ? await agencyResponse.json() : [];
-      
-      // Luego obtenemos las propiedades de los agentes vinculados
-      const agentIds = linkedAgents.map(agent => agent.id);
-      
-      // Consulta para obtener las propiedades de todos los agentes vinculados
-      const promises = agentIds.map(agentId => 
-        fetch(`/api/properties?agentId=${agentId}`)
-          .then(res => res.ok ? res.json() : [])
-      );
-      
-      // Resolvemos todas las promesas
-      const results = await Promise.all(promises);
-      
-      // Aplanamos el array de arrays de propiedades y combinamos con las propiedades de la agencia
-      const agentProps = results.flat();
-      
-      // Combinamos y eliminamos duplicados (puede haber propiedades vinculadas tanto a la agencia como a sus agentes)
-      const allProps = [...agencyProps, ...agentProps];
-      const uniqueProps = allProps.filter((prop, index, self) =>
-        index === self.findIndex((p) => p.id === prop.id)
-      );
-      
-      return uniqueProps;
+      try {
+        // Usamos la ruta dedicada para obtener todas las propiedades vinculadas a la agencia
+        const response = await fetch(`/api/agencies/${id}/properties`);
+        if (!response.ok) {
+          console.error('Error fetching agency properties:', response.statusText);
+          return [];
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Error fetching agency properties:', error);
+        return [];
+      }
     },
     enabled: !!id,
   });
