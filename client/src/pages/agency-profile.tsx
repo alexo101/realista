@@ -120,19 +120,37 @@ export default function AgencyProfile() {
     enabled: !!id,
   });
   
+  // Consulta para obtener los agentes vinculados a esta agencia
+  const { data: linkedAgents = [] } = useQuery({
+    queryKey: [`/api/agencies/${id}/agents`],
+    queryFn: async () => {
+      const response = await fetch(`/api/agencies/${id}/agents`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch linked agents");
+      }
+      return response.json();
+    },
+    // Solo ejecutar cuando tenemos un id de agencia
+    enabled: !!id,
+  });
+  
   // Consulta para obtener las propiedades de los agentes de la agencia
   const { data: agencyProperties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: [`/api/agencies/${id}/properties`],
     queryFn: async () => {
-      // Si no hay agencia o no hay agentes, no hay propiedades
-      if (!agency || !agency.agents || agency.agents.length === 0) {
+      // Si no hay agencia o no hay agentes vinculados, no hay propiedades
+      if (!id || !linkedAgents || linkedAgents.length === 0) {
         return [];
       }
       
-      // Obtenemos todos los IDs de agentes de la agencia
-      const agentIds = agency.agents.map(agent => agent.id);
+      // Primero intentamos obtener las propiedades directamente vinculadas a la agencia
+      const agencyResponse = await fetch(`/api/properties?agencyId=${id}`);
+      const agencyProps = agencyResponse.ok ? await agencyResponse.json() : [];
       
-      // Consulta para obtener las propiedades de todos los agentes
+      // Luego obtenemos las propiedades de los agentes vinculados
+      const agentIds = linkedAgents.map(agent => agent.id);
+      
+      // Consulta para obtener las propiedades de todos los agentes vinculados
       const promises = agentIds.map(agentId => 
         fetch(`/api/properties?agentId=${agentId}`)
           .then(res => res.ok ? res.json() : [])
@@ -141,10 +159,18 @@ export default function AgencyProfile() {
       // Resolvemos todas las promesas
       const results = await Promise.all(promises);
       
-      // Aplanamos el array de arrays de propiedades
-      return results.flat();
+      // Aplanamos el array de arrays de propiedades y combinamos con las propiedades de la agencia
+      const agentProps = results.flat();
+      
+      // Combinamos y eliminamos duplicados (puede haber propiedades vinculadas tanto a la agencia como a sus agentes)
+      const allProps = [...agencyProps, ...agentProps];
+      const uniqueProps = allProps.filter((prop, index, self) =>
+        index === self.findIndex((p) => p.id === prop.id)
+      );
+      
+      return uniqueProps;
     },
-    enabled: !!agency && !!agency.agents && agency.agents.length > 0,
+    enabled: !!id,
   });
 
   // Efecto para desplazar al inicio de la página cuando cambia el ID
@@ -215,11 +241,11 @@ export default function AgencyProfile() {
           <div className="flex items-center mb-4">
             <span className="text-xl font-bold mr-2">
               {(() => {
-                // Calcular puntuación promedio de agentes
+                // Calcular puntuación promedio de agentes (solo los vinculados a esta agencia)
                 const agentsScore = (() => {
-                  if (!agency.agents || agency.agents.length === 0) return 0;
-                  const totalReviews = agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0);
-                  const totalRating = agency.agents.reduce((acc, agent) => acc + ((agent.reviewAverage || 0) * (agent.reviewCount || 0)), 0);
+                  if (!linkedAgents || linkedAgents.length === 0) return 0;
+                  const totalReviews = linkedAgents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0);
+                  const totalRating = linkedAgents.reduce((acc, agent) => acc + ((agent.reviewAverage || 0) * (agent.reviewCount || 0)), 0);
                   return totalReviews > 0 ? totalRating / totalReviews : 0;
                 })();
                 
@@ -230,8 +256,9 @@ export default function AgencyProfile() {
                   return sum / agencyReviews.length;
                 })();
                 
-                // Calcular total de reseñas
-                const totalAgentReviews = agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0;
+                // Calcular total de reseñas (solo de agentes vinculados)
+                const totalAgentReviews = linkedAgents && linkedAgents.length > 0 ? 
+                  linkedAgents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0;
                 const totalReviews = totalAgentReviews + agencyReviews.length;
 
                 // Si no hay reseñas, devolver 0
@@ -252,7 +279,8 @@ export default function AgencyProfile() {
               })()}
             </span>
             <span className="text-sm text-gray-500">
-              ({agencyReviews.length + (agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0)} reseñas)
+              ({agencyReviews.length + (linkedAgents && linkedAgents.length > 0 ? 
+                linkedAgents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0)} reseñas)
             </span>
           </div>
           {agency.agencyAddress && (
@@ -479,7 +507,7 @@ export default function AgencyProfile() {
           {/* Agency Agents Section */}
           <div>
             <h3 className="text-xl font-semibold mb-4">Agentes</h3>
-            {!agency.agents || agency.agents.length === 0 ? (
+            {!linkedAgents || linkedAgents.length === 0 ? (
               <div className="text-center py-8">
                 <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium mb-2">Sin agentes registrados</h3>
@@ -489,7 +517,7 @@ export default function AgencyProfile() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {agency.agents.map(agent => (
+                {linkedAgents.map(agent => (
                 <Link key={agent.id} href={`/agents/${agent.id}`}>
                   <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
@@ -542,11 +570,11 @@ export default function AgencyProfile() {
                   
                   {/* Cálculo de puntuaciones */}
                   {(() => {
-                    // Calcular puntuación promedio de agentes
+                    // Calcular puntuación promedio de agentes (solo los vinculados)
                     const agentsScore = (() => {
-                      if (!agency.agents || agency.agents.length === 0) return 0;
-                      const totalReviews = agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0);
-                      const totalRating = agency.agents.reduce((acc, agent) => acc + ((agent.reviewAverage || 0) * (agent.reviewCount || 0)), 0);
+                      if (!linkedAgents || linkedAgents.length === 0) return 0;
+                      const totalReviews = linkedAgents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0);
+                      const totalRating = linkedAgents.reduce((acc, agent) => acc + ((agent.reviewAverage || 0) * (agent.reviewCount || 0)), 0);
                       return totalReviews > 0 ? totalRating / totalReviews : 0;
                     })();
                     
@@ -557,8 +585,9 @@ export default function AgencyProfile() {
                       return sum / agencyReviews.length;
                     })();
                     
-                    // Calcular total de reseñas
-                    const totalAgentReviews = agency.agents ? agency.agents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0;
+                    // Calcular total de reseñas (solo de agentes vinculados)
+                    const totalAgentReviews = linkedAgents && linkedAgents.length > 0 ? 
+                      linkedAgents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0;
                     const totalReviews = totalAgentReviews + agencyReviews.length;
                     
                     // Si no hay reseñas, mostrar mensaje de sin reseñas
