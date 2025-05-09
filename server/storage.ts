@@ -64,7 +64,7 @@ export interface IStorage {
   deleteAgency(id: number): Promise<void>; // Eliminar una agencia
 
   // Agency Agents
-  getAgencyAgents(agencyId: number): Promise<AgencyAgent[]>;
+  getAgencyAgents(agencyId: number): Promise<User[]>;
   createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent>;
   deleteAgencyAgent(id: number): Promise<void>;
 
