@@ -599,14 +599,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Agency Agents
-  async getAgencyAgents(agencyId: number): Promise<AgencyAgent[]> {
-    const result = await db
-      .select()
-      .from(agencyAgents)
-      .where(eq(agencyAgents.agencyId, agencyId))
-      .orderBy(agencyAgents.agentName);
-
-    return result;
+  async getAgencyAgents(agencyId: number): Promise<User[]> {
+    try {
+      console.log(`Buscando agentes con agencyId = ${agencyId}`);
+      
+      // Convertimos el ID de la agencia a string para la comparación con el campo agencyId
+      const agencyIdStr = agencyId.toString();
+      
+      // Seleccionamos los agentes que pertenecen a esta agencia
+      const result = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.agencyId, agencyIdStr))
+        .orderBy(agents.name);
+      
+      console.log(`Encontrados ${result.length} agentes vinculados a la agencia ${agencyId}`);
+      
+      // Para cada agente, obtenemos su puntuación y número de reseñas
+      const agentsWithReviews = await Promise.all(
+        result.map(async (agent) => {
+          const reviews = await this.getAgentReviews(agent.id);
+          
+          // Calculamos el promedio de puntuación si hay reseñas
+          let reviewAverage = 0;
+          if (reviews.length > 0) {
+            const sum = reviews.reduce((acc, review) => acc + Number(review.rating), 0);
+            reviewAverage = sum / reviews.length;
+          }
+          
+          return {
+            ...agent,
+            reviewCount: reviews.length,
+            reviewAverage: reviewAverage
+          };
+        })
+      );
+      
+      return agentsWithReviews;
+    } catch (error) {
+      console.error(`Error al obtener agentes de la agencia ${agencyId}:`, error);
+      return [];
+    }
   }
 
   async createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent> {
@@ -636,24 +669,29 @@ export class DatabaseStorage implements IStorage {
 
   async getMostViewedProperties(
     limit: number = 6,
-    operationType?: string,
+    operationType?: string
   ): Promise<Property[]> {
-    // Construir la consulta base
-    let query = db
-      .select()
-      .from(properties)
-      .orderBy(sql`${properties.viewCount} DESC`);
+    try {
+      // Construir la consulta base
+      let query = db
+        .select()
+        .from(properties)
+        .orderBy(sql`${properties.viewCount} DESC`);
 
-    // Si se especifica un tipo de operación, añadir el filtro
-    if (operationType) {
-      console.log(
-        `Filtrando propiedades más vistas por tipo de operación: ${operationType}`,
-      );
-      query = query.where(eq(properties.operationType, operationType));
+      // Si se especifica un tipo de operación, añadir el filtro
+      if (operationType) {
+        console.log(
+          `Filtrando propiedades más vistas por tipo de operación: ${operationType}`,
+        );
+        query = query.where(eq(properties.operationType, operationType));
+      }
+
+      // Aplicar el límite y ejecutar la consulta
+      return await query.limit(limit);
+    } catch (error) {
+      console.error('Error al obtener propiedades más vistas:', error);
+      return [];
     }
-
-    // Aplicar el límite y ejecutar la consulta
-    return await query.limit(limit);
   }
 
   async incrementPropertyViewCount(id: number): Promise<void> {

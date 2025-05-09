@@ -124,10 +124,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties", async (req, res) => {
     try {
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
+      const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
       const mostViewed = req.query.mostViewed === 'true';
       const operationType = req.query.operationType as string | undefined;
 
-      console.log(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}`);
+      console.log(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}, agencyId=${agencyId}`);
 
       let properties;
       if (mostViewed) {
@@ -137,6 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
         properties = await storage.getPropertiesByAgent(agentId);
+      } else if (agencyId) {
+        properties = await storage.getPropertiesByAgency(agencyId);
       } else {
         properties = await storage.searchProperties(req.query);
       }
@@ -324,6 +327,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error searching agents:', error);
       res.status(500).json({ message: "Failed to search agents" });
+    }
+  });
+  
+  // Ruta para obtener los agentes vinculados a una agencia
+  app.get("/api/agencies/:id/agents", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.params.id);
+      console.log(`Fetching agents for agency ID: ${agencyId}`);
+      
+      const agents = await storage.getAgencyAgents(agencyId);
+      console.log(`Found ${agents.length} agents for agency ${agencyId}`);
+      
+      res.json(agents);
+    } catch (error) {
+      console.error(`Error fetching agents for agency: ${error}`);
+      res.status(500).json({ message: "Failed to fetch agents for this agency" });
     }
   });
 
