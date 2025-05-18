@@ -207,6 +207,8 @@ export const reviews = pgTable("reviews", {
   propertyId: integer("property_id"),
   verified: boolean("verified").notNull().default(false),
   comment: text("comment"), // Campo para los comentarios
+  agentResponse: text("agent_response"), // Respuesta del agente a la reseña
+  responseDate: timestamp("response_date"), // Fecha en que el agente respondió
   areaKnowledge: decimal("area_knowledge", {
     precision: 2,
     scale: 1,

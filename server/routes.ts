@@ -983,6 +983,118 @@ Gracias!
     }
   });
 
+  // Ruta para obtener las reseñas que un usuario debe gestionar (tanto como agente como sus agencias)
+  app.get("/api/reviews/manage", async (req, res) => {
+    try {
+      const userId = parseInt(req.query.userId as string);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+      
+      // Obtener información del usuario
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Obtener reseñas del agente
+      const agentReviews = await storage.getAgentReviews(userId);
+      
+      let agencyReviews: any[] = [];
+      let managedAgencies: any[] = [];
+      
+      // Si el usuario es administrador, obtener también las reseñas de sus agencias
+      if (user.isAdmin) {
+        managedAgencies = await storage.getAgenciesByAdmin(userId);
+        
+        // Para cada agencia, obtener sus reseñas
+        const agencyReviewsPromises = managedAgencies.map(agency => 
+          storage.getAgencyReviews(agency.id)
+        );
+        
+        const agencyReviewsResults = await Promise.all(agencyReviewsPromises);
+        agencyReviews = agencyReviewsResults.flat();
+      }
+      
+      // Enriquecer las reseñas con información adicional
+      const allReviews = [...agentReviews, ...agencyReviews];
+      
+      const enhancedReviewsPromises = allReviews.map(async (review) => {
+        // Dependiendo del tipo de objetivo, obtener información adicional
+        let targetName = '';
+        let targetAvatar = '';
+        
+        if (review.targetType === 'agent') {
+          const agent = await storage.getUser(review.targetId);
+          if (agent) {
+            targetName = `${agent.name || ''} ${agent.surname || ''}`.trim();
+            targetAvatar = agent.avatar || '';
+          }
+        } else if (review.targetType === 'agency') {
+          const agency = await storage.getAgencyById(review.targetId);
+          if (agency) {
+            targetName = agency.agencyName || '';
+            targetAvatar = agency.agencyLogo || '';
+          }
+        }
+        
+        // Si hay una propiedad relacionada, obtener su información
+        let propertyTitle = '';
+        let propertyAddress = '';
+        
+        if (review.propertyId) {
+          const property = await storage.getProperty(review.propertyId);
+          if (property) {
+            propertyTitle = property.title || '';
+            propertyAddress = property.address || '';
+          }
+        }
+        
+        return {
+          ...review,
+          targetName,
+          targetAvatar,
+          propertyTitle,
+          propertyAddress
+        };
+      });
+      
+      const enhancedReviews = await Promise.all(enhancedReviewsPromises);
+      
+      // Ordenar reseñas por fecha (más recientes primero)
+      const sortedReviews = enhancedReviews.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      
+      res.json(sortedReviews);
+    } catch (error) {
+      console.error('Error obteniendo reseñas para gestionar:', error);
+      res.status(500).json({ message: "Error al obtener las reseñas" });
+    }
+  });
+  
+  // Ruta para responder a una reseña
+  app.post("/api/reviews/:id/respond", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const { response } = req.body;
+      
+      if (!response || typeof response !== 'string') {
+        return res.status(400).json({ message: "La respuesta no puede estar vacía" });
+      }
+      
+      // Actualizar la reseña con la respuesta
+      const updatedReview = await storage.respondToReview(reviewId, response);
+      
+      res.json(updatedReview);
+    } catch (error) {
+      console.error('Error respondiendo a la reseña:', error);
+      res.status(500).json({ message: "Error al guardar la respuesta" });
+    }
+  });
+
   // API para agencias múltiples
   app.get("/api/admin/agencies", async (req, res) => {
     try {
