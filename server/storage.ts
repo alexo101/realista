@@ -56,6 +56,7 @@ export interface IStorage {
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
+  respondToReview(reviewId: number, response: string): Promise<Review>; // Responder a una reseña
 
   // Multi-agency management
   getAgenciesByAdmin(adminAgentId: number): Promise<Agency[]>; // Obtener todas las agencias de un administrador
@@ -469,6 +470,31 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error obteniendo reseñas de la agencia:", error);
       return [];
+    }
+  }
+  
+  // Método para responder a una reseña
+  async respondToReview(reviewId: number, response: string): Promise<Review> {
+    try {
+      console.log(`Respondiendo a reseña ${reviewId} con respuesta: ${response}`);
+      
+      const [updatedReview] = await db
+        .update(reviews)
+        .set({
+          agentResponse: response,
+          responseDate: new Date()
+        })
+        .where(eq(reviews.id, reviewId))
+        .returning();
+      
+      if (!updatedReview) {
+        throw new Error(`No se encontró la reseña con ID ${reviewId}`);
+      }
+      
+      return updatedReview;
+    } catch (error) {
+      console.error(`Error al responder a la reseña ${reviewId}:`, error);
+      throw new Error(`No se pudo guardar la respuesta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 
