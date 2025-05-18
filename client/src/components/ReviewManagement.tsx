@@ -437,10 +437,10 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
               Todas ({reviews.length})
             </TabsTrigger>
             <TabsTrigger value="agent">
-              Agente ({reviews.filter(r => r.targetType === 'agent').length})
+              Agente ({reviews.filter((r: Review) => r.targetType === 'agent').length})
             </TabsTrigger>
             <TabsTrigger value="agency">
-              Agencia ({reviews.filter(r => r.targetType === 'agency').length})
+              Agencia ({reviews.filter((r: Review) => r.targetType === 'agency').length})
             </TabsTrigger>
           </TabsList>
         </Tabs>
