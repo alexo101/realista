@@ -21,6 +21,7 @@ import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { AgenciesList } from "@/components/AgenciesList";
 import { InquiriesList } from "@/components/InquiriesList";
 import { CentralAppointmentsManager } from "@/components/CentralAppointmentsManager";
+import { ReviewManagement } from "@/components/ReviewManagement";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1073,14 +1074,17 @@ export default function ManagePage() {
 
           {section === "reviews" && (
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-2xl font-bold mb-6">Gestión de Reseñas</h2>
-              <div className="text-center py-16 bg-gray-50 rounded-lg">
-                <Star className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-lg font-medium text-gray-900">Funcionalidad en desarrollo</h3>
-                <p className="mt-1 text-gray-500">
-                  Esta sección estará disponible próximamente.
-                </p>
-              </div>
+              {user ? (
+                <ReviewManagement userId={user.id} userType={user.isAdmin ? "admin" : "agent"} />
+              ) : (
+                <div className="text-center py-16 bg-gray-50 rounded-lg">
+                  <Star className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-lg font-medium text-gray-900">Necesitas iniciar sesión</h3>
+                  <p className="mt-1 text-gray-500">
+                    Por favor inicia sesión para gestionar tus reseñas.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
