@@ -103,7 +103,7 @@ const StarRating = ({ rating }: { rating: number }) => {
       {Array.from({ length: 5 - fullStars - (hasHalfStar ? 1 : 0) }).map((_, i) => (
         <Star key={`empty-${i}`} className="h-4 w-4" />
       ))}
-      <span className="ml-1 text-sm text-gray-700">{rating.toFixed(1)}</span>
+      <span className="ml-1 text-sm text-gray-700">{typeof rating === 'number' ? rating.toFixed(1) : rating}</span>
     </div>
   );
 };
