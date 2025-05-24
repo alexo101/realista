@@ -333,15 +333,6 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={section === "reviews"}
-                  onClick={() => setSection("reviews")}
-                >
-                  <Star className="h-4 w-4" />
-                  <span>Gestionar reseñas</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem className="ml-6">
                 <SidebarMenuButton
                   isActive={section === "messages"}
@@ -349,6 +340,16 @@ export default function ManagePage() {
                 >
                   <MessageSquare className="h-4 w-4" />
                   <span>Mensajes</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={section === "reviews"}
+                  onClick={() => setSection("reviews")}
+                >
+                  <Star className="h-4 w-4" />
+                  <span>Gestionar reseñas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
