@@ -740,11 +740,55 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
-    return await db
-      .select()
-      .from(properties)
-      .where(eq(properties.agencyId, agencyId))
-      .orderBy(sql`${properties.createdAt} DESC`);
+    try {
+      console.log(`Obteniendo propiedades para la agencia ${agencyId}`);
+      
+      // 1. Obtener propiedades directamente vinculadas a la agencia
+      const directProperties = await db
+        .select()
+        .from(properties)
+        .where(eq(properties.agencyId, agencyId))
+        .orderBy(sql`${properties.createdAt} DESC`);
+      
+      console.log(`Encontradas ${directProperties.length} propiedades directamente vinculadas a la agencia ${agencyId}`);
+      
+      // 2. Obtener agentes vinculados a esta agencia
+      const agencyAgents = await this.getAgencyAgents(agencyId);
+      console.log(`Encontrados ${agencyAgents.length} agentes vinculados a la agencia ${agencyId}`);
+      
+      // 3. Obtener propiedades de cada agente
+      const agentPropertiesPromises = agencyAgents.map(agent => 
+        this.getPropertiesByAgent(agent.id)
+      );
+      
+      const agentPropertiesArrays = await Promise.all(agentPropertiesPromises);
+      
+      // 4. Aplanar el array de arrays de propiedades
+      const agentProperties = agentPropertiesArrays.flat();
+      console.log(`Encontradas ${agentProperties.length} propiedades de agentes vinculados a la agencia ${agencyId}`);
+      
+      // 5. Combinar propiedades directas y de agentes, eliminando duplicados por ID
+      const allProperties = [...directProperties];
+      
+      // Añadir propiedades de agentes solo si no están ya incluidas
+      agentProperties.forEach(agentProperty => {
+        if (!allProperties.some(p => p.id === agentProperty.id)) {
+          allProperties.push(agentProperty);
+        }
+      });
+      
+      console.log(`Total de propiedades para la agencia ${agencyId}: ${allProperties.length}`);
+      
+      // Ordenar por fecha de creación (más recientes primero)
+      return allProperties.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+    } catch (error) {
+      console.error(`Error al obtener propiedades para la agencia ${agencyId}:`, error);
+      return [];
+    }
   }
 
   async searchProperties(filters: any): Promise<Property[]> {
