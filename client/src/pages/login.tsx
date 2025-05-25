@@ -133,12 +133,12 @@ export default function LoginPage() {
               </Button>
 
               <p className="text-center text-sm text-gray-500 mt-4">
-                ¿No tienes una cuenta?{" "}
+                ¿Eres agente inmobiliario?{" "}
                 <a
                   href="/register"
                   className="text-primary hover:underline"
                 >
-                  Regístrate aquí
+                  Regístrate como profesional.
                 </a>
               </p>
             </form>
