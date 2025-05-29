@@ -15,6 +15,7 @@ import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
+import ClientProfile from "@/pages/client-profile";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       <Route path="/client-register" component={ClientRegisterPage} />
+      <Route path="/client-profile" component={ClientProfile} />
       <Route path="/search/buy" component={Search} />
       <Route path="/search/rent" component={Search} />
       <Route path="/search/agencies" component={Search} />

@@ -5,8 +5,9 @@ interface User {
   id: number;
   email: string;
   name: string | null;
-  isAgent: boolean;
+  isAgent?: boolean;
   isAdmin?: boolean;
+  isClient?: boolean;
   
   // Campos para perfil de agente
   surname?: string;
@@ -32,6 +33,9 @@ interface User {
     twitter?: string;
     linkedin?: string;
   };
+  
+  // Campos adicionales para clientes
+  phone?: string;
 }
 
 interface UserContextType {
