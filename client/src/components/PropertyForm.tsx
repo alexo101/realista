@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Form,
   FormControl,
@@ -24,15 +25,28 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Trash2, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { apiRequest } from "@/lib/queryClient";
 
 const propertyTypes = [
   "Vivienda",
@@ -139,13 +153,15 @@ const formSchema = z.object({
 interface PropertyFormProps {
   onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>;
   onClose: () => void;
-  initialData?: z.infer<typeof formSchema>;
+  initialData?: z.infer<typeof formSchema> & { id?: number; isActive?: boolean };
   isEditing?: boolean;
 }
 
 export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false }: PropertyFormProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
     initialData?.neighborhood
   );
@@ -155,7 +171,65 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     if (initialData?.neighborhood) {
       setLocalNeighborhood(initialData.neighborhood);
     }
+    if (initialData?.isActive !== undefined) {
+      setIsActive(initialData.isActive);
+    }
   }, [initialData]);
+
+  // Mutations for property management
+  const deleteMutation = useMutation({
+    mutationFn: async (propertyId: number) => {
+      const response = await apiRequest("DELETE", `/api/properties/${propertyId}`);
+      if (!response.ok) {
+        throw new Error("Error al eliminar la propiedad");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Propiedad eliminada",
+        description: "La propiedad ha sido eliminada permanentemente.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      onClose();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la propiedad.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ propertyId, isActive }: { propertyId: number; isActive: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/properties/${propertyId}/toggle-status`, {
+        isActive,
+      });
+      if (!response.ok) {
+        throw new Error("Error al cambiar el estado de la propiedad");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setIsActive(data.isActive);
+      toast({
+        title: data.isActive ? "Propiedad activada" : "Propiedad desactivada",
+        description: data.isActive 
+          ? "La propiedad ahora es visible para los clientes." 
+          : "La propiedad está oculta para los clientes.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado de la propiedad.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -761,6 +835,96 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               )}
             </div>
 
+            {/* Property Management Section - Only for editing existing properties */}
+            {isEditing && initialData?.id && (
+              <Card className="mt-6">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Gestión de propiedad</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Toggle Property Status */}
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        {isActive ? (
+                          <Eye className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <EyeOff className="h-5 w-5 text-gray-400" />
+                        )}
+                        <div>
+                          <p className="font-medium">
+                            {isActive ? "Propiedad visible" : "Propiedad oculta"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {isActive 
+                              ? "Los clientes pueden ver esta propiedad en las búsquedas" 
+                              : "Esta propiedad está oculta para los clientes"}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={isActive}
+                        onCheckedChange={(checked) => {
+                          if (initialData?.id) {
+                            toggleStatusMutation.mutate({
+                              propertyId: initialData.id,
+                              isActive: checked,
+                            });
+                          }
+                        }}
+                        disabled={toggleStatusMutation.isPending}
+                      />
+                    </div>
+
+                    {/* Delete Property */}
+                    <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
+                      <div className="flex items-center space-x-3">
+                        <Trash2 className="h-5 w-5 text-red-600" />
+                        <div>
+                          <p className="font-medium text-red-900">Eliminar propiedad</p>
+                          <p className="text-sm text-red-700">
+                            Esta acción no se puede deshacer
+                          </p>
+                        </div>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción eliminará permanentemente la propiedad y no se puede deshacer.
+                              Toda la información y las imágenes asociadas se perderán.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                if (initialData?.id) {
+                                  deleteMutation.mutate(initialData.id);
+                                }
+                              }}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Sí, eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="flex justify-end gap-3">
               <Button
