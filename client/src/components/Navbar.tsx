@@ -20,11 +20,19 @@ export function Navbar() {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
-                  <Link href="/manage">
-                    <Button variant="outline">
-                      Gestionar todo
-                    </Button>
-                  </Link>
+                  {user.isClient ? (
+                    <Link href="/client-profile">
+                      <Button variant="outline">
+                        Mi perfil
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/manage">
+                      <Button variant="outline">
+                        Gestionar todo
+                      </Button>
+                    </Link>
+                  )}
                   <UserMenu />
                 </>
               ) : (
