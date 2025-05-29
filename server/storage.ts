@@ -78,6 +78,8 @@ export interface IStorage {
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(id: number, property: InsertProperty): Promise<Property>;
+  deleteProperty(id: number): Promise<void>;
+  togglePropertyStatus(id: number, isActive: boolean): Promise<Property>;
   incrementPropertyViewCount(id: number): Promise<void>;
 
   // Clients
@@ -895,6 +897,19 @@ export class DatabaseStorage implements IStorage {
     const [updatedProperty] = await db
       .update(properties)
       .set(property)
+      .where(eq(properties.id, id))
+      .returning();
+    return updatedProperty;
+  }
+
+  async deleteProperty(id: number): Promise<void> {
+    await db.delete(properties).where(eq(properties.id, id));
+  }
+
+  async togglePropertyStatus(id: number, isActive: boolean): Promise<Property> {
+    const [updatedProperty] = await db
+      .update(properties)
+      .set({ isActive })
       .where(eq(properties.id, id))
       .returning();
     return updatedProperty;

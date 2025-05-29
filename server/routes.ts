@@ -181,6 +181,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Properties
+  app.delete("/api/properties/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProperty(parseInt(id));
+      res.status(200).json({ message: "Propiedad eliminada exitosamente" });
+    } catch (error) {
+      console.error('Error deleting property:', error);
+      res.status(500).json({ message: "Error al eliminar la propiedad" });
+    }
+  });
+
+  app.patch("/api/properties/:id/toggle-status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      
+      const updatedProperty = await storage.togglePropertyStatus(parseInt(id), isActive);
+      res.status(200).json(updatedProperty);
+    } catch (error) {
+      console.error('Error toggling property status:', error);
+      res.status(500).json({ message: "Error al cambiar el estado de la propiedad" });
+    }
+  });
+
   app.post("/api/properties", async (req, res) => {
     try {
       console.log('Attempting to create property with data:', req.body);
