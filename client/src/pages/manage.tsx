@@ -61,38 +61,38 @@ export default function ManagePage() {
   const [section, setSection] = useState(getInitialSection);
 
   // Estados para la gestión de propiedades y clientes
-  const [isAddingProperty, setIsAddingProperty = useState(false);
-  const [isAddingClient, setIsAddingClient = useState(false);
-  const [isRequestingReview, setIsRequestingReview = useState(false);
-  const [editingProperty, setEditingProperty = useState<Property | null>(null);
-  const [editingClient, setEditingClient = useState<Client | null>(null);
+  const [isAddingProperty, setIsAddingProperty] = useState(false);
+  const [isAddingClient, setIsAddingClient] = useState(false);
+  const [isRequestingReview, setIsRequestingReview] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   // Estados para los campos de perfil de agente
-  const [name, setName = useState("");
-  const [surname, setSurname = useState("");
-  const [description, setDescription = useState("");
-  const [influenceNeighborhoods, setInfluenceNeighborhoods = useState<string[]>([]);
-  const [yearsOfExperience, setYearsOfExperience = useState<number | undefined>(undefined);
-  const [languagesSpoken, setLanguagesSpoken = useState<string[]>([]);
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [description, setDescription] = useState("");
+  const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
+  const [yearsOfExperience, setYearsOfExperience] = useState<number | undefined>(undefined);
+  const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
 
   // Estados para los campos de perfil de agencia
-  const [agencyName, setAgencyName = useState("");
-  const [agencyAddress, setAgencyAddress = useState("");
-  const [agencyDescription, setAgencyDescription = useState("");
-  const [agencyPhone, setAgencyPhone = useState("");
-  const [agencyWebsite, setAgencyWebsite = useState("");
-  const [agencyInfluenceNeighborhoods, setAgencyInfluenceNeighborhoods = useState<string[]>([]);
-  const [yearEstablished, setYearEstablished = useState<number | undefined>(undefined);
-  const [agencyLanguagesSpoken, setAgencyLanguagesSpoken = useState<string[]>([]);
-  const [facebookUrl, setFacebookUrl = useState("");
-  const [instagramUrl, setInstagramUrl = useState("");
-  const [twitterUrl, setTwitterUrl = useState("");
-  const [linkedinUrl, setLinkedinUrl = useState("");
+  const [agencyName, setAgencyName] = useState("");
+  const [agencyAddress, setAgencyAddress] = useState("");
+  const [agencyDescription, setAgencyDescription] = useState("");
+  const [agencyPhone, setAgencyPhone] = useState("");
+  const [agencyWebsite, setAgencyWebsite] = useState("");
+  const [agencyInfluenceNeighborhoods, setAgencyInfluenceNeighborhoods] = useState<string[]>([]);
+  const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
+  const [agencyLanguagesSpoken, setAgencyLanguagesSpoken] = useState<string[]>([]);
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
 
   // Estado para mostrar indicador de guardado exitoso
-  const [showSavedIndicator, setShowSavedIndicator = useState(false);
-  const [hasAgentChanges, setHasAgentChanges = useState(false); // Added
-  const [hasAgencyChanges, setHasAgencyChanges = useState(false); // Added
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  const [hasAgentChanges, setHasAgentChanges] = useState(false); // Added
+  const [hasAgencyChanges, setHasAgencyChanges] = useState(false); // Added
 
 
   // Cargar valores iniciales cuando el usuario cambia y actualizar sección inicial
@@ -102,7 +102,7 @@ export default function ManagePage() {
       setName(user.name || "");
       setSurname(user.surname || "");
       setDescription(user.description || "");
-      setInfluenceNeighborhoods(user.influence_neighborhoods || []);
+      setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
       setYearsOfExperience(user.yearsOfExperience);
       setLanguagesSpoken(user.languagesSpoken || []);
 
@@ -493,7 +493,7 @@ export default function ManagePage() {
                     name,
                     surname,
                     description,
-                    influence_neighborhoods: influenceNeighborhoods,
+                    influenceNeighborhoods,
                     yearsOfExperience,
                     languagesSpoken
                   })}
