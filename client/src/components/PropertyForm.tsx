@@ -835,31 +835,25 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               )}
             </div>
 
-            {/* Property Management Section - Only for editing existing properties */}
+            {/* Estado de la Propiedad - Only for editing existing properties */}
             {isEditing && initialData?.id && (
-              <Card className="mt-6">
-                <CardContent className="pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Gestión de propiedad</h3>
-                  
-                  <div className="space-y-4">
-                    {/* Toggle Property Status */}
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-3">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Estado de la Propiedad</h3>
+                
+                {/* Property Visibility Toggle */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Visibilidad</label>
+                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
+                      <div className="flex items-center space-x-2">
                         {isActive ? (
-                          <Eye className="h-5 w-5 text-green-600" />
+                          <Eye className="h-4 w-4 text-green-600" />
                         ) : (
-                          <EyeOff className="h-5 w-5 text-gray-400" />
+                          <EyeOff className="h-4 w-4 text-gray-400" />
                         )}
-                        <div>
-                          <p className="font-medium">
-                            {isActive ? "Propiedad visible" : "Propiedad oculta"}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {isActive 
-                              ? "Los clientes pueden ver esta propiedad en las búsquedas" 
-                              : "Esta propiedad está oculta para los clientes"}
-                          </p>
-                        </div>
+                        <span className="text-sm">
+                          {isActive ? "Visible para clientes" : "Oculta para clientes"}
+                        </span>
                       </div>
                       <Switch
                         checked={isActive}
@@ -874,56 +868,48 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         disabled={toggleStatusMutation.isPending}
                       />
                     </div>
-
-                    {/* Delete Property */}
-                    <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
-                      <div className="flex items-center space-x-3">
-                        <Trash2 className="h-5 w-5 text-red-600" />
-                        <div>
-                          <p className="font-medium text-red-900">Eliminar propiedad</p>
-                          <p className="text-sm text-red-700">
-                            Esta acción no se puede deshacer
-                          </p>
-                        </div>
-                      </div>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Eliminar
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta acción eliminará permanentemente la propiedad y no se puede deshacer.
-                              Toda la información y las imágenes asociadas se perderán.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => {
-                                if (initialData?.id) {
-                                  deleteMutation.mutate(initialData.id);
-                                }
-                              }}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              Sí, eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* Delete Property */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-red-700">Eliminar Propiedad</label>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar Propiedad
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción eliminará permanentemente la propiedad y no se puede deshacer.
+                            Toda la información y las imágenes asociadas se perderán.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              if (initialData?.id) {
+                                deleteMutation.mutate(initialData.id);
+                              }
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Sí, eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </div>
             )}
 
             <div className="flex justify-end gap-3">
