@@ -19,7 +19,7 @@ import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { AgenciesList } from "@/components/AgenciesList";
-import { PropertyActions } from "@/components/PropertyActions";
+
 import { InquiriesList } from "@/components/InquiriesList";
 import { CentralAppointmentsManager } from "@/components/CentralAppointmentsManager";
 import { ReviewManagement } from "@/components/ReviewManagement";
@@ -808,10 +808,11 @@ export default function ManagePage() {
                     setEditingProperty(null);
                   }}
                   initialData={editingProperty ? {
+                    id: editingProperty.id,
+                    isActive: editingProperty.isActive,
                     title: editingProperty.title,
                     description: editingProperty.description,
                     price: editingProperty.price,
-                    previousPrice: editingProperty.previousPrice || null,
                     address: editingProperty.address,
                     superficie: editingProperty.superficie,
                     bedrooms: editingProperty.bedrooms,
@@ -930,15 +931,7 @@ export default function ManagePage() {
                             </div>
                           )}
 
-                          {/* Property management actions */}
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <PropertyActions 
-                              property={property} 
-                              onUpdate={() => {
-                                queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.id] });
-                              }}
-                            />
-                          </div>
+
                         </div>
                       </div>
                     ))
