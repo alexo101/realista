@@ -220,7 +220,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
           ? "La propiedad ahora es visible para los clientes." 
           : "La propiedad está oculta para los clientes.",
       });
+      // Invalidate queries to refresh the property list
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties", initialData?.id] });
     },
     onError: () => {
       toast({
@@ -859,9 +861,16 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         checked={isActive}
                         onCheckedChange={(checked) => {
                           if (initialData?.id) {
+                            // Optimistic update - immediately update UI
+                            setIsActive(checked);
                             toggleStatusMutation.mutate({
                               propertyId: initialData.id,
                               isActive: checked,
+                            }, {
+                              // Revert on error
+                              onError: () => {
+                                setIsActive(!checked);
+                              }
                             });
                           }
                         }}
