@@ -132,15 +132,26 @@ export default function LoginPage() {
                 {isSubmitting ? "Procesando..." : "Iniciar sesión"}
               </Button>
 
-              <p className="text-center text-sm text-gray-500 mt-4">
-                ¿Eres agente inmobiliario?{" "}
-                <a
-                  href="/register"
-                  className="text-primary hover:underline"
-                >
-                  Regístrate como profesional.
-                </a>
-              </p>
+              <div className="space-y-2 mt-4">
+                <p className="text-center text-sm text-gray-500">
+                  ¿Eres agente inmobiliario?{" "}
+                  <a
+                    href="/register"
+                    className="text-primary hover:underline"
+                  >
+                    Regístrate como profesional.
+                  </a>
+                </p>
+                <p className="text-center text-sm text-gray-500">
+                  ¿Buscas propiedades?{" "}
+                  <a
+                    href="/client-register"
+                    className="text-primary hover:underline"
+                  >
+                    Crea tu cuenta aquí.
+                  </a>
+                </p>
+              </div>
             </form>
           </Form>
         </div>

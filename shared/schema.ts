@@ -82,9 +82,14 @@ export const properties = pgTable("properties", {
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  surname: text("surname"),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
-  agentId: integer("agent_id").notNull(),
+  password: text("password"), // Contraseña para clientes auto-registrados
+  propertyInterest: text("property_interest"), // Tipo de propiedad de interés
+  budget: integer("budget"), // Presupuesto
+  notes: text("notes"), // Notas adicionales
+  agentId: integer("agent_id"), // Ahora opcional para clientes auto-registrados
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

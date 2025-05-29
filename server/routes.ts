@@ -15,6 +15,59 @@ import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhood
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
   
+  // Endpoint para registro de clientes desde la web
+  app.post("/api/clients/register", async (req, res) => {
+    try {
+      console.log('Registro de cliente - Datos recibidos:', req.body);
+
+      // Validar los datos usando el schema de clientes
+      const validatedData = insertClientSchema.parse({
+        name: req.body.name,
+        surname: req.body.surname,
+        email: req.body.email,
+        phone: req.body.phone,
+        password: req.body.password, // Incluir la contraseña
+        propertyInterest: req.body.propertyInterest || "",
+        budget: req.body.budget || null,
+        notes: req.body.notes || "Cliente registrado desde la web",
+        agentId: null // Los clientes auto-registrados no tienen agente asignado inicialmente
+      });
+
+      // Verificar si el email ya existe
+      const existingClient = await storage.getClients();
+      const emailExists = existingClient.some(client => client.email === validatedData.email);
+      
+      if (emailExists) {
+        return res.status(400).json({ 
+          message: "Ya existe una cuenta con este correo electrónico" 
+        });
+      }
+
+      // Crear el cliente
+      const newClient = await storage.createClient(validatedData);
+      
+      console.log('Cliente creado exitosamente:', newClient);
+
+      // Responder con éxito (sin incluir datos sensibles)
+      res.status(201).json({
+        message: "Cuenta creada exitosamente",
+        clientId: newClient.id
+      });
+
+    } catch (error) {
+      console.error('Error en registro de cliente:', error);
+      
+      if (error instanceof Error && error.message.includes('validation')) {
+        return res.status(400).json({ 
+          message: "Datos de registro inválidos" 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Error interno del servidor" 
+      });
+    }
+  });
 
   // Nueva ruta para validar si un email está asociado a un agente invitado
   app.get("/api/agency-agents/check-email", async (req, res) => {
@@ -71,26 +124,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Login - Datos recibidos:', req.body);
       const { email, password } = req.body;
-      const user = await storage.getUserByEmail(email);
+      
+      // Primero intentar encontrar en la tabla de agentes/usuarios
+      let user = await storage.getUserByEmail(email);
+      let isClient = false;
 
-      console.log('Login - Usuario encontrado:', user);
+      // Si no se encuentra en agentes, buscar en clientes
+      if (!user) {
+        const clients = await storage.getClients();
+        const client = clients.find(c => c.email === email);
+        
+        if (client && client.password === password) {
+          // Convertir cliente a formato de usuario para compatibilidad
+          user = {
+            id: client.id,
+            email: client.email,
+            password: client.password,
+            name: client.name,
+            surname: client.surname,
+            description: null,
+            avatar: null,
+            createdAt: client.createdAt,
+            influence_neighborhoods: null,
+            yearsOfExperience: null,
+            languagesSpoken: null,
+            agencyId: null,
+            isAdmin: false,
+            phone: client.phone
+          };
+          isClient = true;
+        }
+      }
 
-      if (!user || user.password !== password) {
+      console.log('Login - Usuario encontrado:', user ? 'Sí' : 'No', isClient ? '(Cliente)' : '(Agente)');
+
+      if (!user || (!isClient && user.password !== password)) {
         console.log('Login - Credenciales inválidas');
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Credenciales inválidas" });
       }
 
       console.log('Login - Éxito, devolviendo usuario:', {
         id: user.id,
         email: user.email,
         name: user.name,
-        isAdmin: user.isAdmin
+        isAdmin: user.isAdmin,
+        isClient: isClient
       });
 
-      res.json(user);
+      // Remover la contraseña antes de enviar la respuesta
+      const { password: _, ...userResponse } = user;
+      res.json({ ...userResponse, isClient });
     } catch (error) {
       console.error('Error during login:', error);
-      res.status(500).json({ message: "Login failed" });
+      res.status(500).json({ message: "Error en el inicio de sesión" });
     }
   });
 
