@@ -68,19 +68,8 @@ export default function ClientProfile() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={user.avatar || ""} />
-              <AvatarFallback>
-                <User className="h-8 w-8" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-              <p className="text-lg text-gray-600">
-                Bienvenido, {user.name || "Cliente"}
-              </p>
-            </div>
+          <div className="mb-4">
+            <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
           </div>
         </div>
 
