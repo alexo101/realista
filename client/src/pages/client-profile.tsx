@@ -53,8 +53,13 @@ export default function ClientProfile() {
   const [activeTab, setActiveTab] = useState("agents");
 
   // Redirect if not logged in or not a client
+  useEffect(() => {
+    if (!user || !user.isClient) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
   if (!user || !user.isClient) {
-    navigate("/login");
     return null;
   }
 
