@@ -20,14 +20,8 @@ import { Home, User, Mail, Lock, Phone } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  surname: z.string().min(2, "Los apellidos deben tener al menos 2 caracteres"),
   email: z.string().email("Por favor introduce un correo electrónico válido"),
-  phone: z.string().min(9, "El teléfono debe tener al menos 9 dígitos"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden",
-  path: ["confirmPassword"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -41,11 +35,8 @@ export default function ClientRegisterPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      surname: "",
       email: "",
-      phone: "",
       password: "",
-      confirmPassword: "",
     },
   });
 
@@ -55,9 +46,9 @@ export default function ClientRegisterPage() {
       // Preparar los datos del cliente
       const clientData = {
         name: data.name,
-        surname: data.surname,
+        surname: "", // Campo simplificado
         email: data.email,
-        phone: data.phone,
+        phone: "000000000", // Campo requerido con valor por defecto
         password: data.password,
         // Datos adicionales para el registro de cliente
         propertyInterest: "", // Se puede completar más tarde
@@ -144,27 +135,6 @@ export default function ClientRegisterPage() {
 
                     <FormField
                       control={form.control}
-                      name="surname"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Apellidos</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                placeholder="Tus apellidos"
-                                className="pl-10"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
@@ -187,28 +157,6 @@ export default function ClientRegisterPage() {
 
                     <FormField
                       control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Teléfono</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                placeholder="600 123 456"
-                                type="tel"
-                                className="pl-10"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="password"
                       render={({ field }) => (
                         <FormItem>
@@ -218,28 +166,6 @@ export default function ClientRegisterPage() {
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                               <Input
                                 placeholder="Tu contraseña"
-                                type="password"
-                                className="pl-10"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirmar contraseña</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                placeholder="Confirma tu contraseña"
                                 type="password"
                                 className="pl-10"
                                 {...field}
