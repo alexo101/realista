@@ -16,7 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Home, User, Mail, Lock, Phone } from "lucide-react";
+import { Home, User, Mail, Lock, Phone, Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
@@ -30,6 +30,7 @@ export default function ClientRegisterPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -166,10 +167,21 @@ export default function ClientRegisterPage() {
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                               <Input
                                 placeholder="Tu contraseña"
-                                type="password"
-                                className="pl-10"
+                                type={showPassword ? "text" : "password"}
+                                className="pl-10 pr-10"
                                 {...field}
                               />
+                              <button
+                                type="button"
+                                className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                {showPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </button>
                             </div>
                           </FormControl>
                           <FormMessage />

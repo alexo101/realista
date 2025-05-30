@@ -16,7 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
-import { Building, Home, Lock, Mail } from "lucide-react";
+import { Building, Home, Lock, Mail, Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email("Por favor introduce un correo electrónico válido"),
@@ -30,6 +30,7 @@ export default function LoginPage() {
   const { setUser } = useUser();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -113,10 +114,21 @@ export default function LoginPage() {
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
                           placeholder="Tu contraseña"
-                          type="password"
-                          className="pl-10"
+                          type={showPassword ? "text" : "password"}
+                          className="pl-10 pr-10"
                           {...field}
                         />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
                     </FormControl>
                     <FormMessage />

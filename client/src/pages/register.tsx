@@ -23,7 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
-import { Building, User as UserIcon, Users } from "lucide-react";
+import { Building, User as UserIcon, Users, Eye, EyeOff } from "lucide-react";
 
 // Esquema de validación para el formulario
 const formSchema = z.object({
