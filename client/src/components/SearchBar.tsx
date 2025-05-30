@@ -292,7 +292,10 @@ export function SearchBar() {
                       : `/agentes/${result.id}`;
 
                     console.log('SearchBar - navigating to profile:', targetPath);
-                    window.location.href = targetPath;
+                    // Use pushState to navigate without full page refresh
+                    window.history.pushState({}, '', targetPath);
+                    // Trigger a popstate event to let React Router handle the navigation
+                    window.dispatchEvent(new PopStateEvent('popstate'));
                   }}
                 />
               </div>

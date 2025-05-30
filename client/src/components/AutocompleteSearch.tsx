@@ -31,18 +31,18 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  
+
   // Referencias a elementos DOM
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Consulta a la API
   const { data: results = [], isLoading, isError, error } = useQuery<SearchResult[]>({
     queryKey: [`/api/search/${type}`, searchTerm],
     queryFn: async () => {
       if (!searchTerm.trim()) return [];
-      
+
       const params = new URLSearchParams();
       if (type === 'agencies') {
         params.append('agencyName', searchTerm.trim());
@@ -50,17 +50,17 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         params.append('agentName', searchTerm.trim());
       }
       params.append('showAll', 'true');
-      
+
       try {
         console.log(`Searching ${type} with query:`, searchTerm);
         const response = await fetch(`/api/search/${type}?${params}`);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Search error (${response.status}):`, errorText);
           throw new Error(`Failed to fetch search results: ${response.status}`);
         }
-        
+
         const data = await response.json();
         console.log(`Found ${data.length} ${type} results`);
         return data;
@@ -73,7 +73,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     staleTime: 5000,
     retry: 1,
   });
-  
+
   // Funciones de manejo de eventos
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -81,7 +81,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     setHighlightedIndex(-1);
     setShowResults(value.trim().length > 0);
   };
-  
+
   const handleClearSearch = () => {
     setSearchTerm('');
     setShowResults(false);
@@ -89,51 +89,40 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       inputRef.current.focus();
     }
   };
-  
+
   const navigateToProfile = (result: SearchResult) => {
-    if (onSelect) {
-      onSelect(result);
-      return;
-    }
-    
+    console.log('AutocompleteSearch - navigating to profile result:', result);
+
     try {
-      // Updated paths to match the application's URL structure with explicit string types
-      let targetPath = '';
-      
-      if (type === 'agencies') {
-        targetPath = `/agencias/${result.id}`;
-        console.log('Navigating to agency profile:', targetPath);
-      } else {
-        targetPath = `/agentes/${result.id}`;
-        console.log('Navigating to agent profile:', targetPath);
+      const targetPath = type === 'agencies' 
+        ? `/agencias/${result.id}` 
+        : `/agentes/${result.id}`;
+
+      console.log('AutocompleteSearch - navigating to:', targetPath);
+
+      // Call the onSelect callback if provided
+      if (onSelect) {
+        onSelect(result);
+        return;
       }
-      
-      // Force a complete page reload to ensure routing works correctly
-      window.location.href = targetPath;
-      
-      // Add a fallback in case the primary navigation doesn't work
-      setTimeout(() => {
-        console.log('Fallback navigation to:', targetPath);
-        window.location.replace(targetPath);
-      }, 100);
+
+      // Use pushState to navigate without full page refresh
+      window.history.pushState({}, '', targetPath);
+      // Trigger a popstate event to let React Router handle the navigation
+      window.dispatchEvent(new PopStateEvent('popstate'));
     } catch (error) {
       console.error('Navigation error:', error);
-      // Last resort - try direct navigation with different path format
-      try {
-        const fallbackPath = type === 'agencies' 
-          ? `/agency-profile/${result.id}` 
-          : `/agent-profile/${result.id}`;
-        console.log('Attempting fallback navigation to:', fallbackPath);
-        window.location.href = fallbackPath;
-      } catch (secondError) {
-        console.error('Fallback navigation error:', secondError);
-      }
+      // Fallback to window.location as last resort
+      const targetPath = type === 'agencies' 
+        ? `/agencias/${result.id}` 
+        : `/agentes/${result.id}`;
+      window.location.href = targetPath;
     }
   };
-  
+
   const navigateToSearch = () => {
     if (!searchTerm.trim()) return;
-    
+
     const params = new URLSearchParams();
     if (type === 'agencies') {
       params.append('agencyName', searchTerm.trim());
@@ -141,13 +130,13 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       params.append('agentName', searchTerm.trim());
     }
     params.append('showAll', 'true');
-    
+
     window.location.href = `/search/${type}?${params}`;
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!results.length) return;
-    
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -155,14 +144,14 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           prev < results.length - 1 ? prev + 1 : prev
         );
         break;
-        
+
       case 'ArrowUp':
         e.preventDefault();
         setHighlightedIndex(prev => 
           prev > 0 ? prev - 1 : 0
         );
         break;
-        
+
       case 'Enter':
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < results.length) {
@@ -171,13 +160,13 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           navigateToSearch();
         }
         break;
-        
+
       case 'Escape':
         setShowResults(false);
         break;
     }
   };
-  
+
   // Efecto para cerrar al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -185,25 +174,25 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
         setShowResults(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  
+
   // Efecto para hacer scroll al elemento resaltado
   useEffect(() => {
     if (resultsContainerRef.current && highlightedIndex >= 0) {
       const container = resultsContainerRef.current;
       const highlightedItem = container.children[highlightedIndex] as HTMLElement;
-      
+
       if (highlightedItem) {
         const containerTop = container.scrollTop;
         const containerBottom = containerTop + container.clientHeight;
         const itemTop = highlightedItem.offsetTop;
         const itemBottom = itemTop + highlightedItem.clientHeight;
-        
+
         if (itemTop < containerTop) {
           container.scrollTop = itemTop;
         } else if (itemBottom > containerBottom) {
@@ -212,7 +201,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
       }
     }
   }, [highlightedIndex]);
-  
+
   // Renderizado
   return (
     <div className="relative w-full" ref={containerRef}>
@@ -227,7 +216,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           placeholder={placeholder || `Buscar ${type === 'agencies' ? 'agencias' : 'agentes'}...`}
           className="pr-16"
         />
-        
+
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-1">
           {searchTerm && (
             <Button
@@ -240,7 +229,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
               <X className="h-4 w-4" />
             </Button>
           )}
-          
+
           <Button
             size="icon"
             variant="ghost"
@@ -252,7 +241,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
           </Button>
         </div>
       </div>
-      
+
       {showResults && (
         <div 
           className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto"
@@ -308,18 +297,18 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                     </div>
                   )}
                 </Avatar>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">
                     {type === 'agents' 
                       ? `${result.name || ''} ${result.surname || ''}` 
                       : result.agencyName || ''}
                   </div>
-                  
+
                   {type === 'agents' && result.agencyName && (
                     <div className="text-sm text-gray-500 truncate">{result.agencyName}</div>
                   )}
-                  
+
                   {type === 'agencies' && (
                     <div className="text-sm text-gray-500 truncate">
                       {result.agencyDescription || result.description || 'Agencia inmobiliaria'}
