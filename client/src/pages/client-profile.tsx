@@ -54,10 +54,6 @@ export default function ClientProfile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  if (!user || !user.isClient) {
-    return <Redirect to="/login" />;
-  }
-
   const [activeTab, setActiveTab] = useState("agents");
 
   // Redirect if not logged in or not a client
@@ -101,6 +97,10 @@ export default function ClientProfile() {
 
   // Mock data for messages - replace with actual API calls when messages feature is implemented
   const messages: Message[] = [];
+
+  if (!user || !user.isClient) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
