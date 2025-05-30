@@ -41,6 +41,7 @@ export default function RegisterPage() {
   const { setUser } = useUser();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Configuración del formulario
   const form = useForm<FormData>({
@@ -193,11 +194,25 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Crea una contraseña segura"
-                        type="password"
-                        {...field}
-                      />
+                      <div className="relative">
+                        <Input
+                          placeholder="Crea una contraseña segura"
+                          type={showPassword ? "text" : "password"}
+                          className="pr-10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </FormControl>
                     <p className="text-sm text-gray-500 mt-1">
                       La contraseña debe tener al menos 8 caracteres. Se recomienda incluir letras, números y símbolos.
