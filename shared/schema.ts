@@ -240,3 +240,18 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
 });
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;
+
+// Client favorite agents table
+export const clientFavoriteAgents = pgTable("client_favorite_agents", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  agentId: integer("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertClientFavoriteAgentSchema = createInsertSchema(clientFavoriteAgents).omit({
+  id: true,
+  createdAt: true,
+});
+export type ClientFavoriteAgent = typeof clientFavoriteAgents.$inferSelect;
+export type InsertClientFavoriteAgent = z.infer<typeof insertClientFavoriteAgentSchema>;
