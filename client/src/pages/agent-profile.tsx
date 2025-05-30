@@ -108,14 +108,27 @@ export default function AgentProfile() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
-  // Mutación para manejar favoritos (simulado por ahora)
+  // Mutación para manejar favoritos
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (agentId: string) => {
-      if (!user) {
-        throw new Error("No autenticado");
+      if (!user || !user.isClient) {
+        throw new Error("Debes ser un cliente para agregar favoritos");
       }
-      // Simular el toggle de favoritos
-      return { isFavorite: !isFavorite, agentId };
+      
+      const response = await fetch(`/api/clients/favorites/agents/${agentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ clientId: user.id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al actualizar favoritos");
+      }
+
+      return response.json();
     },
     onSuccess: (data) => {
       setIsFavorite(data.isFavorite);
@@ -144,6 +157,15 @@ export default function AgentProfile() {
         variant: "destructive",
       });
       navigate("/login");
+      return;
+    }
+    
+    if (!user.isClient) {
+      toast({
+        title: "Función solo para clientes",
+        description: "Solo los clientes pueden agregar agentes a favoritos",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -197,6 +219,28 @@ export default function AgentProfile() {
     },
     enabled: !!id
   });
+
+  // Query para verificar si el agente ya está en favoritos
+  const { data: favoriteStatus } = useQuery({
+    queryKey: [`/api/clients/${user?.id}/favorites/agents/${id}/status`],
+    queryFn: async () => {
+      if (!user || !user.isClient || !id) return { isFavorite: false };
+      
+      const response = await fetch(`/api/clients/${user.id}/favorites/agents/${id}/status`);
+      if (!response.ok) {
+        return { isFavorite: false };
+      }
+      return response.json();
+    },
+    enabled: !!user?.isClient && !!id
+  });
+
+  // Efecto para actualizar el estado de favorito cuando se carga la página
+  useEffect(() => {
+    if (favoriteStatus) {
+      setIsFavorite(favoriteStatus.isFavorite);
+    }
+  }, [favoriteStatus]);
 
   // Efecto para desplazar al inicio de la página cuando cambia el ID
   useEffect(() => {
@@ -331,28 +375,31 @@ export default function AgentProfile() {
               <Phone className="mr-2 h-4 w-4" /> Contactar agente
             </Button>
             
-            {/* Botón de favoritos */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={handleFavoriteClick}
-                    className={isFavorite ? "text-red-500 border-red-500 hover:bg-red-50" : ""}
-                  >
-                    {isFavorite ? (
-                      <Heart className="h-4 w-4 fill-current" />
-                    ) : (
-                      <Heart className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {/* Botón de favoritos - solo para clientes autenticados */}
+            {user && user.isClient && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleFavoriteClick}
+                      className={isFavorite ? "text-red-500 border-red-500 hover:bg-red-50" : ""}
+                      disabled={toggleFavoriteMutation.isPending}
+                    >
+                      {isFavorite ? (
+                        <Heart className="h-4 w-4 fill-current" />
+                      ) : (
+                        <Heart className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
 
             {/* Botón de compartir */}
             <DropdownMenu>

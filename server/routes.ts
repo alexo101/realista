@@ -323,22 +323,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clients/favorites/agents/:agentId", async (req, res) => {
     try {
       const agentId = parseInt(req.params.agentId);
-      const clientId = req.body.clientId; // This should come from session in a real implementation
+      const { clientId } = req.body;
       
       if (!clientId) {
-        return res.status(401).json({ message: "Authentication required" });
+        return res.status(401).json({ message: "Client ID is required" });
       }
 
       const isFavorite = await storage.toggleFavoriteAgent(clientId, agentId);
       
       res.status(200).json({ 
-        message: isFavorite ? "Agent added to favorites" : "Agent removed from favorites",
+        message: isFavorite ? "Agente agregado a favoritos" : "Agente eliminado de favoritos",
         isFavorite: isFavorite,
         agentId: agentId
       });
     } catch (error) {
       console.error('Error updating favorite agent:', error);
-      res.status(500).json({ message: "Failed to update favorite agent" });
+      res.status(500).json({ message: "Error al actualizar favoritos" });
     }
   });
 

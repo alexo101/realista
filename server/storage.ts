@@ -482,12 +482,12 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   // Método para responder a una reseña
   async respondToReview(reviewId: number, response: string): Promise<Review> {
     try {
       console.log(`Respondiendo a reseña ${reviewId} con respuesta: ${response}`);
-      
+
       const [updatedReview] = await db
         .update(reviews)
         .set({
@@ -496,11 +496,11 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(reviews.id, reviewId))
         .returning();
-      
+
       if (!updatedReview) {
         throw new Error(`No se encontró la reseña con ID ${reviewId}`);
       }
-      
+
       return updatedReview;
     } catch (error) {
       console.error(`Error al responder a la reseña ${reviewId}:`, error);
@@ -638,31 +638,31 @@ export class DatabaseStorage implements IStorage {
   async getAgencyAgents(agencyId: number): Promise<User[]> {
     try {
       console.log(`Buscando agentes con agencyId = ${agencyId}`);
-      
+
       // Convertimos el ID de la agencia a string para la comparación con el campo agencyId
       const agencyIdStr = agencyId.toString();
-      
+
       // Seleccionamos los agentes que pertenecen a esta agencia
       const result = await db
         .select()
         .from(agents)
         .where(eq(agents.agencyId, agencyIdStr))
         .orderBy(agents.name);
-      
+
       console.log(`Encontrados ${result.length} agentes vinculados a la agencia ${agencyId}`);
-      
+
       // Para cada agente, obtenemos su puntuación y número de reseñas
       const agentsWithReviews = await Promise.all(
         result.map(async (agent) => {
           const reviews = await this.getAgentReviews(agent.id);
-          
+
           // Calculamos el promedio de puntuación si hay reseñas
           let reviewAverage = 0;
           if (reviews.length > 0) {
             const sum = reviews.reduce((acc, review) => acc + Number(review.rating), 0);
             reviewAverage = sum / reviews.length;
           }
-          
+
           return {
             ...agent,
             reviewCount: reviews.length,
@@ -670,7 +670,7 @@ export class DatabaseStorage implements IStorage {
           };
         })
       );
-      
+
       return agentsWithReviews;
     } catch (error) {
       console.error(`Error al obtener agentes de la agencia ${agencyId}:`, error);
@@ -752,43 +752,43 @@ export class DatabaseStorage implements IStorage {
   async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
     try {
       console.log(`Obteniendo propiedades para la agencia ${agencyId}`);
-      
+
       // 1. Obtener propiedades directamente vinculadas a la agencia
       const directProperties = await db
         .select()
         .from(properties)
         .where(eq(properties.agencyId, agencyId))
         .orderBy(sql`${properties.createdAt} DESC`);
-      
+
       console.log(`Encontradas ${directProperties.length} propiedades directamente vinculadas a la agencia ${agencyId}`);
-      
+
       // 2. Obtener agentes vinculados a esta agencia
       const agencyAgents = await this.getAgencyAgents(agencyId);
       console.log(`Encontrados ${agencyAgents.length} agentes vinculados a la agencia ${agencyId}`);
-      
+
       // 3. Obtener propiedades de cada agente
       const agentPropertiesPromises = agencyAgents.map(agent => 
         this.getPropertiesByAgent(agent.id)
       );
-      
+
       const agentPropertiesArrays = await Promise.all(agentPropertiesPromises);
-      
+
       // 4. Aplanar el array de arrays de propiedades
       const agentProperties = agentPropertiesArrays.flat();
       console.log(`Encontradas ${agentProperties.length} propiedades de agentes vinculados a la agencia ${agencyId}`);
-      
+
       // 5. Combinar propiedades directas y de agentes, eliminando duplicados por ID
       const allProperties = [...directProperties];
-      
+
       // Añadir propiedades de agentes solo si no están ya incluidas
       agentProperties.forEach(agentProperty => {
         if (!allProperties.some(p => p.id === agentProperty.id)) {
           allProperties.push(agentProperty);
         }
       });
-      
+
       console.log(`Total de propiedades para la agencia ${agencyId}: ${allProperties.length}`);
-      
+
       // Ordenar por fecha de creación (más recientes primero)
       return allProperties.sort((a, b) => {
         const dateA = new Date(a.createdAt).getTime();
@@ -1075,21 +1075,72 @@ export class DatabaseStorage implements IStorage {
     return updatedInquiry;
   }
 
-  // Client favorite agents (simulated for now)
   async getFavoriteAgentsByClient(clientId: number): Promise<User[]> {
-    // Return empty array for now - will be implemented with proper database schema
-    return [];
+    const favorites = await db
+      .select({
+        id: agents.id,
+        email: agents.email,
+        name: agents.name,
+        surname: agents.surname,
+        avatar: agents.avatar,
+        yearsOfExperience: agents.yearsOfExperience,
+        influence_neighborhoods: agents.influence_neighborhoods,
+        agencyId: agents.agencyId,
+        description: agents.description,
+        languagesSpoken: agents.languagesSpoken,
+        isAdmin: agents.isAdmin,
+      })
+      .from(clientFavoriteAgents)
+      .innerJoin(agents, eq(clientFavoriteAgents.agentId, agents.id))
+      .where(eq(clientFavoriteAgents.clientId, clientId));
+
+    return favorites;
   }
 
   async toggleFavoriteAgent(clientId: number, agentId: number): Promise<boolean> {
-    // For now, just return true to simulate adding to favorites
-    // This will be properly implemented with database schema
-    return true;
+    // Check if already favorited
+    const existing = await db
+      .select()
+      .from(clientFavoriteAgents)
+      .where(
+        and(
+          eq(clientFavoriteAgents.clientId, clientId),
+          eq(clientFavoriteAgents.agentId, agentId)
+        )
+      );
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await db
+        .delete(clientFavoriteAgents)
+        .where(
+          and(
+            eq(clientFavoriteAgents.clientId, clientId),
+            eq(clientFavoriteAgents.agentId, agentId)
+          )
+        );
+      return false;
+    } else {
+      // Add to favorites
+      await db
+        .insert(clientFavoriteAgents)
+        .values({ clientId, agentId });
+      return true;
+    }
   }
 
   async isFavoriteAgent(clientId: number, agentId: number): Promise<boolean> {
-    // Return false for now - will be implemented with proper database schema
-    return false;
+    const favorite = await db
+      .select()
+      .from(clientFavoriteAgents)
+      .where(
+        and(
+          eq(clientFavoriteAgents.clientId, clientId),
+          eq(clientFavoriteAgents.agentId, agentId)
+        )
+      );
+
+    return favorite.length > 0;
   }
 }
 

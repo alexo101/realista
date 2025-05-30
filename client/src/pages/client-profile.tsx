@@ -63,8 +63,22 @@ export default function ClientProfile() {
     return null;
   }
 
+  // Query para obtener agentes favoritos
+  const { data: favoriteAgents = [] } = useQuery<FavoriteAgent[]>({
+    queryKey: [`/api/clients/${user?.id}/favorites/agents`],
+    queryFn: async () => {
+      if (!user || !user.isClient) return [];
+      
+      const response = await fetch(`/api/clients/${user.id}/favorites/agents`);
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: !!user?.isClient
+  });
+
   // Mock data for demonstration - replace with actual API calls
-  const favoriteAgents: FavoriteAgent[] = [];
   const favoriteProperties: FavoriteProperty[] = [];
   const messages: Message[] = [];
 
