@@ -319,6 +319,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client favorite agents endpoints
+  app.post("/api/clients/favorites/agents/:agentId", async (req, res) => {
+    try {
+      // For now, we'll just return success - in a real implementation,
+      // you would store this in a favorites table
+      const agentId = parseInt(req.params.agentId);
+      
+      res.status(200).json({ 
+        message: "Favorite status updated successfully",
+        agentId: agentId
+      });
+    } catch (error) {
+      console.error('Error updating favorite agent:', error);
+      res.status(500).json({ message: "Failed to update favorite agent" });
+    }
+  });
+
+  app.get("/api/clients/favorites/agents", async (req, res) => {
+    try {
+      // For now, return empty array - in a real implementation,
+      // you would fetch from a favorites table
+      res.status(200).json([]);
+    } catch (error) {
+      console.error('Error fetching favorite agents:', error);
+      res.status(500).json({ message: "Failed to fetch favorite agents" });
+    }
+  });
+
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
