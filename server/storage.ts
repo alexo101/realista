@@ -40,8 +40,11 @@ import {
   type InsertInquiry,
   type InsertReview,
   clientFavoriteAgents,
+  clientFavoriteProperties,
   type ClientFavoriteAgent,
   type InsertClientFavoriteAgent,
+  type ClientFavoriteProperty,
+  type InsertClientFavoriteProperty,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -121,6 +124,11 @@ export interface IStorage {
   getFavoriteAgentsByClient(clientId: number): Promise<User[]>;
   toggleFavoriteAgent(clientId: number, agentId: number): Promise<boolean>;
   isFavoriteAgent(clientId: number, agentId: number): Promise<boolean>;
+
+  // Client favorite properties
+  getFavoritePropertiesByClient(clientId: number): Promise<Property[]>;
+  toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
+  isFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1137,6 +1145,87 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(clientFavoriteAgents.clientId, clientId),
           eq(clientFavoriteAgents.agentId, agentId)
+        )
+      );
+
+    return favorite.length > 0;
+  }
+
+  async getFavoritePropertiesByClient(clientId: number): Promise<Property[]> {
+    const favorites = await db
+      .select({
+        id: properties.id,
+        title: properties.title,
+        description: properties.description,
+        price: properties.price,
+        address: properties.address,
+        neighborhood: properties.neighborhood,
+        superficie: properties.superficie,
+        bedrooms: properties.bedrooms,
+        bathrooms: properties.bathrooms,
+        images: properties.images,
+        type: properties.type,
+        housingType: properties.housingType,
+        housingStatus: properties.housingStatus,
+        floor: properties.floor,
+        reference: properties.reference,
+        operationType: properties.operationType,
+        features: properties.features,
+        availability: properties.availability,
+        availabilityDate: properties.availabilityDate,
+        mainImageIndex: properties.mainImageIndex,
+        isActive: properties.isActive,
+        agentId: properties.agentId,
+        viewCount: properties.viewCount,
+        createdAt: properties.createdAt,
+      })
+      .from(clientFavoriteProperties)
+      .innerJoin(properties, eq(clientFavoriteProperties.propertyId, properties.id))
+      .where(eq(clientFavoriteProperties.clientId, clientId));
+
+    return favorites;
+  }
+
+  async toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean> {
+    // Check if already favorited
+    const existing = await db
+      .select()
+      .from(clientFavoriteProperties)
+      .where(
+        and(
+          eq(clientFavoriteProperties.clientId, clientId),
+          eq(clientFavoriteProperties.propertyId, propertyId)
+        )
+      );
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await db
+        .delete(clientFavoriteProperties)
+        .where(
+          and(
+            eq(clientFavoriteProperties.clientId, clientId),
+            eq(clientFavoriteProperties.propertyId, propertyId)
+          )
+        );
+      return false;
+    } else {
+      // Add to favorites
+      await db
+        .insert(clientFavoriteProperties)
+        .values({ clientId, propertyId });
+      return true;
+    }
+  }
+
+  async isFavoriteProperty(clientId: number, propertyId: number): Promise<boolean> {
+    const favorite = await db
+      .select()
+      .from(clientFavoriteProperties)
+      .where(
+        and(
+          eq(clientFavoriteProperties.clientId, clientId),
+          eq(clientFavoriteProperties.propertyId, propertyId)
         )
       );
 

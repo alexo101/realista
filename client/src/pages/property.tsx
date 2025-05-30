@@ -1,12 +1,18 @@
-import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ContactForm } from "@/components/ContactForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Bed, Bath, MapPin, Phone, Mail, Maximize } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useUser } from "@/contexts/user-context";
+import { useToast } from "@/hooks/use-toast";
+import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle } from "lucide-react";
 
 // Extended Property type with additional fields for features
 interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms'> {

@@ -365,6 +365,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property favorites routes
+  app.post("/api/clients/favorites/properties/:propertyId", async (req, res) => {
+    try {
+      const propertyId = parseInt(req.params.propertyId);
+      const { clientId } = req.body;
+      
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID is required" });
+      }
+
+      const isFavorite = await storage.toggleFavoriteProperty(clientId, propertyId);
+      res.status(200).json({ 
+        isFavorite, 
+        message: isFavorite ? "Property added to favorites" : "Property removed from favorites" 
+      });
+    } catch (error) {
+      console.error('Error toggling property favorite:', error);
+      res.status(500).json({ message: "Failed to update property favorites" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/favorites/properties", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const favoriteProperties = await storage.getFavoritePropertiesByClient(clientId);
+      res.status(200).json(favoriteProperties);
+    } catch (error) {
+      console.error('Error fetching favorite properties:', error);
+      res.status(500).json({ message: "Failed to fetch favorite properties" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/favorites/properties/:propertyId/status", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const propertyId = parseInt(req.params.propertyId);
+      const isFavorite = await storage.isFavoriteProperty(clientId, propertyId);
+      res.status(200).json({ isFavorite });
+    } catch (error) {
+      console.error('Error checking property favorite status:', error);
+      res.status(500).json({ message: "Failed to check property favorite status" });
+    }
+  });
+
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
