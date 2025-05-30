@@ -41,10 +41,13 @@ import {
   type InsertReview,
   clientFavoriteAgents,
   clientFavoriteProperties,
+  propertyVisitRequests,
   type ClientFavoriteAgent,
   type InsertClientFavoriteAgent,
   type ClientFavoriteProperty,
   type InsertClientFavoriteProperty,
+  type PropertyVisitRequest,
+  type InsertPropertyVisitRequest,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -129,6 +132,12 @@ export interface IStorage {
   getFavoritePropertiesByClient(clientId: number): Promise<Property[]>;
   toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
   isFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
+
+  // Property visit requests
+  createPropertyVisitRequest(visitRequest: InsertPropertyVisitRequest): Promise<PropertyVisitRequest>;
+  getPropertyVisitRequestsByClient(clientId: number): Promise<PropertyVisitRequest[]>;
+  getPropertyVisitRequestsByAgent(agentId: number): Promise<PropertyVisitRequest[]>;
+  updatePropertyVisitRequestStatus(id: number, status: string, agentNotes?: string): Promise<PropertyVisitRequest>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1230,6 +1239,44 @@ export class DatabaseStorage implements IStorage {
       );
 
     return favorite.length > 0;
+  }
+
+  // Property visit requests
+  async createPropertyVisitRequest(visitRequest: InsertPropertyVisitRequest): Promise<PropertyVisitRequest> {
+    const [result] = await db
+      .insert(propertyVisitRequests)
+      .values(visitRequest)
+      .returning();
+    return result;
+  }
+
+  async getPropertyVisitRequestsByClient(clientId: number): Promise<PropertyVisitRequest[]> {
+    return await db
+      .select()
+      .from(propertyVisitRequests)
+      .where(eq(propertyVisitRequests.clientId, clientId))
+      .orderBy(desc(propertyVisitRequests.createdAt));
+  }
+
+  async getPropertyVisitRequestsByAgent(agentId: number): Promise<PropertyVisitRequest[]> {
+    return await db
+      .select()
+      .from(propertyVisitRequests)
+      .where(eq(propertyVisitRequests.agentId, agentId))
+      .orderBy(desc(propertyVisitRequests.createdAt));
+  }
+
+  async updatePropertyVisitRequestStatus(id: number, status: string, agentNotes?: string): Promise<PropertyVisitRequest> {
+    const [result] = await db
+      .update(propertyVisitRequests)
+      .set({ 
+        status, 
+        agentNotes,
+        updatedAt: new Date()
+      })
+      .where(eq(propertyVisitRequests.id, id))
+      .returning();
+    return result;
   }
 }
 

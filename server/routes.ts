@@ -7,7 +7,8 @@ import {
   insertNeighborhoodRatingSchema,
   insertAgencyAgentSchema,
   insertAppointmentSchema,
-  insertAgencySchema
+  insertAgencySchema,
+  insertPropertyVisitRequestSchema
 } from "@shared/schema";
 import { sendWelcomeEmail } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";

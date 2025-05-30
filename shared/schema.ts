@@ -270,3 +270,27 @@ export const insertClientFavoritePropertySchema = createInsertSchema(clientFavor
 });
 export type ClientFavoriteProperty = typeof clientFavoriteProperties.$inferSelect;
 export type InsertClientFavoriteProperty = z.infer<typeof insertClientFavoritePropertySchema>;
+
+// Property visit requests table
+export const propertyVisitRequests = pgTable("property_visit_requests", {
+  id: serial("id").primaryKey(),
+  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  agentId: integer("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  requestedDate: timestamp("requested_date").notNull(),
+  requestedTime: text("requested_time").notNull(), // Store time as string like "10:00"
+  status: text("status").notNull().default("pending"), // pending, confirmed, cancelled, completed
+  clientNotes: text("client_notes"),
+  agentNotes: text("agent_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPropertyVisitRequestSchema = createInsertSchema(propertyVisitRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PropertyVisitRequest = typeof propertyVisitRequests.$inferSelect;
+export type InsertPropertyVisitRequest = z.infer<typeof insertPropertyVisitRequestSchema>;
