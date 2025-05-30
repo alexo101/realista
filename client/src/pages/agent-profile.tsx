@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis } from "recharts";
-import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink, Home, MessageCircle, Briefcase } from "lucide-react";
+import { Star, Phone, Mail, MapPin, Building2, Calendar, ExternalLink, Home, MessageCircle, Briefcase, Share2, Heart, HeartOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,12 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { AgentReviewFlow } from "@/components/AgentReviewFlow";
 import { Tooltip as RechartsTooltip } from "recharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useUser } from "@/contexts/user-context";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 // Interfaz para las reseñas
 interface Review {
@@ -23,6 +29,7 @@ interface Review {
   rating: number;
   date: string;
   comment?: string;
+  verified?: boolean;
   // Campos directos para las puntuaciones en la BD
   areaKnowledge: number;
   priceNegotiation: number;
@@ -93,6 +100,78 @@ export default function AgentProfile() {
   // Estados para la pestaña activa y el modal de reseñas
   const [activeTab, setActiveTab] = useState("overview");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  // Hooks para autenticación y navegación
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+
+  // Mutación para manejar favoritos
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (agentId: string) => {
+      if (!user) {
+        throw new Error("No autenticado");
+      }
+      const response = await apiRequest("POST", `/api/clients/favorites/agents/${agentId}`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      setIsFavorite(!isFavorite);
+      toast({
+        title: isFavorite ? "Agente eliminado de favoritos" : "Agente agregado a favoritos",
+        description: isFavorite 
+          ? "El agente ha sido eliminado de tu lista de favoritos" 
+          : "El agente ha sido agregado a tu lista de favoritos",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "No se pudo actualizar favoritos",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Función para manejar el click en favoritos
+  const handleFavoriteClick = () => {
+    if (!user) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para guardar agentes como favoritos",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    
+    if (!id) return;
+    toggleFavoriteMutation.mutate(id);
+  };
+
+  // Función para compartir
+  const handleShare = (platform: string) => {
+    const url = window.location.href;
+    const text = `Mira el perfil de ${agent?.name || 'este agente'} en Realista`;
+    
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${text} - ${url}`)}`, '_blank');
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(url);
+        toast({
+          title: "Enlace copiado",
+          description: "El enlace del perfil ha sido copiado al portapapeles",
+        });
+        break;
+      case 'email':
+        window.open(`mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(url)}`, '_blank');
+        break;
+    }
+  };
 
   // Consulta para obtener los datos del agente
   const { data: agent, isLoading, error } = useQuery<Agent>({
@@ -251,6 +330,52 @@ export default function AgentProfile() {
             <Button size="sm" variant="outline">
               <Phone className="mr-2 h-4 w-4" /> Contactar agente
             </Button>
+            
+            {/* Botón de favoritos */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleFavoriteClick}
+                    className={isFavorite ? "text-red-500 border-red-500 hover:bg-red-50" : ""}
+                  >
+                    {isFavorite ? (
+                      <Heart className="h-4 w-4 fill-current" />
+                    ) : (
+                      <Heart className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {/* Botón de compartir */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
+                  <span className="text-green-600 mr-2">📱</span>
+                  WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('email')}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Email
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('copy')}>
+                  <span className="mr-2">🔗</span>
+                  Copiar enlace
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
