@@ -132,6 +132,17 @@ export default function AgentProfile() {
     },
     onSuccess: (data) => {
       setIsFavorite(data.isFavorite);
+      
+      // Invalidate client favorites query to refresh the client profile page
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user?.id}/favorites/agents`] 
+      });
+      
+      // Also invalidate the status query for this specific agent
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user?.id}/favorites/agents/${id}/status`] 
+      });
+      
       toast({
         title: data.isFavorite ? "Agente agregado a favoritos" : "Agente eliminado de favoritos",
         description: data.isFavorite 
