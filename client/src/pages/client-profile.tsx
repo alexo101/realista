@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLocation, Redirect } from "wouter";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface FavoriteAgent {
   id: number;
