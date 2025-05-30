@@ -9,6 +9,7 @@ import {
   arrayOverlaps,
   not,
   isNull,
+  desc,
 } from "drizzle-orm";
 import {
   agents,

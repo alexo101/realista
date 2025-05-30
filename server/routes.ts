@@ -410,6 +410,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Property Visit Requests
+  app.post("/api/property-visit-requests", async (req, res) => {
+    try {
+      const visitRequestData = insertPropertyVisitRequestSchema.parse({
+        propertyId: req.body.propertyId,
+        clientId: req.body.clientId,
+        agentId: req.body.agentId,
+        requestedDate: new Date(req.body.requestedDate),
+        requestedTime: req.body.requestedTime,
+        clientNotes: req.body.clientNotes || null,
+      });
+
+      const visitRequest = await storage.createPropertyVisitRequest(visitRequestData);
+      res.status(201).json(visitRequest);
+    } catch (error) {
+      console.error('Error creating property visit request:', error);
+      res.status(500).json({ message: "Failed to create property visit request" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/visit-requests", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const visitRequests = await storage.getPropertyVisitRequestsByClient(clientId);
+      res.status(200).json(visitRequests);
+    } catch (error) {
+      console.error('Error getting client visit requests:', error);
+      res.status(500).json({ message: "Failed to get visit requests" });
+    }
+  });
+
+  app.get("/api/agents/:agentId/visit-requests", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const visitRequests = await storage.getPropertyVisitRequestsByAgent(agentId);
+      res.status(200).json(visitRequests);
+    } catch (error) {
+      console.error('Error getting agent visit requests:', error);
+      res.status(500).json({ message: "Failed to get visit requests" });
+    }
+  });
+
+  app.patch("/api/property-visit-requests/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, agentNotes } = req.body;
+      
+      const updatedRequest = await storage.updatePropertyVisitRequestStatus(id, status, agentNotes);
+      res.status(200).json(updatedRequest);
+    } catch (error) {
+      console.error('Error updating visit request status:', error);
+      res.status(500).json({ message: "Failed to update visit request status" });
+    }
+  });
+
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {

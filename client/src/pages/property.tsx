@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ContactForm } from "@/components/ContactForm";
+import { PropertyVisitRequest } from "@/components/PropertyVisitRequest";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -341,6 +342,13 @@ export default function PropertyPage() {
                 <ContactForm propertyId={property.id} />
               </CardContent>
             </Card>
+
+            {property.agentId && (
+              <PropertyVisitRequest 
+                propertyId={property.id} 
+                agentId={property.agentId} 
+              />
+            )}
           </div>
         </div>
       </div>
