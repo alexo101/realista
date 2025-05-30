@@ -108,22 +108,22 @@ export default function AgentProfile() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
-  // Mutación para manejar favoritos
+  // Mutación para manejar favoritos (simulado por ahora)
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (agentId: string) => {
       if (!user) {
         throw new Error("No autenticado");
       }
-      const response = await apiRequest("POST", `/api/clients/favorites/agents/${agentId}`, {});
-      return response.json();
+      // Simular el toggle de favoritos
+      return { isFavorite: !isFavorite, agentId };
     },
-    onSuccess: () => {
-      setIsFavorite(!isFavorite);
+    onSuccess: (data) => {
+      setIsFavorite(data.isFavorite);
       toast({
-        title: isFavorite ? "Agente eliminado de favoritos" : "Agente agregado a favoritos",
-        description: isFavorite 
-          ? "El agente ha sido eliminado de tu lista de favoritos" 
-          : "El agente ha sido agregado a tu lista de favoritos",
+        title: data.isFavorite ? "Agente agregado a favoritos" : "Agente eliminado de favoritos",
+        description: data.isFavorite 
+          ? "El agente ha sido agregado a tu lista de favoritos" 
+          : "El agente ha sido eliminado de tu lista de favoritos",
       });
     },
     onError: (error) => {

@@ -322,12 +322,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client favorite agents endpoints
   app.post("/api/clients/favorites/agents/:agentId", async (req, res) => {
     try {
-      // For now, we'll just return success - in a real implementation,
-      // you would store this in a favorites table
       const agentId = parseInt(req.params.agentId);
+      const clientId = req.body.clientId; // This should come from session in a real implementation
+      
+      if (!clientId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const isFavorite = await storage.toggleFavoriteAgent(clientId, agentId);
       
       res.status(200).json({ 
-        message: "Favorite status updated successfully",
+        message: isFavorite ? "Agent added to favorites" : "Agent removed from favorites",
+        isFavorite: isFavorite,
         agentId: agentId
       });
     } catch (error) {
@@ -336,14 +342,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/favorites/agents", async (req, res) => {
+  app.get("/api/clients/:clientId/favorites/agents", async (req, res) => {
     try {
-      // For now, return empty array - in a real implementation,
-      // you would fetch from a favorites table
-      res.status(200).json([]);
+      const clientId = parseInt(req.params.clientId);
+      const favoriteAgents = await storage.getFavoriteAgentsByClient(clientId);
+      res.status(200).json(favoriteAgents);
     } catch (error) {
       console.error('Error fetching favorite agents:', error);
       res.status(500).json({ message: "Failed to fetch favorite agents" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/favorites/agents/:agentId/status", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const agentId = parseInt(req.params.agentId);
+      const isFavorite = await storage.isFavoriteAgent(clientId, agentId);
+      res.status(200).json({ isFavorite });
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+      res.status(500).json({ message: "Failed to check favorite status" });
     }
   });
 
