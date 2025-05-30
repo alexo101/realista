@@ -78,8 +78,22 @@ export default function ClientProfile() {
     enabled: !!user?.isClient
   });
 
-  // Mock data for demonstration - replace with actual API calls
-  const favoriteProperties: FavoriteProperty[] = [];
+  // Query para obtener propiedades favoritas
+  const { data: favoriteProperties = [] } = useQuery<FavoriteProperty[]>({
+    queryKey: [`/api/clients/${user?.id}/favorites/properties`],
+    queryFn: async () => {
+      if (!user || !user.isClient) return [];
+      
+      const response = await fetch(`/api/clients/${user.id}/favorites/properties`);
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: !!user?.isClient
+  });
+
+  // Mock data for messages - replace with actual API calls when messages feature is implemented
   const messages: Message[] = [];
 
   return (
