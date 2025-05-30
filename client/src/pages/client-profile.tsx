@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
+import { useToast } from "@/components/ui/use-toast";
 
 interface FavoriteAgent {
   id: number;
@@ -50,6 +51,13 @@ interface Message {
 export default function ClientProfile() {
   const { user } = useUser();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  if (!user || !user.isClient) {
+    return <Redirect to="/login" />;
+  }
+
   const [activeTab, setActiveTab] = useState("agents");
 
   // Redirect if not logged in or not a client
@@ -59,16 +67,14 @@ export default function ClientProfile() {
     }
   }, [user, navigate]);
 
-  if (!user || !user.isClient) {
-    return null;
-  }
+
 
   // Query para obtener agentes favoritos
   const { data: favoriteAgents = [] } = useQuery<FavoriteAgent[]>({
     queryKey: [`/api/clients/${user?.id}/favorites/agents`],
     queryFn: async () => {
       if (!user || !user.isClient) return [];
-      
+
       const response = await fetch(`/api/clients/${user.id}/favorites/agents`);
       if (!response.ok) {
         return [];
@@ -83,7 +89,7 @@ export default function ClientProfile() {
     queryKey: [`/api/clients/${user?.id}/favorites/properties`],
     queryFn: async () => {
       if (!user || !user.isClient) return [];
-      
+
       const response = await fetch(`/api/clients/${user.id}/favorites/properties`);
       if (!response.ok) {
         return [];
