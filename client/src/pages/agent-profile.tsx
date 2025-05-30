@@ -618,7 +618,7 @@ export default function AgentProfile() {
                           <div className="text-sm text-gray-500">
                             {typeof review.date === 'string' 
                               ? review.date.substring(0, 16).replace('T', ' ')
-                              : review.date.toISOString().substring(0, 16).replace('T', ' ')}
+                              : new Date(review.date).toISOString().substring(0, 16).replace('T', ' ')}
                           </div>
                         </div>
 
