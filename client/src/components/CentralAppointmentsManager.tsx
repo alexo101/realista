@@ -207,9 +207,9 @@ export function CentralAppointmentsManager({ preSelectedClientId }: CentralAppoi
     <div className="space-y-6">
       <div className="flex justify-end items-center">
         {!showForm && (
-          <Button onClick={() => setShowForm(true)} disabled={!selectedClientId}>
+          <Button onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Nueva Cita
+            Tu Nuevo Evento
           </Button>
         )}
       </div>
