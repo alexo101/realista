@@ -330,7 +330,8 @@ export default function ManagePage() {
                   onClick={() => setSection("appointments")}
                 >
                   <Calendar className="h-4 w-4" />
-                  <span>Citas</span>
+                  <span>Calendario
+</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
