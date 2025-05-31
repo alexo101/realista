@@ -309,15 +309,7 @@ export function CentralAppointmentsManager({ preSelectedClientId }: CentralAppoi
             />
           </CardContent>
         </Card>
-      ) : (
-        <div className="text-center py-12 bg-slate-50 rounded-lg">
-          <Users className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">Selecciona un cliente para ver sus citas</h3>
-          <p className="mt-2 text-gray-500 max-w-md mx-auto">
-            Para gestionar citas, primero debes seleccionar un cliente de la lista.
-          </p>
-        </div>
-      )}
+      ) : null}
       
       {/* Diálogo de confirmación para eliminar cita */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
