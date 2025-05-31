@@ -209,7 +209,7 @@ export function CentralAppointmentsManager({ preSelectedClientId }: CentralAppoi
         {!showForm && (
           <Button onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Tu Nuevo Evento
+            Nuevo evento
           </Button>
         )}
       </div>
