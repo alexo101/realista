@@ -214,65 +214,7 @@ export function CentralAppointmentsManager({ preSelectedClientId }: CentralAppoi
         )}
       </div>
       
-      <div className="bg-slate-50 p-4 rounded-md">
-        <div className="flex items-center gap-2 mb-2">
-          <User className="h-5 w-5 text-primary/60" />
-          <span className="font-medium">Cliente:</span>
-        </div>
-        
-        <Popover open={openClientSelector} onOpenChange={setOpenClientSelector}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={openClientSelector}
-              className="w-full justify-between"
-            >
-              {selectedClient ? (
-                <span>{selectedClient.name} <span className="text-gray-500 text-sm ml-2">({selectedClient.email})</span></span>
-              ) : (
-                <span className="text-muted-foreground">Seleccionar cliente</span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[400px] p-0">
-            <Command>
-              <CommandInput 
-                placeholder="Buscar cliente..." 
-                value={searchTerm}
-                onValueChange={setSearchTerm}
-              />
-              <CommandList>
-                <CommandEmpty>No se encontraron clientes.</CommandEmpty>
-                <CommandGroup heading="Clientes">
-                  {filteredClients.map((client) => (
-                    <CommandItem
-                      key={client.id}
-                      value={client.id.toString()}
-                      onSelect={(value) => {
-                        setSelectedClientId(parseInt(value));
-                        setOpenClientSelector(false);
-                      }}
-                      className="flex items-center justify-between"
-                    >
-                      <div>
-                        <span>{client.name}</span>
-                        <span className="ml-2 text-sm text-muted-foreground">
-                          {client.email}
-                        </span>
-                      </div>
-                      {selectedClientId === client.id && (
-                        <Check className="h-4 w-4 text-primary" />
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
+      
       
       {showForm && selectedClientId ? (
         <Card className="mb-6">
