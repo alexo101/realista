@@ -205,8 +205,7 @@ export function CentralAppointmentsManager({ preSelectedClientId }: CentralAppoi
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Gestión de Citas</h2>
+      <div className="flex justify-end items-center">
         {!showForm && (
           <Button onClick={() => setShowForm(true)} disabled={!selectedClientId}>
             <Plus className="h-4 w-4 mr-2" />
