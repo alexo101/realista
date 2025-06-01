@@ -515,7 +515,7 @@ export default function AgencyProfile() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {linkedAgents.map(agent => (
-                <Link key={agent.id} href={`/agents/${agent.id}`}>
+                <Link key={agent.id} href={`/agentes/${agent.id}`}>
                   <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center text-center">
