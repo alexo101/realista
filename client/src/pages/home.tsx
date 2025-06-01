@@ -4,8 +4,21 @@ import { type Property } from "@shared/schema";
 import { SearchBar } from "@/components/SearchBar";
 import { NeighborhoodRating } from "@/components/NeighborhoodRating";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUser } from "@/contexts/user-context";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 export default function Home() {
+  const { user } = useUser();
+  const [, setLocation] = useLocation();
+
+  // Redirect agents to calendar page
+  useEffect(() => {
+    if (user && user.isAdmin) {
+      setLocation('/calendario');
+    }
+  }, [user, setLocation]);
+
   // Consulta para propiedades más vistas en venta
   const { data: mostViewedSaleProperties, isLoading: isLoadingSales } = useQuery<Property[]>({
     queryKey: ["/api/properties", { mostViewed: true, operationType: "Venta" }],
