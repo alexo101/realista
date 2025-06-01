@@ -465,6 +465,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Agent Calendar Events
+  app.post("/api/agent-events", async (req, res) => {
+    try {
+      const eventData = {
+        agentId: req.body.agentId,
+        clientId: req.body.clientId || null,
+        propertyId: req.body.propertyId || null,
+        eventType: req.body.eventType,
+        eventDate: req.body.eventDate,
+        eventTime: req.body.eventTime,
+        comments: req.body.comments || null,
+        status: req.body.status || "scheduled",
+      };
+
+      const event = await storage.createAgentEvent(eventData);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error('Error creating agent event:', error);
+      res.status(500).json({ message: "Failed to create agent event" });
+    }
+  });
+
+  app.get("/api/agents/:agentId/events", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const { startDate, endDate } = req.query;
+      
+      const events = await storage.getAgentEvents(
+        agentId, 
+        startDate as string, 
+        endDate as string
+      );
+      res.status(200).json(events);
+    } catch (error) {
+      console.error('Error getting agent events:', error);
+      res.status(500).json({ message: "Failed to get agent events" });
+    }
+  });
+
+  app.patch("/api/agent-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const eventData = req.body;
+      
+      const updatedEvent = await storage.updateAgentEvent(id, eventData);
+      res.status(200).json(updatedEvent);
+    } catch (error) {
+      console.error('Error updating agent event:', error);
+      res.status(500).json({ message: "Failed to update agent event" });
+    }
+  });
+
+  app.delete("/api/agent-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      await storage.deleteAgentEvent(id);
+      res.status(200).json({ message: "Agent event deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting agent event:', error);
+      res.status(500).json({ message: "Failed to delete agent event" });
+    }
+  });
+
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
