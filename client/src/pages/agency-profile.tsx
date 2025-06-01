@@ -159,6 +159,25 @@ export default function AgencyProfile() {
 
   // Función para manejar click en favoritos
   const handleFavoriteClick = () => {
+    if (!user) {
+      toast({
+        title: "Inicia sesión para guardar la agencia",
+        description: "Debes iniciar sesión para agregar agencias a favoritos",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    
+    if (!user.isClient) {
+      toast({
+        title: "Función solo para clientes",
+        description: "Solo los clientes pueden agregar agencias a favoritos",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (id) {
       toggleFavoriteMutation.mutate(id);
     }

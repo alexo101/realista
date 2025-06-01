@@ -165,8 +165,8 @@ export default function AgentProfile() {
   const handleFavoriteClick = () => {
     if (!user) {
       toast({
-        title: "Inicia sesión",
-        description: "Debes iniciar sesión para guardar agentes como favoritos",
+        title: "Inicia sesión para guardar el agente",
+        description: "Debes iniciar sesión para agregar agentes a favoritos",
         variant: "destructive",
       });
       navigate("/login");
