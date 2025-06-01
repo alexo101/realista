@@ -1569,6 +1569,55 @@ Gracias!
     }
   });
 
+  // Agent Events routes
+  app.get("/api/agents/:id/events", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.id);
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      const events = await storage.getAgentEvents(agentId, startDate, endDate);
+      res.json(events);
+    } catch (error) {
+      console.error('Error fetching agent events:', error);
+      res.status(500).json({ message: "Failed to fetch agent events" });
+    }
+  });
+
+  app.post("/api/agents/events", async (req, res) => {
+    try {
+      const eventData = insertAgentEventSchema.parse(req.body);
+      const event = await storage.createAgentEvent(eventData);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error('Error creating agent event:', error);
+      res.status(400).json({ message: "Invalid event data" });
+    }
+  });
+
+  app.patch("/api/agents/events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const eventData = req.body;
+      const event = await storage.updateAgentEvent(id, eventData);
+      res.json(event);
+    } catch (error) {
+      console.error('Error updating agent event:', error);
+      res.status(500).json({ message: "Failed to update agent event" });
+    }
+  });
+
+  app.delete("/api/agents/events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAgentEvent(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting agent event:', error);
+      res.status(500).json({ message: "Failed to delete agent event" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
