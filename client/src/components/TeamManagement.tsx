@@ -237,13 +237,12 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar agencia (opcional)" />
+                          <SelectValue placeholder="Sin agencia asignada" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sin agencia</SelectItem>
                         {agenciesLoading ? (
-                          <SelectItem value="" disabled>
+                          <SelectItem value="loading" disabled>
                             Cargando agencias...
                           </SelectItem>
                         ) : (
