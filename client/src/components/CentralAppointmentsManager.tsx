@@ -205,16 +205,75 @@ export function CentralAppointmentsManager({ preSelectedClientId }: CentralAppoi
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end items-center">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Gestión de Citas</h2>
         {!showForm && (
-          <Button onClick={() => setShowForm(true)}>
+          <Button onClick={() => setShowForm(true)} disabled={!selectedClientId}>
             <Plus className="h-4 w-4 mr-2" />
-            Nuevo evento
+            Nueva Cita
           </Button>
         )}
       </div>
       
-      
+      <div className="bg-slate-50 p-4 rounded-md">
+        <div className="flex items-center gap-2 mb-2">
+          <User className="h-5 w-5 text-primary/60" />
+          <span className="font-medium">Cliente:</span>
+        </div>
+        
+        <Popover open={openClientSelector} onOpenChange={setOpenClientSelector}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={openClientSelector}
+              className="w-full justify-between"
+            >
+              {selectedClient ? (
+                <span>{selectedClient.name} <span className="text-gray-500 text-sm ml-2">({selectedClient.email})</span></span>
+              ) : (
+                <span className="text-muted-foreground">Seleccionar cliente</span>
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[400px] p-0">
+            <Command>
+              <CommandInput 
+                placeholder="Buscar cliente..." 
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+              />
+              <CommandList>
+                <CommandEmpty>No se encontraron clientes.</CommandEmpty>
+                <CommandGroup heading="Clientes">
+                  {filteredClients.map((client) => (
+                    <CommandItem
+                      key={client.id}
+                      value={client.id.toString()}
+                      onSelect={(value) => {
+                        setSelectedClientId(parseInt(value));
+                        setOpenClientSelector(false);
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      <div>
+                        <span>{client.name}</span>
+                        <span className="ml-2 text-sm text-muted-foreground">
+                          {client.email}
+                        </span>
+                      </div>
+                      {selectedClientId === client.id && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
       
       {showForm && selectedClientId ? (
         <Card className="mb-6">
@@ -250,7 +309,15 @@ export function CentralAppointmentsManager({ preSelectedClientId }: CentralAppoi
             />
           </CardContent>
         </Card>
-      ) : null}
+      ) : (
+        <div className="text-center py-12 bg-slate-50 rounded-lg">
+          <Users className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-4 text-lg font-medium text-gray-900">Selecciona un cliente para ver sus citas</h3>
+          <p className="mt-2 text-gray-500 max-w-md mx-auto">
+            Para gestionar citas, primero debes seleccionar un cliente de la lista.
+          </p>
+        </div>
+      )}
       
       {/* Diálogo de confirmación para eliminar cita */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

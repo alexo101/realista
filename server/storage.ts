@@ -43,15 +43,12 @@ import {
   clientFavoriteAgents,
   clientFavoriteProperties,
   propertyVisitRequests,
-  agentEvents,
   type ClientFavoriteAgent,
   type InsertClientFavoriteAgent,
   type ClientFavoriteProperty,
   type InsertClientFavoriteProperty,
   type PropertyVisitRequest,
   type InsertPropertyVisitRequest,
-  type AgentEvent,
-  type InsertAgentEvent,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -142,12 +139,6 @@ export interface IStorage {
   getPropertyVisitRequestsByClient(clientId: number): Promise<PropertyVisitRequest[]>;
   getPropertyVisitRequestsByAgent(agentId: number): Promise<PropertyVisitRequest[]>;
   updatePropertyVisitRequestStatus(id: number, status: string, agentNotes?: string): Promise<PropertyVisitRequest>;
-
-  // Agent Events (Calendar)
-  getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]>;
-  createAgentEvent(event: InsertAgentEvent): Promise<AgentEvent>;
-  updateAgentEvent(id: number, event: Partial<InsertAgentEvent>): Promise<AgentEvent>;
-  deleteAgentEvent(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1287,46 +1278,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(propertyVisitRequests.id, id))
       .returning();
     return result;
-  }
-
-  // Agent Events (Calendar)
-  async getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]> {
-    let query = db.select().from(agentEvents).where(eq(agentEvents.agentId, agentId));
-
-    if (startDate && endDate) {
-      query = query.where(
-        and(
-          gte(agentEvents.date, startDate),
-          lte(agentEvents.date, endDate)
-        )
-      );
-    }
-
-    const events = await query.orderBy(agentEvents.date, agentEvents.time);
-    return events;
-  }
-
-  async createAgentEvent(event: InsertAgentEvent): Promise<AgentEvent> {
-    const [newEvent] = await db
-      .insert(agentEvents)
-      .values(event)
-      .returning();
-
-    return newEvent;
-  }
-
-  async updateAgentEvent(id: number, event: Partial<InsertAgentEvent>): Promise<AgentEvent> {
-    const [updatedEvent] = await db
-      .update(agentEvents)
-      .set(event)
-      .where(eq(agentEvents.id, id))
-      .returning();
-
-    return updatedEvent;
-  }
-
-  async deleteAgentEvent(id: number): Promise<void> {
-    await db.delete(agentEvents).where(eq(agentEvents.id, id));
   }
 }
 
