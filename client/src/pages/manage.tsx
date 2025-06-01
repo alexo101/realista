@@ -23,6 +23,7 @@ import { AgenciesList } from "@/components/AgenciesList";
 import { InquiriesList } from "@/components/InquiriesList";
 import { ReviewManagement } from "@/components/ReviewManagement";
 import { AgentCalendar } from "@/pages/agent-calendar";
+import { TeamManagement } from "@/components/TeamManagement";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,7 +56,7 @@ export default function ManagePage() {
     }
 
     // Validar que el tab sea uno de los valores permitidos
-    const validTabs = ['calendar', 'agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries'];
+    const validTabs = ['calendar', 'agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'team'];
     return validTabs.includes(tabParam || '') ? tabParam : 'calendar';
   };
 
@@ -355,6 +356,19 @@ export default function ManagePage() {
                   <span>Gestionar reseñas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              {/* Only show team management for admin agents */}
+              {user?.isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={section === "team"}
+                    onClick={() => setSection("team")}
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Gestionar mi equipo</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
