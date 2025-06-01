@@ -319,6 +319,7 @@ export class DatabaseStorage implements IStorage {
           surname: null,
           description: agency.agencyDescription,
           avatar: agency.agencyLogo,
+          agencyLogo: agency.agencyLogo,
           createdAt: agency.createdAt || new Date(),
           influenceNeighborhoods: neighborhoods,
           yearsOfExperience: null,

@@ -93,11 +93,98 @@ export default function AgencyProfile() {
   // Obtenemos el ID de la agencia de los parámetros de la URL
   const { id } = useParams<{ id: string }>();
   
-  // Estado para la pestaña activa
+  // Estado para la pestaña activa y favoritos
   const [activeTab, setActiveTab] = useState("overview");
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  // Hooks para autenticación y navegación
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
 
   // La galería no mostrará imágenes predeterminadas, solo las que agregue el agente
   const agencyImages: string[] = [];
+
+  // Mutación para manejar favoritos de agencias
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (agencyId: string) => {
+      if (!user || !user.isClient) {
+        throw new Error("Debes ser un cliente para agregar favoritos");
+      }
+      
+      const response = await fetch(`/api/clients/favorites/agencies/${agencyId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ clientId: user.id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al actualizar favoritos");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setIsFavorite(data.isFavorite);
+      
+      // Invalidate client favorites query to refresh the client profile page
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user?.id}/favorites/agencies`] 
+      });
+      
+      // Also invalidate the status query for this specific agency
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user?.id}/favorites/agencies/${id}/status`] 
+      });
+      
+      toast({
+        title: data.isFavorite ? "Agencia agregada a favoritos" : "Agencia eliminada de favoritos",
+        description: data.isFavorite 
+          ? "La agencia ha sido agregada a tu lista de favoritos" 
+          : "La agencia ha sido eliminada de tu lista de favoritos",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Función para manejar click en favoritos
+  const handleFavoriteClick = () => {
+    if (id) {
+      toggleFavoriteMutation.mutate(id);
+    }
+  };
+
+  // Función para compartir el perfil
+  const handleShare = (platform: string) => {
+    const url = window.location.href;
+    const text = `Conoce ${agency?.agencyName || 'esta agencia'} en Realista`;
+    
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${text} - ${url}`)}`, '_blank');
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(url);
+        toast({
+          title: "Enlace copiado",
+          description: "El enlace del perfil ha sido copiado al portapapeles",
+        });
+        break;
+      case 'email':
+        window.open(`mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(url)}`, '_blank');
+        break;
+    }
+  };
 
   // Consulta para obtener los datos de la agencia
   const { data: agency, isLoading, error } = useQuery<Agency>({
@@ -174,6 +261,28 @@ export default function AgencyProfile() {
     },
     enabled: !!id,
   });
+
+  // Query para verificar si la agencia ya está en favoritos
+  const { data: favoriteStatus } = useQuery({
+    queryKey: [`/api/clients/${user?.id}/favorites/agencies/${id}/status`],
+    queryFn: async () => {
+      if (!user || !user.isClient || !id) return { isFavorite: false };
+      
+      const response = await fetch(`/api/clients/${user.id}/favorites/agencies/${id}/status`);
+      if (!response.ok) {
+        return { isFavorite: false };
+      }
+      return response.json();
+    },
+    enabled: !!user?.isClient && !!id
+  });
+
+  // Efecto para actualizar el estado de favorito cuando se carga la página
+  useEffect(() => {
+    if (favoriteStatus) {
+      setIsFavorite(favoriteStatus.isFavorite);
+    }
+  }, [favoriteStatus]);
 
   // Efecto para desplazar al inicio de la página cuando cambia el ID
   useEffect(() => {
@@ -303,6 +412,55 @@ export default function AgencyProfile() {
             <Button size="sm" variant="outline">
               <Phone className="mr-2 h-4 w-4" /> Contactar agencia
             </Button>
+            
+            {/* Botón de favoritos - solo para clientes autenticados */}
+            {user && user.isClient && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleFavoriteClick}
+                      className={isFavorite ? "text-red-500 border-red-500 hover:bg-red-50" : ""}
+                      disabled={toggleFavoriteMutation.isPending}
+                    >
+                      {isFavorite ? (
+                        <Heart className="h-4 w-4 fill-current" />
+                      ) : (
+                        <Heart className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            {/* Botón de compartir */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Share2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleShare('whatsapp')}>
+                  <span className="text-green-600 mr-2">📱</span>
+                  WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('email')}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Email
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare('copy')}>
+                  <span className="mr-2">🔗</span>
+                  Copiar enlace
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

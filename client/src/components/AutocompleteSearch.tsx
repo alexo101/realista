@@ -278,11 +278,7 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                        <img 
-                          src={result.agencyLogo} 
-                          alt={result.agencyName || ''}
-                          className="h-full w-full object-contain"
-                        />
+                        <Building className="h-6 w-6 text-gray-400" />
                       </div>
                     )
                   ) : result.avatar ? (
