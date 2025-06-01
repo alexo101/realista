@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, Phone, Mail, MapPin, Building2, Building, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle, Home } from "lucide-react";
+import { Star, Phone, Mail, MapPin, Building2, Building, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle, Home, Heart, Share2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ImageGallery } from "@/components/ImageGallery";
 import { PropertyCard } from "@/components/PropertyCard";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useUser } from "@/contexts/user-context";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface AgencyAgent {
   id: number;
