@@ -388,31 +388,29 @@ export default function AgentProfile() {
               <Phone className="mr-2 h-4 w-4" /> Contactar agente
             </Button>
             
-            {/* Botón de favoritos - solo para clientes autenticados */}
-            {user && user.isClient && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={handleFavoriteClick}
-                      className={isFavorite ? "text-red-500 border-red-500 hover:bg-red-50" : ""}
-                      disabled={toggleFavoriteMutation.isPending}
-                    >
-                      {isFavorite ? (
-                        <Heart className="h-4 w-4 fill-current" />
-                      ) : (
-                        <Heart className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            {/* Botón de favoritos */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleFavoriteClick}
+                    className={isFavorite ? "text-red-500 border-red-500 hover:bg-red-50" : ""}
+                    disabled={toggleFavoriteMutation.isPending}
+                  >
+                    {isFavorite ? (
+                      <Heart className="h-4 w-4 fill-current" />
+                    ) : (
+                      <Heart className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {/* Botón de compartir */}
             <DropdownMenu>
