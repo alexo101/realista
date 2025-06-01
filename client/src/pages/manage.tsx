@@ -23,6 +23,7 @@ import { AgenciesList } from "@/components/AgenciesList";
 import { InquiriesList } from "@/components/InquiriesList";
 import { CentralAppointmentsManager } from "@/components/CentralAppointmentsManager";
 import { ReviewManagement } from "@/components/ReviewManagement";
+import { AgentCalendar } from "@/pages/agent-calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,8 +56,8 @@ export default function ManagePage() {
     }
 
     // Validar que el tab sea uno de los valores permitidos
-    const validTabs = ['agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'appointments'];
-    return validTabs.includes(tabParam || '') ? tabParam : 'agent-profile';
+    const validTabs = ['calendar', 'agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'appointments'];
+    return validTabs.includes(tabParam || '') ? tabParam : 'calendar';
   };
 
   const [section, setSection] = useState(getInitialSection);
@@ -273,6 +274,16 @@ export default function ManagePage() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
+                  isActive={section === "calendar"}
+                  onClick={() => setSection("calendar")}
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Calendario</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
                   isActive={section === "agent-profile"}
                   onClick={() => setSection("agent-profile")}
                 >
@@ -359,6 +370,12 @@ export default function ManagePage() {
         </Sidebar>
 
         <main className="flex-1 p-6 pt-20">
+          {section === "calendar" && user?.id && (
+            <div className="max-w-6xl mx-auto">
+              <AgentCalendar agentId={user.id} />
+            </div>
+          )}
+
           {section === "agent-profile" && (
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center">

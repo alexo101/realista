@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { AgentCalendar } from "@/pages/agent-calendar";
 
 // Interfaz para las reseñas
 interface Review {
