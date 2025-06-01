@@ -216,11 +216,10 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar contacto (opcional)" />
+                    <SelectValue placeholder="Sin contacto seleccionado" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">Sin contacto</SelectItem>
                   {clients.map((client: any) => (
                     <SelectItem key={client.id} value={client.id.toString()}>
                       {client.name || client.email}
@@ -246,11 +245,10 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar una propiedad (opcional)" />
+                    <SelectValue placeholder="Sin propiedad seleccionada" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">Sin propiedad</SelectItem>
                   {properties.map((property: any) => (
                     <SelectItem key={property.id} value={property.id.toString()}>
                       {property.reference} - {property.address}
