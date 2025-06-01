@@ -81,7 +81,7 @@ export default function ClientRegisterPage() {
         title: "Error",
         description: "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
         variant: "destructive",
-      });
+        });
     } finally {
       setIsSubmitting(false);
     }
