@@ -1288,6 +1288,46 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return result;
   }
+
+  // Agent Events (Calendar)
+  async getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]> {
+    let query = db.select().from(agentEvents).where(eq(agentEvents.agentId, agentId));
+
+    if (startDate && endDate) {
+      query = query.where(
+        and(
+          gte(agentEvents.date, startDate),
+          lte(agentEvents.date, endDate)
+        )
+      );
+    }
+
+    const events = await query.orderBy(agentEvents.date, agentEvents.time);
+    return events;
+  }
+
+  async createAgentEvent(event: InsertAgentEvent): Promise<AgentEvent> {
+    const [newEvent] = await db
+      .insert(agentEvents)
+      .values(event)
+      .returning();
+
+    return newEvent;
+  }
+
+  async updateAgentEvent(id: number, event: Partial<InsertAgentEvent>): Promise<AgentEvent> {
+    const [updatedEvent] = await db
+      .update(agentEvents)
+      .set(event)
+      .where(eq(agentEvents.id, id))
+      .returning();
+
+    return updatedEvent;
+  }
+
+  async deleteAgentEvent(id: number): Promise<void> {
+    await db.delete(agentEvents).where(eq(agentEvents.id, id));
+  }
 }
 
 export const storage: IStorage = new DatabaseStorage();

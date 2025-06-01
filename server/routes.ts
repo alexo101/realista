@@ -8,7 +8,8 @@ import {
   insertAgencyAgentSchema,
   insertAppointmentSchema,
   insertAgencySchema,
-  insertPropertyVisitRequestSchema
+  insertPropertyVisitRequestSchema,
+  insertAgentEventSchema
 } from "@shared/schema";
 import { sendWelcomeEmail } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
@@ -462,6 +463,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating visit request status:', error);
       res.status(500).json({ message: "Failed to update visit request status" });
+    }
+  });
+
+  // Agent Events (Calendar)
+  app.get("/api/agents/:agentId/events", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const { startDate, endDate } = req.query;
+      
+      const events = await storage.getAgentEvents(
+        agentId, 
+        startDate as string, 
+        endDate as string
+      );
+      res.status(200).json(events);
+    } catch (error) {
+      console.error('Error getting agent events:', error);
+      res.status(500).json({ message: "Failed to get agent events" });
+    }
+  });
+
+  app.post("/api/agents/events", async (req, res) => {
+    try {
+      const eventData = insertAgentEventSchema.parse(req.body);
+      const event = await storage.createAgentEvent(eventData);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error('Error creating agent event:', error);
+      res.status(500).json({ message: "Failed to create agent event" });
+    }
+  });
+
+  app.patch("/api/agents/events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const event = await storage.updateAgentEvent(id, updates);
+      res.status(200).json(event);
+    } catch (error) {
+      console.error('Error updating agent event:', error);
+      res.status(500).json({ message: "Failed to update agent event" });
+    }
+  });
+
+  app.delete("/api/agents/events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAgentEvent(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting agent event:', error);
+      res.status(500).json({ message: "Failed to delete agent event" });
     }
   });
 

@@ -16,6 +16,7 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
 import ClientProfile from "@/pages/client-profile";
+import { Calendar } from "@/pages/calendar";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/register" component={RegisterPage} />
       <Route path="/client-register" component={ClientRegisterPage} />
       <Route path="/client-profile" component={ClientProfile} />
+      <Route path="/calendario" component={Calendar} />
       <Route path="/search/buy" component={Search} />
       <Route path="/search/rent" component={Search} />
       <Route path="/search/agencies" component={Search} />
