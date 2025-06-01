@@ -294,3 +294,25 @@ export const insertPropertyVisitRequestSchema = createInsertSchema(propertyVisit
 
 export type PropertyVisitRequest = typeof propertyVisitRequests.$inferSelect;
 export type InsertPropertyVisitRequest = z.infer<typeof insertPropertyVisitRequestSchema>;
+
+// Agent Calendar Events
+export const agentEvents = pgTable("agent_events", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull().references(() => agents.id),
+  clientId: integer("client_id").references(() => clients.id),
+  propertyId: integer("property_id").references(() => properties.id),
+  eventType: text("event_type").notNull(), // 'Llamada' or 'Visita'
+  eventDate: text("event_date").notNull(), // YYYY-MM-DD format
+  eventTime: text("event_time").notNull(), // HH:MM format
+  comments: text("comments"),
+  status: text("status").default("scheduled").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAgentEventSchema = createInsertSchema(agentEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AgentEvent = typeof agentEvents.$inferSelect;
+export type InsertAgentEvent = z.infer<typeof insertAgentEventSchema>;

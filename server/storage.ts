@@ -49,6 +49,9 @@ import {
   type InsertClientFavoriteProperty,
   type PropertyVisitRequest,
   type InsertPropertyVisitRequest,
+  agentEvents,
+  type AgentEvent,
+  type InsertAgentEvent,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -139,6 +142,12 @@ export interface IStorage {
   getPropertyVisitRequestsByClient(clientId: number): Promise<PropertyVisitRequest[]>;
   getPropertyVisitRequestsByAgent(agentId: number): Promise<PropertyVisitRequest[]>;
   updatePropertyVisitRequestStatus(id: number, status: string, agentNotes?: string): Promise<PropertyVisitRequest>;
+
+  // Agent Calendar Events
+  createAgentEvent(eventData: InsertAgentEvent): Promise<AgentEvent>;
+  getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]>;
+  updateAgentEvent(id: number, eventData: Partial<InsertAgentEvent>): Promise<AgentEvent>;
+  deleteAgentEvent(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
