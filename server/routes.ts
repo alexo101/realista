@@ -121,6 +121,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get agencies managed by admin agent
+  app.get("/api/agents/:adminId/agencies", async (req, res) => {
+    try {
+      const adminId = parseInt(req.params.adminId);
+      const agencies = await storage.getAgenciesByAdmin(adminId);
+      res.json(agencies);
+    } catch (error) {
+      console.error('Error fetching admin agencies:', error);
+      res.status(500).json({ message: "Failed to fetch agencies" });
+    }
+  });
+
   // Create agent endpoint for team management
   app.post("/api/agents", async (req, res) => {
     try {

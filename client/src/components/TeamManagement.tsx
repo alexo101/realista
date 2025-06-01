@@ -2,20 +2,23 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Users, UserPlus } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/user-context";
 
 const createAgentSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
   surname: z.string().min(1, "Los apellidos son obligatorios"),
   email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
+  agencyId: z.string().optional(),
 });
 
 type CreateAgentFormData = z.infer<typeof createAgentSchema>;
@@ -28,6 +31,14 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
   const [showAddAgentForm, setShowAddAgentForm] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useUser();
+
+  // Fetch agencies managed by the admin agent
+  const { data: agencies = [], isLoading: agenciesLoading } = useQuery({
+    queryKey: ["/api/agents", user?.id, "agencies"],
+    queryFn: () => fetch(`/api/agents/${user?.id}/agencies`).then(res => res.json()),
+    enabled: !!user?.id && user?.isAdmin,
+  });
 
   const form = useForm<CreateAgentFormData>({
     resolver: zodResolver(createAgentSchema),
@@ -35,6 +46,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
       name: "",
       surname: "",
       email: "",
+      agencyId: "",
     },
   });
 
@@ -44,7 +56,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
       return apiRequest("/api/agents", "POST", {
         ...agentData,
         password: "defaultPassword123", // Default password, agent can change later
-        agencyId: agencyId || null,
+        agencyId: agentData.agencyId || null,
         isAdmin: false,
       });
     },
@@ -210,6 +222,39 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Agency */}
+              <FormField
+                control={form.control}
+                name="agencyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Agencia</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar agencia (opcional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Sin agencia</SelectItem>
+                        {agenciesLoading ? (
+                          <SelectItem value="" disabled>
+                            Cargando agencias...
+                          </SelectItem>
+                        ) : (
+                          agencies.map((agency: any) => (
+                            <SelectItem key={agency.id} value={agency.id.toString()}>
+                              {agency.agencyName}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
