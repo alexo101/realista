@@ -21,7 +21,6 @@ import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { AgenciesList } from "@/components/AgenciesList";
 
 import { InquiriesList } from "@/components/InquiriesList";
-import { CentralAppointmentsManager } from "@/components/CentralAppointmentsManager";
 import { ReviewManagement } from "@/components/ReviewManagement";
 import { AgentCalendar } from "@/pages/agent-calendar";
 import { Input } from "@/components/ui/input";
@@ -56,7 +55,7 @@ export default function ManagePage() {
     }
 
     // Validar que el tab sea uno de los valores permitidos
-    const validTabs = ['calendar', 'agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'appointments'];
+    const validTabs = ['calendar', 'agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries'];
     return validTabs.includes(tabParam || '') ? tabParam : 'calendar';
   };
 
@@ -335,16 +334,7 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem className="ml-6">
-                <SidebarMenuButton
-                  isActive={section === "appointments"}
-                  onClick={() => setSection("appointments")}
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span>Calendario
-</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              
 
               <SidebarMenuItem className="ml-6">
                 <SidebarMenuButton
@@ -1118,11 +1108,7 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "appointments" && (
-            <div className="max-w-4xl mx-auto">
-              <CentralAppointmentsManager />
-            </div>
-          )}
+          
         </main>
       </SidebarProvider>
     </div>
