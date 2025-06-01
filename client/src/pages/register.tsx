@@ -13,13 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
@@ -27,7 +21,7 @@ import { Building, User as UserIcon, Users, Eye, EyeOff } from "lucide-react";
 
 // Esquema de validación para el formulario
 const formSchema = z.object({
-  profileType: z.enum(["agent", "agency", "agencyNetwork"], {
+  profileType: z.enum(["agent", "agency"], {
     required_error: "Por favor selecciona un tipo de perfil",
   }),
   email: z.string().email("Por favor introduce un correo electrónico válido"),
@@ -58,9 +52,9 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     try {
       // Determinar si el usuario será un agente admin basado en la selección
-      const isAdmin = data.profileType === "agency" || data.profileType === "agencyNetwork";
+      const isAdmin = data.profileType === "agency";
       const isAgencyNetwork = data.profileType === "agencyNetwork";
-      
+
       // Preparamos el payload según el tipo de perfil seleccionado
       const payload = {
         email: data.email,
@@ -71,27 +65,27 @@ export default function RegisterPage() {
       };
 
       console.log("Enviando datos de registro:", payload);
-      
+
       const response = await apiRequest("POST", "/api/auth/register", payload);
 
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-        
+
         let successMessage = "Tu cuenta ha sido creada correctamente.";
-        
+
         // Mensaje personalizado según el tipo de perfil
         if (data.profileType === "agency") {
           successMessage = "Tu agencia ha sido registrada correctamente. Ahora puedes completar tu perfil.";
         } else if (data.profileType === "agencyNetwork") {
           successMessage = "Tu red de agencias ha sido registrada correctamente. Ahora puedes configurar tu red.";
         }
-        
+
         toast({
           title: "Registro exitoso",
           description: successMessage,
         });
-        
+
         // Redirigir a la página de gestión con la pestaña adecuada según el tipo de perfil
         if (isAdmin) {
           // Si es una agencia o red de agencias, dirigir a la sección de perfil de agencia
@@ -134,36 +128,30 @@ export default function RegisterPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de perfil</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un tipo de perfil" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="agent" className="flex items-center">
-                          <div className="flex items-center">
-                            <UserIcon className="mr-2 h-4 w-4" />
-                            Anunciarme como agente
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="agency" className="flex items-center">
-                          <div className="flex items-center">
-                            <Building className="mr-2 h-4 w-4" />
-                            Anunciar mi agencia
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="agencyNetwork" className="flex items-center">
-                          <div className="flex items-center">
-                            <Users className="mr-2 h-4 w-4" />
-                            Añadir red de agencias
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="grid grid-cols-1 gap-4"
+                      >
+                        <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+                          <RadioGroupItem value="agent" id="agent" />
+                          <UserIcon className="h-6 w-6 text-primary" />
+                          <FormLabel htmlFor="agent" className="font-normal cursor-pointer flex-1">
+                            <div className="font-medium">Anunciarme como agente</div>
+                            <div className="text-sm text-gray-500">Trabaja de forma independiente</div>
+                          </FormLabel>
+                        </div>
+                        <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+                          <RadioGroupItem value="agency" id="agency" />
+                          <Building className="h-6 w-6 text-primary" />
+                          <FormLabel htmlFor="agency" className="font-normal cursor-pointer flex-1">
+                            <div className="font-medium">Anunciar mi agencia</div>
+                            <div className="text-sm text-gray-500">Gestiona una agencia inmobiliaria</div>
+                          </FormLabel>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -275,18 +263,6 @@ export default function RegisterPage() {
                 <h3 className="font-medium">Perfil de agencia</h3>
                 <p className="text-sm text-gray-600">
                   Perfecto para agencias inmobiliarias que quieren gestionar sus propiedades y equipo de agentes en una sola plataforma.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium">Red de agencias</h3>
-                <p className="text-sm text-gray-600">
-                  Para grupos inmobiliarios con múltiples oficinas que necesitan una gestión centralizada de su red de agencias.
                 </p>
               </div>
             </div>
