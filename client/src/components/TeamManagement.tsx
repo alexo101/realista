@@ -87,7 +87,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
         </div>
         <Button onClick={() => setShowAddAgentForm(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Add agents
+          Añadir agentes
         </Button>
       </div>
 
