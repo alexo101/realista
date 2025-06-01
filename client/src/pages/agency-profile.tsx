@@ -332,9 +332,9 @@ export default function AgencyProfile() {
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="md:w-36 lg:w-48">
           <div className="h-36 w-36 lg:h-48 lg:w-48 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-primary/20">
-            {agency.agencyLogo ? (
+            {(agency.agencyLogo || agency.avatar) ? (
               <img
-                src={agency.agencyLogo}
+                src={agency.agencyLogo || agency.avatar}
                 alt={agency.agencyName}
                 className="w-full h-full object-contain"
               />
