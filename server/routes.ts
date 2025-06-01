@@ -121,6 +121,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create agent endpoint for team management
+  app.post("/api/agents", async (req, res) => {
+    try {
+      console.log('Creating agent - Received data:', req.body);
+      
+      const agentData = {
+        name: req.body.name,
+        surname: req.body.surname,
+        email: req.body.email,
+        password: req.body.password,
+        agencyId: req.body.agencyId || null,
+        isAdmin: req.body.isAdmin || false,
+        phone: "Sin especificar",
+        description: null,
+        avatar: null,
+        influence_neighborhoods: null,
+        yearsOfExperience: null,
+        agencyName: null,
+        agencyPhone: null,
+        agencyEmail: null,
+        agencyAddress: null,
+        agencyDescription: null,
+        specialties: null,
+        certifications: null,
+        languages: null,
+        workingHours: null,
+        serviceAreas: null,
+        webSite: null,
+        linkedIn: null,
+        facebook: null,
+        instagram: null,
+        twitter: null
+      };
+
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(agentData.email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "Ya existe un usuario con este correo electrónico" 
+        });
+      }
+
+      const newAgent = await storage.createUser(agentData);
+      console.log('Agent created successfully:', newAgent);
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(newAgent.email, newAgent.name || 'Agente', true);
+        console.log('Welcome email sent to:', newAgent.email);
+      } catch (emailError) {
+        console.error('Error sending welcome email:', emailError);
+      }
+
+      res.status(201).json(newAgent);
+    } catch (error) {
+      console.error('Error creating agent:', error);
+      res.status(400).json({ message: "Error al crear el agente" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       console.log('Login - Datos recibidos:', req.body);

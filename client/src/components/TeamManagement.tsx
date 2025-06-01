@@ -41,14 +41,11 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
   // Create agent mutation
   const createAgentMutation = useMutation({
     mutationFn: async (agentData: CreateAgentFormData) => {
-      return apiRequest("/api/agents", {
-        method: "POST",
-        body: JSON.stringify({
-          ...agentData,
-          password: "defaultPassword123", // Default password, agent can change later
-          agencyId: agencyId || null,
-          isAdmin: false,
-        }),
+      return apiRequest("/api/agents", "POST", {
+        ...agentData,
+        password: "defaultPassword123", // Default password, agent can change later
+        agencyId: agencyId || null,
+        isAdmin: false,
       });
     },
     onSuccess: () => {

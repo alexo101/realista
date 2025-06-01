@@ -1122,6 +1122,12 @@ export default function ManagePage() {
             </div>
           )}
 
+          {section === "team" && user?.isAdmin && (
+            <div className="max-w-6xl mx-auto">
+              <TeamManagement agencyId={user.agencyId ? parseInt(user.agencyId) : undefined} />
+            </div>
+          )}
+
           
         </main>
       </SidebarProvider>
