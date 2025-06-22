@@ -53,7 +53,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [roomsFilter, setRoomsFilter] = useState<number[]>(defaultBedrooms ? [defaultBedrooms] : [1]);
-  const [bathrooms, setBathrooms] = useState<number | null | string>(null);
+  const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [openFeatures, setOpenFeatures] = useState(false);
 
@@ -109,12 +109,12 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
       priceMin,
       priceMax,
       bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
-      bathrooms: bathrooms === "any" || bathrooms === "" || !bathrooms ? null : parseInt(bathrooms as string),
+      bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
       features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
     };
 
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, roomsFilter, bathrooms, selectedFeatures, debouncedFilterChange]);
+  }, [operationType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, debouncedFilterChange]);
 
   // Añadir o eliminar características
   const toggleFeature = (featureId: string) => {
@@ -149,8 +149,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   operationType: "Venta",
                   priceMin: null,
                   priceMax: null,
-                  bedrooms: bedrooms === "any" ? null : Number(bedrooms),
-                  bathrooms: bathrooms === "any" ? null : Number(bathrooms),
+                  bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+                  bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
                   features: selectedFeatures
                 });
               }}
@@ -174,8 +174,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   operationType: "Alquiler",
                   priceMin: null,
                   priceMax: null,
-                  bedrooms: bedrooms === "any" ? null : Number(bedrooms),
-                  bathrooms: bathrooms === "any" ? null : Number(bathrooms),
+                  bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+                  bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
                   features: selectedFeatures
                 });
               }}
@@ -372,74 +372,155 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtro de baños */}
-          <div>
+          <div className="w-1/2">
             <Label className="font-medium mb-1.5 block text-sm">
               <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Baños
             </Label>
-            <Select
-              value={bathrooms?.toString() || "any"}
-              onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
-            >
+            <Select>
               <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder="Baños" />
+                <SelectValue placeholder={
+                  bathroomsFilter.length > 0 
+                    ? `${bathroomsFilter.length} seleccionados` 
+                    : "Baños"
+                } />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Cualquiera</SelectItem>
-                <SelectItem value="1">1+</SelectItem>
-                <SelectItem value="2">2+</SelectItem>
+              <SelectContent className="w-[200px]">
+                <div className="space-y-2 px-1 py-2">
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (bathroomsFilter.includes(1)) {
+                        // Si 1 está seleccionado, lo quitamos junto con todos los superiores
+                        setBathroomsFilter(prev => prev.filter(r => r !== 1 && r !== 2 && r !== 3 && r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                        setBathroomsFilter([1, 2, 3, 4]);
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={bathroomsFilter.includes(1)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>1</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (bathroomsFilter.includes(2)) {
+                        // Si 2 está seleccionado, lo quitamos junto con todos los superiores
+                        setBathroomsFilter(prev => prev.filter(r => r !== 2 && r !== 3 && r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                        setBathroomsFilter(prev => [...prev.filter(r => r !== 2 && r !== 3 && r !== 4), 2, 3, 4]);
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={bathroomsFilter.includes(2)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>2</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (bathroomsFilter.includes(3)) {
+                        // Si 3 está seleccionado, lo quitamos junto con todos los superiores
+                        setBathroomsFilter(prev => prev.filter(r => r !== 3 && r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                        setBathroomsFilter(prev => [...prev.filter(r => r !== 3 && r !== 4), 3, 4]);
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={bathroomsFilter.includes(3)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>3</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (bathroomsFilter.includes(4)) {
+                        // Si 4 está seleccionado, lo quitamos
+                        setBathroomsFilter(prev => prev.filter(r => r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos
+                        setBathroomsFilter(prev => [...prev, 4]);
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={bathroomsFilter.includes(4)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>4 baños o más</span>
+                  </label>
+                </div>
               </SelectContent>
             </Select>
           </div>
-
-          {/* Filtro de características */}
-          <div>
-            <Label className="font-medium mb-1.5 block text-sm">
-              <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
-              Características
-            </Label>
-            <Popover open={openFeatures} onOpenChange={setOpenFeatures}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openFeatures}
-                  className="w-full justify-start h-9 text-sm"
-                >
-                  {selectedFeatures.length === 0
-                    ? "Seleccionar"
-                    : `${selectedFeatures.length} seleccionadas`}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Command>
-                  <CommandList>
-                    <CommandGroup>
-                      {features.map((feature) => (
-                        <CommandItem
-                          key={feature.id}
-                          value={feature.id}
-                          onSelect={() => toggleFeature(feature.id)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedFeatures.includes(feature.id) ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {feature.label}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          
         </div>
+
+        {/* Filtro de características en fila separada */}
+        <div className="mb-4">
+          <Label className="font-medium mb-1.5 block text-sm">
+            <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+            Características
+          </Label>
+          <Popover open={openFeatures} onOpenChange={setOpenFeatures}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openFeatures}
+                className="w-full justify-start h-9 text-sm"
+              >
+                {selectedFeatures.length === 0
+                  ? "Seleccionar"
+                  : `${selectedFeatures.length} seleccionadas`}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Command>
+                <CommandList>
+                  <CommandGroup>
+                    {features.map((feature) => (
+                      <CommandItem
+                        key={feature.id}
+                        value={feature.id}
+                        onSelect={() => toggleFeature(feature.id)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedFeatures.includes(feature.id) ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {feature.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Mostrar etiquetas de características seleccionadas */}
