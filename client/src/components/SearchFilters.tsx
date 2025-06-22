@@ -94,7 +94,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="any">Cualquiera</SelectItem>
+            <SelectItem value="all">Cualquiera</SelectItem>
             <SelectItem value="0">0 habitaciones (estudio)</SelectItem>
             <SelectItem value="1">1+ habitaciones</SelectItem>
             <SelectItem value="2">2+ habitaciones</SelectItem>
@@ -116,7 +116,7 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
             <SelectValue placeholder="Cualquiera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="any">Cualquiera</SelectItem>
+            <SelectItem value="all">Cualquiera</SelectItem>
             <SelectItem value="apartment">Piso</SelectItem>
             <SelectItem value="house">Casa</SelectItem>
             <SelectItem value="villa">Villa</SelectItem>
