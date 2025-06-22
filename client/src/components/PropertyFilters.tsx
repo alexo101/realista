@@ -19,6 +19,7 @@ import debounce from "lodash.debounce";
 interface PropertyFiltersProps {
   onFilterChange: (filters: PropertyFilters) => void;
   defaultOperationType?: "Venta" | "Alquiler";
+  defaultBedrooms?: number | null;
 }
 
 export interface PropertyFilters {
@@ -47,11 +48,11 @@ const features = [
   { id: "accesible", label: "Accesible" },
 ];
 
-export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta" }: PropertyFiltersProps) {
+export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
-  const [bedrooms, setBedrooms] = useState<number | null | string>(null);
+  const [bedrooms, setBedrooms] = useState<number | null | string>(defaultBedrooms?.toString() || "1");
   const [bathrooms, setBathrooms] = useState<number | null | string>(null);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [openFeatures, setOpenFeatures] = useState(false);
@@ -107,7 +108,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
       operationType,
       priceMin,
       priceMax,
-      bedrooms: bedrooms === "any" || bedrooms === "" ? null : parseInt(bedrooms as string),
+      bedrooms: bedrooms ? parseInt(bedrooms as string) : 1,
       bathrooms: bathrooms === "any" || bathrooms === "" ? null : parseInt(bathrooms as string),
       features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
     };
@@ -231,20 +232,19 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtro de habitaciones */}
-          <div>
+          <div className="w-1/2">
             <Label className="font-medium mb-1.5 block text-sm">
               <BedDouble className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Habitaciones
             </Label>
             <Select
-              value={bedrooms?.toString() || "any"}
-              onValueChange={(value) => setBedrooms(value === "any" ? null : value)}
+              value={bedrooms?.toString() || "1"}
+              onValueChange={(value) => setBedrooms(value)}
             >
               <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder="Habitaciones" />
+                <SelectValue placeholder="1+" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Cualquiera</SelectItem>
+              <SelectContent className="w-24">
                 <SelectItem value="1">1+</SelectItem>
                 <SelectItem value="2">2+</SelectItem>
                 <SelectItem value="3">3+</SelectItem>
