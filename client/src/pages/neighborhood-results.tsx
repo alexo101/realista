@@ -41,7 +41,7 @@ export default function NeighborhoodResultsPage() {
     operationType: "Venta",
     priceMin: null,
     priceMax: null,
-    bedrooms: defaultBedrooms,
+    bedrooms: defaultBedrooms || 1,
     bathrooms: null
   });
   

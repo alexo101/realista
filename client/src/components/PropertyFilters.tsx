@@ -52,7 +52,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
-  const [bedrooms, setBedrooms] = useState<number | null | string>(defaultBedrooms?.toString() || "1");
+  const [roomsFilter, setRoomsFilter] = useState<number[]>(defaultBedrooms ? [defaultBedrooms] : [1]);
   const [bathrooms, setBathrooms] = useState<number | null | string>(null);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [openFeatures, setOpenFeatures] = useState(false);
@@ -108,13 +108,13 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
       operationType,
       priceMin,
       priceMax,
-      bedrooms: bedrooms ? parseInt(bedrooms as string) : 1,
-      bathrooms: bathrooms === "any" || bathrooms === "" ? null : parseInt(bathrooms as string),
+      bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+      bathrooms: bathrooms === "any" || bathrooms === "" || !bathrooms ? null : parseInt(bathrooms as string),
       features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
     };
 
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, bedrooms, bathrooms, selectedFeatures, debouncedFilterChange]);
+  }, [operationType, priceMin, priceMax, roomsFilter, bathrooms, selectedFeatures, debouncedFilterChange]);
 
   // Añadir o eliminar características
   const toggleFeature = (featureId: string) => {
@@ -237,19 +237,136 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               <BedDouble className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Habitaciones
             </Label>
-            <Select
-              value={bedrooms?.toString() || "1"}
-              onValueChange={(value) => setBedrooms(value)}
-            >
+            <Select>
               <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder="1+" />
+                <SelectValue placeholder={
+                  roomsFilter.length > 0 
+                    ? `${roomsFilter.length} seleccionadas` 
+                    : "Habitaciones"
+                } />
               </SelectTrigger>
-              <SelectContent className="w-24">
-                <SelectItem value="1">1+</SelectItem>
-                <SelectItem value="2">2+</SelectItem>
-                <SelectItem value="3">3+</SelectItem>
-                <SelectItem value="4">4+</SelectItem>
-                <SelectItem value="5">5+</SelectItem>
+              <SelectContent className="w-[240px]">
+                <div className="space-y-2 px-1 py-2">
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (roomsFilter.includes(0)) {
+                        setRoomsFilter(prev => prev.filter(r => r !== 0));
+                      } else {
+                        setRoomsFilter([0]); // Solo se permite seleccionar estudios
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={roomsFilter.includes(0)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>0 habitaciones (estudios)</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (roomsFilter.includes(1)) {
+                        // Si 1 está seleccionado, lo quitamos junto con todos los superiores
+                        setRoomsFilter(prev => prev.filter(r => r !== 1 && r !== 2 && r !== 3 && r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                        // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                        setRoomsFilter(prev => {
+                          const newFilter = prev.filter(r => r !== 0);
+                          return [...newFilter, 1, 2, 3, 4];
+                        });
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={roomsFilter.includes(1)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>1</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (roomsFilter.includes(2)) {
+                        // Si 2 está seleccionado, lo quitamos junto con todos los superiores
+                        setRoomsFilter(prev => prev.filter(r => r !== 2 && r !== 3 && r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                        // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                        setRoomsFilter(prev => {
+                          const newFilter = prev.filter(r => r !== 0);
+                          return [...newFilter, 2, 3, 4];
+                        });
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={roomsFilter.includes(2)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>2</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (roomsFilter.includes(3)) {
+                        // Si 3 está seleccionado, lo quitamos junto con todos los superiores
+                        setRoomsFilter(prev => prev.filter(r => r !== 3 && r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos junto con todos los superiores
+                        // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                        setRoomsFilter(prev => {
+                          const newFilter = prev.filter(r => r !== 0);
+                          return [...newFilter, 3, 4];
+                        });
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={roomsFilter.includes(3)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>3</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (roomsFilter.includes(4)) {
+                        // Si 4 está seleccionado, lo quitamos
+                        setRoomsFilter(prev => prev.filter(r => r !== 4));
+                      } else {
+                        // Si no está seleccionado, lo seleccionamos
+                        // Y nos aseguramos de quitar 0 (estudios) si estuviera seleccionado
+                        setRoomsFilter(prev => {
+                          const newFilter = prev.filter(r => r !== 0);
+                          return [...newFilter, 4];
+                        });
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={roomsFilter.includes(4)}
+                      onChange={() => {}} // Controlado por el onClick del label
+                    />
+                    <span>4 habitaciones o más</span>
+                  </label>
+                </div>
               </SelectContent>
             </Select>
           </div>
