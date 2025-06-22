@@ -26,6 +26,11 @@ export default function NeighborhoodResultsPage() {
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
   
+  // Extract URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const bedroomsFromUrl = urlParams.get('bedrooms');
+  const defaultBedrooms = bedroomsFromUrl ? parseInt(bedroomsFromUrl) : null;
+  
   // Filtros para cada pestaña
   const [propertiesFilter, setPropertiesFilter] = useState<string>("default");
   const [agenciesFilter, setAgenciesFilter] = useState<string>("default");
@@ -36,7 +41,7 @@ export default function NeighborhoodResultsPage() {
     operationType: "Venta",
     priceMin: null,
     priceMax: null,
-    bedrooms: null,
+    bedrooms: defaultBedrooms,
     bathrooms: null
   });
   
@@ -247,6 +252,7 @@ export default function NeighborhoodResultsPage() {
               <PropertyFilters 
                 onFilterChange={setPropertyFilters}
                 defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
+                defaultBedrooms={defaultBedrooms}
               />
               
               <div className="mb-4 flex justify-end">
