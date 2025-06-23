@@ -132,8 +132,27 @@ export function SearchBar() {
       if (searchType === 'agencies') tab = 'agencies';
       else if (searchType === 'agents') tab = 'agents';
 
+      // Build query parameters for filters
+      const params = new URLSearchParams();
+      
+      // Add bedroom filter if rooms are selected
+      if ((searchType === 'buy' || searchType === 'rent') && roomsFilter.length > 0) {
+        params.append("bedrooms", roomsFilter.join(','));
+      }
+      
+      // Add price filters
+      if ((searchType === 'buy' || searchType === 'rent') && priceRange.min && priceRange.min !== "any") {
+        params.append("minPrice", priceRange.min);
+      }
+      if ((searchType === 'buy' || searchType === 'rent') && priceRange.max && priceRange.max !== "any") {
+        params.append("maxPrice", priceRange.max);
+      }
+
+      const queryString = params.toString();
+      const url = `/neighborhood/${encodedValue}/${tab}${queryString ? '?' + queryString : ''}`;
+      
       // Redirigir a la página de resultados
-      setLocation(`/neighborhood/${encodedValue}/${tab}`);
+      setLocation(url);
       return;
     }
 
