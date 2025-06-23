@@ -156,8 +156,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   operationType: "Venta",
                   priceMin: null,
                   priceMax: null,
-                  bedrooms: bedrooms === "any" ? null : Number(bedrooms),
-                  bathrooms: bathrooms === "any" ? null : Number(bathrooms),
+                  bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+                  bathrooms: bathrooms === "any" || !bathrooms ? null : parseInt(bathrooms as string),
                   features: selectedFeatures
                 });
               }}
@@ -181,8 +181,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   operationType: "Alquiler",
                   priceMin: null,
                   priceMax: null,
-                  bedrooms: bedrooms === "any" ? null : Number(bedrooms),
-                  bathrooms: bathrooms === "any" ? null : Number(bathrooms),
+                  bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+                  bathrooms: bathrooms === "any" || !bathrooms ? null : parseInt(bathrooms as string),
                   features: selectedFeatures
                 });
               }}
