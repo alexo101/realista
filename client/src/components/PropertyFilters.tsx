@@ -108,8 +108,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   useEffect(() => {
     const filters: PropertyFilters = {
       operationType,
-      priceMin,
-      priceMax,
+      priceMin: priceMin === "" || priceMin === "any" ? null : parseInt(priceMin),
+      priceMax: priceMax === "" || priceMax === "any" ? null : parseInt(priceMax),
       bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
       bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
       features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
@@ -185,7 +185,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                 <SelectValue placeholder="Precio mín." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin mínimo</SelectItem>
+                <SelectItem value="any">Sin mínimo</SelectItem>
                 {priceRanges.map(range => (
                   <SelectItem key={range.value} value={range.value.toString()}>
                     {range.label}
@@ -210,7 +210,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   <SelectValue placeholder="Precio máx." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin máximo</SelectItem>
+                  <SelectItem value="any">Sin máximo</SelectItem>
                   {priceRanges.map(range => (
                     <SelectItem key={range.value} value={range.value.toString()}>
                       {range.label}

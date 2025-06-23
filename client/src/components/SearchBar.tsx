@@ -112,11 +112,45 @@ export function SearchBar() {
   );
 
   const handleSearch = () => {
-    // Verificar si se ha seleccionado al menos una ubicación para todos los tipos de búsqueda
-    if (selectedNeighborhoods.length === 0) {
+    // Validaciones según el tipo de búsqueda
+    if (searchType === 'agencies') {
+      // Para agencias: necesitamos ubicación Y opcionalmente nombre de agencia
+      if (selectedNeighborhoods.length === 0) {
+        toast({
+          title: "Ubicación requerida",
+          description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar agencias",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (searchType === 'agents') {
+      // Para agentes: necesitamos ubicación Y opcionalmente nombre de agente
+      if (selectedNeighborhoods.length === 0) {
+        toast({
+          title: "Ubicación requerida", 
+          description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar agentes",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (searchType === 'buy' || searchType === 'rent') {
+      // Para propiedades: necesitamos ubicación obligatoriamente
+      if (selectedNeighborhoods.length === 0) {
+        toast({
+          title: "Ubicación requerida",
+          description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar propiedades",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validación adicional: no permitir valores vacíos o solo espacios en blanco
+    const hasValidNeighborhood = selectedNeighborhoods.some(n => n && n.trim() !== '');
+    if (!hasValidNeighborhood) {
       toast({
-        title: "Ubicación requerida",
-        description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar",
+        title: "Selección inválida",
+        description: "Por favor, selecciona una ubicación válida",
         variant: "destructive",
       });
       return;
@@ -125,6 +159,17 @@ export function SearchBar() {
     // Si hay un solo barrio/distrito/Barcelona seleccionado, redirigir a la página de resultados específica
     if (selectedNeighborhoods.length === 1) {
       const selectedValue = selectedNeighborhoods[0];
+      
+      // Validar que el valor no esté vacío
+      if (!selectedValue || selectedValue.trim() === '') {
+        toast({
+          title: "Selección inválida",
+          description: "Por favor, selecciona una ubicación válida",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const encodedValue = encodeURIComponent(selectedValue);
 
       // Determinar la pestaña según el tipo de búsqueda
@@ -202,6 +247,16 @@ export function SearchBar() {
   };
 
   const toggleNeighborhood = (neighborhood: string) => {
+    // Validar que el barrio no esté vacío
+    if (!neighborhood || neighborhood.trim() === '') {
+      toast({
+        title: "Selección inválida",
+        description: "No se puede seleccionar una ubicación vacía",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Si el barrio ya está seleccionado, lo quitamos
     if (selectedNeighborhoods.includes(neighborhood)) {
       setSelectedNeighborhoods([]);
@@ -513,6 +568,7 @@ export function SearchBar() {
           <Button
             onClick={handleSearch}
             className="flex items-center gap-2 px-6"
+            disabled={selectedNeighborhoods.length === 0 || !selectedNeighborhoods.some(n => n && n.trim() !== '')}
           >
             <Search className="h-4 w-4" /> Buscar
           </Button>
