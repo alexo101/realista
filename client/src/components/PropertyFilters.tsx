@@ -53,7 +53,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [roomsFilter, setRoomsFilter] = useState<number[]>(defaultBedrooms ? [defaultBedrooms] : [1]);
-  const [bathrooms, setBathrooms] = useState<number | null | string>(null);
+  const [bathrooms, setBathrooms] = useState<number | null | string>("any");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [openFeatures, setOpenFeatures] = useState(false);
 

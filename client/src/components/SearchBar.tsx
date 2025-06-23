@@ -85,7 +85,7 @@ export function SearchBar() {
   const [isNeighborhoodOpen, setIsNeighborhoodOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
-  const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "", max: "" });
+  const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "any", max: "any" });
   const [agencyName, setAgencyName] = useState('');
   const [agentName, setAgentName] = useState('');
   const [roomsFilter, setRoomsFilter] = useState<number[]>([]);
@@ -191,7 +191,7 @@ export function SearchBar() {
   const handleSearchTypeChange = (newType: SearchType) => {
     setSearchType(newType);
     setSelectedNeighborhoods([]);
-    setPriceRange({ min: "", max: "" });
+    setPriceRange({ min: "any", max: "any" });
     setRoomsFilter([]);
     setAgencyName('');
     setAgentName('');
@@ -329,16 +329,17 @@ export function SearchBar() {
               {/* 1. Precio máximo */}
               <div className="flex-1">
                 <Select
-                  value={priceRange.max}
+                  value={priceRange.max || "any"}
                   onValueChange={(value) => setPriceRange(prev => ({
                     ...prev,
-                    max: value
+                    max: value === "any" ? "any" : value
                   }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Precio max" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="any">Cualquier precio</SelectItem>
                     {PRICE_RANGES.map(range => (
                       <SelectItem
                         key={range.value}

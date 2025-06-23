@@ -17,10 +17,10 @@ interface SearchFiltersProps {
 
 export function SearchFilters({ onFilter }: SearchFiltersProps) {
   const [filters, setFilters] = useState({
-    minPrice: "",
-    maxPrice: "",
-    bedrooms: "",
-    type: "",
+    minPrice: "any",
+    maxPrice: "any",
+    bedrooms: "any",
+    type: "any",
   });
 
   const handleFilter = () => {
@@ -29,10 +29,10 @@ export function SearchFilters({ onFilter }: SearchFiltersProps) {
 
   const clearFilters = () => {
     setFilters({
-      minPrice: "",
-      maxPrice: "",
-      bedrooms: "",
-      type: "",
+      minPrice: "any",
+      maxPrice: "any",
+      bedrooms: "any",
+      type: "any",
     });
     onFilter({});
   };
