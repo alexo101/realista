@@ -149,10 +149,10 @@ export function SearchBar() {
     }
 
     // Property specific parameters
-    if ((searchType === 'buy' || searchType === 'rent') && priceRange.min) {
+    if ((searchType === 'buy' || searchType === 'rent') && priceRange.min && priceRange.min !== "any") {
       params.append("minPrice", priceRange.min);
     }
-    if ((searchType === 'buy' || searchType === 'rent') && priceRange.max) {
+    if ((searchType === 'buy' || searchType === 'rent') && priceRange.max && priceRange.max !== "any") {
       params.append("maxPrice", priceRange.max);
     }
 

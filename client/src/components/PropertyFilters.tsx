@@ -109,7 +109,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
       priceMin,
       priceMax,
       bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
-      bathrooms: bathrooms === "any" || bathrooms === "" || !bathrooms ? null : parseInt(bathrooms as string),
+      bathrooms: bathrooms === "any" || !bathrooms ? null : parseInt(bathrooms as string),
       features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
     };
 
