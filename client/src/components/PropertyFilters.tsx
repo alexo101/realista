@@ -10,10 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Euro, Bath, BedDouble, Building } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Euro, Bath, BedDouble, Building } from "lucide-react";
 import debounce from "lodash.debounce";
 
 interface PropertyFiltersProps {
@@ -30,6 +27,7 @@ export interface PropertyFilters {
   bedrooms: number | null;
   bathrooms: number | null;
   features?: string[];
+  sortBy?: string;
 }
 
 // Lista de características disponibles
@@ -159,7 +157,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   priceMax: null,
                   bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
                   bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
-                  features: selectedFeatures
+                  features: selectedFeatures,
+                  sortBy: sortBy !== "default" ? sortBy : undefined
                 });
               }}
             >
@@ -184,7 +183,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   priceMax: null,
                   bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
                   bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
-                  features: selectedFeatures
+                  features: selectedFeatures,
+                  sortBy: sortBy !== "default" ? sortBy : undefined
                 });
               }}
             >
