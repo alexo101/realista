@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Euro, Bath, BedDouble, Building } from "lucide-react";
 import debounce from "lodash.debounce";
+import { cn } from "@/lib/utils";
 
 interface PropertyFiltersProps {
   onFilterChange: (filters: PropertyFilters) => void;
