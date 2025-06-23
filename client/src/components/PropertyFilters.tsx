@@ -16,13 +16,6 @@ import { Check, ChevronsUpDown, Euro, Bath, BedDouble, Building } from "lucide-r
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 
-interface PropertyFiltersProps {
-  onFilterChange: (filters: PropertyFilters) => void;
-  defaultOperationType?: "Venta" | "Alquiler";
-  defaultBedrooms?: number | null;
-  defaultBedroomsList?: number[];
-}
-
 export interface PropertyFilters {
   operationType: "Venta" | "Alquiler";
   priceMin: number | null;
@@ -30,6 +23,15 @@ export interface PropertyFilters {
   bedrooms: number | null;
   bathrooms: number | null;
   features?: string[];
+}
+
+interface PropertyFiltersProps {
+  onFilterChange: (filters: PropertyFilters) => void;
+  defaultOperationType?: "Venta" | "Alquiler";
+  defaultBedrooms?: number | null;
+  defaultBedroomsList?: number[];
+  propertiesFilter?: string;
+  onSortChange?: (value: string) => void;
 }
 
 // Lista de características disponibles
@@ -49,7 +51,7 @@ const features = [
   { id: "accesible", label: "Accesible" },
 ];
 
-export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms, defaultBedroomsList }: PropertyFiltersProps) {
+export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms, defaultBedroomsList, propertiesFilter, onSortChange }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
@@ -136,7 +138,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
     <div className="bg-white rounded-lg shadow p-4 mb-6">
       <div className="space-y-4">
         {/* Fila superior - Operación */}
-        <div className="flex justify-center sm:justify-start">
+        <div className="flex justify-center sm:justify-start items-center">
           {/* Toggle de tipo de operación */}
           <div className="flex bg-gray-100 p-1 rounded-full">
             <Button
@@ -189,6 +191,20 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             >
               Alquilar
             </Button>
+          </div>
+
+          {/* Sorting filter - Moved to be inline with operation type */}
+          <div className="ml-4">
+            <Select onValueChange={onSortChange}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="price-asc">Precio (Menor a Mayor)</SelectItem>
+                <SelectItem value="price-desc">Precio (Mayor a Menor)</SelectItem>
+                {/* Add other sorting options here if needed */}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -444,8 +460,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               </PopoverContent>
             </Popover>
           </div>
-          
-          
+
+
         </div>
         </div>
 

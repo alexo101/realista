@@ -262,25 +262,9 @@ export default function NeighborhoodResultsPage() {
                 defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
                 defaultBedrooms={defaultBedrooms}
                 defaultBedroomsList={defaultBedroomsList}
+                propertiesFilter={propertiesFilter}
+                onSortChange={setPropertiesFilter}
               />
-              
-              <div className="mb-4 flex justify-end">
-                <Select
-                  value={propertiesFilter}
-                  onValueChange={setPropertiesFilter}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Predeterminado</SelectItem>
-                    <SelectItem value="price_asc">Más baratos</SelectItem>
-                    <SelectItem value="newest">Más recientes</SelectItem>
-                    <SelectItem value="price_m2">Más baratos €/m2</SelectItem>
-                    <SelectItem value="price_drop">Mayores bajadas de precio</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <PropertyResults 
                 results={useMemo(() => {
                   if (!properties) return [];
