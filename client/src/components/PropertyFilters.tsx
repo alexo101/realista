@@ -195,8 +195,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
         </div>
 
         {/* Fila de filtros - Precio, habitaciones, baños, características, ordenación */}
-        <div className="flex flex-wrap gap-4 justify-between">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 flex-grow">
+        <div className="flex flex-wrap gap-6 justify-between">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 flex-grow">
           {/* Filtro de precio */}
           <div>
             <Label className="font-medium mb-1.5 block text-sm">
@@ -241,7 +241,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtros de habitaciones y baños en la misma fila */}
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             {/* Filtro de habitaciones */}
             <div className="flex-1">
             <Label className="font-medium mb-1.5 block text-sm">
@@ -443,7 +443,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtro de características */}
-          <div>
+          <div className="border-l border-gray-200 pl-4">
             <Label className="font-medium mb-1.5 block text-sm">
               <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Características
@@ -482,7 +482,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtro de ordenación */}
-          <div>
+          <div className="border-l border-gray-200 pl-4">
             <Label className="font-medium mb-1.5 block text-sm">
               Ordenar por
             </Label>
