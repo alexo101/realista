@@ -62,7 +62,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   );
   const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [openFeatures, setOpenFeatures] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("default");
 
   // Opciones para los rangos de precios según el tipo de operación
   const priceOptions = {
@@ -118,10 +118,11 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
       bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
       bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
       features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
+      sortBy: sortBy !== "default" ? sortBy : undefined,
     };
 
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, debouncedFilterChange]);
+  }, [operationType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy, debouncedFilterChange]);
 
   // Añadir o eliminar características
   const toggleFeature = (featureId: string) => {
@@ -192,9 +193,9 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
         </div>
 
-        {/* Fila de filtros - Precio, habitaciones, baños, características */}
+        {/* Fila de filtros - Precio, habitaciones, baños, características, ordenación */}
         <div className="flex flex-wrap gap-4 justify-between">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-grow">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 flex-grow">
           {/* Filtro de precio */}
           <div>
             <Label className="font-medium mb-1.5 block text-sm">
@@ -209,7 +210,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Min precio" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent side="bottom">
                   <SelectItem value="any">Cualquier precio</SelectItem>
                   {priceOptions[operationType].map((option) => (
                     <SelectItem key={`min-${option.value}`} value={option.value}>
@@ -226,7 +227,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Máx precio" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent side="bottom">
                   <SelectItem value="any">Cualquier precio</SelectItem>
                   {priceOptions[operationType].map((option) => (
                     <SelectItem key={`max-${option.value}`} value={option.value}>
@@ -446,44 +447,59 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Características
             </Label>
-            <Popover open={openFeatures} onOpenChange={setOpenFeatures}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openFeatures}
-                  className="w-full justify-start h-9 text-sm"
-                >
-                  {selectedFeatures.length === 0
-                    ? "Seleccionar"
-                    : `${selectedFeatures.length} seleccionadas`}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Command>
-                  <CommandList>
-                    <CommandGroup>
-                      {features.map((feature) => (
-                        <CommandItem
-                          key={feature.id}
-                          value={feature.id}
-                          onSelect={() => toggleFeature(feature.id)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedFeatures.includes(feature.id) ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {feature.label}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <Select>
+              <SelectTrigger className="h-9 text-sm w-full justify-start">
+                <SelectValue placeholder={
+                  selectedFeatures.length > 0 
+                    ? `${selectedFeatures.length} seleccionadas` 
+                    : "Seleccionar"
+                } />
+              </SelectTrigger>
+              <SelectContent side="bottom" className="w-[240px]">
+                <div className="space-y-2 px-1 py-2">
+                  {features.map((feature) => (
+                    <label 
+                      key={feature.id}
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFeature(feature.id);
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={selectedFeatures.includes(feature.id)}
+                        onChange={() => {}}
+                      />
+                      <span>{feature.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filtro de ordenación */}
+          <div>
+            <Label className="font-medium mb-1.5 block text-sm">
+              Ordenar por
+            </Label>
+            <Select
+              value={sortBy}
+              onValueChange={(value) => setSortBy(value)}
+            >
+              <SelectTrigger className="h-9 text-sm w-full justify-start">
+                <SelectValue placeholder="Predeterminado" />
+              </SelectTrigger>
+              <SelectContent side="bottom">
+                <SelectItem value="default">Predeterminado</SelectItem>
+                <SelectItem value="price-asc">Precio: menor a mayor</SelectItem>
+                <SelectItem value="price-desc">Precio: mayor a menor</SelectItem>
+                <SelectItem value="newest">Más recientes</SelectItem>
+                <SelectItem value="oldest">Más antiguos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           
