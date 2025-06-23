@@ -33,13 +33,11 @@ export default function NeighborhoodResultsPage() {
   const maxPriceFromUrl = urlParams.get('maxPrice');
   
   // Parse bedrooms - could be a single number or comma-separated list
-  let defaultBedrooms = null;
+  let defaultBedroomsList: number[] = [];
   if (bedroomsFromUrl) {
-    const bedroomsList = bedroomsFromUrl.split(',').map(b => parseInt(b)).filter(b => !isNaN(b));
-    if (bedroomsList.length > 0) {
-      defaultBedrooms = Math.min(...bedroomsList); // Use the minimum for the filter
-    }
+    defaultBedroomsList = bedroomsFromUrl.split(',').map(b => parseInt(b)).filter(b => !isNaN(b));
   }
+  const defaultBedrooms = defaultBedroomsList.length > 0 ? Math.min(...defaultBedroomsList) : null;
   
   // Filtros para cada pestaña
   const [propertiesFilter, setPropertiesFilter] = useState<string>("default");
@@ -261,6 +259,9 @@ export default function NeighborhoodResultsPage() {
               {/* Filtros de propiedades */}
               <PropertyFilters 
                 onFilterChange={setPropertyFilters}
+                defaultOperationType={propertyFilters.operationType}
+                defaultBedrooms={propertyFilters.bedrooms}
+                defaultBedroomsList={defaultBedroomsList}
                 defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
                 defaultBedrooms={defaultBedrooms}
               />

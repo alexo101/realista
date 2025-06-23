@@ -20,6 +20,7 @@ interface PropertyFiltersProps {
   onFilterChange: (filters: PropertyFilters) => void;
   defaultOperationType?: "Venta" | "Alquiler";
   defaultBedrooms?: number | null;
+  defaultBedroomsList?: number[];
 }
 
 export interface PropertyFilters {
@@ -48,11 +49,17 @@ const features = [
   { id: "accesible", label: "Accesible" },
 ];
 
-export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms }: PropertyFiltersProps) {
+export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms, defaultBedroomsList }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
-  const [roomsFilter, setRoomsFilter] = useState<number[]>(defaultBedrooms ? [defaultBedrooms] : [1]);
+  const [roomsFilter, setRoomsFilter] = useState<number[]>(
+    defaultBedroomsList && defaultBedroomsList.length > 0 
+      ? defaultBedroomsList 
+      : defaultBedrooms 
+        ? [defaultBedrooms] 
+        : [1]
+  );
   const [bathrooms, setBathrooms] = useState<number | null | string>("any");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [openFeatures, setOpenFeatures] = useState(false);
