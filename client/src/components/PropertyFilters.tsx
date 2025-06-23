@@ -16,6 +16,13 @@ import { Check, ChevronsUpDown, Euro, Bath, BedDouble, Building } from "lucide-r
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 
+interface PropertyFiltersProps {
+  onFilterChange: (filters: PropertyFilters) => void;
+  defaultOperationType?: "Venta" | "Alquiler";
+  defaultBedrooms?: number | null;
+  defaultBedroomsList?: number[];
+}
+
 export interface PropertyFilters {
   operationType: "Venta" | "Alquiler";
   priceMin: number | null;
@@ -23,15 +30,6 @@ export interface PropertyFilters {
   bedrooms: number | null;
   bathrooms: number | null;
   features?: string[];
-}
-
-interface PropertyFiltersProps {
-  onFilterChange: (filters: PropertyFilters) => void;
-  defaultOperationType?: "Venta" | "Alquiler";
-  defaultBedrooms?: number | null;
-  defaultBedroomsList?: number[];
-  propertiesFilter?: string;
-  onSortChange?: (value: string) => void;
 }
 
 // Lista de características disponibles
@@ -51,7 +49,7 @@ const features = [
   { id: "accesible", label: "Accesible" },
 ];
 
-export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms, defaultBedroomsList, propertiesFilter, onSortChange }: PropertyFiltersProps) {
+export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms, defaultBedroomsList }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
@@ -62,7 +60,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
         ? [defaultBedrooms] 
         : [1]
   );
-  const [bathrooms, setBathrooms] = useState<number | null | string>("any");
+  const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [openFeatures, setOpenFeatures] = useState(false);
 
@@ -123,7 +121,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
     };
 
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, roomsFilter, bathrooms, selectedFeatures, debouncedFilterChange]);
+  }, [operationType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, debouncedFilterChange]);
 
   // Añadir o eliminar características
   const toggleFeature = (featureId: string) => {
@@ -138,7 +136,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
     <div className="bg-white rounded-lg shadow p-4 mb-6">
       <div className="space-y-4">
         {/* Fila superior - Operación */}
-        <div className="flex justify-center sm:justify-start items-center">
+        <div className="flex justify-center sm:justify-start">
           {/* Toggle de tipo de operación */}
           <div className="flex bg-gray-100 p-1 rounded-full">
             <Button
@@ -192,20 +190,6 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               Alquilar
             </Button>
           </div>
-
-          {/* Sorting filter - Moved to be inline with operation type */}
-          <div className="ml-4">
-            <Select onValueChange={onSortChange}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="price-asc">Precio (Menor a Mayor)</SelectItem>
-                <SelectItem value="price-desc">Precio (Mayor a Menor)</SelectItem>
-                {/* Add other sorting options here if needed */}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {/* Fila de filtros - Precio, habitaciones, baños, características */}
@@ -254,8 +238,10 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             </div>
           </div>
 
-          {/* Filtro de habitaciones */}
-          <div className="w-1/2">
+          {/* Filtros de habitaciones y baños en la misma fila */}
+          <div className="flex gap-2">
+            {/* Filtro de habitaciones */}
+            <div className="flex-1">
             <Label className="font-medium mb-1.5 block text-sm">
               <BedDouble className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Habitaciones
@@ -394,25 +380,64 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             </Select>
           </div>
 
-          {/* Filtro de baños */}
-          <div>
-            <Label className="font-medium mb-1.5 block text-sm">
-              <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
-              Baños
-            </Label>
-            <Select
-              value={bathrooms?.toString() || "any"}
-              onValueChange={(value) => setBathrooms(value === "any" ? null : value)}
-            >
-              <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder="Baños" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Cualquiera</SelectItem>
-                <SelectItem value="1">1+</SelectItem>
-                <SelectItem value="2">2+</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Filtro de baños */}
+            <div className="flex-1">
+              <Label className="font-medium mb-1.5 block text-sm">
+                <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+                Baños
+              </Label>
+              <Select>
+                <SelectTrigger className="h-9 text-sm w-full justify-start">
+                  <SelectValue placeholder={
+                    bathroomsFilter.length > 0 
+                      ? `${bathroomsFilter.length} seleccionados` 
+                      : "Baños"
+                  } />
+                </SelectTrigger>
+                <SelectContent className="w-[200px]">
+                  <div className="space-y-2 px-1 py-2">
+                    <label 
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (bathroomsFilter.includes(1)) {
+                          setBathroomsFilter(prev => prev.filter(b => b !== 1 && b !== 2));
+                        } else {
+                          setBathroomsFilter([1, 2]);
+                        }
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={bathroomsFilter.includes(1)}
+                        onChange={() => {}}
+                      />
+                      <span>1+ baños</span>
+                    </label>
+                    <label 
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (bathroomsFilter.includes(2)) {
+                          setBathroomsFilter(prev => prev.filter(b => b !== 2));
+                        } else {
+                          setBathroomsFilter(prev => [...prev.filter(b => b !== 1), 2]);
+                        }
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300" 
+                        checked={bathroomsFilter.includes(2)}
+                        onChange={() => {}}
+                      />
+                      <span>2+ baños</span>
+                    </label>
+                  </div>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Filtro de características */}
@@ -460,8 +485,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               </PopoverContent>
             </Popover>
           </div>
-
-
+          
+          
         </div>
         </div>
 
