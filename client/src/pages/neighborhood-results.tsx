@@ -259,11 +259,9 @@ export default function NeighborhoodResultsPage() {
               {/* Filtros de propiedades */}
               <PropertyFilters 
                 onFilterChange={setPropertyFilters}
-                defaultOperationType={propertyFilters.operationType}
-                defaultBedrooms={propertyFilters.bedrooms}
-                defaultBedroomsList={defaultBedroomsList}
                 defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
                 defaultBedrooms={defaultBedrooms}
+                defaultBedroomsList={defaultBedroomsList}
               />
               
               <div className="mb-4 flex justify-end">
