@@ -40,7 +40,6 @@ export default function NeighborhoodResultsPage() {
   const defaultBedrooms = defaultBedroomsList.length > 0 ? Math.min(...defaultBedroomsList) : null;
   
   // Filtros para cada pestaña
-  const [propertiesFilter, setPropertiesFilter] = useState<string>("default");
   const [agenciesFilter, setAgenciesFilter] = useState<string>("default");
   const [agentsFilter, setAgentsFilter] = useState<string>("default");
   
@@ -263,44 +262,27 @@ export default function NeighborhoodResultsPage() {
                 defaultBedrooms={defaultBedrooms}
                 defaultBedroomsList={defaultBedroomsList}
               />
-              
-              <div className="mb-4 flex justify-end">
-                <Select
-                  value={propertiesFilter}
-                  onValueChange={setPropertiesFilter}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Predeterminado</SelectItem>
-                    <SelectItem value="price_asc">Más baratos</SelectItem>
-                    <SelectItem value="newest">Más recientes</SelectItem>
-                    <SelectItem value="price_m2">Más baratos €/m2</SelectItem>
-                    <SelectItem value="price_drop">Mayores bajadas de precio</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <PropertyResults 
                 results={useMemo(() => {
                   if (!properties) return [];
                   
                   const sortedProperties = [...properties];
                   
-                  switch (propertiesFilter) {
-                    case 'price_asc':
+                  // Use the sortBy from propertyFilters instead of the removed propertiesFilter
+                  switch (propertyFilters.sortBy) {
+                    case 'price-asc':
                       return sortedProperties.sort((a, b) => a.price - b.price);
                     case 'newest':
                       return sortedProperties.sort((a, b) => 
                         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                       );
-                    case 'price_m2':
+                    case 'price-m2':
                       return sortedProperties.sort((a, b) => {
                         const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
                         const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
                         return pricePerM2A - pricePerM2B;
                       });
-                    case 'price_drop':
+                    case 'price-drop':
                       return sortedProperties.sort((a, b) => {
                         const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
                         const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
@@ -309,7 +291,7 @@ export default function NeighborhoodResultsPage() {
                     default:
                       return sortedProperties;
                   }
-                }, [properties, propertiesFilter]) || []} 
+                }, [properties, propertyFilters.sortBy]) || []} 
                 isLoading={propertiesLoading} 
               />
             </TabsContent>

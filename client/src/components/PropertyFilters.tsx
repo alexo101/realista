@@ -61,7 +61,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   );
   const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<string>("default");
+  const [sortBy, setSortBy] = useState<string>("newest");
 
   // Opciones para los rangos de precios según el tipo de operación
   const priceOptions = {
@@ -491,14 +491,13 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               onValueChange={(value) => setSortBy(value)}
             >
               <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder="Predeterminado" />
+                <SelectValue placeholder="Más recientes" />
               </SelectTrigger>
               <SelectContent side="bottom">
-                <SelectItem value="default">Predeterminado</SelectItem>
-                <SelectItem value="price-asc">Precio: menor a mayor</SelectItem>
-                <SelectItem value="price-desc">Precio: mayor a menor</SelectItem>
                 <SelectItem value="newest">Más recientes</SelectItem>
-                <SelectItem value="oldest">Más antiguos</SelectItem>
+                <SelectItem value="price-asc">Más baratos</SelectItem>
+                <SelectItem value="price-m2">Más baratos €/m2</SelectItem>
+                <SelectItem value="price-drop">Mayores bajadas</SelectItem>
               </SelectContent>
             </Select>
           </div>
