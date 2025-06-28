@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,35 +28,23 @@ export interface PropertyFilters {
   priceMax: number | null;
   bedrooms: number | null;
   bathrooms: number | null;
-  features?: string[];
+  features: string[];
   sortBy?: string;
 }
 
-// Lista de características disponibles
-const features = [
-  { id: "terraza", label: "Terraza" },
-  { id: "balcon", label: "Balcón" },
-  { id: "ascensor", label: "Ascensor" },
-  { id: "aire-acondicionado", label: "Aire acondicionado" },
-  { id: "calefaccion", label: "Calefacción" },
-  { id: "piscina", label: "Piscina" },
-  { id: "garaje", label: "Garaje" },
-  { id: "jardin", label: "Jardín" },
-  { id: "trastero", label: "Trastero" },
-  { id: "amueblado", label: "Amueblado" },
-  { id: "vistas-mar", label: "Vistas al mar" },
-  { id: "exterior", label: "Exterior" },
-  { id: "accesible", label: "Accesible" },
-];
-
-export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta", defaultBedrooms, defaultBedroomsList }: PropertyFiltersProps) {
+export function PropertyFilters({ 
+  onFilterChange, 
+  defaultOperationType = "Venta",
+  defaultBedrooms = null,
+  defaultBedroomsList = []
+}: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [roomsFilter, setRoomsFilter] = useState<number[]>(
-    defaultBedroomsList && defaultBedroomsList.length > 0 
+    defaultBedroomsList.length > 0 
       ? defaultBedroomsList 
-      : defaultBedrooms 
+      : defaultBedrooms !== null 
         ? [defaultBedrooms] 
         : [1]
   );
@@ -67,68 +56,68 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
   const priceOptions = {
     Venta: [
       { value: "100000", label: "100.000€" },
-      { value: "150000", label: "150.000€" },
       { value: "200000", label: "200.000€" },
       { value: "300000", label: "300.000€" },
       { value: "400000", label: "400.000€" },
       { value: "500000", label: "500.000€" },
-      { value: "600000", label: "600.000€" },
-      { value: "700000", label: "700.000€" },
-      { value: "800000", label: "800.000€" },
-      { value: "900000", label: "900.000€" },
+      { value: "750000", label: "750.000€" },
       { value: "1000000", label: "1.000.000€" },
-      { value: "2000000", label: "2.000.000€" },
+      { value: "1500000", label: "1.500.000€" },
+      { value: "2000000", label: "2.000.000€" }
     ],
     Alquiler: [
-      { value: "400", label: "400€" },
-      { value: "600", label: "600€" },
-      { value: "800", label: "800€" },
+      { value: "500", label: "500€" },
+      { value: "750", label: "750€" },
       { value: "1000", label: "1.000€" },
-      { value: "1200", label: "1.200€" },
+      { value: "1250", label: "1.250€" },
       { value: "1500", label: "1.500€" },
       { value: "2000", label: "2.000€" },
       { value: "2500", label: "2.500€" },
       { value: "3000", label: "3.000€" },
-      { value: "4000", label: "4.000€" },
-      { value: "5000", label: "5.000€" },
-    ],
+      { value: "4000", label: "4.000€" }
+    ]
   };
 
-  // Reset prices when operation type changes
-  useEffect(() => {
-    setPriceMin(null);
-    setPriceMax(null);
-  }, [operationType]);
+  // Características disponibles
+  const features = [
+    { id: "elevator", label: "Ascensor" },
+    { id: "parking", label: "Parking" },
+    { id: "terrace", label: "Terraza" },
+    { id: "garden", label: "Jardín" },
+    { id: "pool", label: "Piscina" },
+    { id: "gym", label: "Gimnasio" },
+    { id: "security", label: "Seguridad 24h" },
+    { id: "furnished", label: "Amueblado" },
+    { id: "airConditioning", label: "Aire acondicionado" },
+    { id: "heating", label: "Calefacción" },
+    { id: "fireplace", label: "Chimenea" },
+    { id: "balcony", label: "Balcón" }
+  ];
 
-  // Debounce para no ejecutar el filtro en cada cambio
-  const debouncedFilterChange = useCallback(
-    debounce((filters: PropertyFilters) => {
-      onFilterChange(filters);
-    }, 300),
-    [onFilterChange]
-  );
+  // Actualizar filtros cuando cambien los valores
+  const debouncedFilterChange = debounce((filters: PropertyFilters) => {
+    onFilterChange(filters);
+  }, 300);
 
-  // Actualiza los filtros cuando cambia cualquiera
   useEffect(() => {
     const filters: PropertyFilters = {
       operationType,
       priceMin,
       priceMax,
-      bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+      bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : null,
       bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
-      features: selectedFeatures.length > 0 ? selectedFeatures : undefined,
-      sortBy: sortBy !== "default" ? sortBy : undefined,
+      features: selectedFeatures,
+      sortBy: sortBy !== "newest" ? sortBy : undefined
     };
-
+    
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy, debouncedFilterChange]);
+  }, [operationType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy]);
 
-  // Añadir o eliminar características
   const toggleFeature = (featureId: string) => {
-    setSelectedFeatures(current => 
-      current.includes(featureId) 
-        ? current.filter(id => id !== featureId) 
-        : [...current, featureId]
+    setSelectedFeatures(prev => 
+      prev.includes(featureId) 
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
     );
   };
 
@@ -194,12 +183,11 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
         </div>
 
-        {/* Fila de filtros - Precio, habitaciones, baños, características, ordenación */}
-        <div className="flex flex-wrap gap-6 justify-between">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 flex-grow">
+        {/* Fila de filtros organizados uniformemente */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {/* Filtro de precio */}
-          <div>
-            <Label className="font-medium mb-1.5 block text-sm">
+          <div className="space-y-1.5">
+            <Label className="font-medium block text-sm">
               <Euro className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Precio {operationType === "Alquiler" ? "/mes" : ""}
             </Label>
@@ -220,7 +208,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                   ))}
                 </SelectContent>
               </Select>
-              <span>-</span>
+              <span className="text-gray-400">-</span>
               <Select
                 value={priceMax?.toString() || "any"}
                 onValueChange={(value) => setPriceMax(value === "any" ? null : parseInt(value))}
@@ -240,11 +228,9 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             </div>
           </div>
 
-          {/* Filtros de habitaciones y baños en la misma fila */}
-          <div className="flex gap-3">
-            {/* Filtro de habitaciones */}
-            <div className="flex-1">
-            <Label className="font-medium mb-1.5 block text-sm">
+          {/* Filtro de habitaciones */}
+          <div className="space-y-1.5">
+            <Label className="font-medium block text-sm">
               <BedDouble className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Habitaciones
             </Label>
@@ -256,7 +242,7 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
                     : "Habitaciones"
                 } />
               </SelectTrigger>
-              <SelectContent className="w-[240px]">
+              <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
                   <label 
                     className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
@@ -382,69 +368,68 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
             </Select>
           </div>
 
-            {/* Filtro de baños */}
-            <div className="flex-1">
-              <Label className="font-medium mb-1.5 block text-sm">
-                <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
-                Baños
-              </Label>
-              <Select>
-                <SelectTrigger className="h-9 text-sm w-full justify-start">
-                  <SelectValue placeholder={
-                    bathroomsFilter.length > 0 
-                      ? `${bathroomsFilter.length} seleccionados` 
-                      : "Baños"
-                  } />
-                </SelectTrigger>
-                <SelectContent className="w-[200px]">
-                  <div className="space-y-2 px-1 py-2">
-                    <label 
-                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (bathroomsFilter.includes(1)) {
-                          setBathroomsFilter(prev => prev.filter(b => b !== 1 && b !== 2));
-                        } else {
-                          setBathroomsFilter([1, 2]);
-                        }
-                      }}
-                    >
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-300" 
-                        checked={bathroomsFilter.includes(1)}
-                        onChange={() => {}}
-                      />
-                      <span>1+ baños</span>
-                    </label>
-                    <label 
-                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (bathroomsFilter.includes(2)) {
-                          setBathroomsFilter(prev => prev.filter(b => b !== 2));
-                        } else {
-                          setBathroomsFilter(prev => [...prev.filter(b => b !== 1), 2]);
-                        }
-                      }}
-                    >
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-gray-300" 
-                        checked={bathroomsFilter.includes(2)}
-                        onChange={() => {}}
-                      />
-                      <span>2+ baños</span>
-                    </label>
-                  </div>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Filtro de baños */}
+          <div className="space-y-1.5">
+            <Label className="font-medium block text-sm">
+              <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+              Baños
+            </Label>
+            <Select>
+              <SelectTrigger className="h-9 text-sm w-full justify-start">
+                <SelectValue placeholder={
+                  bathroomsFilter.length > 0 
+                    ? `${bathroomsFilter.length} seleccionados` 
+                    : "Baños"
+                } />
+              </SelectTrigger>
+              <SelectContent side="bottom" className="w-[200px]">
+                <div className="space-y-2 px-1 py-2">
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (bathroomsFilter.includes(1)) {
+                        setBathroomsFilter(prev => prev.filter(b => b !== 1 && b !== 2));
+                      } else {
+                        setBathroomsFilter([1, 2]);
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={bathroomsFilter.includes(1)}
+                      onChange={() => {}}
+                    />
+                    <span>1+ baños</span>
+                  </label>
+                  <label 
+                    className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (bathroomsFilter.includes(2)) {
+                        setBathroomsFilter(prev => prev.filter(b => b !== 2));
+                      } else {
+                        setBathroomsFilter(prev => [...prev.filter(b => b !== 1), 2]);
+                      }
+                    }}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300" 
+                      checked={bathroomsFilter.includes(2)}
+                      onChange={() => {}}
+                    />
+                    <span>2+ baños</span>
+                  </label>
+                </div>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Filtro de características */}
-          <div className="border-l border-gray-200 pl-4">
-            <Label className="font-medium mb-1.5 block text-sm">
+          <div className="space-y-1.5">
+            <Label className="font-medium block text-sm">
               <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
               Características
             </Label>
@@ -482,8 +467,8 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
           </div>
 
           {/* Filtro de ordenación */}
-          <div className="border-l border-gray-200 pl-4">
-            <Label className="font-medium mb-1.5 block text-sm">
+          <div className="space-y-1.5">
+            <Label className="font-medium block text-sm">
               Ordenar por
             </Label>
             <Select
@@ -501,9 +486,6 @@ export function PropertyFilters({ onFilterChange, defaultOperationType = "Venta"
               </SelectContent>
             </Select>
           </div>
-          
-          
-        </div>
         </div>
 
         {/* Mostrar etiquetas de características seleccionadas */}
