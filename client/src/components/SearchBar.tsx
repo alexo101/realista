@@ -149,7 +149,7 @@ export function SearchBar() {
       }
 
       const queryString = params.toString();
-      const url = `/neighborhood/${encodedValue}/${tab}${queryString ? '?' + queryString : ''}`;
+      const url = '/neighborhood/' + encodedValue + '/' + tab + (queryString ? '?' + queryString : '');
 
       // Redirigir a la página de resultados
       setLocation(url);
@@ -192,8 +192,7 @@ export function SearchBar() {
     }
 
     // Agent search parameters
-    ```python
-if (searchType === 'agents') {
+    if (searchType === 'agents') {
       if (agentName && agentName.trim() !== '') {
         params.append('agentName', agentName.trim());
       }
@@ -440,11 +439,7 @@ if (searchType === 'agents') {
                     {/* Make distrito selectable */}
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start ${
-                        selectedNeighborhoods.includes(district.district)
-                          ? "bg-primary/10"
-                          : ""
-                      }`}
+                      className={"w-full justify-start " + (selectedNeighborhoods.includes(district.district) ? "bg-primary/10" : "")}
                       onClick={() => toggleNeighborhood(district.district)}
                     >
                       {district.district}
