@@ -899,7 +899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (typeof rawNeighborhoods === 'string') {
             try {
               // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
-              const cleaned = rawNeighborhoods.replace(/^\{|\}$/g, '');
+              const cleaned = (rawNeighborhoods as string).replace(/^\{|\}$/g, '');
               
               // Check if it's wrapped in quotes and contains commas
               if (cleaned.includes(',') && cleaned.includes('"')) {
