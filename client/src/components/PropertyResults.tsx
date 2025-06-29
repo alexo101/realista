@@ -44,7 +44,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
     queryKey: [`/api/clients/${user?.id}/favorites/properties/status`],
     queryFn: async () => {
       if (!user?.id) return {};
-      
+
       const statuses: { [key: number]: boolean } = {};
       await Promise.all(
         results.map(async (property) => {
@@ -67,10 +67,14 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   // Mutation to toggle favorite status
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (propertyId: number) => {
-      if (!user?.id) {
-        throw new Error("User not authenticated");
+      if (!user || !user.id) {
+        throw new Error("Debes iniciar sesión para agregar favoritos");
       }
-      
+
+      if (!user.isClient) {
+        throw new Error("Debes ser un cliente para agregar favoritos");
+      }
+
       return await apiRequest("POST", `/api/clients/favorites/properties/${propertyId}`, {
         body: { clientId: user.id }
       });
@@ -83,7 +87,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
       queryClient.invalidateQueries({ 
         queryKey: [`/api/clients/${user?.id}/favorites/properties`] 
       });
-      
+
       toast({
         title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
         description: data.isFavorite 
@@ -118,7 +122,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
 
   const handleToggleFavorite = (propertyId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!user) {
       toast({
         title: "Inicia sesión requerida",
@@ -130,7 +134,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
       }, 1000);
       return;
     }
-    
+
     toggleFavoriteMutation.mutate(propertyId);
   };
 
@@ -182,7 +186,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                     alt={property.title || property.address}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />
-                  
+
                   {/* Navigation arrows */}
                   {hasMultipleImages && (
                     <>
@@ -202,7 +206,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
-                      
+
                       {/* Image indicators */}
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
                         {property.images.map((_, index) => (
@@ -222,16 +226,16 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                   <Building2 className="w-12 h-12 text-gray-400" />
                 </div>
               )}
-              
+
               <div className="absolute top-2 right-2 bg-primary text-white text-xs font-medium px-2 py-1 rounded-md">
                 {property.operationType === 'Alquiler' || property.operationType === 'alquiler' ? 'Alquiler' : 'Venta'}
               </div>
             </div>
-            
+
             <div className="p-4">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-semibold text-lg line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
-                
+
                 {/* Favorite and Share buttons */}
                 <div className="flex gap-1">
                   <Button
@@ -258,7 +262,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-2xl font-bold text-primary">€{property.price.toLocaleString()}</p>
                 {property.previousPrice && property.previousPrice > property.price && (
@@ -278,7 +282,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                 <span>{property.neighborhood}</span>
               </div>
               <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
-              
+
               {/* Mostrar características si existen */}
               {property.features && property.features.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">

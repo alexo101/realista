@@ -15,7 +15,7 @@ import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhood
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
-  
+
   // Endpoint para registro de clientes desde la web
   app.post("/api/clients/register", async (req, res) => {
     try {
@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar si el email ya existe
       const existingClient = await storage.getClients();
       const emailExists = existingClient.some(client => client.email === validatedData.email);
-      
+
       if (emailExists) {
         return res.status(400).json({ 
           message: "Ya existe una cuenta con este correo electrónico" 
@@ -46,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Crear el cliente
       const newClient = await storage.createClient(validatedData);
-      
+
       console.log('Cliente creado exitosamente:', newClient);
 
       // Responder con éxito (sin incluir datos sensibles)
@@ -57,13 +57,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error('Error en registro de cliente:', error);
-      
+
       if (error instanceof Error && error.message.includes('validation')) {
         return res.status(400).json({ 
           message: "Datos de registro inválidos" 
         });
       }
-      
+
       res.status(500).json({ 
         message: "Error interno del servidor" 
       });
@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/agents", async (req, res) => {
     try {
       console.log('Creating agent - Received data:', req.body);
-      
+
       const agentData = {
         name: req.body.name,
         surname: req.body.surname,
@@ -197,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Login - Datos recibidos:', req.body);
       const { email, password } = req.body;
-      
+
       // Primero intentar encontrar en la tabla de agentes/usuarios
       let user = await storage.getUserByEmail(email);
       let isClient = false;
@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         const clients = await storage.getClients();
         const client = clients.find(c => c.email === email);
-        
+
         if (client && client.password === password) {
           // Convertir cliente a formato de usuario para compatibilidad
           user = {
@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { isActive } = req.body;
-      
+
       const updatedProperty = await storage.togglePropertyStatus(parseInt(id), isActive);
       res.status(200).json(updatedProperty);
     } catch (error) {
@@ -397,13 +397,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const agentId = parseInt(req.params.agentId);
       const { clientId } = req.body;
-      
+
       if (!clientId) {
         return res.status(401).json({ message: "Client ID is required" });
       }
 
       const isFavorite = await storage.toggleFavoriteAgent(clientId, agentId);
-      
+
       res.status(200).json({ 
         message: isFavorite ? "Agente agregado a favoritos" : "Agente eliminado de favoritos",
         isFavorite: isFavorite,
@@ -443,9 +443,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const propertyId = parseInt(req.params.propertyId);
       const { clientId } = req.body;
-      
+
+      console.log('Toggle property favorite request:', { propertyId, clientId, body: req.body });
+
       if (!clientId) {
+        console.log('Missing clientId in request body');
         return res.status(400).json({ message: "Client ID is required" });
+      }
+
+      if (isNaN(propertyId)) {
+        return res.status(400).json({ message: "Invalid property ID" });
       }
 
       const isFavorite = await storage.toggleFavoriteProperty(clientId, propertyId);
@@ -528,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const { status, agentNotes } = req.body;
-      
+
       const updatedRequest = await storage.updatePropertyVisitRequestStatus(id, status, agentNotes);
       res.status(200).json(updatedRequest);
     } catch (error) {
@@ -563,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const agentId = parseInt(req.params.agentId);
       const { startDate, endDate } = req.query;
-      
+
       const events = await storage.getAgentEvents(
         agentId, 
         startDate as string, 
@@ -580,7 +587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const eventData = req.body;
-      
+
       const updatedEvent = await storage.updateAgentEvent(id, eventData);
       res.status(200).json(updatedEvent);
     } catch (error) {
@@ -592,7 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/agent-events/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       await storage.deleteAgentEvent(id);
       res.status(200).json({ message: "Agent event deleted successfully" });
     } catch (error) {
@@ -721,16 +728,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to search agents" });
     }
   });
-  
+
   // Ruta para obtener los agentes vinculados a una agencia
   app.get("/api/agencies/:id/agents", async (req, res) => {
     try {
       const agencyId = parseInt(req.params.id);
       console.log(`Fetching agents for agency ID: ${agencyId}`);
-      
+
       const agents = await storage.getAgencyAgents(agencyId);
       console.log(`Found ${agents.length} agents for agency ${agencyId}`);
-      
+
       res.json(agents);
     } catch (error) {
       console.error(`Error fetching agents for agency: ${error}`);
@@ -815,26 +822,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Add detailed logging to see what's coming from the database
-      console.log('Agency results before normalization:', JSON.stringify(processedResults, null, 2));
-      
+      console.log('Agency resultsbefore normalization:', JSON.stringify(processedResults, null, 2));
+
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
         console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
-        
+
         // Get the agency neighborhoods from the standardized field
         const rawNeighborhoods = agency.agencyInfluenceNeighborhoods;
         console.log('- Original neighborhoods:', rawNeighborhoods);
         console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
-        
+
         // Initialize array to store neighborhood values
         let neighborhoodsArray = [];
-        
+
         // Handle PostgreSQL array format: "{\"La Sagrera\",\"Sant Andreu del Palomar\"}"
         if (typeof rawNeighborhoods === 'string') {
           try {
             // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
             const cleaned = rawNeighborhoods.replace(/^\{|\}$/g, '');
-            
+
             // Check if it's wrapped in quotes and contains commas
             if (cleaned.includes(',') && cleaned.includes('"')) {
               // Split by "," but respect quotes
@@ -848,7 +855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Single value
               neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
             }
-            
+
             console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
           } catch (e) {
             console.log('- Failed to parse neighborhoods:', e.message);
@@ -857,16 +864,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (Array.isArray(rawNeighborhoods)) {
           neighborhoodsArray = rawNeighborhoods;
         }
-        
+
         // Set field to standardized name
         agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
-        
+
         console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
         return agency;
       });
-      
+
       console.log('Agency results after normalization:', JSON.stringify(normalizedResults, null, 2));
-      
+
       console.log('Search agencies results:', normalizedResults.length);
       res.json(normalizedResults);
     } catch (error) {
@@ -1379,45 +1386,45 @@ Gracias!
   app.get("/api/reviews/manage", async (req, res) => {
     try {
       const userId = parseInt(req.query.userId as string);
-      
+
       if (isNaN(userId)) {
         return res.status(400).json({ message: "ID de usuario inválido" });
       }
-      
+
       // Obtener información del usuario
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
-      
+
       // Obtener reseñas del agente
       const agentReviews = await storage.getAgentReviews(userId);
-      
+
       let agencyReviews: any[] = [];
       let managedAgencies: any[] = [];
-      
+
       // Si el usuario es administrador, obtener también las reseñas de sus agencias
       if (user.isAdmin) {
         managedAgencies = await storage.getAgenciesByAdmin(userId);
-        
+
         // Para cada agencia, obtener sus reseñas
         const agencyReviewsPromises = managedAgencies.map(agency => 
           storage.getAgencyReviews(agency.id)
         );
-        
+
         const agencyReviewsResults = await Promise.all(agencyReviewsPromises);
         agencyReviews = agencyReviewsResults.flat();
       }
-      
+
       // Enriquecer las reseñas con información adicional
       const allReviews = [...agentReviews, ...agencyReviews];
-      
+
       const enhancedReviewsPromises = allReviews.map(async (review) => {
         // Dependiendo del tipo de objetivo, obtener información adicional
         let targetName = '';
         let targetAvatar = '';
-        
+
         if (review.targetType === 'agent') {
           const agent = await storage.getUser(review.targetId);
           if (agent) {
@@ -1431,11 +1438,11 @@ Gracias!
             targetAvatar = agency.agencyLogo || '';
           }
         }
-        
+
         // Si hay una propiedad relacionada, obtener su información
         let propertyTitle = '';
         let propertyAddress = '';
-        
+
         if (review.propertyId) {
           const property = await storage.getProperty(review.propertyId);
           if (property) {
@@ -1443,7 +1450,7 @@ Gracias!
             propertyAddress = property.address || '';
           }
         }
-        
+
         return {
           ...review,
           targetName,
@@ -1452,34 +1459,34 @@ Gracias!
           propertyAddress
         };
       });
-      
+
       const enhancedReviews = await Promise.all(enhancedReviewsPromises);
-      
+
       // Ordenar reseñas por fecha (más recientes primero)
       const sortedReviews = enhancedReviews.sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      
+
       res.json(sortedReviews);
     } catch (error) {
       console.error('Error obteniendo reseñas para gestionar:', error);
       res.status(500).json({ message: "Error al obtener las reseñas" });
     }
   });
-  
+
   // Ruta para responder a una reseña
   app.post("/api/reviews/:id/respond", async (req, res) => {
     try {
       const reviewId = parseInt(req.params.id);
       const { response } = req.body;
-      
+
       if (!response || typeof response !== 'string') {
         return res.status(400).json({ message: "La respuesta no puede estar vacía" });
       }
-      
+
       // Actualizar la reseña con la respuesta
       const updatedReview = await storage.respondToReview(reviewId, response);
-      
+
       res.json(updatedReview);
     } catch (error) {
       console.error('Error respondiendo a la reseña:', error);

@@ -36,7 +36,7 @@ export default function PropertyPage() {
   const { id } = useParams<{ id: string }>();
   const propertyId = parseInt(id);
   const [isFavorite, setIsFavorite] = useState(false);
-  
+
   const { user } = useUser();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -66,10 +66,14 @@ export default function PropertyPage() {
   // Mutation for toggling favorites
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (propertyId: string) => {
-      if (!user || !user.isClient) {
+      if (!user || !user.id) {
+        throw new Error("Debes iniciar sesión para agregar favoritos");
+      }
+
+      if (!user.isClient) {
         throw new Error("Debes ser un cliente para agregar favoritos");
       }
-      
+
       const response = await fetch(`/api/clients/favorites/properties/${propertyId}`, {
         method: 'POST',
         headers: {
@@ -87,17 +91,17 @@ export default function PropertyPage() {
     },
     onSuccess: (data) => {
       setIsFavorite(data.isFavorite);
-      
+
       // Invalidate client favorites query to refresh the client profile page
       queryClient.invalidateQueries({ 
         queryKey: [`/api/clients/${user?.id}/favorites/properties`] 
       });
-      
+
       // Also invalidate the status query for this specific property
       queryClient.invalidateQueries({ 
         queryKey: [`/api/clients/${user?.id}/favorites/properties/${propertyId}/status`] 
       });
-      
+
       toast({
         title: data.isFavorite ? "Propiedad agregada a favoritos" : "Propiedad eliminada de favoritos",
         description: data.isFavorite 
@@ -125,7 +129,7 @@ export default function PropertyPage() {
       navigate("/login");
       return;
     }
-    
+
     if (!user.isClient) {
       toast({
         title: "Función solo para clientes",
@@ -134,7 +138,7 @@ export default function PropertyPage() {
       });
       return;
     }
-    
+
     if (!id) return;
     toggleFavoriteMutation.mutate(id);
   };
@@ -143,7 +147,7 @@ export default function PropertyPage() {
   const handleShare = (platform: string) => {
     const url = window.location.href;
     const text = `Mira esta propiedad en ${property?.neighborhood || 'Barcelona'} - ${property?.title || property?.address} en Realista`;
-    
+
     switch (platform) {
       case 'whatsapp':
         window.open(`https://wa.me/?text=${encodeURIComponent(`${text} - ${url}`)}`, '_blank');
@@ -215,7 +219,7 @@ export default function PropertyPage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Favorite and Share buttons */}
                 <div className="flex gap-2 ml-4">
                   {/* Favorite button - only show for clients or potential clients */}
