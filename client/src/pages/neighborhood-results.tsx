@@ -49,7 +49,8 @@ export default function NeighborhoodResultsPage() {
     priceMin: minPriceFromUrl ? parseInt(minPriceFromUrl) : null,
     priceMax: maxPriceFromUrl ? parseInt(maxPriceFromUrl) : null,
     bedrooms: defaultBedrooms || 1,
-    bathrooms: null
+    bathrooms: null,
+    features: []
   });
   
   // Verificar si estamos en Barcelona general

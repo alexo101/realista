@@ -122,23 +122,22 @@ export function PropertyFilters({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-6">
-      <div className="space-y-4">
-        {/* Fila superior - Operación */}
-        <div className="flex justify-center sm:justify-start">
-          {/* Toggle de tipo de operación */}
-          <div className="flex bg-gray-100 p-1 rounded-full">
+    <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+      <div className="space-y-6">
+        {/* Sección superior - Toggle de operación */}
+        <div className="flex justify-start">
+          <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
             <Button
-              variant={operationType === "Venta" ? "default" : "ghost"}
+              variant="ghost"
+              size="sm"
               className={cn(
-                "rounded-full text-sm h-9 px-5",
+                "rounded-md px-4 py-2 text-sm font-medium transition-all",
                 operationType === "Venta" 
-                  ? "bg-primary text-primary-foreground shadow-sm" 
-                  : "bg-white hover:bg-gray-200"
+                  ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-white"
               )}
               onClick={() => {
                 setOperationType("Venta");
-                // Reset price filters when changing operation type
                 setPriceMin(null);
                 setPriceMax(null);
                 onFilterChange({
@@ -148,23 +147,23 @@ export function PropertyFilters({
                   bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
                   bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
                   features: selectedFeatures,
-                  sortBy: sortBy !== "default" ? sortBy : undefined
+                  sortBy: sortBy !== "newest" ? sortBy : undefined
                 });
               }}
             >
               Comprar
             </Button>
             <Button
-              variant={operationType === "Alquiler" ? "default" : "ghost"}
+              variant="ghost"
+              size="sm"
               className={cn(
-                "rounded-full text-sm h-9 px-5",
+                "rounded-md px-4 py-2 text-sm font-medium transition-all",
                 operationType === "Alquiler" 
-                  ? "bg-primary text-primary-foreground shadow-sm" 
-                  : "bg-white hover:bg-gray-200"
+                  ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700" 
+                  : "text-gray-600 hover:text-gray-900 hover:bg-white"
               )}
               onClick={() => {
                 setOperationType("Alquiler");
-                // Reset price filters when changing operation type
                 setPriceMin(null);
                 setPriceMax(null);
                 onFilterChange({
@@ -174,7 +173,7 @@ export function PropertyFilters({
                   bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
                   bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
                   features: selectedFeatures,
-                  sortBy: sortBy !== "default" ? sortBy : undefined
+                  sortBy: sortBy !== "newest" ? sortBy : undefined
                 });
               }}
             >
@@ -183,64 +182,65 @@ export function PropertyFilters({
           </div>
         </div>
 
-        {/* Fila de filtros organizados uniformemente */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {/* Filtro de precio */}
-          <div className="space-y-1.5">
-            <Label className="font-medium block text-sm">
-              <Euro className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
-              Precio {operationType === "Alquiler" ? "/mes" : ""}
+        {/* Sección de filtros principales */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {/* Precio mínimo */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-600 flex items-center">
+              <Euro className="w-4 h-4 mr-1" />
+              Min.
             </Label>
-            <div className="flex items-center gap-2">
-              <Select
-                value={priceMin?.toString() || "any"}
-                onValueChange={(value) => setPriceMin(value === "any" ? null : parseInt(value))}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Min precio" />
-                </SelectTrigger>
-                <SelectContent side="bottom">
-                  <SelectItem value="any">Cualquier precio</SelectItem>
-                  {priceOptions[operationType].map((option) => (
-                    <SelectItem key={`min-${option.value}`} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-gray-400">-</span>
-              <Select
-                value={priceMax?.toString() || "any"}
-                onValueChange={(value) => setPriceMax(value === "any" ? null : parseInt(value))}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Máx precio" />
-                </SelectTrigger>
-                <SelectContent side="bottom">
-                  <SelectItem value="any">Cualquier precio</SelectItem>
-                  {priceOptions[operationType].map((option) => (
-                    <SelectItem key={`max-${option.value}`} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={priceMin?.toString() || "any"}
+              onValueChange={(value) => setPriceMin(value === "any" ? null : parseInt(value))}
+            >
+              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
+                <SelectValue placeholder="Cualquiera" />
+              </SelectTrigger>
+              <SelectContent side="bottom">
+                <SelectItem value="any">Cualquiera</SelectItem>
+                {priceOptions[operationType].map((option) => (
+                  <SelectItem key={`min-${option.value}`} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Filtro de habitaciones */}
-          <div className="space-y-1.5">
-            <Label className="font-medium block text-sm">
-              <BedDouble className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+          {/* Precio máximo */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-600 flex items-center">
+              <Euro className="w-4 h-4 mr-1" />
+              Máx.
+            </Label>
+            <Select
+              value={priceMax?.toString() || "any"}
+              onValueChange={(value) => setPriceMax(value === "any" ? null : parseInt(value))}
+            >
+              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
+                <SelectValue placeholder="Cualquiera" />
+              </SelectTrigger>
+              <SelectContent side="bottom">
+                <SelectItem value="any">Cualquiera</SelectItem>
+                {priceOptions[operationType].map((option) => (
+                  <SelectItem key={`max-${option.value}`} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Habitaciones */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-600 flex items-center">
+              <BedDouble className="w-4 h-4 mr-1" />
               Habitaciones
             </Label>
             <Select>
-              <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder={
-                  roomsFilter.length > 0 
-                    ? `${roomsFilter.length} seleccionadas` 
-                    : "Habitaciones"
-                } />
+              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
+                <SelectValue placeholder="Cualquiera" />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
@@ -368,19 +368,15 @@ export function PropertyFilters({
             </Select>
           </div>
 
-          {/* Filtro de baños */}
-          <div className="space-y-1.5">
-            <Label className="font-medium block text-sm">
-              <Bath className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+          {/* Baños */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-600 flex items-center">
+              <Bath className="w-4 h-4 mr-1" />
               Baños
             </Label>
             <Select>
-              <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder={
-                  bathroomsFilter.length > 0 
-                    ? `${bathroomsFilter.length} seleccionados` 
-                    : "Baños"
-                } />
+              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
+                <SelectValue placeholder="Baños" />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[200px]">
                 <div className="space-y-2 px-1 py-2">
@@ -427,19 +423,15 @@ export function PropertyFilters({
             </Select>
           </div>
 
-          {/* Filtro de características */}
-          <div className="space-y-1.5">
-            <Label className="font-medium block text-sm">
-              <Building className="w-4 h-4 inline-block mr-1.5" strokeWidth={2} />
+          {/* Características */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-600 flex items-center">
+              <Building className="w-4 h-4 mr-1" />
               Características
             </Label>
             <Select>
-              <SelectTrigger className="h-9 text-sm w-full justify-start">
-                <SelectValue placeholder={
-                  selectedFeatures.length > 0 
-                    ? `${selectedFeatures.length} seleccionadas` 
-                    : "Seleccionar"
-                } />
+              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
+                <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
@@ -466,16 +458,16 @@ export function PropertyFilters({
             </Select>
           </div>
 
-          {/* Filtro de ordenación */}
-          <div className="space-y-1.5">
-            <Label className="font-medium block text-sm">
+          {/* Ordenar por */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-600">
               Ordenar por
             </Label>
             <Select
               value={sortBy}
               onValueChange={(value) => setSortBy(value)}
             >
-              <SelectTrigger className="h-9 text-sm w-full justify-start">
+              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
                 <SelectValue placeholder="Más recientes" />
               </SelectTrigger>
               <SelectContent side="bottom">
@@ -488,37 +480,37 @@ export function PropertyFilters({
           </div>
         </div>
 
-        {/* Mostrar etiquetas de características seleccionadas */}
+        {/* Etiquetas de características seleccionadas */}
         {selectedFeatures.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {selectedFeatures.map((featureId) => {
-              const feature = features.find(f => f.id === featureId);
-              return feature ? (
-                <Badge
-                  key={featureId}
-                  variant="outline"
-                  className="px-2 py-1 rounded-full bg-gray-50"
-                >
-                  {feature.label}
-                  <button
-                    className="ml-1 text-gray-500 hover:text-gray-700"
-                    onClick={() => toggleFeature(featureId)}
+          <div className="border-t pt-4">
+            <div className="flex flex-wrap gap-2">
+              {selectedFeatures.map((featureId) => {
+                const feature = features.find(f => f.id === featureId);
+                return feature ? (
+                  <Badge
+                    key={featureId}
+                    variant="secondary"
+                    className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 border-blue-200"
                   >
-                    ×
-                  </button>
-                </Badge>
-              ) : null;
-            })}
-            {selectedFeatures.length > 0 && (
+                    {feature.label}
+                    <button
+                      className="ml-1.5 text-blue-600 hover:text-blue-800"
+                      onClick={() => toggleFeature(featureId)}
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                ) : null;
+              })}
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-6 px-2 text-xs"
+                className="h-7 px-3 text-xs text-gray-500 hover:text-gray-700"
                 onClick={() => setSelectedFeatures([])}
               >
-                Limpiar filtros
+                Limpiar todo
               </Button>
-            )}
+            </div>
           </div>
         )}
       </div>
