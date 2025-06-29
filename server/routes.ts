@@ -133,63 +133,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create agent endpoint for team management
-  app.post("/api/agents", async (req, res) => {
+  // Create agent invitation endpoint for team management
+  app.post("/api/agents/invite", async (req, res) => {
     try {
-      console.log('Creating agent - Received data:', req.body);
+      console.log('Creating agent invitation - Received data:', req.body);
 
-      const agentData = {
-        name: req.body.name,
-        surname: req.body.surname,
-        email: req.body.email,
-        password: req.body.password,
-        agencyId: req.body.agencyId || null,
-        isAdmin: req.body.isAdmin || false,
-        phone: "Sin especificar",
-        description: null,
-        avatar: null,
-        influence_neighborhoods: null,
-        yearsOfExperience: null,
-        agencyName: null,
-        agencyPhone: null,
-        agencyEmail: null,
-        agencyAddress: null,
-        agencyDescription: null,
-        specialties: null,
-        certifications: null,
-        languages: null,
-        workingHours: null,
-        serviceAreas: null,
-        webSite: null,
-        linkedIn: null,
-        facebook: null,
-        instagram: null,
-        twitter: null
-      };
+      const { name, surname, email, agencyId } = req.body;
 
       // Check if email already exists
-      const existingUser = await storage.getUserByEmail(agentData.email);
+      const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ 
           message: "Ya existe un usuario con este correo electrónico" 
         });
       }
 
-      const newAgent = await storage.createUser(agentData);
-      console.log('Agent created successfully:', newAgent);
-
-      // Send welcome email
-      try {
-        await sendWelcomeEmail(newAgent.email, newAgent.name || 'Agente', true);
-        console.log('Welcome email sent to:', newAgent.email);
-      } catch (emailError) {
-        console.error('Error sending welcome email:', emailError);
+      // Get agency information if provided
+      let agencyName = 'Realista';
+      if (agencyId) {
+        const agency = await storage.getAgencyById(parseInt(agencyId));
+        if (agency) {
+          agencyName = agency.agencyName || 'Realista';
+        }
       }
 
-      res.status(201).json(newAgent);
+      // Send invitation email
+      try {
+        await sendWelcomeEmail(email, `${name} ${surname}`, true);
+        console.log('Invitation email sent to:', email);
+        
+        // Log the invitation for tracking (in a real app, you'd store this in a database)
+        console.log(`
+-----------------------------------
+ENVIANDO EMAIL DE INVITACIÓN:
+Para: ${email}
+Asunto: Invitación para unirse a ${agencyName} en Realista
+
+Contenido:
+Hola ${name} ${surname},
+
+Has sido invitado/a a unirte a ${agencyName} en la plataforma Realista.
+
+Para completar tu registro y acceder a tu cuenta, visita:
+${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&surname=${encodeURIComponent(surname)}
+
+¡Bienvenido/a al equipo!
+-----------------------------------
+`);
+
+        res.status(200).json({ 
+          message: "Invitación enviada exitosamente",
+          email: email,
+          name: `${name} ${surname}`
+        });
+      } catch (emailError) {
+        console.error('Error sending invitation email:', emailError);
+        res.status(500).json({ 
+          message: "Error enviando la invitación por email" 
+        });
+      }
     } catch (error) {
-      console.error('Error creating agent:', error);
-      res.status(400).json({ message: "Error al crear el agente" });
+      console.error('Error creating agent invitation:', error);
+      res.status(500).json({ 
+        message: "Error procesando la invitación del agente" 
+      });
     }
   });
 

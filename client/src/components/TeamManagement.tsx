@@ -50,20 +50,20 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     },
   });
 
-  // Create agent mutation
+  // Create agent invitation mutation
   const createAgentMutation = useMutation({
     mutationFn: async (agentData: CreateAgentFormData) => {
-      return apiRequest("/api/agents", "POST", {
-        ...agentData,
-        password: "defaultPassword123", // Default password, agent can change later
+      return apiRequest("/api/agents/invite", "POST", {
+        name: agentData.name,
+        surname: agentData.surname,
+        email: agentData.email,
         agencyId: agentData.agencyId || null,
-        isAdmin: false,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
-        title: "Agente creado exitosamente",
-        description: "El nuevo agente ha sido añadido al equipo.",
+        title: "Invitación enviada exitosamente",
+        description: `Se ha enviado una invitación a ${data.email} para unirse al equipo.`,
       });
       form.reset();
       setShowAddAgentForm(false);
@@ -71,8 +71,8 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Error al crear agente",
-        description: error.message || "No se pudo crear el agente.",
+        title: "Error al enviar invitación",
+        description: error.message || "No se pudo enviar la invitación.",
         variant: "destructive",
       });
     },
@@ -103,53 +103,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
         </Button>
       </div>
 
-      {/* Team Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total de Agentes
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">
-              +2 desde el mes pasado
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Agentes Activos
-            </CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">4</div>
-            <p className="text-xs text-muted-foreground">
-              80% del equipo
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Nuevos este mes
-            </CardTitle>
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2</div>
-            <p className="text-xs text-muted-foreground">
-              Incorporados recientemente
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      
 
       {/* Agent List */}
       <Card>
@@ -272,7 +226,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                   type="submit" 
                   disabled={!isFormValid() || createAgentMutation.isPending}
                 >
-                  {createAgentMutation.isPending ? "Creando..." : "Crear agente"}
+                  {createAgentMutation.isPending ? "Enviando invitación..." : "Enviar invitación"}
                 </Button>
               </div>
             </form>
