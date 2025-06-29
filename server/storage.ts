@@ -832,10 +832,7 @@ export class DatabaseStorage implements IStorage {
   async searchProperties(filters: any): Promise<Property[]> {
     console.log("Filtros recibidos:", filters);
 
-    // Construir la consulta base
-    let query = db.select().from(properties);
-    
-    // Collect all WHERE conditions to combine them properly
+    // Collect all WHERE conditions
     const whereConditions = [];
 
     // Aplicar filtros si están definidos
@@ -859,7 +856,7 @@ export class DatabaseStorage implements IStorage {
         // Si hay múltiples barrios, usamos OR
         if (neighborhoods.length > 1) {
           whereConditions.push(
-            or(...neighborhoods.map((n) => eq(properties.neighborhood, n)))
+            or(...neighborhoods.map((n: string) => eq(properties.neighborhood, n)))
           );
         } else {
           // Si es solo un barrio
@@ -900,23 +897,25 @@ export class DatabaseStorage implements IStorage {
         if (features.length > 0) {
           console.log(`Filtrando por características: ${features.join(", ")}`);
           // Para cada característica, verificamos que esté en el array de la propiedad
-          features.forEach((feature) => {
+          features.forEach((feature: string) => {
             whereConditions.push(
               sql`${properties.features} @> ARRAY[${feature}]::text[]`
             );
           });
         }
       }
-      
-      // Apply all WHERE conditions using AND
-      if (whereConditions.length > 0) {
-        console.log(`Aplicando ${whereConditions.length} condiciones de filtro con AND`);
-        query = query.where(and(...whereConditions));
-      }
-
-      // Ordenar por precio (por defecto)
-      query = query.orderBy(properties.price);
     }
+
+    // Build query with all conditions
+    let query = db.select().from(properties);
+    
+    if (whereConditions.length > 0) {
+      console.log(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
+      query = query.where(and(...whereConditions));
+    }
+
+    // Ordenar por precio (por defecto)
+    query = query.orderBy(properties.price);
 
     console.log("Ejecutando consulta de propiedades con filtros");
     const result = await query;
