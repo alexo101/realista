@@ -132,6 +132,9 @@ export default function NeighborhoodResultsPage() {
       return response.json();
     },
     enabled: activeTab === 'properties',
+    staleTime: 300000, // 5 minutes cache for fast tab switching
+    gcTime: 600000, // 10 minutes in cache
+    refetchOnWindowFocus: false,
   });
 
   // Consultas para agencias
@@ -145,6 +148,9 @@ export default function NeighborhoodResultsPage() {
       return response.json();
     },
     enabled: activeTab === 'agencies',
+    staleTime: 300000, // 5 minutes cache for fast tab switching
+    gcTime: 600000, // 10 minutes in cache
+    refetchOnWindowFocus: false,
   });
 
   // Consultas para agentes
@@ -158,6 +164,9 @@ export default function NeighborhoodResultsPage() {
       return response.json();
     },
     enabled: activeTab === 'agents',
+    staleTime: 300000, // 5 minutes cache for fast tab switching
+    gcTime: 600000, // 10 minutes in cache
+    refetchOnWindowFocus: false,
   });
   
   // Consulta para las valoraciones del barrio
@@ -167,9 +176,6 @@ export default function NeighborhoodResultsPage() {
       const params = new URLSearchParams();
       params.append('neighborhood', effectiveNeighborhood);
       
-      // Añadir un parámetro timestamp para evitar caché del navegador
-      params.append('_t', Date.now().toString());
-      
       const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch ratings for ${effectiveNeighborhood}`);
       const data = await response.json();
@@ -177,9 +183,11 @@ export default function NeighborhoodResultsPage() {
       return data;
     },
     enabled: !isBarcelonaPage && !isDistrictPage, // Siempre habilitado para barrios individuales
-    refetchOnWindowFocus: true, // Refrescar cuando la ventana obtiene el foco
-    refetchOnMount: true, // Refrescar cuando el componente se monta
-    refetchInterval: 2000 // Refresca cada 2 segundos siempre
+    staleTime: 600000, // 10 minutes cache - neighborhood ratings change rarely
+    gcTime: 1200000, // 20 minutes in cache
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   return (
