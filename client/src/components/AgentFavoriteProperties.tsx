@@ -9,6 +9,7 @@ interface Property {
   price: number;
   bedrooms: number;
   bathrooms: number;
+  size: number;
   superficie: number;
   images: string[];
   type: string;

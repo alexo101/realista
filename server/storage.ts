@@ -237,7 +237,7 @@ export class DatabaseStorage implements IStorage {
             sql`${agents.name} ILIKE ${`%${agentName}%`}`,
             sql`${agents.surname} ILIKE ${`%${agentName}%`}`
           )
-        );
+        ) as any;
       }
 
       // Filtrar por barrios si se proporcionan
@@ -252,7 +252,7 @@ export class DatabaseStorage implements IStorage {
             // Convertimos el array JavaScript a un array SQL
             sql`ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
           )
-        );
+        ) as any;
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
@@ -327,20 +327,12 @@ export class DatabaseStorage implements IStorage {
           surname: null,
           description: agency.agencyDescription,
           avatar: agency.agencyLogo,
-          agencyLogo: agency.agencyLogo,
           createdAt: agency.createdAt || new Date(),
-          influenceNeighborhoods: neighborhoods,
+          influence_neighborhoods: neighborhoods,
           yearsOfExperience: null,
           languagesSpoken: languages,
           agencyId: String(agency.adminAgentId),
           isAdmin: false,
-          agencyName: agency.agencyName,
-          agencyWebsite: agency.agencyWebsite,
-          agencySocialMedia: socialMedia,
-          agencyActiveSince: agency.agencyActiveSince,
-          agencyAddress: agency.agencyAddress,
-          isAgent: false,
-          isAgency: true,
         } as User;
       });
 
@@ -459,24 +451,11 @@ export class DatabaseStorage implements IStorage {
       description: agency.agencyDescription,
       avatar: agency.agencyLogo,
       createdAt: new Date(), // Fecha actual como aproximación si no existe
-      // Barrios de actuación de la agencia
-      influenceNeighborhoods: neighborhoods,
-      // Campos específicos de agentes que no son relevantes para agencias
+      influence_neighborhoods: neighborhoods,
       yearsOfExperience: null,
-      // Idiomas soportados
       languagesSpoken: languages,
-      // ID de administrador de la agencia (casteado a string para mantener compatibilidad)
       agencyId: String(agency.adminAgentId),
       isAdmin: false,
-      // Campos adicionales específicos de agencias para frontend
-      agencyName: agency.agencyName,
-      agencyWebsite: agency.agencyWebsite,
-      agencySocialMedia: socialMedia,
-      agencyActiveSince: agency.agencyActiveSince,
-      agencyAddress: agency.agencyAddress,
-      // Flag para diferenciar agentes de agencias
-      isAgent: false,
-      isAgency: true,
     } as User;
 
     return agentFormat;
