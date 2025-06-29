@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -263,171 +264,224 @@ export function SearchBar() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-4">
-        <div className="flex items-center gap-4 mb-4">
-          <Button
-            variant={searchType === 'rent' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => handleSearchTypeChange('rent')}
-          >
-            Alquilar
-          </Button>
-          <Button
-            variant={searchType === 'buy' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => handleSearchTypeChange('buy')}
-          >
-            Comprar
-          </Button>
-          <Button
-            variant={searchType === 'agencies' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => handleSearchTypeChange('agencies')}
-          >
-            Agencias
-          </Button>
-          <Button
-            variant={searchType === 'agents' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
-            onClick={() => handleSearchTypeChange('agents')}
-          >
-            Agentes
-          </Button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {/* Tab Navigation */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={searchType === 'rent' ? 'default' : 'ghost'}
+              size="sm"
+              className={searchType === 'rent' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}
+              onClick={() => handleSearchTypeChange('rent')}
+            >
+              Alquilar
+            </Button>
+            <Button
+              variant={searchType === 'buy' ? 'default' : 'ghost'}
+              size="sm"
+              className={searchType === 'buy' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}
+              onClick={() => handleSearchTypeChange('buy')}
+            >
+              Comprar
+            </Button>
+            <Button
+              variant={searchType === 'agencies' ? 'default' : 'ghost'}
+              size="sm"
+              className={searchType === 'agencies' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}
+              onClick={() => handleSearchTypeChange('agencies')}
+            >
+              Agencias
+            </Button>
+            <Button
+              variant={searchType === 'agents' ? 'default' : 'ghost'}
+              size="sm"
+              className={searchType === 'agents' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}
+              onClick={() => handleSearchTypeChange('agents')}
+            >
+              Agentes
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Buscador para Agencias y Agentes */}
+        {/* Search Content */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          {/* Search Input for Agencies and Agents */}
           {(searchType === 'agencies' || searchType === 'agents') && (
             <>
-              <div className="flex-1 relative" style={{ flex: 2 }}>
+              <div className="md:col-span-7">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {searchType === 'agencies' ? 'Buscar Agencia' : 'Buscar Agente'}
+                </label>
                 <AutocompleteSearch 
                   type={searchType as 'agencies' | 'agents'} 
                   placeholder={'Buscar ' + (searchType === 'agencies' ? 'agencias' : 'agentes') + ' por nombre...'}
                   onSelect={(result) => {
-                    // En vez de solo actualizar el estado, navegamos directamente al perfil
                     const targetPath = searchType === 'agencies'
                       ? '/agencias/' + result.id
                       : '/agentes/' + result.id;
-
                     console.log('SearchBar - navigating to profile:', targetPath);
-                    // Use pushState to navigate without full page refresh
                     window.history.pushState({}, '', targetPath);
-                    // Trigger a popstate event to let React Router handle the navigation
                     window.dispatchEvent(new PopStateEvent('popstate'));
                   }}
                 />
               </div>
 
-              {/* Selector de barrio para Agencias y Agentes */}
-              <div className="flex-1">
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Barrio
+                </label>
                 <Button
                   variant="outline"
-                  className="w-full justify-start h-auto py-2 px-3"
+                  className="w-full justify-start h-10 px-3 text-sm"
                   onClick={() => setIsNeighborhoodOpen(true)}
                 >
                   {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-1.5 py-0.5 text-xs">
-                          {n}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-1 overflow-hidden">
+                      <span className="bg-primary/10 rounded px-2 py-0.5 text-xs truncate">
+                        {selectedNeighborhoods[0]}
+                      </span>
+                      {selectedNeighborhoods.length > 1 && (
+                        <span className="text-xs text-gray-500">+{selectedNeighborhoods.length - 1}</span>
+                      )}
                     </div>
                   ) : (
-                    "Selecciona un barrio"
+                    <span className="text-gray-500">Seleccionar barrio</span>
                   )}
                 </Button>
               </div>
             </>
           )}
 
-          {/* Filtros para Alquilar y Comprar */}
+          {/* Property Search Filters */}
           {(searchType === 'buy' || searchType === 'rent') && (
             <>
-              {/* 3. Selección de barrio */}
-              <div className="flex-1">
+              <div className="md:col-span-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ubicación
+                </label>
                 <Button
                   variant="outline"
-                  className="w-full justify-start h-auto py-2 px-3"
+                  className="w-full justify-start h-10 px-3 text-sm"
                   onClick={() => setIsNeighborhoodOpen(true)}
                 >
                   {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-1.5 py-0.5 text-xs">
-                          {n}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-1 overflow-hidden">
+                      <span className="bg-primary/10 rounded px-2 py-0.5 text-xs truncate">
+                        {selectedNeighborhoods[0]}
+                      </span>
+                      {selectedNeighborhoods.length > 1 && (
+                        <span className="text-xs text-gray-500">+{selectedNeighborhoods.length - 1}</span>
+                      )}
                     </div>
                   ) : (
-                    "Selecciona un barrio"
+                    <span className="text-gray-500">Seleccionar barrio</span>
                   )}
                 </Button>
+              </div>
+
+              <div className="md:col-span-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filtros adicionales
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                  >
+                    Precio
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                  >
+                    Habitaciones
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                  >
+                    Más filtros
+                  </Button>
+                </div>
               </div>
             </>
           )}
 
-          <Button
-            onClick={handleSearch}
-            className="flex items-center gap-2 px-6"
-          >
-            <Search className="h-4 w-4" /> Buscar
-          </Button>
+          <div className="md:col-span-2">
+            <Button
+              onClick={handleSearch}
+              className="w-full h-10 flex items-center justify-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">Buscar</span>
+            </Button>
+          </div>
         </div>
-
-        {/* Review buttons have been removed */}
       </div>
 
       {/* Dialog for neighborhood selection */}
       <Dialog open={isNeighborhoodOpen} onOpenChange={setIsNeighborhoodOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogTitle className="text-lg font-semibold">SELECCIONA UN BARRIO</DialogTitle>
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
+          <DialogTitle className="text-xl font-semibold text-gray-900">
+            Seleccionar Ubicación
+          </DialogTitle>
+          <DialogDescription className="text-sm text-gray-600">
+            Elige uno o varios barrios de Barcelona para filtrar los resultados
+          </DialogDescription>
           <div className="space-y-4">
-            <Input
-              placeholder="Buscar barrio..."
-              value={neighborhoodSearch}
-              onChange={(e) => setNeighborhoodSearch(e.target.value)}
-              onKeyDown={handleNeighborhoodKeyDown}
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar barrio o distrito..."
+                value={neighborhoodSearch}
+                onChange={(e) => setNeighborhoodSearch(e.target.value)}
+                onKeyDown={handleNeighborhoodKeyDown}
+                className="pl-10 h-12"
+              />
+            </div>
 
             {selectedNeighborhoods.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500 mb-2">BARRIO SELECCIONADO</p>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-gray-700 mb-3">Ubicaciones seleccionadas</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedNeighborhoods.map(neighborhood => (
                     <span
                       key={neighborhood}
-                      className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
+                      className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-sm flex items-center gap-2 cursor-pointer hover:bg-red-50 hover:border-red-200 transition-colors"
                       onClick={() => toggleNeighborhood(neighborhood)}
                     >
                       {neighborhood}
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 text-gray-400 hover:text-red-500" />
                     </span>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="max-h-[300px] overflow-auto">
+            <div className="border rounded-lg max-h-[400px] overflow-auto">
               {/* Barcelona option (for no filter) */}
-              <div className="mb-4">
+              <div className="border-b border-gray-100">
                 <Button
                   variant="ghost"
-                  className={"w-full justify-start " + (selectedNeighborhoods.includes("Barcelona") ? "bg-primary/10" : "")}
+                  className={"w-full justify-start h-12 px-4 rounded-none " + (selectedNeighborhoods.includes("Barcelona") ? "bg-primary/10 text-primary" : "hover:bg-gray-50")}
                   onClick={() => toggleNeighborhood("Barcelona")}
                 >
-                  Barcelona (Todos los barrios)
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-primary rounded-full opacity-60"></div>
+                    <span className="font-medium">Barcelona (Toda la ciudad)</span>
+                  </div>
                 </Button>
               </div>
 
               {/* Group neighborhoods by district */}
-              {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => {
-                // Filter neighborhoods in this district
+              {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district, districtIndex) => {
                 const filteredNeighborhoodsInDistrict = district.neighborhoods.filter(n =>
                   n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
                 );
 
-                // Show distrito even if no neighborhoods match (for search)
                 const showDistrict = neighborhoodSearch === "" || 
                   district.district.toLowerCase().includes(neighborhoodSearch.toLowerCase()) ||
                   filteredNeighborhoodsInDistrict.length > 0;
@@ -435,21 +489,25 @@ export function SearchBar() {
                 if (!showDistrict) return null;
 
                 return (
-                  <div key={district.district} className="mb-4">
-                    {/* Make distrito selectable */}
+                  <div key={district.district} className={districtIndex > 0 ? "border-t border-gray-100" : ""}>
+                    {/* District header */}
                     <Button
                       variant="ghost"
-                      className={"w-full justify-start " + (selectedNeighborhoods.includes(district.district) ? "bg-primary/10" : "")}
+                      className={"w-full justify-start h-12 px-4 rounded-none font-medium " + (selectedNeighborhoods.includes(district.district) ? "bg-primary/10 text-primary" : "hover:bg-gray-50")}
                       onClick={() => toggleNeighborhood(district.district)}
                     >
-                      {district.district}
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                        <span>{district.district}</span>
+                      </div>
                     </Button>
 
+                    {/* Neighborhoods */}
                     {filteredNeighborhoodsInDistrict.length > 0 && filteredNeighborhoodsInDistrict.map(neighborhood => (
                       <Button
                         key={neighborhood}
                         variant="ghost"
-                        className={"w-full justify-start pl-6 " + (selectedNeighborhoods.includes(neighborhood) ? "bg-primary/10" : "")}
+                        className={"w-full justify-start h-10 px-4 pl-10 rounded-none text-sm " + (selectedNeighborhoods.includes(neighborhood) ? "bg-primary/5 text-primary" : "hover:bg-gray-50 text-gray-600")}
                         onClick={() => toggleNeighborhood(neighborhood)}
                       >
                         {neighborhood}
@@ -460,16 +518,23 @@ export function SearchBar() {
               })}
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex justify-between pt-4 border-t">
+              <Button 
+                variant="ghost"
+                onClick={() => {
+                  setSelectedNeighborhoods([]);
+                  setNeighborhoodSearch('');
+                }}
+                disabled={selectedNeighborhoods.length === 0}
+              >
+                Limpiar selección
+              </Button>
               <Button 
                 onClick={() => {
                   setIsNeighborhoodOpen(false);
-                  // No ejecutar búsqueda automáticamente
                 }}
-                className="ml-auto"
-                disabled={selectedNeighborhoods.length === 0}
               >
-                Seleccionar
+                Aplicar filtros
               </Button>
             </div>
           </div>
