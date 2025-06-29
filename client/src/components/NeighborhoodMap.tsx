@@ -121,17 +121,19 @@ export default function NeighborhoodMap({
         baseCoords[1] + randomOffset()
       ];
 
-      // Create custom icon based on property type
+      // Create custom house icon based on property type
       const icon = L.divIcon({
         className: 'custom-property-marker',
         html: `
-          <div class="property-marker ${property.operationType.toLowerCase()}">
-            <div class="marker-price">€${property.price.toLocaleString()}</div>
-            <div class="marker-type">${property.type}</div>
+          <div class="house-marker ${property.operationType.toLowerCase()}">
+            <svg class="house-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+            <div class="price-badge">€${property.price.toLocaleString()}</div>
           </div>
         `,
-        iconSize: [120, 60],
-        iconAnchor: [60, 60],
+        iconSize: [40, 50],
+        iconAnchor: [20, 50],
       });
 
       const marker = L.marker(coords, { icon })
@@ -146,6 +148,9 @@ export default function NeighborhoodMap({
             ${property.bedrooms ? `<p class="text-xs"><strong>Habitaciones:</strong> ${property.bedrooms}</p>` : ''}
             ${property.bathrooms ? `<p class="text-xs"><strong>Baños:</strong> ${property.bathrooms}</p>` : ''}
             ${property.superficie ? `<p class="text-xs"><strong>Superficie:</strong> ${property.superficie}m²</p>` : ''}
+            <button onclick="window.location.href='/property/${property.id}'" class="property-details-btn">
+              Ver detalles
+            </button>
           </div>
         `)
         .on('click', () => {

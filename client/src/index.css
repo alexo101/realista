@@ -13,47 +13,49 @@
   border: none !important;
 }
 
-.property-marker {
-  background: white;
-  border: 2px solid #3b82f6;
-  border-radius: 8px;
-  padding: 4px 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  font-size: 10px;
-  text-align: center;
-  min-width: 100px;
+.house-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
 }
 
-.property-marker::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #3b82f6;
+.house-icon {
+  width: 24px;
+  height: 24px;
+  color: #3b82f6;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
-.property-marker.venta {
+.house-marker.venta .house-icon {
+  color: #ef4444;
+}
+
+.house-marker.alquiler .house-icon {
+  color: #3b82f6;
+}
+
+.price-badge {
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  color: #1f2937;
+  margin-top: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  white-space: nowrap;
+}
+
+.house-marker.venta .price-badge {
   border-color: #ef4444;
   background: #fee2e2;
 }
 
-.property-marker.venta::after {
-  border-top-color: #ef4444;
-}
-
-.property-marker.alquiler {
+.house-marker.alquiler .price-badge {
   border-color: #3b82f6;
   background: #dbeafe;
-}
-
-.property-marker.alquiler::after {
-  border-top-color: #3b82f6;
 }
 
 .marker-price {
@@ -77,6 +79,24 @@
 
 .property-popup p {
   margin: 4px 0;
+}
+
+.property-details-btn {
+  width: 100%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background-color 0.2s;
+}
+
+.property-details-btn:hover {
+  background: #2563eb;
 }
 
 @layer base {
