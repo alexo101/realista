@@ -52,10 +52,10 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
 
   // Create event mutation
   const createEventMutation = useMutation({
-    mutationFn: (eventData: any) => apiRequest("/api/agent-events", {
-      method: "POST",
-      body: JSON.stringify(eventData)
-    }),
+    mutationFn: async (eventData: any) => {
+      const response = await apiRequest("POST", "/api/agent-events", eventData);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
       setShowEventForm(false);
@@ -64,10 +64,10 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
 
   // Update event mutation
   const updateEventMutation = useMutation({
-    mutationFn: ({ id, ...eventData }: any) => apiRequest(`/api/agent-events/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(eventData)
-    }),
+    mutationFn: async ({ id, ...eventData }: any) => {
+      const response = await apiRequest("PATCH", `/api/agent-events/${id}`, eventData);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
       setSelectedEvent(null);
@@ -77,9 +77,10 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
 
   // Delete event mutation
   const deleteEventMutation = useMutation({
-    mutationFn: (eventId: number) => apiRequest(`/api/agent-events/${eventId}`, {
-      method: "DELETE"
-    }),
+    mutationFn: async (eventId: number) => {
+      const response = await apiRequest("DELETE", `/api/agent-events/${eventId}`);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
     }
