@@ -890,35 +890,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
         
         // Initialize array to store neighborhood values
-        let neighborhoodsArray = [];
+        let neighborhoodsArray: string[] = [];
         
-        // Handle PostgreSQL array format: "{\"La Sagrera\",\"Sant Andreu del Palomar\"}"
-        if (rawNeighborhoods && typeof rawNeighborhoods === 'string') {
-          try {
-            // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
-            const cleaned = rawNeighborhoods.replace(/^\{|\}$/g, '');
-            
-            // Check if it's wrapped in quotes and contains commas
-            if (cleaned.includes(',') && cleaned.includes('"')) {
-              // Split by "," but respect quotes
-              neighborhoodsArray = cleaned.split(/","|,/)
-                .map((n: string) => n.replace(/^"|"$/g, '').trim())
-                .filter(Boolean);
-            } else if (cleaned.includes(',')) {
-              // Simple comma split if no quotes
-              neighborhoodsArray = cleaned.split(',').map((n: string) => n.trim()).filter(Boolean);
-            } else {
-              // Single value
-              neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
+        // Handle different neighborhood formats
+        if (rawNeighborhoods) {
+          if (Array.isArray(rawNeighborhoods)) {
+            neighborhoodsArray = rawNeighborhoods;
+          } else if (typeof rawNeighborhoods === 'string') {
+            try {
+              // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
+              const cleaned = rawNeighborhoods.replace(/^\{|\}$/g, '');
+              
+              // Check if it's wrapped in quotes and contains commas
+              if (cleaned.includes(',') && cleaned.includes('"')) {
+                // Split by "," but respect quotes
+                neighborhoodsArray = cleaned.split(/","|,/)
+                  .map((n: string) => n.replace(/^"|"$/g, '').trim())
+                  .filter(Boolean);
+              } else if (cleaned.includes(',')) {
+                // Simple comma split if no quotes
+                neighborhoodsArray = cleaned.split(',').map((n: string) => n.trim()).filter(Boolean);
+              } else {
+                // Single value
+                neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
+              }
+              
+              console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
+            } catch (e: any) {
+              console.log('- Failed to parse neighborhoods:', e.message);
+              neighborhoodsArray = [];
             }
-            
-            console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
-          } catch (e: any) {
-            console.log('- Failed to parse neighborhoods:', e.message);
-            neighborhoodsArray = [];
           }
-        } else if (Array.isArray(rawNeighborhoods)) {
-          neighborhoodsArray = rawNeighborhoods;
         }
         
         // Set field to standardized name
