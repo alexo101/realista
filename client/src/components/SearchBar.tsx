@@ -345,16 +345,16 @@ export function SearchBar() {
           {(searchType === 'buy' || searchType === 'rent') && (
             <>
               {/* 3. Selección de barrio */}
-              <div className="flex-1">
+              <div className="flex-none w-1/3">
                 <Button
                   variant="outline"
-                  className="w-full justify-start h-auto py-2 px-3"
+                  className="w-full justify-start h-auto py-3 px-4 border-2 border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/10 font-semibold shadow-md hover:shadow-lg transition-all duration-200"
                   onClick={() => setIsNeighborhoodOpen(true)}
                 >
                   {selectedNeighborhoods.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-1.5 py-0.5 text-xs">
+                        <span key={n} className="bg-primary/20 rounded px-1.5 py-0.5 text-xs font-medium">
                           {n}
                         </span>
                       ))}
