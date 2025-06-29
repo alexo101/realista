@@ -2,10 +2,11 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
+import { PropertyMap } from "@/components/PropertyMap";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
-import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown } from "lucide-react";
+import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -42,6 +43,9 @@ export default function NeighborhoodResultsPage() {
   // Filtros para cada pestaña
   const [agenciesFilter, setAgenciesFilter] = useState<string>("default");
   const [agentsFilter, setAgentsFilter] = useState<string>("default");
+  
+  // Estado para el toggle de vista (lista/mapa)
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   
   // Filtros específicos para propiedades
   const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
@@ -263,38 +267,96 @@ export default function NeighborhoodResultsPage() {
                 defaultBedrooms={defaultBedrooms}
                 defaultBedroomsList={defaultBedroomsList}
               />
-              <PropertyResults 
-                results={useMemo(() => {
-                  if (!properties) return [];
-                  
-                  const sortedProperties = [...properties];
-                  
-                  // Use the sortBy from propertyFilters instead of the removed propertiesFilter
-                  switch (propertyFilters.sortBy) {
-                    case 'price-asc':
-                      return sortedProperties.sort((a, b) => a.price - b.price);
-                    case 'newest':
-                      return sortedProperties.sort((a, b) => 
-                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                      );
-                    case 'price-m2':
-                      return sortedProperties.sort((a, b) => {
-                        const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
-                        const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
-                        return pricePerM2A - pricePerM2B;
-                      });
-                    case 'price-drop':
-                      return sortedProperties.sort((a, b) => {
-                        const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
-                        const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
-                        return dropB - dropA; // Mayor a menor
-                      });
-                    default:
-                      return sortedProperties;
-                  }
-                }, [properties, propertyFilters.sortBy]) || []} 
-                isLoading={propertiesLoading} 
-              />
+              
+              {/* Botones de vista (Lista/Mapa) al mismo nivel que Comprar/Alquilar */}
+              <div className="flex items-center gap-4 mb-6">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  className="rounded-none px-8"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Vista Lista
+                </Button>
+                <Button
+                  variant={viewMode === 'map' ? 'default' : 'ghost'}
+                  className="rounded-none px-8"
+                  onClick={() => setViewMode('map')}
+                >
+                  <Map className="h-4 w-4 mr-2" />
+                  Vista Mapa
+                </Button>
+              </div>
+
+              {/* Contenido condicional basado en el modo de vista */}
+              {viewMode === 'list' ? (
+                <PropertyResults 
+                  results={useMemo(() => {
+                    if (!properties) return [];
+                    
+                    const sortedProperties = [...properties];
+                    
+                    // Use the sortBy from propertyFilters instead of the removed propertiesFilter
+                    switch (propertyFilters.sortBy) {
+                      case 'price-asc':
+                        return sortedProperties.sort((a, b) => a.price - b.price);
+                      case 'newest':
+                        return sortedProperties.sort((a, b) => 
+                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        );
+                      case 'price-m2':
+                        return sortedProperties.sort((a, b) => {
+                          const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
+                          const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
+                          return pricePerM2A - pricePerM2B;
+                        });
+                      case 'price-drop':
+                        return sortedProperties.sort((a, b) => {
+                          const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
+                          const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
+                          return dropB - dropA; // Mayor a menor
+                        });
+                      default:
+                        return sortedProperties;
+                    }
+                  }, [properties, propertyFilters.sortBy]) || []} 
+                  isLoading={propertiesLoading} 
+                />
+              ) : (
+                <PropertyMap
+                  properties={useMemo(() => {
+                    if (!properties) return [];
+                    
+                    const sortedProperties = [...properties];
+                    
+                    // Apply the same sorting logic as the list view
+                    switch (propertyFilters.sortBy) {
+                      case 'price-asc':
+                        return sortedProperties.sort((a, b) => a.price - b.price);
+                      case 'newest':
+                        return sortedProperties.sort((a, b) => 
+                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        );
+                      case 'price-m2':
+                        return sortedProperties.sort((a, b) => {
+                          const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
+                          const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
+                          return pricePerM2A - pricePerM2B;
+                        });
+                      case 'price-drop':
+                        return sortedProperties.sort((a, b) => {
+                          const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
+                          const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
+                          return dropB - dropA; // Mayor a menor
+                        });
+                      default:
+                        return sortedProperties;
+                    }
+                  }, [properties, propertyFilters.sortBy]) || []}
+                  neighborhood={decodedNeighborhood}
+                  className="w-full"
+                />
+              )}
             </TabsContent>
 
             {/* Contenido de pestaña: Agencias */}

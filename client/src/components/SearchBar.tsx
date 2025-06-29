@@ -262,8 +262,8 @@ export function SearchBar() {
   };
 
   return (
-    <div className="flex justify-center">
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4">
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-lg p-4">
         <div className="flex items-center gap-4 mb-4">
           <Button
             variant={searchType === 'rent' ? 'default' : 'ghost'}
@@ -326,9 +326,9 @@ export function SearchBar() {
                   onClick={() => setIsNeighborhoodOpen(true)}
                 >
                   {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-2">
                       {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-1.5 py-0.5 text-xs">
+                        <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
                           {n}
                         </span>
                       ))}
@@ -345,16 +345,16 @@ export function SearchBar() {
           {(searchType === 'buy' || searchType === 'rent') && (
             <>
               {/* 3. Selección de barrio */}
-              <div className="flex-none w-1/3">
+              <div className="flex-1">
                 <Button
                   variant="outline"
-                  className="w-full justify-start h-auto py-3 px-4 border-2 border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/10 font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+                  className="w-full justify-start h-auto py-2 px-3"
                   onClick={() => setIsNeighborhoodOpen(true)}
                 >
                   {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-2">
                       {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/20 rounded px-1.5 py-0.5 text-xs font-medium">
+                        <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
                           {n}
                         </span>
                       ))}
@@ -475,6 +475,8 @@ export function SearchBar() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Review dialog components have been removed */}
     </div>
   );
 }
