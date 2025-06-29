@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user = {
             id: client.id,
             email: client.email,
-            password: client.password,
+            password: client.password ?? "",
             name: client.name,
             surname: client.surname,
             description: null,
@@ -222,8 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             yearsOfExperience: null,
             languagesSpoken: null,
             agencyId: null,
-            isAdmin: false,
-            phone: client.phone
+            isAdmin: false
           };
           isClient = true;
         }
@@ -317,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (mostViewed) {
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
         // Usamos el tipo de operación para filtrar las propiedades más vistas
-        properties = await storage.getMostViewedProperties(limit, operationType);
+        properties = await storage.getMostViewedProperties(limit);
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
         properties = await storage.getPropertiesByAgent(agentId);
@@ -883,10 +882,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
-        console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
+        console.log(`Processing agency ${agency.id} (${agency.name}):`);
         
         // Get the agency neighborhoods from the standardized field
-        const rawNeighborhoods = agency.agencyInfluenceNeighborhoods;
+        const rawNeighborhoods = agency.influence_neighborhoods;
         console.log('- Original neighborhoods:', rawNeighborhoods);
         console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
         
@@ -914,7 +913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
-          } catch (e) {
+          } catch (e: any) {
             console.log('- Failed to parse neighborhoods:', e.message);
             neighborhoodsArray = [];
           }
@@ -923,9 +922,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Set field to standardized name
-        agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
+        (agency as any).agencyInfluenceNeighborhoods = neighborhoodsArray;
         
-        console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
+        console.log('- Final neighborhoods array:', (agency as any).agencyInfluenceNeighborhoods);
         return agency;
       });
       
