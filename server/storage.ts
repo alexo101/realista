@@ -148,6 +148,11 @@ export interface IStorage {
   getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]>;
   updateAgentEvent(id: number, eventData: Partial<InsertAgentEvent>): Promise<AgentEvent>;
   deleteAgentEvent(id: number): Promise<void>;
+
+  // Agent favorite properties
+  getFavoritePropertiesByAgent(agentId: number): Promise<Property[]>;
+  toggleAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean>;
+  isAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
