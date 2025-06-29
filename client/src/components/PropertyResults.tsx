@@ -58,7 +58,9 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
       return {};
     },
     enabled: !!user?.id && results.length > 0,
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 300000, // Cache for 5 minutes
+    gcTime: 600000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false
   });
 
   // Mutation to toggle favorite status

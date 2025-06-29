@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { cache } from "./cache";
 import {
   eq,
   sql,
@@ -738,6 +739,16 @@ export class DatabaseStorage implements IStorage {
     operationType?: string
   ): Promise<Property[]> {
     try {
+      // Check cache first to improve performance
+      const cacheKey = `most_viewed_properties_${limit}_${operationType || 'all'}`;
+      const cached = cache.get<Property[]>(cacheKey);
+      if (cached) {
+        console.log(`Returning cached most viewed properties for ${operationType || 'all'}`);
+        return cached;
+      }
+
+      console.log(`Database query for most viewed properties: ${operationType || 'all'}`);
+      
       // Construir la consulta base con campos específicos para mejor rendimiento
       let query = db
         .select({
@@ -788,11 +799,16 @@ export class DatabaseStorage implements IStorage {
       const results = await query.limit(limit);
       
       // Procesar los arrays JSON
-      return results.map((property) => ({
+      const processedResults = results.map((property) => ({
         ...property,
         images: this.parseArrayField(property.images),
         features: this.parseArrayField(property.features),
       }));
+
+      // Cache results for 5 minutes to dramatically improve loading performance
+      cache.set(cacheKey, processedResults, 300);
+      
+      return processedResults;
     } catch (error) {
       console.error('Error al obtener propiedades más vistas:', error);
       return [];

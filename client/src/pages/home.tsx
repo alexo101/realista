@@ -15,7 +15,10 @@ export default function Home() {
         throw new Error("Error al cargar las propiedades más vistas en venta");
       }
       return response.json();
-    }
+    },
+    staleTime: 300000, // 5 minutes cache
+    gcTime: 600000, // 10 minutes in cache
+    refetchOnWindowFocus: false,
   });
 
   // Consulta para propiedades más vistas en alquiler
@@ -27,7 +30,10 @@ export default function Home() {
         throw new Error("Error al cargar las propiedades más vistas en alquiler");
       }
       return response.json();
-    }
+    },
+    staleTime: 300000, // 5 minutes cache
+    gcTime: 600000, // 10 minutes in cache
+    refetchOnWindowFocus: false,
   });
 
   const isLoading = isLoadingSales || isLoadingRental;
