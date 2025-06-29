@@ -256,7 +256,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
-      dbQuery = dbQuery.limit(10);
+      dbQuery = dbQuery.limit(10) as any;
 
       console.log(`Ejecutando búsqueda de agentes...`);
       const agentResults = await dbQuery;
@@ -285,7 +285,7 @@ export class DatabaseStorage implements IStorage {
       if (agencyName && agencyName.trim() !== "") {
         dbQuery = dbQuery.where(
           sql`${agencies.agencyName} ILIKE ${`%${agencyName}%`}`
-        );
+        ) as any;
       }
 
       // Filtrar por barrios si se proporcionan
@@ -296,11 +296,11 @@ export class DatabaseStorage implements IStorage {
         // Use the correct column name from the schema
         dbQuery = dbQuery.where(
           sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
-        );
+        ) as any;
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
-      dbQuery = dbQuery.limit(10);
+      dbQuery = dbQuery.limit(10) as any;
 
       // Ejecutamos la consulta
       console.log(`Ejecutando búsqueda de agencias...`);
@@ -734,7 +734,7 @@ export class DatabaseStorage implements IStorage {
         console.log(
           `Filtrando propiedades más vistas por tipo de operación: ${operationType}`,
         );
-        query = query.where(eq(properties.operationType, operationType));
+        query = query.where(eq(properties.operationType, operationType)) as any;
       }
 
       // Aplicar el límite y ejecutar la consulta
@@ -898,11 +898,11 @@ export class DatabaseStorage implements IStorage {
     
     if (whereConditions.length > 0) {
       console.log(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
-      query = query.where(and(...whereConditions));
+      query = query.where(and(...whereConditions)) as any;
     }
 
     // Ordenar por precio (por defecto)
-    query = query.orderBy(properties.price);
+    query = query.orderBy(properties.price) as any;
 
     console.log("Ejecutando consulta de propiedades con filtros");
     const result = await query;
