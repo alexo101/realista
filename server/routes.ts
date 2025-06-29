@@ -893,7 +893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let neighborhoodsArray = [];
         
         // Handle PostgreSQL array format: "{\"La Sagrera\",\"Sant Andreu del Palomar\"}"
-        if (typeof rawNeighborhoods === 'string') {
+        if (rawNeighborhoods && typeof rawNeighborhoods === 'string') {
           try {
             // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
             const cleaned = rawNeighborhoods.replace(/^\{|\}$/g, '');
@@ -902,11 +902,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (cleaned.includes(',') && cleaned.includes('"')) {
               // Split by "," but respect quotes
               neighborhoodsArray = cleaned.split(/","|,/)
-                .map(n => n.replace(/^"|"$/g, '').trim())
+                .map((n: string) => n.replace(/^"|"$/g, '').trim())
                 .filter(Boolean);
             } else if (cleaned.includes(',')) {
               // Simple comma split if no quotes
-              neighborhoodsArray = cleaned.split(',').map(n => n.trim()).filter(Boolean);
+              neighborhoodsArray = cleaned.split(',').map((n: string) => n.trim()).filter(Boolean);
             } else {
               // Single value
               neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
@@ -1490,8 +1490,8 @@ Gracias!
         } else if (review.targetType === 'agency') {
           const agency = await storage.getAgencyById(review.targetId);
           if (agency) {
-            targetName = agency.agencyName || '';
-            targetAvatar = agency.agencyLogo || '';
+            targetName = agency.name || '';
+            targetAvatar = agency.avatar || '';
           }
         }
         
@@ -1616,9 +1616,9 @@ Gracias!
       // Si se proporciona adminAgentId, obtener solo las agencias de ese administrador
       const agencies = adminAgentId 
         ? await storage.getAgenciesByAdmin(adminAgentId)
-        : await storage.getAgenciesByAdmin(req.user?.id || 0);
+        : await storage.getAgenciesByAdmin((req as any).user?.id || 0);
 
-      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || req.user?.id}`);
+      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || (req as any).user?.id}`);
       res.json(agencies);
     } catch (error) {
       console.error('Error fetching agencies:', error);
@@ -1629,13 +1629,13 @@ Gracias!
   app.post("/api/agencies", async (req, res) => {
     try {
       console.log('Creating agency with data:', req.body);
-      if (!req.body.adminAgentId && !req.user?.id) {
+      if (!req.body.adminAgentId && !(req as any).user?.id) {
         return res.status(400).json({ message: "Missing adminAgentId" });
       }
 
       const agencyData = {
         ...req.body,
-        adminAgentId: req.body.adminAgentId || req.user?.id
+        adminAgentId: req.body.adminAgentId || (req as any).user?.id
       };
 
       const result = await storage.createAgency(agencyData);
