@@ -834,6 +834,9 @@ export class DatabaseStorage implements IStorage {
 
     // Construir la consulta base
     let query = db.select().from(properties);
+    
+    // Collect all WHERE conditions to combine them properly
+    const whereConditions = [];
 
     // Aplicar filtros si están definidos
     if (filters) {
@@ -842,9 +845,7 @@ export class DatabaseStorage implements IStorage {
         console.log(
           `Filtrando por tipo de operación: ${filters.operationType}`,
         );
-        query = query.where(
-          eq(properties.operationType, filters.operationType),
-        );
+        whereConditions.push(eq(properties.operationType, filters.operationType));
       }
 
       // Filtrar por barrio(s)
@@ -857,39 +858,37 @@ export class DatabaseStorage implements IStorage {
 
         // Si hay múltiples barrios, usamos OR
         if (neighborhoods.length > 1) {
-          query = query.where(
-            or(...neighborhoods.map((n) => eq(properties.neighborhood, n))),
+          whereConditions.push(
+            or(...neighborhoods.map((n) => eq(properties.neighborhood, n)))
           );
         } else {
           // Si es solo un barrio
-          query = query.where(eq(properties.neighborhood, neighborhoods[0]));
+          whereConditions.push(eq(properties.neighborhood, neighborhoods[0]));
         }
       }
 
       // Filtrar por precio mínimo si está definido
       if (filters.priceMin !== undefined && filters.priceMin !== null) {
         console.log(`Filtrando por precio mínimo: ${filters.priceMin}`);
-        query = query.where(gte(properties.price, Number(filters.priceMin)));
+        whereConditions.push(gte(properties.price, Number(filters.priceMin)));
       }
 
       // Filtrar por precio máximo si está definido
       if (filters.priceMax !== undefined && filters.priceMax !== null) {
         console.log(`Filtrando por precio máximo: ${filters.priceMax}`);
-        query = query.where(lte(properties.price, Number(filters.priceMax)));
+        whereConditions.push(lte(properties.price, Number(filters.priceMax)));
       }
 
       // Filtrar por número de habitaciones si está definido
       if (filters.bedrooms !== undefined && filters.bedrooms !== null) {
         console.log(`Filtrando por habitaciones: ${filters.bedrooms}`);
-        query = query.where(gte(properties.bedrooms, Number(filters.bedrooms)));
+        whereConditions.push(gte(properties.bedrooms, Number(filters.bedrooms)));
       }
 
       // Filtrar por número de baños si está definido
       if (filters.bathrooms !== undefined && filters.bathrooms !== null) {
         console.log(`Filtrando por baños: ${filters.bathrooms}`);
-        query = query.where(
-          gte(properties.bathrooms, Number(filters.bathrooms)),
-        );
+        whereConditions.push(gte(properties.bathrooms, Number(filters.bathrooms)));
       }
 
       // Filtrar por características si están definidas
@@ -902,12 +901,17 @@ export class DatabaseStorage implements IStorage {
           console.log(`Filtrando por características: ${features.join(", ")}`);
           // Para cada característica, verificamos que esté en el array de la propiedad
           features.forEach((feature) => {
-            // Esto asume que 'features' es un array en PostgreSQL
-            query = query.where(
-              sql`${properties.features} @> ARRAY[${feature}]::text[]`,
+            whereConditions.push(
+              sql`${properties.features} @> ARRAY[${feature}]::text[]`
             );
           });
         }
+      }
+      
+      // Apply all WHERE conditions using AND
+      if (whereConditions.length > 0) {
+        console.log(`Aplicando ${whereConditions.length} condiciones de filtro con AND`);
+        query = query.where(and(...whereConditions));
       }
 
       // Ordenar por precio (por defecto)
@@ -915,7 +919,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     console.log("Ejecutando consulta de propiedades con filtros");
-    return await query;
+    const result = await query;
+    console.log(`Consulta completada. Encontradas ${result.length} propiedades que coinciden con los filtros.`);
+    
+    return result;
   }
 
   async createProperty(property: InsertProperty): Promise<Property> {
