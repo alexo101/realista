@@ -60,18 +60,14 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const port = process.env.PORT || 5000;
+  const port = parseInt(process.env.PORT || "5000");
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
 
-  // Handle graceful shutdown
+  // Handle graceful shutdown  
   process.on('SIGINT', () => {
-    if(serverInstance){
-        serverInstance.close(() => {
-          console.log('Server closed gracefully');
-          process.exit(0);
-        });
-    }
+    console.log('Server shutting down gracefully');
+    process.exit(0);
   });
 })();

@@ -248,14 +248,10 @@ export default function NeighborhoodResultsPage() {
           
           {/* Tabs para diferentes tipos de resultados */}
           <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid grid-cols-5 mb-8">
+            <TabsList className="grid grid-cols-4 mb-8">
               <TabsTrigger value="properties" className="flex items-center gap-1">
                 <HomeIcon className="h-4 w-4" />
                 Propiedades
-              </TabsTrigger>
-              <TabsTrigger value="map" className="flex items-center gap-1">
-                <Map className="h-4 w-4" />
-                Mapa
               </TabsTrigger>
               <TabsTrigger value="agencies" className="flex items-center gap-1">
                 <Building2 className="h-4 w-4" />
@@ -319,7 +315,7 @@ export default function NeighborhoodResultsPage() {
                   isLoading={propertiesLoading} 
                 />
               ) : (
-                <PropertyMap
+                <NeighborhoodMap
                   properties={useMemo(() => {
                     if (!properties) return [];
                     
@@ -350,24 +346,11 @@ export default function NeighborhoodResultsPage() {
                     }
                   }, [properties, propertyFilters.sortBy]) || []}
                   neighborhood={decodedNeighborhood}
-                  className="w-full"
                 />
               )}
             </TabsContent>
 
-            {/* Contenido de pestaña: Mapa */}
-            <TabsContent value="map" className="mt-0">
-              <div className="w-full h-[600px] rounded-lg overflow-hidden border">
-                <NeighborhoodMap
-                  neighborhood={decodedNeighborhood}
-                  properties={properties || []}
-                  onPropertyClick={(property) => {
-                    // Navigate to property detail page
-                    window.location.href = `/property/${property.id}`;
-                  }}
-                />
-              </div>
-            </TabsContent>
+
 
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
