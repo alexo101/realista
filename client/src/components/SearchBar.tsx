@@ -95,12 +95,12 @@ export function SearchBar() {
     // Check if we have a type parameter in the URL
     const urlParams = new URLSearchParams(window.location.search);
     const typeParam = urlParams.get('type') as SearchType | null;
-    
+
     // If there's a valid type parameter, use it
     if (typeParam && ['rent', 'buy', 'agencies', 'agents'].includes(typeParam)) {
       return typeParam as SearchType;
     }
-    
+
     // Otherwise, don't select any tab by default
     return 'buy';
   };
@@ -134,12 +134,12 @@ export function SearchBar() {
 
       // Build query parameters for filters
       const params = new URLSearchParams();
-      
+
       // Add bedroom filter if rooms are selected
       if ((searchType === 'buy' || searchType === 'rent') && roomsFilter.length > 0) {
         params.append("bedrooms", roomsFilter.join(','));
       }
-      
+
       // Add price filters
       if ((searchType === 'buy' || searchType === 'rent') && priceRange.min && priceRange.min !== "any") {
         params.append("minPrice", priceRange.min);
@@ -150,7 +150,7 @@ export function SearchBar() {
 
       const queryString = params.toString();
       const url = `/neighborhood/${encodedValue}/${tab}${queryString ? '?' + queryString : ''}`;
-      
+
       // Redirigir a la página de resultados
       setLocation(url);
       return;
@@ -158,10 +158,10 @@ export function SearchBar() {
 
     // Instead of changing URLs for different tabs, we'll use a common URL with search parameters
     const params = new URLSearchParams();
-    
+
     // Add the search type as a parameter
     params.append("type", searchType);
-    
+
     // Add location parameters
     if (selectedNeighborhoods.length > 0) {
       params.append("neighborhoods", selectedNeighborhoods.join(","));
@@ -214,7 +214,7 @@ export function SearchBar() {
     setRoomsFilter([]);
     setAgencyName('');
     setAgentName('');
-    
+
     // We no longer navigate to different URLs when changing tabs
     // Instead, we just stay on the current page and let the parent component
     // handle showing different content based on the searchType state
@@ -345,33 +345,7 @@ export function SearchBar() {
           {/* Filtros para Alquilar y Comprar */}
           {(searchType === 'buy' || searchType === 'rent') && (
             <>
-              {/* 1. Precio máximo */}
-              <div className="flex-1">
-                <Select
-                  value={priceRange.max || "any"}
-                  onValueChange={(value) => setPriceRange(prev => ({
-                    ...prev,
-                    max: value === "any" ? "any" : value
-                  }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Precio max" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Cualquier precio</SelectItem>
-                    {PRICE_RANGES.map(range => (
-                      <SelectItem
-                        key={range.value}
-                        value={range.value}
-                      >
-                        {range.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* 2. Habitaciones */}
+              {/* 1. Habitaciones */}
               <div className="flex-1">
                 <Select>
                   <SelectTrigger className="w-full">
