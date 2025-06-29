@@ -42,11 +42,14 @@ import {
   type InsertReview,
   clientFavoriteAgents,
   clientFavoriteProperties,
+  agentFavoriteProperties,
   propertyVisitRequests,
   type ClientFavoriteAgent,
   type InsertClientFavoriteAgent,
   type ClientFavoriteProperty,
   type InsertClientFavoriteProperty,
+  type AgentFavoriteProperty,
+  type InsertAgentFavoriteProperty,
   type PropertyVisitRequest,
   type InsertPropertyVisitRequest,
   agentEvents,
@@ -1345,6 +1348,90 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgentEvent(id: number): Promise<void> {
     await db.delete(agentEvents).where(eq(agentEvents.id, id));
+  }
+
+  // Agent favorite properties methods
+  async getFavoritePropertiesByAgent(agentId: number): Promise<Property[]> {
+    const favorites = await db
+      .select({
+        id: properties.id,
+        title: properties.title,
+        description: properties.description,
+        price: properties.price,
+        address: properties.address,
+        neighborhood: properties.neighborhood,
+        superficie: properties.superficie,
+        bedrooms: properties.bedrooms,
+        bathrooms: properties.bathrooms,
+        images: properties.images,
+        type: properties.type,
+        housingType: properties.housingType,
+        housingStatus: properties.housingStatus,
+        floor: properties.floor,
+        reference: properties.reference,
+        operationType: properties.operationType,
+        features: properties.features,
+        availability: properties.availability,
+        availabilityDate: properties.availabilityDate,
+        mainImageIndex: properties.mainImageIndex,
+        isActive: properties.isActive,
+        agentId: properties.agentId,
+        agencyId: properties.agencyId,
+        viewCount: properties.viewCount,
+        previousPrice: properties.previousPrice,
+        createdAt: properties.createdAt,
+      })
+      .from(agentFavoriteProperties)
+      .innerJoin(properties, eq(agentFavoriteProperties.propertyId, properties.id))
+      .where(eq(agentFavoriteProperties.agentId, agentId));
+
+    return favorites;
+  }
+
+  async toggleAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean> {
+    // Check if already favorited
+    const existing = await db
+      .select()
+      .from(agentFavoriteProperties)
+      .where(
+        and(
+          eq(agentFavoriteProperties.agentId, agentId),
+          eq(agentFavoriteProperties.propertyId, propertyId)
+        )
+      );
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await db
+        .delete(agentFavoriteProperties)
+        .where(
+          and(
+            eq(agentFavoriteProperties.agentId, agentId),
+            eq(agentFavoriteProperties.propertyId, propertyId)
+          )
+        );
+      return false;
+    } else {
+      // Add to favorites
+      await db
+        .insert(agentFavoriteProperties)
+        .values({ agentId, propertyId });
+      return true;
+    }
+  }
+
+  async isAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean> {
+    const favorite = await db
+      .select()
+      .from(agentFavoriteProperties)
+      .where(
+        and(
+          eq(agentFavoriteProperties.agentId, agentId),
+          eq(agentFavoriteProperties.propertyId, propertyId)
+        )
+      );
+
+    return favorite.length > 0;
   }
 }
 

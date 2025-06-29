@@ -438,6 +438,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Agent favorite properties routes
+  app.post("/api/agents/favorites/properties/:propertyId", async (req, res) => {
+    try {
+      const propertyId = parseInt(req.params.propertyId);
+      const { agentId } = req.body;
+      
+      if (!agentId) {
+        return res.status(400).json({ message: "Agent ID is required" });
+      }
+
+      const isFavorite = await storage.toggleAgentFavoriteProperty(agentId, propertyId);
+      
+      res.status(200).json({ 
+        message: isFavorite ? "Propiedad agregada a seguimiento" : "Propiedad eliminada de seguimiento",
+        isFavorite: isFavorite,
+        propertyId: propertyId
+      });
+    } catch (error) {
+      console.error('Error updating agent favorite property:', error);
+      res.status(500).json({ message: "Error al actualizar seguimiento de propiedad" });
+    }
+  });
+
+  app.get("/api/agents/:agentId/favorites/properties", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const favoriteProperties = await storage.getFavoritePropertiesByAgent(agentId);
+      res.status(200).json(favoriteProperties);
+    } catch (error) {
+      console.error('Error fetching agent favorite properties:', error);
+      res.status(500).json({ message: "Failed to fetch favorite properties" });
+    }
+  });
+
+  app.get("/api/agents/:agentId/favorites/properties/status", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const propertyIds = req.query.propertyIds as string;
+      
+      if (!propertyIds) {
+        return res.status(200).json({});
+      }
+
+      const ids = propertyIds.split(',').map(id => parseInt(id));
+      const favoriteStatuses: Record<number, boolean> = {};
+      
+      for (const propertyId of ids) {
+        favoriteStatuses[propertyId] = await storage.isAgentFavoriteProperty(agentId, propertyId);
+      }
+      
+      res.status(200).json(favoriteStatuses);
+    } catch (error) {
+      console.error('Error checking agent favorite status:', error);
+      res.status(500).json({ message: "Failed to check favorite status" });
+    }
+  });
+
   // Property favorites routes
   app.post("/api/clients/favorites/properties/:propertyId", async (req, res) => {
     try {
