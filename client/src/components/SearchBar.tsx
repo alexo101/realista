@@ -326,9 +326,9 @@ export function SearchBar() {
                   onClick={() => setIsNeighborhoodOpen(true)}
                 >
                   {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                       {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
+                        <span key={n} className="bg-primary/10 rounded px-1.5 py-0.5 text-xs">
                           {n}
                         </span>
                       ))}
@@ -352,9 +352,9 @@ export function SearchBar() {
                   onClick={() => setIsNeighborhoodOpen(true)}
                 >
                   {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                       {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
+                        <span key={n} className="bg-primary/10 rounded px-1.5 py-0.5 text-xs">
                           {n}
                         </span>
                       ))}
