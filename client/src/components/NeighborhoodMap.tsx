@@ -180,54 +180,7 @@ export default function NeighborhoodMap({
         </div>
       )}
 
-      {/* Custom CSS for markers */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .property-marker {
-          background: white;
-          border: 2px solid #3b82f6;
-          border-radius: 8px;
-          padding: 4px 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          font-size: 10px;
-          text-align: center;
-          min-width: 100px;
-        }
-        
-        .property-marker.venta {
-          border-color: #ef4444;
-          background: #fee2e2;
-        }
-        
-        .property-marker.alquiler {
-          border-color: #3b82f6;
-          background: #dbeafe;
-        }
-        
-        .marker-price {
-          font-weight: bold;
-          color: #1f2937;
-        }
-        
-        .marker-type {
-          font-size: 8px;
-          color: #6b7280;
-          margin-top: 2px;
-        }
-        
-        .property-popup {
-          min-width: 200px;
-        }
-        
-        .property-popup h3 {
-          margin: 0 0 8px 0;
-        }
-        
-        .property-popup p {
-          margin: 4px 0;
-        }
-        `
-      }} />
+
     </div>
   );
 }

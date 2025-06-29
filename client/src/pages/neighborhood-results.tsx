@@ -355,6 +355,20 @@ export default function NeighborhoodResultsPage() {
               )}
             </TabsContent>
 
+            {/* Contenido de pestaña: Mapa */}
+            <TabsContent value="map" className="mt-0">
+              <div className="w-full h-[600px] rounded-lg overflow-hidden border">
+                <NeighborhoodMap
+                  neighborhood={decodedNeighborhood}
+                  properties={properties || []}
+                  onPropertyClick={(property) => {
+                    // Navigate to property detail page
+                    window.location.href = `/property/${property.id}`;
+                  }}
+                />
+              </div>
+            </TabsContent>
+
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
               <div className="mb-4 flex justify-end">

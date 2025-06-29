@@ -61,27 +61,9 @@ app.use((req, res, next) => {
   }
 
   const port = process.env.PORT || 5000;
-  let serverInstance;
-  function startServer(p: number) {
-    serverInstance = server.listen({
-      port: p,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`serving on port ${p}`);
-    });
-
-    serverInstance.on('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        console.log(`Port ${p} in use, trying port ${p + 1}`);
-        serverInstance.close();
-        startServer(p + 1);
-      } else {
-        console.error('Error starting server:', err);
-      }
-    });
-  }
-  startServer(port);
+  server.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port}`);
+  });
 
   // Handle graceful shutdown
   process.on('SIGINT', () => {
