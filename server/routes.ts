@@ -444,8 +444,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const propertyId = parseInt(req.params.propertyId);
       const { clientId } = req.body;
       
+      console.log('Toggle property favorite request:', { propertyId, clientId, body: req.body });
+      
       if (!clientId) {
+        console.log('Missing clientId in request body');
         return res.status(400).json({ message: "Client ID is required" });
+      }
+
+      if (isNaN(propertyId)) {
+        return res.status(400).json({ message: "Invalid property ID" });
       }
 
       const isFavorite = await storage.toggleFavoriteProperty(clientId, propertyId);

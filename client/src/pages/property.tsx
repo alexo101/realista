@@ -66,8 +66,16 @@ export default function PropertyPage() {
   // Mutation for toggling favorites
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (propertyId: string) => {
-      if (!user || !user.isClient) {
+      if (!user) {
+        throw new Error("Debes iniciar sesión para agregar favoritos");
+      }
+      
+      if (!user.isClient) {
         throw new Error("Debes ser un cliente para agregar favoritos");
+      }
+
+      if (!user.id) {
+        throw new Error("Error de autenticación - ID de cliente no válido");
       }
       
       const response = await fetch(`/api/clients/favorites/properties/${propertyId}`, {

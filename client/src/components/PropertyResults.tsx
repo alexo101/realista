@@ -67,8 +67,16 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   // Mutation to toggle favorite status
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (propertyId: number) => {
-      if (!user?.id) {
-        throw new Error("User not authenticated");
+      if (!user) {
+        throw new Error("Debes iniciar sesión para agregar favoritos");
+      }
+      
+      if (!user.isClient) {
+        throw new Error("Debes ser un cliente para agregar favoritos");
+      }
+
+      if (!user.id) {
+        throw new Error("Error de autenticación - ID de cliente no válido");
       }
       
       return await apiRequest("POST", `/api/clients/favorites/properties/${propertyId}`, {
