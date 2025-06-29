@@ -93,8 +93,8 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
       });
       
       toast({
-        title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
-        description: data.isFavorite 
+        title: (data as any).isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
+        description: (data as any).isFavorite 
           ? "La propiedad se ha agregado a tus favoritos."
           : "La propiedad se ha eliminado de tus favoritos."
       });

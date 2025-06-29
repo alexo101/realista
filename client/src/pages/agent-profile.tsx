@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { PropertyCard } from "@/components/PropertyCard";
 import { AgentReviewFlow } from "@/components/AgentReviewFlow";
+import { AgentFavoriteProperties } from "@/components/AgentFavoriteProperties";
 import { Tooltip as RechartsTooltip } from "recharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
