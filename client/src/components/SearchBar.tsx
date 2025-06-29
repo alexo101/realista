@@ -262,8 +262,8 @@ export function SearchBar() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-4">
+    <div className="flex justify-center">
+      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg p-4">
         <div className="flex items-center gap-4 mb-4">
           <Button
             variant={searchType === 'rent' ? 'default' : 'ghost'}
@@ -475,8 +475,6 @@ export function SearchBar() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Review dialog components have been removed */}
     </div>
   );
 }
