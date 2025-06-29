@@ -94,7 +94,9 @@ export default function ClientProfile() {
       }
       return response.json();
     },
-    enabled: !!user?.isClient
+    enabled: !!user?.isClient,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   // Mock data for messages - replace with actual API calls when messages feature is implemented

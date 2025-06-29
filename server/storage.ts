@@ -738,22 +738,61 @@ export class DatabaseStorage implements IStorage {
     operationType?: string
   ): Promise<Property[]> {
     try {
-      // Construir la consulta base
+      // Construir la consulta base con campos específicos para mejor rendimiento
       let query = db
-        .select()
+        .select({
+          id: properties.id,
+          reference: properties.reference,
+          title: properties.title,
+          address: properties.address,
+          neighborhood: properties.neighborhood,
+          type: properties.type,
+          operationType: properties.operationType,
+          price: properties.price,
+          previousPrice: properties.previousPrice,
+          superficie: properties.superficie,
+          bedrooms: properties.bedrooms,
+          bathrooms: properties.bathrooms,
+          images: properties.images,
+          mainImageIndex: properties.mainImageIndex,
+          features: properties.features,
+          viewCount: properties.viewCount,
+          createdAt: properties.createdAt,
+          agentId: properties.agentId,
+          agencyId: properties.agencyId,
+          isActive: properties.isActive,
+          housingType: properties.housingType,
+          housingStatus: properties.housingStatus,
+          floor: properties.floor,
+          availability: properties.availability,
+          availabilityDate: properties.availabilityDate,
+        })
         .from(properties)
-        .orderBy(sql`${properties.viewCount} DESC`);
+        .where(eq(properties.isActive, true))
+        .orderBy(desc(properties.viewCount));
 
       // Si se especifica un tipo de operación, añadir el filtro
       if (operationType) {
         console.log(
           `Filtrando propiedades más vistas por tipo de operación: ${operationType}`,
         );
-        query = query.where(eq(properties.operationType, operationType));
+        query = query.where(
+          and(
+            eq(properties.isActive, true),
+            eq(properties.operationType, operationType)
+          )
+        );
       }
 
       // Aplicar el límite y ejecutar la consulta
-      return await query.limit(limit);
+      const results = await query.limit(limit);
+      
+      // Procesar los arrays JSON
+      return results.map((property) => ({
+        ...property,
+        images: this.parseArrayField(property.images),
+        features: this.parseArrayField(property.features),
+      }));
     } catch (error) {
       console.error('Error al obtener propiedades más vistas:', error);
       return [];

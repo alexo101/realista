@@ -315,8 +315,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let properties;
       if (mostViewed) {
+        // Add aggressive caching for most viewed properties to improve loading performance
+        const cacheKey = `most-viewed-${operationType || 'all'}`;
+        const etag = `"${cacheKey}-${Math.floor(Date.now() / 300000)}"`;
+        
+        res.set({
+          'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+          'ETag': etag
+        });
+
+        // Check if client has cached version
+        if (req.headers['if-none-match'] === etag) {
+          return res.status(304).end();
+        }
+
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
-        // Usamos el tipo de operación para filtrar las propiedades más vistas
         properties = await storage.getMostViewedProperties(limit, operationType);
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
