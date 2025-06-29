@@ -1101,9 +1101,11 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: agents.id,
         email: agents.email,
+        password: sql`''`,
         name: agents.name,
         surname: agents.surname,
         avatar: agents.avatar,
+        createdAt: sql`NOW()`,
         yearsOfExperience: agents.yearsOfExperience,
         influence_neighborhoods: agents.influence_neighborhoods,
         agencyId: agents.agencyId,
@@ -1115,7 +1117,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(agents, eq(clientFavoriteAgents.agentId, agents.id))
       .where(eq(clientFavoriteAgents.clientId, clientId));
 
-    return favorites;
+    return favorites as User[];
   }
 
   async toggleFavoriteAgent(clientId: number, agentId: number): Promise<boolean> {
@@ -1189,6 +1191,8 @@ export class DatabaseStorage implements IStorage {
         mainImageIndex: properties.mainImageIndex,
         isActive: properties.isActive,
         agentId: properties.agentId,
+        agencyId: properties.agencyId,
+        previousPrice: properties.previousPrice,
         viewCount: properties.viewCount,
         createdAt: properties.createdAt,
       })
@@ -1196,7 +1200,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(properties, eq(clientFavoriteProperties.propertyId, properties.id))
       .where(eq(clientFavoriteProperties.clientId, clientId));
 
-    return favorites;
+    return favorites as Property[];
   }
 
   async toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean> {
@@ -1296,16 +1300,20 @@ export class DatabaseStorage implements IStorage {
     let query = db
       .select()
       .from(agentEvents)
-      .where(eq(agentEvents.agentId, agentId));
+      .where(eq(agentEvents.agentId, agentId)) as any;
     
     if (startDate && endDate) {
-      query = query.where(
-        and(
-          eq(agentEvents.agentId, agentId),
-          gte(agentEvents.eventDate, startDate),
-          lte(agentEvents.eventDate, endDate)
-        )
-      );
+      const eventResults = await db
+        .select()
+        .from(agentEvents)
+        .where(
+          and(
+            eq(agentEvents.agentId, agentId),
+            gte(agentEvents.eventDate, startDate),
+            lte(agentEvents.eventDate, endDate)
+          )
+        );
+      return eventResults;
     }
     
     return await query.orderBy(agentEvents.eventDate, agentEvents.eventTime);
