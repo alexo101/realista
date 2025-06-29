@@ -887,7 +887,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchProperties(filters: any): Promise<Property[]> {
-    console.log("Filtros recibidos:", filters);
+    // Check cache first for tab switching optimization
+    const cacheKey = `search_properties_${JSON.stringify(filters)}`;
+    const cached = cache.get<Property[]>(cacheKey);
+    if (cached) {
+      console.log("Returning cached property search results for filters:", filters);
+      return cached;
+    }
+
+    console.log("Database query for property search filters:", filters);
 
     // Collect all WHERE conditions
     const whereConditions = [];
@@ -977,6 +985,9 @@ export class DatabaseStorage implements IStorage {
     console.log("Ejecutando consulta de propiedades con filtros");
     const result = await query;
     console.log(`Consulta completada. Encontradas ${result.length} propiedades que coinciden con los filtros.`);
+    
+    // Cache the results for 5 minutes for fast tab switching
+    cache.set(cacheKey, result, 300);
     
     return result;
   }
