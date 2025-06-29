@@ -5,6 +5,7 @@ import { PropertyResults } from "@/components/PropertyResults";
 import { PropertyMap } from "@/components/PropertyMap";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
+import NeighborhoodMap from "@/components/NeighborhoodMap";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -247,10 +248,14 @@ export default function NeighborhoodResultsPage() {
           
           {/* Tabs para diferentes tipos de resultados */}
           <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid grid-cols-4 mb-8">
+            <TabsList className="grid grid-cols-5 mb-8">
               <TabsTrigger value="properties" className="flex items-center gap-1">
                 <HomeIcon className="h-4 w-4" />
                 Propiedades
+              </TabsTrigger>
+              <TabsTrigger value="map" className="flex items-center gap-1">
+                <Map className="h-4 w-4" />
+                Mapa
               </TabsTrigger>
               <TabsTrigger value="agencies" className="flex items-center gap-1">
                 <Building2 className="h-4 w-4" />
