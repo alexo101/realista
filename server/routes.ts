@@ -489,6 +489,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch favorites status endpoint for performance optimization
+  app.get("/api/clients/:clientId/favorites/properties/batch", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const propertyIdsParam = req.query.propertyIds as string;
+      
+      if (!propertyIdsParam) {
+        return res.status(400).json({ message: "Property IDs are required" });
+      }
+
+      const propertyIds = propertyIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      const favoriteStatuses = await storage.getBatchFavoritePropertyStatus(clientId, propertyIds);
+      res.status(200).json(favoriteStatuses);
+    } catch (error) {
+      console.error('Error checking batch property favorite status:', error);
+      res.status(500).json({ message: "Failed to check batch property favorite status" });
+    }
+  });
+
   // Property Visit Requests
   app.post("/api/property-visit-requests", async (req, res) => {
     try {

@@ -10,6 +10,7 @@ import {
   not,
   isNull,
   desc,
+  inArray,
 } from "drizzle-orm";
 import {
   agents,
@@ -136,6 +137,7 @@ export interface IStorage {
   getFavoritePropertiesByClient(clientId: number): Promise<Property[]>;
   toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
   isFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
+  getBatchFavoritePropertyStatus(clientId: number, propertyIds: number[]): Promise<{ [key: number]: boolean }>;
 
   // Property visit requests
   createPropertyVisitRequest(visitRequest: InsertPropertyVisitRequest): Promise<PropertyVisitRequest>;
@@ -1256,6 +1258,27 @@ export class DatabaseStorage implements IStorage {
       );
 
     return favorite.length > 0;
+  }
+
+  async getBatchFavoritePropertyStatus(clientId: number, propertyIds: number[]): Promise<{ [key: number]: boolean }> {
+    if (propertyIds.length === 0) return {};
+    
+    const favorites = await db
+      .select({ propertyId: clientFavoriteProperties.propertyId })
+      .from(clientFavoriteProperties)
+      .where(
+        and(
+          eq(clientFavoriteProperties.clientId, clientId),
+          inArray(clientFavoriteProperties.propertyId, propertyIds)
+        )
+      );
+
+    const result: { [key: number]: boolean } = {};
+    propertyIds.forEach(id => {
+      result[id] = favorites.some(fav => fav.propertyId === id);
+    });
+    
+    return result;
   }
 
   // Property visit requests

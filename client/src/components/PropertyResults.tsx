@@ -41,27 +41,24 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
 
   // Fetch favorite status for all properties when user is logged in
   const { data: favoriteStatuses = {} } = useQuery({
-    queryKey: [`/api/clients/${user?.id}/favorites/properties/status`],
+    queryKey: [`/api/clients/${user?.id}/favorites/properties/batch`],
     queryFn: async () => {
-      if (!user?.id) return {};
+      if (!user?.id || results.length === 0) return {};
 
-      const statuses: { [key: number]: boolean } = {};
-      await Promise.all(
-        results.map(async (property) => {
-          try {
-            const response = await fetch(`/api/clients/${user.id}/favorites/properties/${property.id}/status`);
-            if (response.ok) {
-              const data = await response.json();
-              statuses[property.id] = data.isFavorite;
-            }
-          } catch (error) {
-            console.error(`Error fetching favorite status for property ${property.id}:`, error);
-          }
-        })
-      );
-      return statuses;
+      // Batch request for all property IDs
+      const propertyIds = results.map(p => p.id).join(',');
+      try {
+        const response = await fetch(`/api/clients/${user.id}/favorites/properties/batch?propertyIds=${propertyIds}`);
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        console.error('Error fetching batch favorite status:', error);
+      }
+      return {};
     },
     enabled: !!user?.id && results.length > 0,
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   // Mutation to toggle favorite status

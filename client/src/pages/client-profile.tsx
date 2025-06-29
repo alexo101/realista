@@ -77,7 +77,9 @@ export default function ClientProfile() {
       }
       return response.json();
     },
-    enabled: !!user?.isClient
+    enabled: !!user?.isClient,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   // Query para obtener propiedades favoritas
