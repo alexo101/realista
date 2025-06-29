@@ -133,7 +133,7 @@ export function PropertyFilters({
               className={cn(
                 "rounded-md px-4 py-2 text-sm font-medium transition-all",
                 operationType === "Venta" 
-                  ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700" 
+                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
                   : "text-gray-600 hover:text-gray-900 hover:bg-white"
               )}
               onClick={() => {
@@ -159,7 +159,7 @@ export function PropertyFilters({
               className={cn(
                 "rounded-md px-4 py-2 text-sm font-medium transition-all",
                 operationType === "Alquiler" 
-                  ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700" 
+                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
                   : "text-gray-600 hover:text-gray-900 hover:bg-white"
               )}
               onClick={() => {
