@@ -67,16 +67,8 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   // Mutation to toggle favorite status
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (propertyId: number) => {
-      if (!user) {
-        throw new Error("Debes iniciar sesión para agregar favoritos");
-      }
-      
-      if (!user.isClient) {
-        throw new Error("Debes ser un cliente para agregar favoritos");
-      }
-
-      if (!user.id) {
-        throw new Error("Error de autenticación - ID de cliente no válido");
+      if (!user?.id) {
+        throw new Error("User not authenticated");
       }
       
       return await apiRequest("POST", `/api/clients/favorites/properties/${propertyId}`, {
@@ -93,8 +85,8 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
       });
       
       toast({
-        title: (data as any).isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
-        description: (data as any).isFavorite 
+        title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
+        description: data.isFavorite 
           ? "La propiedad se ha agregado a tus favoritos."
           : "La propiedad se ha eliminado de tus favoritos."
       });

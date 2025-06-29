@@ -42,14 +42,11 @@ import {
   type InsertReview,
   clientFavoriteAgents,
   clientFavoriteProperties,
-  agentFavoriteProperties,
   propertyVisitRequests,
   type ClientFavoriteAgent,
   type InsertClientFavoriteAgent,
   type ClientFavoriteProperty,
   type InsertClientFavoriteProperty,
-  type AgentFavoriteProperty,
-  type InsertAgentFavoriteProperty,
   type PropertyVisitRequest,
   type InsertPropertyVisitRequest,
   agentEvents,
@@ -151,11 +148,6 @@ export interface IStorage {
   getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]>;
   updateAgentEvent(id: number, eventData: Partial<InsertAgentEvent>): Promise<AgentEvent>;
   deleteAgentEvent(id: number): Promise<void>;
-
-  // Agent favorite properties
-  getFavoritePropertiesByAgent(agentId: number): Promise<Property[]>;
-  toggleAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean>;
-  isAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -237,7 +229,7 @@ export class DatabaseStorage implements IStorage {
             sql`${agents.name} ILIKE ${`%${agentName}%`}`,
             sql`${agents.surname} ILIKE ${`%${agentName}%`}`
           )
-        ) as any;
+        );
       }
 
       // Filtrar por barrios si se proporcionan
@@ -252,11 +244,11 @@ export class DatabaseStorage implements IStorage {
             // Convertimos el array JavaScript a un array SQL
             sql`ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
           )
-        ) as any;
+        );
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
-      dbQuery = dbQuery.limit(10) as any;
+      dbQuery = dbQuery.limit(10);
 
       console.log(`Ejecutando búsqueda de agentes...`);
       const agentResults = await dbQuery;
@@ -285,7 +277,7 @@ export class DatabaseStorage implements IStorage {
       if (agencyName && agencyName.trim() !== "") {
         dbQuery = dbQuery.where(
           sql`${agencies.agencyName} ILIKE ${`%${agencyName}%`}`
-        ) as any;
+        );
       }
 
       // Filtrar por barrios si se proporcionan
@@ -296,11 +288,11 @@ export class DatabaseStorage implements IStorage {
         // Use the correct column name from the schema
         dbQuery = dbQuery.where(
           sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
-        ) as any;
+        );
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
-      dbQuery = dbQuery.limit(10) as any;
+      dbQuery = dbQuery.limit(10);
 
       // Ejecutamos la consulta
       console.log(`Ejecutando búsqueda de agencias...`);
@@ -327,12 +319,20 @@ export class DatabaseStorage implements IStorage {
           surname: null,
           description: agency.agencyDescription,
           avatar: agency.agencyLogo,
+          agencyLogo: agency.agencyLogo,
           createdAt: agency.createdAt || new Date(),
-          influence_neighborhoods: neighborhoods,
+          influenceNeighborhoods: neighborhoods,
           yearsOfExperience: null,
           languagesSpoken: languages,
           agencyId: String(agency.adminAgentId),
           isAdmin: false,
+          agencyName: agency.agencyName,
+          agencyWebsite: agency.agencyWebsite,
+          agencySocialMedia: socialMedia,
+          agencyActiveSince: agency.agencyActiveSince,
+          agencyAddress: agency.agencyAddress,
+          isAgent: false,
+          isAgency: true,
         } as User;
       });
 
@@ -451,11 +451,24 @@ export class DatabaseStorage implements IStorage {
       description: agency.agencyDescription,
       avatar: agency.agencyLogo,
       createdAt: new Date(), // Fecha actual como aproximación si no existe
-      influence_neighborhoods: neighborhoods,
+      // Barrios de actuación de la agencia
+      influenceNeighborhoods: neighborhoods,
+      // Campos específicos de agentes que no son relevantes para agencias
       yearsOfExperience: null,
+      // Idiomas soportados
       languagesSpoken: languages,
+      // ID de administrador de la agencia (casteado a string para mantener compatibilidad)
       agencyId: String(agency.adminAgentId),
       isAdmin: false,
+      // Campos adicionales específicos de agencias para frontend
+      agencyName: agency.agencyName,
+      agencyWebsite: agency.agencyWebsite,
+      agencySocialMedia: socialMedia,
+      agencyActiveSince: agency.agencyActiveSince,
+      agencyAddress: agency.agencyAddress,
+      // Flag para diferenciar agentes de agencias
+      isAgent: false,
+      isAgency: true,
     } as User;
 
     return agentFormat;
@@ -734,7 +747,7 @@ export class DatabaseStorage implements IStorage {
         console.log(
           `Filtrando propiedades más vistas por tipo de operación: ${operationType}`,
         );
-        query = query.where(eq(properties.operationType, operationType)) as any;
+        query = query.where(eq(properties.operationType, operationType));
       }
 
       // Aplicar el límite y ejecutar la consulta
@@ -898,11 +911,11 @@ export class DatabaseStorage implements IStorage {
     
     if (whereConditions.length > 0) {
       console.log(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
-      query = query.where(and(...whereConditions)) as any;
+      query = query.where(and(...whereConditions));
     }
 
     // Ordenar por precio (por defecto)
-    query = query.orderBy(properties.price) as any;
+    query = query.orderBy(properties.price);
 
     console.log("Ejecutando consulta de propiedades con filtros");
     const result = await query;
@@ -1101,11 +1114,9 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: agents.id,
         email: agents.email,
-        password: sql`''`,
         name: agents.name,
         surname: agents.surname,
         avatar: agents.avatar,
-        createdAt: sql`NOW()`,
         yearsOfExperience: agents.yearsOfExperience,
         influence_neighborhoods: agents.influence_neighborhoods,
         agencyId: agents.agencyId,
@@ -1117,7 +1128,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(agents, eq(clientFavoriteAgents.agentId, agents.id))
       .where(eq(clientFavoriteAgents.clientId, clientId));
 
-    return favorites as User[];
+    return favorites;
   }
 
   async toggleFavoriteAgent(clientId: number, agentId: number): Promise<boolean> {
@@ -1191,8 +1202,6 @@ export class DatabaseStorage implements IStorage {
         mainImageIndex: properties.mainImageIndex,
         isActive: properties.isActive,
         agentId: properties.agentId,
-        agencyId: properties.agencyId,
-        previousPrice: properties.previousPrice,
         viewCount: properties.viewCount,
         createdAt: properties.createdAt,
       })
@@ -1200,7 +1209,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(properties, eq(clientFavoriteProperties.propertyId, properties.id))
       .where(eq(clientFavoriteProperties.clientId, clientId));
 
-    return favorites as Property[];
+    return favorites;
   }
 
   async toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean> {
@@ -1300,20 +1309,16 @@ export class DatabaseStorage implements IStorage {
     let query = db
       .select()
       .from(agentEvents)
-      .where(eq(agentEvents.agentId, agentId)) as any;
+      .where(eq(agentEvents.agentId, agentId));
     
     if (startDate && endDate) {
-      const eventResults = await db
-        .select()
-        .from(agentEvents)
-        .where(
-          and(
-            eq(agentEvents.agentId, agentId),
-            gte(agentEvents.eventDate, startDate),
-            lte(agentEvents.eventDate, endDate)
-          )
-        );
-      return eventResults;
+      query = query.where(
+        and(
+          eq(agentEvents.agentId, agentId),
+          gte(agentEvents.eventDate, startDate),
+          lte(agentEvents.eventDate, endDate)
+        )
+      );
     }
     
     return await query.orderBy(agentEvents.eventDate, agentEvents.eventTime);
@@ -1335,90 +1340,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgentEvent(id: number): Promise<void> {
     await db.delete(agentEvents).where(eq(agentEvents.id, id));
-  }
-
-  // Agent favorite properties methods
-  async getFavoritePropertiesByAgent(agentId: number): Promise<Property[]> {
-    const favorites = await db
-      .select({
-        id: properties.id,
-        title: properties.title,
-        description: properties.description,
-        price: properties.price,
-        address: properties.address,
-        neighborhood: properties.neighborhood,
-        superficie: properties.superficie,
-        bedrooms: properties.bedrooms,
-        bathrooms: properties.bathrooms,
-        images: properties.images,
-        type: properties.type,
-        housingType: properties.housingType,
-        housingStatus: properties.housingStatus,
-        floor: properties.floor,
-        reference: properties.reference,
-        operationType: properties.operationType,
-        features: properties.features,
-        availability: properties.availability,
-        availabilityDate: properties.availabilityDate,
-        mainImageIndex: properties.mainImageIndex,
-        isActive: properties.isActive,
-        agentId: properties.agentId,
-        agencyId: properties.agencyId,
-        viewCount: properties.viewCount,
-        previousPrice: properties.previousPrice,
-        createdAt: properties.createdAt,
-      })
-      .from(agentFavoriteProperties)
-      .innerJoin(properties, eq(agentFavoriteProperties.propertyId, properties.id))
-      .where(eq(agentFavoriteProperties.agentId, agentId));
-
-    return favorites;
-  }
-
-  async toggleAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean> {
-    // Check if already favorited
-    const existing = await db
-      .select()
-      .from(agentFavoriteProperties)
-      .where(
-        and(
-          eq(agentFavoriteProperties.agentId, agentId),
-          eq(agentFavoriteProperties.propertyId, propertyId)
-        )
-      );
-
-    if (existing.length > 0) {
-      // Remove from favorites
-      await db
-        .delete(agentFavoriteProperties)
-        .where(
-          and(
-            eq(agentFavoriteProperties.agentId, agentId),
-            eq(agentFavoriteProperties.propertyId, propertyId)
-          )
-        );
-      return false;
-    } else {
-      // Add to favorites
-      await db
-        .insert(agentFavoriteProperties)
-        .values({ agentId, propertyId });
-      return true;
-    }
-  }
-
-  async isAgentFavoriteProperty(agentId: number, propertyId: number): Promise<boolean> {
-    const favorite = await db
-      .select()
-      .from(agentFavoriteProperties)
-      .where(
-        and(
-          eq(agentFavoriteProperties.agentId, agentId),
-          eq(agentFavoriteProperties.propertyId, propertyId)
-        )
-      );
-
-    return favorite.length > 0;
   }
 }
 

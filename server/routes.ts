@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user = {
             id: client.id,
             email: client.email,
-            password: client.password ?? "",
+            password: client.password,
             name: client.name,
             surname: client.surname,
             description: null,
@@ -222,7 +222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             yearsOfExperience: null,
             languagesSpoken: null,
             agencyId: null,
-            isAdmin: false
+            isAdmin: false,
+            phone: client.phone
           };
           isClient = true;
         }
@@ -316,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (mostViewed) {
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
         // Usamos el tipo de operación para filtrar las propiedades más vistas
-        properties = await storage.getMostViewedProperties(limit);
+        properties = await storage.getMostViewedProperties(limit, operationType);
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
         properties = await storage.getPropertiesByAgent(agentId);
@@ -437,78 +438,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Agent favorite properties routes
-  app.post("/api/agents/favorites/properties/:propertyId", async (req, res) => {
-    try {
-      const propertyId = parseInt(req.params.propertyId);
-      const { agentId } = req.body;
-      
-      if (!agentId) {
-        return res.status(400).json({ message: "Agent ID is required" });
-      }
-
-      const isFavorite = await storage.toggleAgentFavoriteProperty(agentId, propertyId);
-      
-      res.status(200).json({ 
-        message: isFavorite ? "Propiedad agregada a seguimiento" : "Propiedad eliminada de seguimiento",
-        isFavorite: isFavorite,
-        propertyId: propertyId
-      });
-    } catch (error) {
-      console.error('Error updating agent favorite property:', error);
-      res.status(500).json({ message: "Error al actualizar seguimiento de propiedad" });
-    }
-  });
-
-  app.get("/api/agents/:agentId/favorites/properties", async (req, res) => {
-    try {
-      const agentId = parseInt(req.params.agentId);
-      const favoriteProperties = await storage.getFavoritePropertiesByAgent(agentId);
-      res.status(200).json(favoriteProperties);
-    } catch (error) {
-      console.error('Error fetching agent favorite properties:', error);
-      res.status(500).json({ message: "Failed to fetch favorite properties" });
-    }
-  });
-
-  app.get("/api/agents/:agentId/favorites/properties/status", async (req, res) => {
-    try {
-      const agentId = parseInt(req.params.agentId);
-      const propertyIds = req.query.propertyIds as string;
-      
-      if (!propertyIds) {
-        return res.status(200).json({});
-      }
-
-      const ids = propertyIds.split(',').map(id => parseInt(id));
-      const favoriteStatuses: Record<number, boolean> = {};
-      
-      for (const propertyId of ids) {
-        favoriteStatuses[propertyId] = await storage.isAgentFavoriteProperty(agentId, propertyId);
-      }
-      
-      res.status(200).json(favoriteStatuses);
-    } catch (error) {
-      console.error('Error checking agent favorite status:', error);
-      res.status(500).json({ message: "Failed to check favorite status" });
-    }
-  });
-
   // Property favorites routes
   app.post("/api/clients/favorites/properties/:propertyId", async (req, res) => {
     try {
       const propertyId = parseInt(req.params.propertyId);
       const { clientId } = req.body;
       
-      console.log('Toggle property favorite request:', { propertyId, clientId, body: req.body });
-      
       if (!clientId) {
-        console.log('Missing clientId in request body');
         return res.status(400).json({ message: "Client ID is required" });
-      }
-
-      if (isNaN(propertyId)) {
-        return res.status(400).json({ message: "Invalid property ID" });
       }
 
       const isFavorite = await storage.toggleFavoriteProperty(clientId, propertyId);
@@ -882,51 +819,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
-        console.log(`Processing agency ${agency.id} (${agency.name}):`);
+        console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
         
         // Get the agency neighborhoods from the standardized field
-        const rawNeighborhoods = agency.influence_neighborhoods;
+        const rawNeighborhoods = agency.agencyInfluenceNeighborhoods;
         console.log('- Original neighborhoods:', rawNeighborhoods);
         console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
         
         // Initialize array to store neighborhood values
-        let neighborhoodsArray: string[] = [];
+        let neighborhoodsArray = [];
         
-        // Handle different neighborhood formats
-        if (rawNeighborhoods) {
-          if (Array.isArray(rawNeighborhoods)) {
-            neighborhoodsArray = rawNeighborhoods;
-          } else if (typeof rawNeighborhoods === 'string') {
-            try {
-              // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
-              const cleaned = (rawNeighborhoods as string).replace(/^\{|\}$/g, '');
-              
-              // Check if it's wrapped in quotes and contains commas
-              if (cleaned.includes(',') && cleaned.includes('"')) {
-                // Split by "," but respect quotes
-                neighborhoodsArray = cleaned.split(/","|,/)
-                  .map((n: string) => n.replace(/^"|"$/g, '').trim())
-                  .filter(Boolean);
-              } else if (cleaned.includes(',')) {
-                // Simple comma split if no quotes
-                neighborhoodsArray = cleaned.split(',').map((n: string) => n.trim()).filter(Boolean);
-              } else {
-                // Single value
-                neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
-              }
-              
-              console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
-            } catch (e: any) {
-              console.log('- Failed to parse neighborhoods:', e.message);
-              neighborhoodsArray = [];
+        // Handle PostgreSQL array format: "{\"La Sagrera\",\"Sant Andreu del Palomar\"}"
+        if (typeof rawNeighborhoods === 'string') {
+          try {
+            // Remove the curly braces and attempt to parse if it's a PostgreSQL array string
+            const cleaned = rawNeighborhoods.replace(/^\{|\}$/g, '');
+            
+            // Check if it's wrapped in quotes and contains commas
+            if (cleaned.includes(',') && cleaned.includes('"')) {
+              // Split by "," but respect quotes
+              neighborhoodsArray = cleaned.split(/","|,/)
+                .map(n => n.replace(/^"|"$/g, '').trim())
+                .filter(Boolean);
+            } else if (cleaned.includes(',')) {
+              // Simple comma split if no quotes
+              neighborhoodsArray = cleaned.split(',').map(n => n.trim()).filter(Boolean);
+            } else {
+              // Single value
+              neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
             }
+            
+            console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
+          } catch (e) {
+            console.log('- Failed to parse neighborhoods:', e.message);
+            neighborhoodsArray = [];
           }
+        } else if (Array.isArray(rawNeighborhoods)) {
+          neighborhoodsArray = rawNeighborhoods;
         }
         
         // Set field to standardized name
-        (agency as any).agencyInfluenceNeighborhoods = neighborhoodsArray;
+        agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
         
-        console.log('- Final neighborhoods array:', (agency as any).agencyInfluenceNeighborhoods);
+        console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
         return agency;
       });
       
@@ -1492,8 +1427,8 @@ Gracias!
         } else if (review.targetType === 'agency') {
           const agency = await storage.getAgencyById(review.targetId);
           if (agency) {
-            targetName = agency.name || '';
-            targetAvatar = agency.avatar || '';
+            targetName = agency.agencyName || '';
+            targetAvatar = agency.agencyLogo || '';
           }
         }
         
@@ -1618,9 +1553,9 @@ Gracias!
       // Si se proporciona adminAgentId, obtener solo las agencias de ese administrador
       const agencies = adminAgentId 
         ? await storage.getAgenciesByAdmin(adminAgentId)
-        : await storage.getAgenciesByAdmin((req as any).user?.id || 0);
+        : await storage.getAgenciesByAdmin(req.user?.id || 0);
 
-      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || (req as any).user?.id}`);
+      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || req.user?.id}`);
       res.json(agencies);
     } catch (error) {
       console.error('Error fetching agencies:', error);
@@ -1631,13 +1566,13 @@ Gracias!
   app.post("/api/agencies", async (req, res) => {
     try {
       console.log('Creating agency with data:', req.body);
-      if (!req.body.adminAgentId && !(req as any).user?.id) {
+      if (!req.body.adminAgentId && !req.user?.id) {
         return res.status(400).json({ message: "Missing adminAgentId" });
       }
 
       const agencyData = {
         ...req.body,
-        adminAgentId: req.body.adminAgentId || (req as any).user?.id
+        adminAgentId: req.body.adminAgentId || req.user?.id
       };
 
       const result = await storage.createAgency(agencyData);

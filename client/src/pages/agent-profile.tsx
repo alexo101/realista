@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { PropertyCard } from "@/components/PropertyCard";
 import { AgentReviewFlow } from "@/components/AgentReviewFlow";
-import { AgentFavoriteProperties } from "@/components/AgentFavoriteProperties";
 import { Tooltip as RechartsTooltip } from "recharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -441,10 +440,9 @@ export default function AgentProfile() {
 
       {/* Tabs de Navegación */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-        <TabsList className="grid w-full grid-cols-4 md:w-auto md:inline-flex">
+        <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex">
           <TabsTrigger value="overview">Información general</TabsTrigger>
           <TabsTrigger value="properties">Propiedades</TabsTrigger>
-          <TabsTrigger value="siguiendo">Siguiendo</TabsTrigger>
           <TabsTrigger value="reviews">Reseñas</TabsTrigger>
         </TabsList>
 
@@ -576,11 +574,6 @@ export default function AgentProfile() {
               ))}
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="siguiendo" className="mt-6">
-          <h2 className="text-2xl font-semibold mb-6">Propiedades que sigue {fullName}</h2>
-          <AgentFavoriteProperties agentId={agent?.id} />
         </TabsContent>
 
         <TabsContent value="reviews" className="mt-6">
