@@ -260,33 +260,16 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
-              {/* Filtros de propiedades */}
+              {/* Filtros de propiedades con toggle de vista integrado */}
               <PropertyFilters 
                 onFilterChange={setPropertyFilters}
                 defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
                 defaultBedrooms={defaultBedrooms}
                 defaultBedroomsList={defaultBedroomsList}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                showViewToggle={true}
               />
-              
-              {/* Botones de vista (Lista/Mapa) al mismo nivel que Comprar/Alquilar */}
-              <div className="flex items-center gap-4 mb-6">
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'ghost'}
-                  className="rounded-none px-8"
-                  onClick={() => setViewMode('list')}
-                >
-                  <List className="h-4 w-4 mr-2" />
-                  Vista Lista
-                </Button>
-                <Button
-                  variant={viewMode === 'map' ? 'default' : 'ghost'}
-                  className="rounded-none px-8"
-                  onClick={() => setViewMode('map')}
-                >
-                  <Map className="h-4 w-4 mr-2" />
-                  Vista Mapa
-                </Button>
-              </div>
 
               {/* Contenido condicional basado en el modo de vista */}
               {viewMode === 'list' ? (

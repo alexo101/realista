@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Euro, Bath, BedDouble, Building } from "lucide-react";
+import { Euro, Bath, BedDouble, Building, List, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 
@@ -20,6 +20,9 @@ interface PropertyFiltersProps {
   defaultOperationType?: "Venta" | "Alquiler";
   defaultBedrooms?: number | null;
   defaultBedroomsList?: number[];
+  viewMode?: 'list' | 'map';
+  onViewModeChange?: (mode: 'list' | 'map') => void;
+  showViewToggle?: boolean;
 }
 
 export interface PropertyFilters {
@@ -36,7 +39,10 @@ export function PropertyFilters({
   onFilterChange, 
   defaultOperationType = "Venta",
   defaultBedrooms = null,
-  defaultBedroomsList = []
+  defaultBedroomsList = [],
+  viewMode = 'list',
+  onViewModeChange,
+  showViewToggle = false
 }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
@@ -124,8 +130,8 @@ export function PropertyFilters({
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
       <div className="space-y-6">
-        {/* Sección superior - Toggle de operación */}
-        <div className="flex justify-start">
+        {/* Sección superior - Toggle de operación y vista */}
+        <div className="flex justify-between items-center">
           <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
             <Button
               variant="ghost"
@@ -180,6 +186,40 @@ export function PropertyFilters({
               Alquilar
             </Button>
           </div>
+
+          {/* Toggle de vista (Lista/Mapa) */}
+          {showViewToggle && onViewModeChange && (
+            <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "rounded-md px-4 py-2 text-sm font-medium transition-all",
+                  viewMode === "list" 
+                    ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                )}
+                onClick={() => onViewModeChange('list')}
+              >
+                <List className="h-4 w-4 mr-2" />
+                Vista Lista
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "rounded-md px-4 py-2 text-sm font-medium transition-all",
+                  viewMode === "map" 
+                    ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                )}
+                onClick={() => onViewModeChange('map')}
+              >
+                <Map className="h-4 w-4 mr-2" />
+                Vista Mapa
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Sección de filtros principales */}
