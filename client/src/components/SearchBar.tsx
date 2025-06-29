@@ -204,7 +204,7 @@ if (searchType === 'agents') {
     }
 
     const queryString = params.toString();
-    setLocation(`/search${queryString ? '?' + queryString : ''}`);
+    setLocation('/search' + (queryString ? '?' + queryString : ''));
   };
 
   // Reset state when search type changes without changing URL
@@ -303,12 +303,12 @@ if (searchType === 'agents') {
               <div className="flex-1 relative" style={{ flex: 2 }}>
                 <AutocompleteSearch 
                   type={searchType as 'agencies' | 'agents'} 
-                  placeholder={`Buscar ${searchType === 'agencies' ? 'agencias' : 'agentes'} por nombre...`}
+                  placeholder={'Buscar ' + (searchType === 'agencies' ? 'agencias' : 'agentes') + ' por nombre...'}
                   onSelect={(result) => {
                     // En vez de solo actualizar el estado, navegamos directamente al perfil
                     const targetPath = searchType === 'agencies'
-                      ? `/agencias/${result.id}`
-                      : `/agentes/${result.id}`;
+                      ? '/agencias/' + result.id
+                      : '/agentes/' + result.id;
 
                     console.log('SearchBar - navigating to profile:', targetPath);
                     // Use pushState to navigate without full page refresh
@@ -414,11 +414,7 @@ if (searchType === 'agents') {
               <div className="mb-4">
                 <Button
                   variant="ghost"
-                  className={`w-full justify-start ${
-                    selectedNeighborhoods.includes("Barcelona")
-                      ? "bg-primary/10"
-                      : ""
-                  }`}
+                  className={"w-full justify-start " + (selectedNeighborhoods.includes("Barcelona") ? "bg-primary/10" : "")}
                   onClick={() => toggleNeighborhood("Barcelona")}
                 >
                   Barcelona (Todos los barrios)
@@ -458,11 +454,7 @@ if (searchType === 'agents') {
                       <Button
                         key={neighborhood}
                         variant="ghost"
-                        className={`w-full justify-start pl-6 ${
-                          selectedNeighborhoods.includes(neighborhood)
-                            ? "bg-primary/10"
-                            : ""
-                        }`}
+                        className={"w-full justify-start pl-6 " + (selectedNeighborhoods.includes(neighborhood) ? "bg-primary/10" : "")}
                         onClick={() => toggleNeighborhood(neighborhood)}
                       >
                         {neighborhood}
