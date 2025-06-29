@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Building2, ChevronLeft, ChevronRight, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/user-context";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PropertyResult {
   id: number;
@@ -32,8 +35,70 @@ interface PropertyResultsProps {
 
 export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
-  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const { user } = useUser();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch favorite status for all properties when user is logged in
+  const { data: favoriteStatuses = {} } = useQuery({
+    queryKey: [`/api/clients/${user?.id}/favorites/properties/status`],
+    queryFn: async () => {
+      if (!user?.id) return {};
+      
+      const statuses: { [key: number]: boolean } = {};
+      await Promise.all(
+        results.map(async (property) => {
+          try {
+            const response = await fetch(`/api/clients/${user.id}/favorites/properties/${property.id}/status`);
+            if (response.ok) {
+              const data = await response.json();
+              statuses[property.id] = data.isFavorite;
+            }
+          } catch (error) {
+            console.error(`Error fetching favorite status for property ${property.id}:`, error);
+          }
+        })
+      );
+      return statuses;
+    },
+    enabled: !!user?.id && results.length > 0,
+  });
+
+  // Mutation to toggle favorite status
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (propertyId: number) => {
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
+      
+      return await apiRequest("POST", `/api/clients/favorites/properties/${propertyId}`, {
+        body: { clientId: user.id }
+      });
+    },
+    onSuccess: (data, propertyId) => {
+      // Invalidate and refetch favorite status
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user?.id}/favorites/properties/status`] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user?.id}/favorites/properties`] 
+      });
+      
+      toast({
+        title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
+        description: data.isFavorite 
+          ? "La propiedad se ha agregado a tus favoritos."
+          : "La propiedad se ha eliminado de tus favoritos."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "No se pudo actualizar favoritos",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handlePrevImage = (propertyId: number, images: string[], e: React.MouseEvent) => {
     e.stopPropagation();
@@ -53,23 +118,20 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
 
   const handleToggleFavorite = (propertyId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(propertyId)) {
-        newFavorites.delete(propertyId);
-        toast({
-          title: "Eliminado de favoritos",
-          description: "La propiedad se ha eliminado de tus favoritos."
-        });
-      } else {
-        newFavorites.add(propertyId);
-        toast({
-          title: "Agregado a favoritos",
-          description: "La propiedad se ha agregado a tus favoritos."
-        });
-      }
-      return newFavorites;
-    });
+    
+    if (!user) {
+      toast({
+        title: "Inicia sesión requerida",
+        description: "Debes iniciar sesión para guardar propiedades favoritas."
+      });
+      // Redirect to login after showing toast
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
+      return;
+    }
+    
+    toggleFavoriteMutation.mutate(propertyId);
   };
 
   const handleShare = (property: PropertyResult, e: React.MouseEvent) => {
@@ -180,7 +242,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                   >
                     <Heart 
                       className={`h-4 w-4 ${
-                        favorites.has(property.id) 
+                        favoriteStatuses[property.id] 
                           ? 'fill-red-500 text-red-500' 
                           : 'text-gray-400 hover:text-red-500'
                       }`} 
