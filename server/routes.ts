@@ -12,6 +12,7 @@ import {
 } from "@shared/schema";
 import { sendWelcomeEmail } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
+import { cache } from "./cache";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
@@ -984,7 +985,20 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
 
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
       console.log('Search agents queryString:', queryString);
-      const agents = await storage.searchAgents(queryString);
+      
+      // Check cache for agents search
+      const agentsCacheKey = `agents_search:${queryString}`;
+      let agents = cache.get(agentsCacheKey);
+      
+      if (!agents) {
+        console.log('Cache miss for agents search, querying database');
+        agents = await storage.searchAgents(queryString);
+        // Cache agents for 10 minutes for faster tab switching
+        cache.set(agentsCacheKey, agents, 600);
+      } else {
+        console.log('Cache hit for agents search');
+      }
+      
       console.log('Search agents results:', agents.length);
       res.json(agents);
     } catch (error) {
