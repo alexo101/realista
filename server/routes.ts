@@ -847,7 +847,19 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
 
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
       console.log('Search agencies queryString:', queryString);
-      const agencies = await storage.searchAgencies(queryString);
+      
+      // Check cache for agencies search
+      const agenciesCacheKey = `agencies_search:${queryString}`;
+      let agencies = cache.get(agenciesCacheKey);
+      
+      if (!agencies) {
+        console.log('Cache miss for agencies search, querying database');
+        agencies = await storage.searchAgencies(queryString);
+        // Cache agencies for 10 minutes for faster tab switching
+        cache.set(agenciesCacheKey, agencies, 600);
+      } else {
+        console.log('Cache hit for agencies search');
+      }
 
       // Procesamos los resultados para asegurar que se usen las propiedades correctas
       const processedResults = agencies.map(agency => {

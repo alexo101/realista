@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
 import { PropertyMap } from "@/components/PropertyMap";
@@ -27,6 +27,7 @@ export default function NeighborhoodResultsPage() {
   const [, setLocation] = useLocation();
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
+  const queryClient = useQueryClient();
   
   // Extract URL parameters
   const urlParams = new URLSearchParams(window.location.search);
@@ -83,9 +84,90 @@ export default function NeighborhoodResultsPage() {
 
   const activeTab = getActiveTab();
   
-  // Cambiar tab
+  // Preload data for all tabs on component mount for faster switching
+  useEffect(() => {
+    const preloadData = () => {
+      // Preload properties data
+      queryClient.prefetchQuery({
+        queryKey: ['/api/properties', { 
+          neighborhoods: effectiveNeighborhood,
+          operationType: propertyFilters.operationType,
+          priceMin: propertyFilters.priceMin,
+          priceMax: propertyFilters.priceMax,
+          bedrooms: propertyFilters.bedrooms,
+          bathrooms: propertyFilters.bathrooms,
+          features: propertyFilters.features,
+          mostViewed: false
+        }],
+        queryFn: async () => {
+          const params = new URLSearchParams();
+          params.append('neighborhoods', effectiveNeighborhood);
+          params.append('operationType', propertyFilters.operationType);
+          params.append('mostViewed', 'false');
+          
+          if (propertyFilters.priceMin !== null) {
+            params.append('priceMin', propertyFilters.priceMin.toString());
+          }
+          
+          if (propertyFilters.priceMax !== null) {
+            params.append('priceMax', propertyFilters.priceMax.toString());
+          }
+          
+          if (propertyFilters.bedrooms !== null) {
+            params.append('bedrooms', propertyFilters.bedrooms.toString());
+          }
+          
+          if (propertyFilters.bathrooms !== null) {
+            params.append('bathrooms', propertyFilters.bathrooms.toString());
+          }
+          
+          if (propertyFilters.features && propertyFilters.features.length > 0) {
+            params.append('features', propertyFilters.features.join(','));
+          }
+          
+          const response = await fetch(`/api/properties?${params.toString()}`);
+          if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
+          return response.json();
+        },
+        staleTime: 300000,
+      });
+
+      // Preload agencies data
+      queryClient.prefetchQuery({
+        queryKey: ['/api/search/agencies', { neighborhoods: effectiveNeighborhood }],
+        queryFn: async () => {
+          const params = new URLSearchParams();
+          params.append('neighborhoods', effectiveNeighborhood);
+          const response = await fetch(`/api/search/agencies?${params.toString()}`);
+          if (!response.ok) throw new Error(`Failed to fetch agencies for ${effectiveNeighborhood}`);
+          return response.json();
+        },
+        staleTime: 300000,
+      });
+
+      // Preload agents data
+      queryClient.prefetchQuery({
+        queryKey: ['/api/search/agents', { neighborhoods: effectiveNeighborhood }],
+        queryFn: async () => {
+          const params = new URLSearchParams();
+          params.append('neighborhoods', effectiveNeighborhood);
+          const response = await fetch(`/api/search/agents?${params.toString()}`);
+          if (!response.ok) throw new Error(`Failed to fetch agents for ${effectiveNeighborhood}`);
+          return response.json();
+        },
+        staleTime: 300000,
+      });
+    };
+
+    // Preload data after a short delay to prioritize current tab
+    const timer = setTimeout(preloadData, 500);
+    return () => clearTimeout(timer);
+  }, [decodedNeighborhood, propertyFilters, queryClient]);
+
+  // Optimized tab change using state instead of page reload
   const handleTabChange = (value: string) => {
-    window.location.href = `/neighborhood/${encodeURIComponent(decodedNeighborhood)}/${value}`;
+    // Use client-side navigation instead of full page reload
+    setLocation(`/neighborhood/${encodeURIComponent(decodedNeighborhood)}/${value}`);
   };
 
   // Consultas para propiedades
@@ -132,7 +214,6 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();
     },
-    enabled: activeTab === 'properties',
     staleTime: 300000, // 5 minutes cache for fast tab switching
     gcTime: 600000, // 10 minutes in cache
     refetchOnWindowFocus: false,
@@ -148,7 +229,6 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch agencies for ${effectiveNeighborhood}`);
       return response.json();
     },
-    enabled: activeTab === 'agencies',
     staleTime: 300000, // 5 minutes cache for fast tab switching
     gcTime: 600000, // 10 minutes in cache
     refetchOnWindowFocus: false,
@@ -164,7 +244,6 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch agents for ${effectiveNeighborhood}`);
       return response.json();
     },
-    enabled: activeTab === 'agents',
     staleTime: 300000, // 5 minutes cache for fast tab switching
     gcTime: 600000, // 10 minutes in cache
     refetchOnWindowFocus: false,
