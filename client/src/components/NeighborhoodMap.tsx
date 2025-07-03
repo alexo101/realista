@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { geocodeAddresses, GeocodingResult, getFallbackCoordinates } from '../utils/geocoding';
 
 // Fix for default markers not showing in Leaflet with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -59,12 +60,40 @@ export default function NeighborhoodMap({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [geocodedCoords, setGeocodedCoords] = useState<Map<number, GeocodingResult>>(new Map());
 
   // Get coordinates for the neighborhood
   const getNeighborhoodCenter = (): [number, number] => {
     if (center) return center;
     return NEIGHBORHOOD_COORDINATES[neighborhood] || NEIGHBORHOOD_COORDINATES['Barcelona'];
   };
+
+  // Geocode property addresses when properties change
+  useEffect(() => {
+    if (properties.length === 0) return;
+
+    const geocodeProperties = async () => {
+      setIsLoading(true);
+      
+      const addressesToGeocode = properties.map(property => ({
+        address: property.address,
+        neighborhood: property.neighborhood,
+        id: property.id
+      }));
+
+      try {
+        const geocodedResults = await geocodeAddresses(addressesToGeocode);
+        setGeocodedCoords(geocodedResults);
+      } catch (error) {
+        console.error('Error geocoding addresses:', error);
+        // Continue with fallback coordinates
+      }
+      
+      setIsLoading(false);
+    };
+
+    geocodeProperties();
+  }, [properties]);
 
   // Initialize map
   useEffect(() => {
@@ -112,14 +141,22 @@ export default function NeighborhoodMap({
 
     // Add property markers
     properties.forEach((property) => {
-      // For demo purposes, we'll add some offset around the neighborhood center
-      // In a real app, you'd geocode the actual addresses
-      const baseCoords = getNeighborhoodCenter();
-      const randomOffset = () => (Math.random() - 0.5) * 0.01; // Small random offset
-      const coords: [number, number] = [
-        baseCoords[0] + randomOffset(),
-        baseCoords[1] + randomOffset()
-      ];
+      // Use geocoded coordinates if available, otherwise use neighborhood fallback
+      const geocodedCoord = geocodedCoords.get(property.id);
+      let coords: [number, number];
+      
+      if (geocodedCoord) {
+        coords = [geocodedCoord.lat, geocodedCoord.lng];
+      } else {
+        // Use fallback coordinates from the neighborhood
+        const fallbackCoords = getFallbackCoordinates(property.neighborhood);
+        // Add small random offset to avoid overlapping markers
+        const randomOffset = () => (Math.random() - 0.5) * 0.005; // Smaller offset for better grouping
+        coords = [
+          fallbackCoords[0] + randomOffset(),
+          fallbackCoords[1] + randomOffset()
+        ];
+      }
 
       // Create custom house icon based on property type
       const icon = L.divIcon({
@@ -169,7 +206,7 @@ export default function NeighborhoodMap({
       mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
     }
 
-  }, [properties, isLoading, onPropertyClick]);
+  }, [properties, isLoading, onPropertyClick, geocodedCoords]);
 
   return (
     <div className="relative w-full h-full">
@@ -180,8 +217,13 @@ export default function NeighborhoodMap({
       />
       
       {isLoading && (
-        <div className="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center">
-          <div className="text-gray-600">Cargando mapa...</div>
+        <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center z-10">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="text-gray-600 text-sm">
+              {properties.length > 0 ? 'Ubicando propiedades en el mapa...' : 'Cargando mapa...'}
+            </div>
+          </div>
         </div>
       )}
 

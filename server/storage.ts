@@ -289,8 +289,9 @@ export class DatabaseStorage implements IStorage {
         console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
 
         // Use the correct column name from the schema
+        const neighborhoodArray = neighborhoods.map(n => `'${n}'`).join(',');
         dbQuery = dbQuery.where(
-          sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
+          sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${neighborhoodArray}]`
         );
       }
 
