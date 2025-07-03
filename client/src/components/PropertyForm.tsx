@@ -26,6 +26,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,8 +45,6 @@ import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Trash2, Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
@@ -144,7 +145,7 @@ const formSchema = z.object({
     .nullable(),
   title: z.string().optional(),
   images: z.array(z.string()).optional(),
-  mainImageIndex: z.number().default(0),
+  mainImageIndex: z.number().default(-1),
   features: z.array(z.string()).default([]),
   availability: z.enum(availabilityOptions).default("Inmediatamente"),
   availabilityDate: z.date().optional(),
@@ -251,7 +252,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       neighborhood: undefined as any,
       title: "",
       images: [],
-      mainImageIndex: 0,
+      mainImageIndex: -1,
       features: [],
       availability: "Inmediatamente",
       availabilityDate: undefined,
@@ -492,12 +493,21 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   <FormControl>
                     <Input
                       {...field}
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       placeholder="Introduce el precio"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      onKeyPress={(e) => {
+                        // Only allow numbers
+                        if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                          e.preventDefault();
+                        }
+                      }}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (!value || Number(value) > 0) {
+                        // Only allow numeric values
+                        if (value === '' || /^\d+$/.test(value)) {
                           field.onChange(value);
                         }
                       }}
@@ -517,15 +527,22 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     <FormLabel>Habitaciones</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="Número de habitaciones"
                         value={field.value === null || field.value === undefined ? "" : field.value}
+                        onKeyPress={(e) => {
+                          if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                            e.preventDefault();
+                          }
+                        }}
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) {
                             field.onChange("");
-                          } else if (Number(value) > 0 && Number.isInteger(Number(value))) {
+                          } else if (/^\d+$/.test(value) && Number(value) > 0 && Number.isInteger(Number(value))) {
                             field.onChange(Number(value));
                           }
                         }}
@@ -547,15 +564,22 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     <FormLabel>Baños</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="Número de baños"
                         value={field.value === null || field.value === undefined ? "" : field.value}
+                        onKeyPress={(e) => {
+                          if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                            e.preventDefault();
+                          }
+                        }}
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) {
                             field.onChange("");
-                          } else if (Number(value) > 0 && Number.isInteger(Number(value))) {
+                          } else if (/^\d+$/.test(value) && Number(value) > 0 && Number.isInteger(Number(value))) {
                             field.onChange(Number(value));
                           }
                         }}
@@ -577,15 +601,22 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     <FormLabel>Superficie (m²)</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         placeholder="Superficie en m²"
                         value={field.value === null || field.value === undefined ? "" : field.value}
+                        onKeyPress={(e) => {
+                          if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                            e.preventDefault();
+                          }
+                        }}
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) {
                             field.onChange("");
-                          } else if (Number(value) > 0) {
+                          } else if (/^\d+$/.test(value) && Number(value) > 0) {
                             field.onChange(Number(value));
                           }
                         }}
@@ -606,38 +637,49 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Barrio</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={(value) => {
-                        // Actualizar el formulario con el valor seleccionado
-                        field.onChange(value);
-                        // Actualizar el estado local
-                        setLocalNeighborhood(value);
-                      }}
-                      value={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un barrio" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => (
-                          <div key={district.district}>
-                            {/* Encabezado del distrito (no seleccionable) */}
-                            <div className="font-bold px-2 py-1 text-sm text-gray-500">
-                              {district.district}
-                            </div>
-                            
-                            {/* Barrios del distrito */}
-                            {district.neighborhoods.map((neighborhood) => (
-                              <SelectItem key={neighborhood} value={neighborhood}>
-                                {neighborhood}
-                              </SelectItem>
-                            ))}
-                          </div>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={`w-full justify-between ${!field.value && "text-muted-foreground"}`}
+                        >
+                          {field.value || "Buscar barrio..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Buscar barrio..." />
+                        <CommandList>
+                          <CommandEmpty>No se encontró ningún barrio.</CommandEmpty>
+                          {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => (
+                            <CommandGroup key={district.district} heading={district.district}>
+                              {district.neighborhoods.map((neighborhood) => (
+                                <CommandItem
+                                  key={neighborhood}
+                                  value={neighborhood}
+                                  onSelect={() => {
+                                    field.onChange(neighborhood);
+                                    setLocalNeighborhood(neighborhood);
+                                  }}
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${
+                                      field.value === neighborhood ? "opacity-100" : "opacity-0"
+                                    }`}
+                                  />
+                                  {neighborhood}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
@@ -675,12 +717,26 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           onChange={(e) => {
                             const files = Array.from(e.target.files || []);
                             if (files.length > 0) {
+                              const currentImages = field.value || [];
+                              const newImages: string[] = [];
+                              
+                              let loadedCount = 0;
+                              const totalFiles = files.length;
+                              
                               // Convert each file to base64
                               files.forEach(file => {
                                 const reader = new FileReader();
                                 reader.onload = (e) => {
                                   const base64String = e.target?.result as string;
-                                  field.onChange([...(field.value || []), base64String]);
+                                  newImages.push(base64String);
+                                  loadedCount++;
+                                  
+                                  // Update the form once all files are loaded
+                                  if (loadedCount === totalFiles) {
+                                    field.onChange([...currentImages, ...newImages]);
+                                    // Reset mainImageIndex to -1 (no main image selected)
+                                    form.setValue("mainImageIndex", -1);
+                                  }
                                 };
                                 reader.readAsDataURL(file);
                               });
@@ -931,9 +987,17 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting || 
+                  ((form.watch("images")?.length || 0) > 0 && (form.watch("mainImageIndex") ?? -1) === -1)
+                }
               >
-                {isEditing ? 'Actualizar' : 'Crear'} propiedad
+                {isSubmitting 
+                  ? 'Guardando...' 
+                  : ((form.watch("images")?.length || 0) > 0 && (form.watch("mainImageIndex") ?? -1) === -1)
+                    ? 'Selecciona imagen principal'
+                    : `${isEditing ? 'Actualizar' : 'Crear'} propiedad`
+                }
               </Button>
             </div>
           </form>

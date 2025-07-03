@@ -106,17 +106,17 @@ type DraggableImageGalleryProps = {
 
 export function DraggableImageGallery({ images, onChange }: DraggableImageGalleryProps) {
   const [imageList, setImageList] = useState<string[]>(images || []);
-  const [mainImageIndex, setMainImageIndex] = useState<number>(0);
+  const [mainImageIndex, setMainImageIndex] = useState<number>(-1);
 
   useEffect(() => {
     setImageList(images || []);
   }, [images]);
 
   useEffect(() => {
-    if (imageList.length === 0 && mainImageIndex > 0) {
-      setMainImageIndex(0);
+    if (imageList.length === 0) {
+      setMainImageIndex(-1);
     }
-  }, [imageList, mainImageIndex]);
+  }, [imageList]);
 
   const moveImage = (dragIndex: number, hoverIndex: number) => {
     const newImages = [...imageList];
@@ -151,16 +151,16 @@ export function DraggableImageGallery({ images, onChange }: DraggableImageGaller
     // Adjust main image index if needed
     let newMainIndex = mainImageIndex;
     if (index === mainImageIndex) {
-      // If the main image was deleted, set the first image as main
-      newMainIndex = newImages.length > 0 ? 0 : -1;
-    } else if (index < mainImageIndex) {
+      // If the main image was deleted, no main image is selected
+      newMainIndex = -1;
+    } else if (index < mainImageIndex && mainImageIndex > 0) {
       // If an image before the main was deleted, decrement the main index
       newMainIndex = mainImageIndex - 1;
     }
     
     setImageList(newImages);
-    setMainImageIndex(newMainIndex >= 0 ? newMainIndex : 0);
-    onChange(newImages, newMainIndex >= 0 ? newMainIndex : 0);
+    setMainImageIndex(newMainIndex);
+    onChange(newImages, newMainIndex);
   };
 
   const handleSetMain = (index: number) => {
@@ -182,6 +182,16 @@ export function DraggableImageGallery({ images, onChange }: DraggableImageGaller
             </svg>
             <span>Arrastra para reordenar las imágenes</span>
           </div>
+          {mainImageIndex === -1 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-amber-800">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L5.732 19.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span className="text-sm font-medium">Selecciona una imagen principal haciendo clic en el botón ✓</span>
+              </div>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {imageList.map((url, index) => (
