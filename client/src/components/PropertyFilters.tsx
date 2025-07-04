@@ -202,7 +202,7 @@ export function PropertyFilters({
                 onClick={() => onViewModeChange('list')}
               >
                 <List className="h-4 w-4 mr-2" />
-                Vista Lista
+                Lista
               </Button>
               <Button
                 variant="ghost"
@@ -216,7 +216,7 @@ export function PropertyFilters({
                 onClick={() => onViewModeChange('map')}
               >
                 <Map className="h-4 w-4 mr-2" />
-                Vista Mapa
+                Mapa
               </Button>
             </div>
           )}
