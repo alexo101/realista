@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Message {
   id: number;
@@ -38,20 +37,6 @@ export function MessageCarousel() {
     return () => clearInterval(interval);
   }, [isAutoPlaying]);
 
-  const goToPrevious = () => {
-    setIsAutoPlaying(false);
-    setCurrentIndex(currentIndex === 0 ? messages.length - 1 : currentIndex - 1);
-    // Resume auto-play after 10 seconds
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
-  const goToNext = () => {
-    setIsAutoPlaying(false);
-    setCurrentIndex(currentIndex === messages.length - 1 ? 0 : currentIndex + 1);
-    // Resume auto-play after 10 seconds
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
   const goToSlide = (index: number) => {
     setIsAutoPlaying(false);
     setCurrentIndex(index);
@@ -62,27 +47,10 @@ export function MessageCarousel() {
   return (
     <div className="relative w-full">
       {/* Main message display */}
-      <div className="relative min-h-[60px] flex items-center justify-center px-12">
+      <div className="relative min-h-[60px] flex items-center justify-center">
         <p className="text-lg text-center text-gray-600 transition-all duration-500 ease-in-out">
           {messages[currentIndex].text}
         </p>
-        
-        {/* Navigation arrows */}
-        <button
-          onClick={goToPrevious}
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Mensaje anterior"
-        >
-          <ChevronLeft className="w-5 h-5 text-gray-500" />
-        </button>
-        
-        <button
-          onClick={goToNext}
-          className="absolute right-0 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label="Siguiente mensaje"
-        >
-          <ChevronRight className="w-5 h-5 text-gray-500" />
-        </button>
       </div>
 
       {/* Dots indicator */}
@@ -99,16 +67,6 @@ export function MessageCarousel() {
             aria-label={`Ir al mensaje ${index + 1}`}
           />
         ))}
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-1 mt-3">
-        <div 
-          className="bg-primary h-1 rounded-full transition-all duration-100 ease-linear"
-          style={{ 
-            width: isAutoPlaying ? `${((currentIndex + 1) / messages.length) * 100}%` : '0%'
-          }}
-        />
       </div>
     </div>
   );
