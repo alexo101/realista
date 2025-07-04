@@ -46,7 +46,7 @@ export default function Home() {
             Encuentra tu hogar ideal en Barcelona
           </h1>
           <p className="text-lg text-center text-gray-600 mb-8">
-            Miles de propiedades te están esperando
+            Propiedades, barrios y reseñas confiables. Todo lo que necesitas para encontrar el hogar ideal, en un solo lugar.
           </p>
           <SearchBar />
         </div>
