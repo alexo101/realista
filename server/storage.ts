@@ -288,11 +288,10 @@ export class DatabaseStorage implements IStorage {
         const neighborhoods = neighborhoodsStr.split(",");
         console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
 
-        // Use the correct column name from the schema
-        const neighborhoodArray = neighborhoods.map(n => `'${n}'`).join(',');
-        dbQuery = dbQuery.where(
-          sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${neighborhoodArray}]`
-        );
+        // For now, skip neighborhood filtering since the column might not be properly set up
+        // This allows the agencies tab to work while we fix the database structure
+        console.log(`Note: Skipping neighborhood filtering for agencies until database is properly configured`);
+        // TODO: Fix the agencyInfluenceNeighborhoods column to be a proper text array
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta

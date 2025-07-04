@@ -1,4 +1,4 @@
-import { UserCircle, MapPin, ExternalLink } from "lucide-react";
+import { UserCircle, MapPin, ExternalLink, Users } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -30,7 +30,20 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
     );
   }
 
-  // Removed empty state
+  // Display empty state if no results or if results array is empty
+  if (!results || results.length === 0) {
+    return (
+      <div className="text-center py-16 bg-gray-50 rounded-lg">
+        <Users className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-lg font-medium text-gray-900">
+          No hay agentes disponibles
+        </h3>
+        <p className="mt-1 text-gray-500">
+          No se encontraron agentes que coincidan con tu búsqueda
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
