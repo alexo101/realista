@@ -908,6 +908,9 @@ export default function ManagePage() {
                           <div className="flex justify-between items-start">
                             <div>
                               <h3 className="font-medium truncate">{property.title || property.address}</h3>
+                              {property.neighborhood && (
+                                <p className="text-sm text-blue-600 font-medium truncate">{property.neighborhood}</p>
+                              )}
                               <p className="text-sm text-gray-500 truncate">{property.address}</p>
                             </div>
                             <div className="text-right">
