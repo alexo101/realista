@@ -3,6 +3,7 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { type Property } from "@shared/schema";
 import { SearchBar } from "@/components/SearchBar";
 import { NeighborhoodRating } from "@/components/NeighborhoodRating";
+import { MessageCarousel } from "@/components/MessageCarousel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
@@ -45,9 +46,9 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-center mb-4">
             Encuentra tu hogar ideal en Barcelona
           </h1>
-          <p className="text-lg text-center text-gray-600 mb-8">
-            Propiedades, barrios y reseñas confiables. Todo lo que necesitas para encontrar el hogar ideal, en un solo lugar.
-          </p>
+          <div className="mb-8">
+            <MessageCarousel />
+          </div>
           <SearchBar />
         </div>
       </section>
