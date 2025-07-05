@@ -169,8 +169,10 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((property) => {
         const hasMultipleImages = property.images && property.images.length > 1;
-        const currentIndex = currentImageIndex[property.id] || 0;
-        const currentImage = property.images?.[currentIndex] || property.images?.[0];
+        // Use mainImageIndex as default starting point, or 0
+        const defaultIndex = property.mainImageIndex ?? 0;
+        const currentIndex = currentImageIndex[property.id] ?? defaultIndex;
+        const currentImage = property.images?.[currentIndex] || property.images?.[0] || "";
 
         return (
           <div 
@@ -182,9 +184,16 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
               {property.images && property.images.length > 0 ? (
                 <>
                   <img
-                    src={currentImage}
+                    src={currentImage || "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=400&auto=format&fit=crop"}
                     alt={property.title || property.address}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => {
+                      // Fallback to a default image if the current image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.src = "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=400&auto=format&fit=crop";
+                    }}
                   />
 
                   {/* Navigation arrows */}

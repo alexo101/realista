@@ -214,9 +214,11 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();
     },
-    staleTime: 300000, // 5 minutes cache for fast tab switching
-    gcTime: 600000, // 10 minutes in cache
+    staleTime: 600000, // 10 minutes cache for better performance
+    gcTime: 900000, // 15 minutes in cache
     refetchOnWindowFocus: false,
+    retry: 2, // Retry failed requests up to 2 times
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Consultas para agencias
@@ -229,9 +231,11 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch agencies for ${effectiveNeighborhood}`);
       return response.json();
     },
-    staleTime: 300000, // 5 minutes cache for fast tab switching
-    gcTime: 600000, // 10 minutes in cache
+    staleTime: 600000, // 10 minutes cache for better performance
+    gcTime: 900000, // 15 minutes in cache
     refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Consultas para agentes
@@ -244,9 +248,11 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch agents for ${effectiveNeighborhood}`);
       return response.json();
     },
-    staleTime: 300000, // 5 minutes cache for fast tab switching
-    gcTime: 600000, // 10 minutes in cache
+    staleTime: 600000, // 10 minutes cache for better performance
+    gcTime: 900000, // 15 minutes in cache
     refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
   
   // Consulta para las valoraciones del barrio
