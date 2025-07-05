@@ -269,7 +269,7 @@ export default function ManagePage() {
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
-        <Sidebar className="pt-16 w-64 border-r">
+        <Sidebar className="pt-16 w-64 border-r hidden md:block">
           <SidebarContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -373,7 +373,98 @@ export default function ManagePage() {
           </SidebarContent>
         </Sidebar>
 
-        <main className="flex-1 p-6 pt-20">
+        {/* Mobile navigation */}
+        <div className="md:hidden fixed top-16 left-0 right-0 bg-white border-b z-40">
+          <div className="flex overflow-x-auto p-2 gap-2">
+            <Button
+              variant={section === "calendar" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSection("calendar")}
+              className="whitespace-nowrap"
+            >
+              <Calendar className="h-4 w-4 mr-1" />
+              Calendario
+            </Button>
+            <Button
+              variant={section === "agent-profile" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSection("agent-profile")}
+              className="whitespace-nowrap"
+            >
+              <UserCircle className="h-4 w-4 mr-1" />
+              Perfil
+            </Button>
+            <Button
+              variant={section === "properties" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSection("properties")}
+              className="whitespace-nowrap"
+            >
+              <Building2 className="h-4 w-4 mr-1" />
+              Propiedades
+            </Button>
+            <Button
+              variant={section === "clients" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSection("clients")}
+              className="whitespace-nowrap"
+            >
+              <Users className="h-4 w-4 mr-1" />
+              Clientes
+            </Button>
+            <Button
+              variant={section === "inquiries" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSection("inquiries")}
+              className="whitespace-nowrap"
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              Consultas
+            </Button>
+            <Button
+              variant={section === "reviews" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSection("reviews")}
+              className="whitespace-nowrap"
+            >
+              <Star className="h-4 w-4 mr-1" />
+              Reseñas
+            </Button>
+            {user?.isAgency && (
+              <>
+                <Button
+                  variant={section === "agency-profile" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSection("agency-profile")}
+                  className="whitespace-nowrap"
+                >
+                  <Building className="h-4 w-4 mr-1" />
+                  Agencia
+                </Button>
+                <Button
+                  variant={section === "team" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSection("team")}
+                  className="whitespace-nowrap"
+                >
+                  <Users className="h-4 w-4 mr-1" />
+                  Equipo
+                </Button>
+                <Button
+                  variant={section === "agencies" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSection("agencies")}
+                  className="whitespace-nowrap"
+                >
+                  <Building2 className="h-4 w-4 mr-1" />
+                  Multi-agencia
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <main className="flex-1 p-4 md:p-6 pt-24 md:pt-20">
           {section === "calendar" && user?.id && (
             <div className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />

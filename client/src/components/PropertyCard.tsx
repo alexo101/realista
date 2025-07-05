@@ -122,30 +122,32 @@ export function PropertyCard({ property }: PropertyCardProps) {
           )}
         </div>
         
-        <CardContent className="p-4">
+        <CardContent className="p-3 md:p-4">
           <div className="mb-2">
-            <h3 className="font-semibold text-lg truncate">{property.title}</h3>
-            <div className="flex items-center text-sm text-gray-500">
-              <MapPin className="h-3 w-3 mr-1" /> {property.address}
+            <h3 className="font-semibold text-base md:text-lg truncate">{property.title}</h3>
+            <div className="flex items-center text-xs md:text-sm text-gray-500">
+              <MapPin className="h-3 w-3 mr-1" /> 
+              <span className="truncate">{property.address}</span>
             </div>
           </div>
           
-          <div className="text-xl font-bold mb-3 flex items-center">
-            <Euro className="h-5 w-5 mr-1" /> {formattedPrice}
-            {property.operationType === 'rent' && <span className="text-sm font-normal ml-1">/mes</span>}
+          <div className="text-lg md:text-xl font-bold mb-3 flex items-center">
+            <Euro className="h-4 w-4 md:h-5 md:w-5 mr-1" /> 
+            <span className="truncate">{formattedPrice}</span>
+            {property.operationType === 'rent' && <span className="text-xs md:text-sm font-normal ml-1">/mes</span>}
           </div>
           
-          <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex items-center justify-between text-xs md:text-sm text-gray-600">
             <div className="flex items-center">
-              <Bed className="h-4 w-4 mr-1" />
+              <Bed className="h-3 w-3 md:h-4 md:w-4 mr-1" />
               <span>{property.bedrooms}</span>
             </div>
             <div className="flex items-center">
-              <Bath className="h-4 w-4 mr-1" />
+              <Bath className="h-3 w-3 md:h-4 md:w-4 mr-1" />
               <span>{property.bathrooms}</span>
             </div>
             <div className="flex items-center">
-              <Square className="h-4 w-4 mr-1" />
+              <Square className="h-3 w-3 md:h-4 md:w-4 mr-1" />
               <span>{property.superficie || property.size}m²</span>
             </div>
           </div>

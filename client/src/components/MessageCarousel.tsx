@@ -47,8 +47,8 @@ export function MessageCarousel() {
   return (
     <div className="relative w-full">
       {/* Main message display */}
-      <div className="relative min-h-[60px] flex items-center justify-center">
-        <p className="text-lg text-center text-gray-600 transition-all duration-500 ease-in-out">
+      <div className="relative min-h-[60px] md:min-h-[60px] flex items-center justify-center px-4">
+        <p className="text-sm md:text-lg text-center text-gray-600 transition-all duration-500 ease-in-out leading-relaxed">
           {messages[currentIndex].text}
         </p>
       </div>

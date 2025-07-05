@@ -111,6 +111,13 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- January 5, 2025. Made all screens responsive for desktop and mobile devices
+  - Enhanced navbar with mobile menu and hamburger navigation
+  - Improved property cards and results grids for mobile layouts
+  - Added responsive breakpoints throughout component hierarchy
+  - Implemented mobile navigation for manage page with horizontal scroll
+  - Optimized search bars and filters for mobile interaction
+  - Enhanced caching strategy with 10-minute cache times and retry logic
 - June 28, 2025. Initial setup
 
 ## User Preferences

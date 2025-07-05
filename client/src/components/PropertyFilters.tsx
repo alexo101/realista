@@ -131,7 +131,7 @@ export function PropertyFilters({
     <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
       <div className="space-y-6">
         {/* Sección superior - Toggle de operación y vista */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
             <Button
               variant="ghost"
@@ -223,7 +223,7 @@ export function PropertyFilters({
         </div>
 
         {/* Sección de filtros principales */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
           {/* Precio mínimo */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">

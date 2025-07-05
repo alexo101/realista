@@ -41,24 +41,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen pt-16">
-      <section className="bg-primary/5 py-16">
+      <section className="bg-primary/5 py-8 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold text-center mb-4">
+          <h1 className="text-2xl md:text-4xl font-bold text-center mb-4">
             Encuentra tu hogar ideal en Barcelona
           </h1>
-          <div className="mb-8">
+          <div className="mb-6 md:mb-8">
             <MessageCarousel />
           </div>
           <SearchBar />
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <NeighborhoodRating />
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-semibold mb-6">Las más vistas</h2>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <h2 className="text-xl md:text-2xl font-semibold mb-6">Las más vistas</h2>
         
         <Tabs defaultValue="venta" className="mt-4">
           <TabsList className="mb-4">

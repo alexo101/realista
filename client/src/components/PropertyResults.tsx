@@ -157,7 +157,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {Array(6).fill(0).map((_, i) => (
           <div key={i} className="bg-gray-100 animate-pulse h-[300px] rounded-lg" />
         ))}
@@ -166,7 +166,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
       {results.map((property) => {
         const hasMultipleImages = property.images && property.images.length > 1;
         // Use mainImageIndex as default starting point, or 0
@@ -241,20 +241,20 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="p-3 md:p-4">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-lg line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
+                <h3 className="font-semibold text-base md:text-lg line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
 
                 {/* Favorite and Share buttons */}
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="p-1 h-8 w-8 hover:bg-gray-100"
+                    className="p-1 h-7 w-7 md:h-8 md:w-8 hover:bg-gray-100"
                     onClick={(e) => handleToggleFavorite(property.id, e)}
                   >
                     <Heart 
-                      className={`h-4 w-4 ${
+                      className={`h-3 w-3 md:h-4 md:w-4 ${
                         favoriteStatuses[property.id] 
                           ? 'fill-red-500 text-red-500' 
                           : 'text-gray-400 hover:text-red-500'
@@ -264,16 +264,16 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="p-1 h-8 w-8 hover:bg-gray-100"
+                    className="p-1 h-7 w-7 md:h-8 md:w-8 hover:bg-gray-100"
                     onClick={(e) => handleShare(property, e)}
                   >
-                    <Share2 className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                    <Share2 className="h-3 w-3 md:h-4 md:w-4 text-gray-400 hover:text-blue-500" />
                   </Button>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 mt-2">
-                <p className="text-2xl font-bold text-primary">€{property.price.toLocaleString()}</p>
+                <p className="text-lg md:text-2xl font-bold text-primary">€{property.price.toLocaleString()}</p>
                 {property.previousPrice && property.previousPrice > property.price && (
                   <span className="text-sm font-medium text-red-600">
                     {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓

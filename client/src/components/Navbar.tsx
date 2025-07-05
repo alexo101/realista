@@ -1,11 +1,13 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { Home, Menu, X } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { useUser } from "@/contexts/user-context";
+import { useState } from "react";
 
 export function Navbar() {
   const { user } = useUser();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <>
@@ -17,7 +19,8 @@ export function Navbar() {
               <span className="text-xl font-bold text-primary">Realista</span>
             </Link>
 
-            <div className="flex items-center space-x-4">
+            {/* Desktop navigation */}
+            <div className="hidden md:flex items-center space-x-4">
               {user ? (
                 <>
                   {user.isClient ? (
@@ -51,8 +54,61 @@ export function Navbar() {
                 </>
               )}
             </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-200">
+            <div className="px-4 py-2 space-y-2">
+              {user ? (
+                <>
+                  {user.isClient ? (
+                    <Link href="/client-profile" className="block">
+                      <Button variant="outline" className="w-full justify-start">
+                        Mi perfil
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/manage" className="block">
+                      <Button variant="outline" className="w-full justify-start">
+                        Gestionar todo
+                      </Button>
+                    </Link>
+                  )}
+                  <div className="pt-2">
+                    <UserMenu />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link href="/register" className="block">
+                    <Button variant="outline" className="w-full justify-start">
+                      Registra tu agencia
+                    </Button>
+                  </Link>
+
+                  <Link href="/login" className="block">
+                    <Button variant="outline" className="w-full justify-start">
+                      Iniciar sesión
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
     </>
   );

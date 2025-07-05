@@ -264,38 +264,38 @@ export function SearchBar() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-lg p-4">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4">
           <Button
             variant={searchType === 'rent' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
+            className="rounded-none px-4 md:px-8 text-sm md:text-base"
             onClick={() => handleSearchTypeChange('rent')}
           >
             Alquilar
           </Button>
           <Button
             variant={searchType === 'buy' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
+            className="rounded-none px-4 md:px-8 text-sm md:text-base"
             onClick={() => handleSearchTypeChange('buy')}
           >
             Comprar
           </Button>
           <Button
             variant={searchType === 'agencies' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
+            className="rounded-none px-4 md:px-8 text-sm md:text-base"
             onClick={() => handleSearchTypeChange('agencies')}
           >
             Agencias
           </Button>
           <Button
             variant={searchType === 'agents' ? 'default' : 'ghost'}
-            className="rounded-none px-8"
+            className="rounded-none px-4 md:px-8 text-sm md:text-base"
             onClick={() => handleSearchTypeChange('agents')}
           >
             Agentes
           </Button>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
           {/* Buscador para Agencias y Agentes */}
           {(searchType === 'agencies' || searchType === 'agents') && (
             <>
