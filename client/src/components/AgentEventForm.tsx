@@ -244,7 +244,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[200px] p-0">
                   <Command>
                     <CommandInput 
                       placeholder="Buscar contacto por nombre o apellido..."

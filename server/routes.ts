@@ -413,6 +413,18 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  // Get clients by agent ID (for event form)
+  app.get("/api/agents/:agentId/clients", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const clients = await storage.getClientsByAgent(agentId);
+      res.json(clients);
+    } catch (error) {
+      console.error('Error fetching clients for agent:', error);
+      res.status(500).json({ message: "Failed to fetch clients" });
+    }
+  });
+
   // Client favorite agents endpoints
   app.post("/api/clients/favorites/agents/:agentId", async (req, res) => {
     try {

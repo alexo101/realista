@@ -64,6 +64,7 @@ export function ClientForm({ onSubmit, onClose, initialData, isEditing = false }
     defaultValues: initialData || {
       id: undefined,
       name: "",
+      surname: "",
       phone: "",
       email: "",
     },
