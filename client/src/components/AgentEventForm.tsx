@@ -236,9 +236,14 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
                       )}
                     >
                       {field.value
-                        ? clients.find((client: any) => client.id === field.value)?.name || 
-                          clients.find((client: any) => client.id === field.value)?.email ||
-                          "Cliente seleccionado"
+                        ? (() => {
+                            const selectedClient = clients.find((client: any) => client.id === field.value);
+                            if (selectedClient) {
+                              const fullName = `${selectedClient.name || ''} ${selectedClient.surname || ''}`.trim();
+                              return fullName || selectedClient.email || "Cliente seleccionado";
+                            }
+                            return "Cliente seleccionado";
+                          })()
                         : "Sin contacto seleccionado"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>

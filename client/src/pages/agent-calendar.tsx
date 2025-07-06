@@ -50,6 +50,26 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
     }
   });
 
+  // Fetch properties to get addresses
+  const { data: properties = [] } = useQuery({
+    queryKey: ["/api/properties"],
+    queryFn: async () => {
+      const response = await fetch("/api/properties");
+      if (!response.ok) throw new Error("Failed to fetch properties");
+      return response.json();
+    }
+  });
+
+  // Fetch clients to get names
+  const { data: clients = [] } = useQuery({
+    queryKey: ["/api/agents", agentId, "clients"],
+    queryFn: async () => {
+      const response = await fetch(`/api/agents/${agentId}/clients`);
+      if (!response.ok) throw new Error("Failed to fetch clients");
+      return response.json();
+    }
+  });
+
   // Create event mutation
   const createEventMutation = useMutation({
     mutationFn: async (eventData: any) => {
@@ -148,73 +168,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       </div>
 
       {/* Events Display */}
-      <Tabs defaultValue="calendar" className="w-full">
-        <TabsList>
-          <TabsTrigger value="calendar">Vista Calendario</TabsTrigger>
-          <TabsTrigger value="list">Vista Lista</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="calendar" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Eventos Programados
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8">Cargando eventos...</div>
-              ) : events.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No hay eventos programados para {viewMode === "today" ? "hoy" : "esta semana"}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {events.map((event: AgentEvent) => (
-                    <div key={event.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-                         onClick={() => {
-                           setSelectedEvent(event);
-                           setShowEventForm(true);
-                         }}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{formatEventTime(event.eventTime)}</span>
-                            </div>
-                            <span className="text-sm text-muted-foreground">
-                              {format(new Date(event.eventDate), "dd/MM/yyyy")}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <Badge className={getEventTypeColor(event.eventType)}>
-                                {event.eventType}
-                              </Badge>
-                              <span className="font-medium">
-                                {event.eventType === "Visita" ? "Visita de propiedad" : "Llamada telefónica"}
-                              </span>
-                            </div>
-                            {event.comments && (
-                              <p className="text-sm text-muted-foreground mt-1">{event.comments}</p>
-                            )}
-                          </div>
-                        </div>
-                        <Badge variant={event.status === "scheduled" ? "default" : "secondary"}>
-                          {event.status === "scheduled" ? "Programado" : "Completado"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="list" className="space-y-4">
+      <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Lista de Eventos</CardTitle>
@@ -228,71 +182,82 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                       <th className="text-left p-2">Tipo de evento</th>
                       <th className="text-left p-2">Propiedades</th>
                       <th className="text-left p-2">Contactos</th>
+                      <th className="text-left p-2">Estado</th>
                       <th className="text-left p-2">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {events.map((event: AgentEvent) => (
-                      <tr key={event.id} className="border-b hover:bg-gray-50">
-                        <td className="p-2">
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {format(new Date(event.eventDate), "dd/MM/yyyy")}
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                              {formatEventTime(event.eventTime)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="p-2">
-                          <Badge className={getEventTypeColor(event.eventType)}>
-                            {event.eventType}
-                          </Badge>
-                        </td>
-                        <td className="p-2">
-                          {event.propertyId ? (
-                            <span className="text-sm">Propiedad #{event.propertyId}</span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Sin propiedad</span>
-                          )}
-                        </td>
-                        <td className="p-2">
-                          {event.clientId ? (
-                            <span className="text-sm">Cliente #{event.clientId}</span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Sin contacto</span>
-                          )}
-                        </td>
-                        <td className="p-2">
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedEvent(event);
-                                setShowEventForm(true);
-                              }}
-                            >
-                              Editar
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => deleteEventMutation.mutate(event.id)}
-                            >
-                              Eliminar
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {events.map((event: AgentEvent) => {
+                      const property = properties.find((p: any) => p.id === event.propertyId);
+                      const client = clients.find((c: any) => c.id === event.clientId);
+                      return (
+                        <tr key={event.id} className="border-b hover:bg-gray-50">
+                          <td className="p-2">
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {format(new Date(event.eventDate), "dd/MM/yyyy")}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {formatEventTime(event.eventTime)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-2">
+                            <Badge className={getEventTypeColor(event.eventType)}>
+                              {event.eventType}
+                            </Badge>
+                          </td>
+                          <td className="p-2">
+                            {property ? (
+                              <span className="text-sm">{property.address}</span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Sin propiedad</span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            {client ? (
+                              <span className="text-sm">
+                                {client.name} {client.surname || ''}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Sin contacto</span>
+                            )}
+                          </td>
+                          <td className="p-2">
+                            <Badge variant={event.status === "scheduled" ? "default" : "secondary"}>
+                              {event.status === "scheduled" ? "Programado" : "Completado"}
+                            </Badge>
+                          </td>
+                          <td className="p-2">
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedEvent(event);
+                                  setShowEventForm(true);
+                                }}
+                              >
+                                Editar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => deleteEventMutation.mutate(event.id)}
+                              >
+                                Eliminar
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
 
       {/* Event Form Dialog */}
       <Dialog open={showEventForm} onOpenChange={setShowEventForm}>

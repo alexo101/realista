@@ -1128,7 +1128,9 @@ export default function ManagePage() {
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="text-lg font-medium">{client.name}</h3>
+                            <h3 className="text-lg font-medium">
+                              {client.name} {client.surname || ''}
+                            </h3>
                             <p className="text-sm text-gray-600 mt-1">Email: {client.email} • Teléfono: {client.phone}</p>
 
                             {client.operationType && (
