@@ -19,6 +19,7 @@ import { AppointmentsManager } from "./AppointmentForm";
 const formSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(1, "El nombre es obligatorio"),
+  surname: z.string().optional(),
   phone: z.string()
     .min(1, "El número de teléfono es obligatorio")
     .superRefine((val, ctx) => {
@@ -101,6 +102,20 @@ export function ClientForm({ onSubmit, onClose, initialData, isEditing = false }
                     <FormLabel>Nombre</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Introduce el nombre" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="surname"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Apellido</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Introduce el apellido" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
