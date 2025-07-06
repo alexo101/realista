@@ -1087,6 +1087,7 @@ export default function ManagePage() {
                   }}
                   initialData={editingClient ? {
                     name: editingClient.name,
+                    surname: editingClient.surname || "",
                     email: editingClient.email,
                     phone: editingClient.phone,
                     notes: editingClient.notes,
