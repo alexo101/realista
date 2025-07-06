@@ -297,8 +297,8 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       {/* Event Form Dialog */}
       <Dialog open={showEventForm} onOpenChange={setShowEventForm}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-lg font-semibold">
               {selectedEvent ? "Editar Evento" : "Programar nuevo evento"}
             </DialogTitle>
           </DialogHeader>

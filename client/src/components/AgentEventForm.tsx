@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,8 @@ interface AgentEventFormProps {
 
 export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }: AgentEventFormProps) {
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactSearch, setContactSearch] = useState("");
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
@@ -107,8 +110,9 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+    <div className="p-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {/* Event Type */}
         <FormField
           control={form.control}
@@ -218,25 +222,76 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
           control={form.control}
           name="clientId"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="flex flex-col">
               <FormLabel>Contacto</FormLabel>
-              <Select 
-                onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
-                defaultValue={field.value?.toString()}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin contacto seleccionado" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {clients.map((client: any) => (
-                    <SelectItem key={client.id} value={client.id.toString()}>
-                      {client.name || client.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={contactOpen} onOpenChange={setContactOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value
+                        ? clients.find((client: any) => client.id === field.value)?.name || 
+                          clients.find((client: any) => client.id === field.value)?.email ||
+                          "Cliente seleccionado"
+                        : "Sin contacto seleccionado"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Buscar contacto por nombre o apellido..."
+                      value={contactSearch}
+                      onValueChange={setContactSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No se encontraron contactos.</CommandEmpty>
+                      <CommandGroup>
+                        {clients
+                          .filter((client: any) => {
+                            const searchTerm = contactSearch.toLowerCase();
+                            const fullName = `${client.name || ''} ${client.surname || ''}`.toLowerCase();
+                            const email = (client.email || '').toLowerCase();
+                            return fullName.includes(searchTerm) || email.includes(searchTerm);
+                          })
+                          .map((client: any) => (
+                            <CommandItem
+                              key={client.id}
+                              value={client.id.toString()}
+                              onSelect={() => {
+                                field.onChange(client.id);
+                                setContactOpen(false);
+                                setContactSearch("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value === client.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {client.name ? `${client.name} ${client.surname || ''}`.trim() : client.email}
+                                </span>
+                                {client.name && client.email && (
+                                  <span className="text-sm text-muted-foreground">{client.email}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}
@@ -304,5 +359,6 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
         </div>
       </form>
     </Form>
+    </div>
   );
 }
