@@ -170,9 +170,6 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       {/* Events Display */}
       <div className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Lista de Eventos</CardTitle>
-            </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full">
