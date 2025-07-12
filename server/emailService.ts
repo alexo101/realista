@@ -1,15 +1,7 @@
 import nodemailer, { TransportOptions } from 'nodemailer';
 
-// Configuración del transporte de correo
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.ethereal.email', // Ethereal como fallback para pruebas
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_USER || 'ethereal.user',
-    pass: process.env.EMAIL_PASSWORD || 'ethereal.password',
-  },
-} as TransportOptions);
+// Variable global para el transporter
+let transporter: nodemailer.Transporter;
 
 // Función para crear una cuenta de prueba en Ethereal si no hay credenciales
 async function createTestAccount() {
@@ -23,20 +15,33 @@ async function createTestAccount() {
       console.log('Contraseña:', testAccount.pass);
       console.log('URL de preview:', 'https://ethereal.email');
       
-      // Actualizar el transporter con las credenciales de prueba
-      (transporter as any).options = {
-        ...(transporter as any).options,
+      // Crear el transporter con las credenciales de prueba
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
         auth: {
           user: testAccount.user,
           pass: testAccount.pass
         }
-      };
+      });
       
       return true;
     } catch (error) {
       console.error('Error al crear cuenta de prueba de email:', error);
       return false;
     }
+  } else {
+    // Usar credenciales del entorno
+    transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || 'smtp.ethereal.email',
+      port: parseInt(process.env.EMAIL_PORT || '587'),
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
   }
   return true;
 }
