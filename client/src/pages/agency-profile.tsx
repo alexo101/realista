@@ -547,6 +547,16 @@ export default function AgencyProfile() {
                     </div>
                   </div>
                   
+                  {agency.yearEstablished && (
+                    <div className="flex">
+                      <Calendar className="h-5 w-5 mr-3 text-gray-500" />
+                      <div>
+                        <div className="font-medium">Fundada en</div>
+                        <div>{agency.yearEstablished}</div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {agency.agencyAddress && (
                     <div className="flex">
                       <MapPin className="h-5 w-5 mr-3 text-gray-500" />

@@ -796,24 +796,36 @@ export default function ManagePage() {
 
                 <div>
                   <Label htmlFor="yearEstablished">Año de fundación</Label>
-                  <Input 
-                    id="yearEstablished" 
-                    type="number"
-                    placeholder="Año en que se fundó la agencia" 
-                    value={yearEstablished !== undefined ? yearEstablished : ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
+                  <Select
+                    value={yearEstablished ? yearEstablished.toString() : ''}
+                    onValueChange={(value) => {
                       if (value === '') {
                         setYearEstablished(undefined);
                       } else {
-                        const numValue = parseInt(value, 10);
-                        if (!isNaN(numValue) && numValue > 1900 && numValue <= new Date().getFullYear()) {
-                          setYearEstablished(numValue);
-                        }
+                        setYearEstablished(parseInt(value, 10));
                       }
                       setHasAgencyChanges(true); // Added change detection
                     }}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona el año de fundación" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">-- Seleccionar año --</SelectItem>
+                      {(() => {
+                        const currentYear = new Date().getFullYear();
+                        const years = [];
+                        for (let year = currentYear; year >= 1900; year--) {
+                          years.push(year);
+                        }
+                        return years.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
