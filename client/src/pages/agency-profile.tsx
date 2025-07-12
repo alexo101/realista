@@ -12,6 +12,7 @@ import { ImageGallery } from "@/components/ImageGallery";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AgencyReview } from "@/components/AgencyReview";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -96,6 +97,7 @@ export default function AgencyProfile() {
   // Estado para la pestaña activa y favoritos
   const [activeTab, setActiveTab] = useState("overview");
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Hooks para autenticación y navegación
   const { user } = useUser();
@@ -257,7 +259,7 @@ export default function AgencyProfile() {
     enabled: !!id,
   });
   
-  // Consulta para obtener las propiedades de la agencia
+  // Consulta para obtener las propiedades de la agencia con optimización de carga
   const { data: agencyProperties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: [`/api/agencies/${id}/properties`],
     queryFn: async () => {
@@ -278,7 +280,12 @@ export default function AgencyProfile() {
         return [];
       }
     },
-    enabled: !!id,
+    enabled: !!id && activeTab === 'properties', // Solo cargar cuando se necesite
+    staleTime: 300000, // 5 minutos de cache
+    gcTime: 600000, // 10 minutos en memoria
+    refetchOnWindowFocus: false,
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Query para verificar si la agencia ya está en favoritos
@@ -786,7 +793,7 @@ export default function AgencyProfile() {
                           <p className="text-gray-500 max-w-md mx-auto">
                             Esta agencia aún no tiene reseñas.
                           </p>
-                          <Button className="mt-4">
+                          <Button className="mt-4" onClick={() => setIsReviewModalOpen(true)}>
                             Escribir una reseña
                           </Button>
                         </div>
@@ -859,7 +866,7 @@ export default function AgencyProfile() {
                           </div>
                         </div>
                         
-                        <Button className="w-full">
+                        <Button className="w-full" onClick={() => setIsReviewModalOpen(true)}>
                           Escribir una reseña
                         </Button>
                       </div>
@@ -920,6 +927,13 @@ export default function AgencyProfile() {
           </div>
         </TabsContent>
       </Tabs>
+      
+      {/* Modal para escribir reseña */}
+      {isReviewModalOpen && (
+        <AgencyReview 
+          onClose={() => setIsReviewModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
