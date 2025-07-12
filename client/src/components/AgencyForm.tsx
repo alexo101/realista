@@ -227,9 +227,9 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             <div>
               <Label htmlFor="yearEstablished">Año de fundación</Label>
               <Select
-                value={yearEstablished ? yearEstablished.toString() : ''}
+                value={yearEstablished ? yearEstablished.toString() : 'none'}
                 onValueChange={(value) => {
-                  if (value === '') {
+                  if (value === 'none') {
                     setYearEstablished(undefined);
                   } else {
                     setYearEstablished(parseInt(value, 10));
@@ -240,7 +240,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   <SelectValue placeholder="Selecciona el año de fundación" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-- Seleccionar año --</SelectItem>
+                  <SelectItem value="none">-- Seleccionar año --</SelectItem>
                   {(() => {
                     const currentYear = new Date().getFullYear();
                     const years = [];
