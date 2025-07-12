@@ -43,8 +43,8 @@ export default function NeighborhoodResultsPage() {
   const defaultBedrooms = defaultBedroomsList.length > 0 ? Math.min(...defaultBedroomsList) : null;
   
   // Filtros para cada pestaña
-  const [agenciesFilter, setAgenciesFilter] = useState<string>("default");
-  const [agentsFilter, setAgentsFilter] = useState<string>("default");
+  const [agenciesFilter, setAgenciesFilter] = useState<string>("best_rating");
+  const [agentsFilter, setAgentsFilter] = useState<string>("best_rating");
   
   // Estado para el toggle de vista (lista/mapa)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
@@ -448,7 +448,6 @@ export default function NeighborhoodResultsPage() {
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="default">Predeterminado</SelectItem>
                     <SelectItem value="best_rating">Mejor puntuación</SelectItem>
                     <SelectItem value="newest_reviews">Más recientes</SelectItem>
                     <SelectItem value="most_reviews">Más reseñas</SelectItem>
@@ -493,7 +492,6 @@ export default function NeighborhoodResultsPage() {
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="default">Predeterminado</SelectItem>
                     <SelectItem value="best_rating">Mejor puntuación</SelectItem>
                     <SelectItem value="newest_reviews">Más recientes</SelectItem>
                     <SelectItem value="most_reviews">Más reseñas</SelectItem>
