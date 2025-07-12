@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -70,6 +71,7 @@ export default function ManagePage() {
   const [isRequestingReview, setIsRequestingReview] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [reviewRequestClient, setReviewRequestClient] = useState<{ id: number; name: string } | null>(null);
 
   // Estados para los campos de perfil de agente
   const [name, setName] = useState("");
@@ -293,8 +295,17 @@ export default function ManagePage() {
 
   // Function to handle review request confirmation
   const handleRequestReview = (clientId: number, clientName: string) => {
-    if (confirm(`¿Estás seguro de que quieres solicitar una reseña a ${clientName}?`)) {
-      sendReviewRequestMutation.mutate({ clientId, agentId: user!.id });
+    setReviewRequestClient({ id: clientId, name: clientName });
+  };
+
+  // Function to confirm and send review request
+  const confirmSendReviewRequest = () => {
+    if (reviewRequestClient) {
+      sendReviewRequestMutation.mutate({ 
+        clientId: reviewRequestClient.id, 
+        agentId: user!.id 
+      });
+      setReviewRequestClient(null);
     }
   };
 
@@ -1332,6 +1343,33 @@ export default function ManagePage() {
           
         </main>
       </SidebarProvider>
+
+      {/* Review Request Confirmation Dialog */}
+      <Dialog open={reviewRequestClient !== null} onOpenChange={(open) => !open && setReviewRequestClient(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar solicitud de reseña</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres solicitar una reseña a {reviewRequestClient?.name}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setReviewRequestClient(null)}
+              disabled={sendReviewRequestMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={confirmSendReviewRequest}
+              disabled={sendReviewRequestMutation.isPending}
+            >
+              {sendReviewRequestMutation.isPending ? 'Enviando...' : 'Enviar solicitud'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
