@@ -104,3 +104,36 @@ export async function sendWelcomeEmail(to: string, name: string, isAgent: boolea
     return false;
   }
 }
+
+// Función para enviar solicitud de reseña
+export async function sendReviewRequest(to: string, clientName: string, agentName: string) {
+  try {
+    const subject = `Solicitud de reseña de ${agentName}`;
+    const content = `
+      <h2>Solicitud de reseña</h2>
+      <p>Hola ${clientName},</p>
+      <p>El agente <strong>${agentName}</strong> te ha solicitado una reseña sobre los servicios que has recibido.</p>
+      <p>Tu opinión es muy importante para nosotros y nos ayuda a seguir mejorando nuestros servicios.</p>
+      <p>Si deseas compartir tu experiencia, puedes hacerlo accediendo a nuestra plataforma.</p>
+      <p>Muchas gracias por tu tiempo y confianza.</p>
+      <p>Saludos cordiales,<br>El equipo de Realista</p>
+    `;
+
+    const info = await transporter.sendMail({
+      from: '"Realista" <noreply@realista.es>',
+      to: to,
+      subject: subject,
+      html: content,
+    });
+
+    console.log('Solicitud de reseña enviada:', info.messageId);
+    if ((info as any).messageUrl) {
+      console.log('Preview URL (solo para pruebas):', (info as any).messageUrl);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error al enviar la solicitud de reseña:', error);
+    return false;
+  }
+}

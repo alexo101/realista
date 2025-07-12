@@ -10,7 +10,7 @@ import {
   insertAgencySchema,
   insertPropertyVisitRequestSchema
 } from "@shared/schema";
-import { sendWelcomeEmail } from "./emailService";
+import { sendWelcomeEmail, sendReviewRequest } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
 import { cache } from "./cache";
 
@@ -1733,6 +1733,38 @@ Gracias!
     } catch (error) {
       console.error('Error deleting agency agent:', error);
       res.status(500).json({ message: "Failed to delete agency agent" });
+    }
+  });
+
+  // API para solicitar reseñas
+  app.post("/api/review-requests", async (req, res) => {
+    try {
+      const { clientId, agentId } = req.body;
+      
+      // Obtener datos del cliente y agente
+      const client = await storage.getClient(clientId);
+      const agent = await storage.getUser(agentId);
+      
+      if (!client || !agent) {
+        return res.status(404).json({ message: "Cliente o agente no encontrado" });
+      }
+      
+      // Enviar email de solicitud de reseña
+      const success = await sendReviewRequest(
+        client.email, 
+        client.name, 
+        agent.name || "Agente"
+      );
+      
+      if (success) {
+        console.log(`Solicitud de reseña enviada de ${agent.name} para ${client.name}`);
+        res.json({ message: "Solicitud de reseña enviada exitosamente" });
+      } else {
+        res.status(500).json({ message: "Error al enviar la solicitud de reseña" });
+      }
+    } catch (error) {
+      console.error('Error sending review request:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
     }
   });
 
