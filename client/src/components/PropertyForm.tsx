@@ -166,7 +166,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
     initialData?.neighborhood
   );
-  
+
   // Actualizar el barrio local cuando cambia el initialData
   useEffect(() => {
     if (initialData?.neighborhood) {
@@ -258,7 +258,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       availabilityDate: undefined,
     },
   });
-  
+
   // Handler for image changes with main image index
   const handleImageChange = (newImages: string[], mainImageIndex: number) => {
     form.setValue("images", newImages);
@@ -390,7 +390,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       <FormLabel>Tipo de vivienda</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value}
+                        value={field.value || undefined}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -418,7 +418,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       <FormLabel>Situación de la vivienda</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value}
+                        value={field.value || undefined}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -592,7 +592,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="superficie"
@@ -719,10 +719,10 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                             if (files.length > 0) {
                               const currentImages = field.value || [];
                               const newImages: string[] = [];
-                              
+
                               let loadedCount = 0;
                               const totalFiles = files.length;
-                              
+
                               // Convert each file to base64
                               files.forEach(file => {
                                 const reader = new FileReader();
@@ -730,7 +730,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                                   const base64String = e.target?.result as string;
                                   newImages.push(base64String);
                                   loadedCount++;
-                                  
+
                                   // Update the form once all files are loaded
                                   if (loadedCount === totalFiles) {
                                     field.onChange([...currentImages, ...newImages]);
@@ -766,7 +766,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 </FormItem>
               )}
             />
-            
+
             {/* Sección de Características */}
             <FormField
               control={form.control}
@@ -815,7 +815,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 </FormItem>
               )}
             />
-            
+
             {/* Sección de Disponibilidad */}
             <div className="space-y-4">
               <FormField
@@ -851,7 +851,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   </FormItem>
                 )}
               />
-              
+
               {form.watch("availability") === "A partir de" && (
                 <FormField
                   control={form.control}
@@ -897,7 +897,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
             {isEditing && initialData?.id && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Estado de la Propiedad</h3>
-                
+
                 {/* Property Visibility Toggle */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
