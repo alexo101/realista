@@ -301,7 +301,7 @@ export const agentEvents = pgTable("agent_events", {
   agentId: integer("agent_id").notNull().references(() => agents.id),
   clientId: integer("client_id").references(() => clients.id),
   propertyId: integer("property_id").references(() => properties.id),
-  eventType: text("event_type").notNull(), // 'Llamada' or 'Visita'
+  eventType: text("event_type").notNull(), // 'Llamada', 'Visita', or 'Seguimiento'
   eventDate: text("event_date").notNull(), // YYYY-MM-DD format
   eventTime: text("event_time").notNull(), // HH:MM format
   comments: text("comments"),

@@ -123,7 +123,16 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
   };
 
   const getEventTypeColor = (eventType: string) => {
-    return eventType === "Visita" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800";
+    switch (eventType) {
+      case "Visita":
+        return "bg-blue-100 text-blue-800";
+      case "Llamada":
+        return "bg-green-100 text-green-800";
+      case "Seguimiento":
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
   };
 
   return (

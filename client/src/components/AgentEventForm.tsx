@@ -19,12 +19,21 @@ import { cn } from "@/lib/utils";
 import { type AgentEvent } from "@shared/schema";
 
 const eventFormSchema = z.object({
-  eventType: z.enum(["Llamada", "Visita"]),
+  eventType: z.enum(["Llamada", "Visita", "Seguimiento"]),
   eventDate: z.string().min(1, "La fecha es obligatoria"),
   eventTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:MM)"),
   clientId: z.number().optional(),
   propertyId: z.number().optional(),
   comments: z.string().optional(),
+}).refine((data) => {
+  // Property is mandatory for "Visita" events
+  if (data.eventType === "Visita" && !data.propertyId) {
+    return false;
+  }
+  return true;
+}, {
+  message: "La propiedad es obligatoria para eventos de tipo 'Visita'",
+  path: ["propertyId"],
 });
 
 type EventFormData = z.infer<typeof eventFormSchema>;
@@ -45,7 +54,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
-      eventType: event?.eventType as "Llamada" | "Visita" || "Visita",
+      eventType: event?.eventType as "Llamada" | "Visita" | "Seguimiento" || "Visita",
       eventDate: event?.eventDate || "",
       eventTime: event?.eventTime || "",
       clientId: event?.clientId || undefined,
@@ -136,6 +145,12 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
                     <RadioGroupItem value="Llamada" id="llamada" />
                     <FormLabel htmlFor="llamada" className="font-normal cursor-pointer">
                       Llamada
+                    </FormLabel>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="Seguimiento" id="seguimiento" />
+                    <FormLabel htmlFor="seguimiento" className="font-normal cursor-pointer">
+                      Seguimiento
                     </FormLabel>
                   </div>
                 </RadioGroup>
@@ -306,29 +321,36 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
         <FormField
           control={form.control}
           name="propertyId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Propiedad</FormLabel>
-              <Select 
-                onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
-                defaultValue={field.value?.toString()}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin propiedad seleccionada" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {properties.map((property: any) => (
-                    <SelectItem key={property.id} value={property.id.toString()}>
-                      {property.reference} - {property.address}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            const currentEventType = form.watch("eventType");
+            const isPropertyMandatory = currentEventType === "Visita";
+            
+            return (
+              <FormItem>
+                <FormLabel>
+                  Propiedad {isPropertyMandatory && <span className="text-red-500">*</span>}
+                </FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                  defaultValue={field.value?.toString()}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isPropertyMandatory ? "Selecciona una propiedad" : "Sin propiedad seleccionada"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {properties.map((property: any) => (
+                      <SelectItem key={property.id} value={property.id.toString()}>
+                        {property.reference} - {property.address}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         {/* Comments */}
