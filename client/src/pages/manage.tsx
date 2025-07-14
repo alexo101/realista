@@ -1230,17 +1230,7 @@ export default function ManagePage() {
                             )}
                           </div>
 
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsRequestingReview(true);
-                            }}
-                          >
-                            <Star className="h-4 w-4 mr-1" />
-                            Solicitar reseña
-                          </Button>
+                          
                         </div>
                       </div>
                     ))
