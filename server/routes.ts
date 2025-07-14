@@ -621,14 +621,22 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   app.get("/api/agents/:agentId/events", async (req, res) => {
     try {
       const agentId = parseInt(req.params.agentId);
-      const { startDate, endDate } = req.query;
+      const { startDate, endDate, clientId } = req.query;
 
       const events = await storage.getAgentEvents(
         agentId, 
         startDate as string, 
         endDate as string
       );
-      res.status(200).json(events);
+      
+      // Filter by clientId if provided
+      let filteredEvents = events;
+      if (clientId) {
+        const clientIdNum = parseInt(clientId as string);
+        filteredEvents = events.filter(event => event.clientId === clientIdNum);
+      }
+      
+      res.status(200).json(filteredEvents);
     } catch (error) {
       console.error('Error getting agent events:', error);
       res.status(500).json({ message: "Failed to get agent events" });
@@ -657,6 +665,35 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     } catch (error) {
       console.error('Error deleting agent event:', error);
       res.status(500).json({ message: "Failed to delete agent event" });
+    }
+  });
+
+  // Client visit requests
+  app.get("/api/clients/:clientId/visit-requests", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const requests = await storage.getPropertyVisitRequestsByClient(clientId);
+      res.status(200).json(requests);
+    } catch (error) {
+      console.error('Error getting client visit requests:', error);
+      res.status(500).json({ message: "Failed to get client visit requests" });
+    }
+  });
+
+  // Get client details
+  app.get("/api/clients/:clientId", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const client = await storage.getClient(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      res.status(200).json(client);
+    } catch (error) {
+      console.error('Error getting client:', error);
+      res.status(500).json({ message: "Failed to get client" });
     }
   });
 

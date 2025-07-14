@@ -18,6 +18,7 @@ import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircl
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
+import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
@@ -71,6 +72,7 @@ export default function ManagePage() {
   const [isRequestingReview, setIsRequestingReview] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
   const [reviewRequestClient, setReviewRequestClient] = useState<{ id: number; name: string } | null>(null);
 
   // Estados para los campos de perfil de agente
@@ -1162,6 +1164,43 @@ export default function ManagePage() {
                   } : undefined}
                   isEditing={!!editingClient}
                 />
+              ) : selectedClientForHistory ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-semibold">
+                        {selectedClientForHistory.name} {selectedClientForHistory.surname || ''}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {selectedClientForHistory.email} • {selectedClientForHistory.phone}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setEditingClient(selectedClientForHistory);
+                          setSelectedClientForHistory(null);
+                        }}
+                      >
+                        Editar cliente
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSelectedClientForHistory(null)}
+                      >
+                        Volver
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {user?.id && (
+                    <ClientHistoryTimeline 
+                      clientId={selectedClientForHistory.id} 
+                      agentId={user.id}
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="grid gap-6">
                   {isLoadingClients ? (
@@ -1182,8 +1221,7 @@ export default function ManagePage() {
                         key={client.id} 
                         className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
                         onClick={() => {
-                          setEditingClient(client);
-                          setIsAddingClient(false);
+                          setSelectedClientForHistory(client);
                         }}
                       >
                         <div className="flex items-start justify-between">
