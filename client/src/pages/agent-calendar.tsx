@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus } from "lucide-react";
 import { AgentEventForm } from "@/components/AgentEventForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { type AgentEvent } from "@shared/schema";
 
@@ -21,6 +22,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
   const [showEventForm, setShowEventForm] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<AgentEvent | null>(null);
   const queryClient = useQueryClient();
 
   // Calculate date range based on view mode
@@ -240,7 +242,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                               <Button 
                                 size="sm" 
                                 variant="destructive"
-                                onClick={() => deleteEventMutation.mutate(event.id)}
+                                onClick={() => setEventToDelete(event)}
                               >
                                 Eliminar
                               </Button>
@@ -282,6 +284,44 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Event Confirmation Dialog */}
+      <AlertDialog open={!!eventToDelete} onOpenChange={() => setEventToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {eventToDelete && (
+                <>
+                  ¿Estás seguro de que quieres eliminar este evento?
+                  <br />
+                  <strong>Fecha:</strong> {format(new Date(eventToDelete.eventDate), "dd/MM/yyyy")}
+                  <br />
+                  <strong>Hora:</strong> {formatEventTime(eventToDelete.eventTime)}
+                  <br />
+                  <strong>Tipo:</strong> {eventToDelete.eventType}
+                  <br />
+                  Esta acción no se puede deshacer.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (eventToDelete) {
+                  deleteEventMutation.mutate(eventToDelete.id);
+                  setEventToDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
