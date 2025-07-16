@@ -322,13 +322,44 @@ export default function ManagePage() {
         <Sidebar className="pt-16 w-64 border-r hidden md:block">
           <SidebarContent>
             <SidebarMenu>
+              {/* CRM Section */}
               <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={section === "clients" || section === "appointments"}
+                  onClick={() => setSection("clients")}
+                >
+                  <Users className="h-4 w-4" />
+                  <span>CRM</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem className="ml-6">
                 <SidebarMenuButton
                   isActive={section === "calendar"}
                   onClick={() => setSection("calendar")}
                 >
                   <Calendar className="h-4 w-4" />
                   <span>Calendario</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem className="ml-6">
+                <SidebarMenuButton
+                  isActive={section === "clients"}
+                  onClick={() => setSection("clients")}
+                >
+                  <UserCircle className="h-4 w-4" />
+                  <span>Clientes</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem className="ml-6">
+                <SidebarMenuButton
+                  isActive={section === "messages"}
+                  onClick={() => setSection("messages")}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Mensajes</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -367,38 +398,6 @@ export default function ManagePage() {
 
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={section === "clients" || section === "appointments"}
-                  onClick={() => setSection("clients")}
-                >
-                  <Users className="h-4 w-4" />
-                  <span>CRM clientes</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem className="ml-6">
-                <SidebarMenuButton
-                  isActive={section === "clients"}
-                  onClick={() => setSection("clients")}
-                >
-                  <UserCircle className="h-4 w-4" />
-                  <span>Clientes</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              
-
-              <SidebarMenuItem className="ml-6">
-                <SidebarMenuButton
-                  isActive={section === "messages"}
-                  onClick={() => setSection("messages")}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Mensajes</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton
                   isActive={section === "reviews"}
                   onClick={() => setSection("reviews")}
                 >
@@ -427,6 +426,15 @@ export default function ManagePage() {
         <div className="md:hidden fixed top-16 left-0 right-0 bg-white border-b z-40">
           <div className="flex overflow-x-auto p-2 gap-2">
             <Button
+              variant={section === "clients" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSection("clients")}
+              className="whitespace-nowrap"
+            >
+              <Users className="h-4 w-4 mr-1" />
+              CRM
+            </Button>
+            <Button
               variant={section === "calendar" ? "default" : "ghost"}
               size="sm"
               onClick={() => setSection("calendar")}
@@ -452,15 +460,6 @@ export default function ManagePage() {
             >
               <Building2 className="h-4 w-4 mr-1" />
               Propiedades
-            </Button>
-            <Button
-              variant={section === "clients" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSection("clients")}
-              className="whitespace-nowrap"
-            >
-              <Users className="h-4 w-4 mr-1" />
-              Clientes
             </Button>
             <Button
               variant={section === "inquiries" ? "default" : "ghost"}
