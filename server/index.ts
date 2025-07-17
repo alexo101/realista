@@ -64,15 +64,6 @@ app.use((req, res, next) => {
     const port = parseInt(process.env.PORT || "5000");
     server.listen(port, "0.0.0.0", () => {
       log(`serving on port ${port}`);
-    }).on('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${port} is already in use. Trying port ${port + 1}...`);
-        server.listen(port + 1, "0.0.0.0", () => {
-          log(`serving on port ${port + 1}`);
-        });
-      } else {
-        console.error('Server error:', err);
-      }
     });
 
     // Handle graceful shutdown  
