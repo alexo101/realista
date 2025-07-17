@@ -1805,6 +1805,95 @@ Gracias!
     }
   });
 
+  // Conversational Messages API
+  app.get("/api/conversations/agent/:agentId", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      
+      // Get inquiries and transform them into conversations
+      const inquiries = await storage.getInquiriesByAgent(agentId);
+      
+      // Transform inquiries into conversations format
+      const conversations = inquiries.map(inquiry => ({
+        id: inquiry.id,
+        clientId: inquiry.id, // Using inquiry ID as client reference
+        clientName: inquiry.name,
+        clientEmail: inquiry.email,
+        clientPhone: inquiry.phone,
+        propertyId: inquiry.propertyId,
+        propertyTitle: inquiry.property?.title || "Sin título",
+        propertyAddress: inquiry.property?.address || "Dirección no disponible",
+        lastMessage: inquiry.message,
+        lastMessageTime: inquiry.createdAt,
+        unreadCount: inquiry.status === 'pendiente' ? 1 : 0,
+        status: inquiry.status === 'finalizado' ? 'closed' : 'active',
+        messages: [
+          {
+            id: 1,
+            senderId: inquiry.id,
+            senderName: inquiry.name,
+            senderType: 'client',
+            content: `Hola, estoy interesado en la propiedad en ${inquiry.property?.address || 'esta dirección'}. ${inquiry.message}`,
+            timestamp: inquiry.createdAt,
+            isRead: true
+          }
+        ]
+      }));
+      
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      res.status(500).json({ message: "Error al cargar conversaciones" });
+    }
+  });
+
+  app.post("/api/conversations/:conversationId/messages", async (req, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      const { content, senderType } = req.body;
+      
+      // For now, we'll create a simple message response
+      // In a real implementation, you'd save this to a messages table
+      const newMessage = {
+        id: Date.now(), // Simple ID generation
+        senderId: senderType === 'agent' ? conversationId : conversationId,
+        senderName: senderType === 'agent' ? 'Agente' : 'Cliente',
+        senderType: senderType,
+        content: content,
+        timestamp: new Date().toISOString(),
+        isRead: false
+      };
+      
+      // Update inquiry status to 'contactado' when agent sends first message
+      if (senderType === 'agent') {
+        try {
+          await storage.updateInquiryStatus(conversationId, 'contactado');
+        } catch (error) {
+          console.error('Error updating inquiry status:', error);
+        }
+      }
+      
+      res.json(newMessage);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      res.status(500).json({ message: "Error al enviar mensaje" });
+    }
+  });
+
+  app.patch("/api/conversations/:conversationId/read", async (req, res) => {
+    try {
+      const conversationId = parseInt(req.params.conversationId);
+      
+      // Mark inquiry as read (update status if needed)
+      await storage.updateInquiryStatus(conversationId, 'contactado');
+      
+      res.json({ message: "Conversación marcada como leída" });
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+      res.status(500).json({ message: "Error al marcar como leída" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

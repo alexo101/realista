@@ -24,7 +24,7 @@ import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { AgenciesList } from "@/components/AgenciesList";
 
-import { InquiriesList } from "@/components/InquiriesList";
+import { ConversationalMessages } from "@/components/ConversationalMessages";
 import { ReviewManagement } from "@/components/ReviewManagement";
 import { AgentCalendar } from "@/pages/agent-calendar";
 import { TeamManagement } from "@/components/TeamManagement";
@@ -1442,9 +1442,9 @@ export default function ManagePage() {
           )}
 
           {section === "messages" && (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto">
               <h2 className="text-2xl font-bold mb-6">Gestión de Mensajes</h2>
-              <InquiriesList />
+              <ConversationalMessages />
             </div>
           )}
 

@@ -43,7 +43,8 @@ Realista is a modern real estate platform built with React and Express.js that a
 ### Client Relationship Management
 - **Client profiles**: Comprehensive client information management
 - **Appointment scheduling**: Integrated calendar system for property visits
-- **Inquiry management**: Lead tracking and communication system
+- **Conversational messages**: Real-time chat interface for agent-client communication
+- **Inquiry management**: Lead tracking and communication system with full property address display
 - **Property visit requests**: Structured visit scheduling workflow
 
 ### Review and Rating System
@@ -111,6 +112,13 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- January 17, 2025. Enhanced Messages section with conversational interface
+  - Replaced basic inquiry list with WhatsApp-style chat interface
+  - Added client search functionality by name and property address
+  - Implemented real-time messaging with agent messages on the right side
+  - Added full property address display in initial messages
+  - Created conversation view with message history and send functionality
+  - Added API endpoints for conversations and message handling
 - January 5, 2025. Made all screens responsive for desktop and mobile devices
   - Enhanced navbar with mobile menu and hamburger navigation
   - Improved property cards and results grids for mobile layouts
