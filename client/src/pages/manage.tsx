@@ -1443,7 +1443,6 @@ export default function ManagePage() {
 
           {section === "messages" && (
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-2xl font-bold mb-6">Gestión de Mensajes</h2>
               <ConversationalMessages />
             </div>
           )}
