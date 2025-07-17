@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
@@ -74,6 +74,7 @@ export default function ManagePage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
   const [reviewRequestClient, setReviewRequestClient] = useState<{ id: number; name: string } | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Estados para los campos de perfil de agente
   const [name, setName] = useState("");
@@ -319,47 +320,86 @@ export default function ManagePage() {
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
-        <Sidebar className="pt-16 w-64 border-r hidden md:block">
+        <Sidebar className={`pt-16 border-r hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
           <SidebarContent>
+            {/* Collapse/Expand Button */}
+            <div className="flex justify-end p-2 border-b">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="h-8 w-8 p-0"
+              >
+                {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
+            </div>
             <SidebarMenu>
               {/* CRM Section */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={section === "clients" || section === "appointments"}
                   onClick={() => setSection("clients")}
+                  className="relative group"
+                  title={sidebarCollapsed ? "CRM" : ""}
                 >
-                  <Users className="h-4 w-4" />
-                  <span>CRM</span>
+                  <Users className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>CRM</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      CRM
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem className="ml-6">
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={section === "calendar"}
                   onClick={() => setSection("calendar")}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Calendario" : ""}
                 >
-                  <Calendar className="h-4 w-4" />
-                  <span>Calendario</span>
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Calendario</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Calendario
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem className="ml-6">
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={section === "clients"}
                   onClick={() => setSection("clients")}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Clientes" : ""}
                 >
-                  <UserCircle className="h-4 w-4" />
-                  <span>Clientes</span>
+                  <UserCircle className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Clientes</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Clientes
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem className="ml-6">
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={section === "messages"}
                   onClick={() => setSection("messages")}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Mensajes" : ""}
                 >
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Mensajes</span>
+                  <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Mensajes</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Mensajes
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -367,9 +407,16 @@ export default function ManagePage() {
                 <SidebarMenuButton
                   isActive={section === "agent-profile"}
                   onClick={() => setSection("agent-profile")}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Mi perfil de agente" : ""}
                 >
-                  <UserCircle className="h-4 w-4" />
-                  <span>Mi perfil de agente</span>
+                  <UserCircle className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Mi perfil de agente</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Mi perfil de agente
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -379,9 +426,16 @@ export default function ManagePage() {
                   <SidebarMenuButton
                     isActive={section === "agency-profile"}
                     onClick={() => setSection("agency-profile")}
+                    className="relative group"
+                    title={sidebarCollapsed ? "Gestionar agencia" : ""}
                   >
-                    <Building className="h-4 w-4" />
-                    <span>Gestionar agencia</span>
+                    <Building className="h-4 w-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>Gestionar agencia</span>}
+                    {sidebarCollapsed && (
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                        Gestionar agencia
+                      </div>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -390,9 +444,16 @@ export default function ManagePage() {
                 <SidebarMenuButton
                   isActive={section === "properties"}
                   onClick={() => setSection("properties")}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Gestionar propiedades" : ""}
                 >
-                  <Building2 className="h-4 w-4" />
-                  <span>Gestionar propiedades</span>
+                  <Building2 className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Gestionar propiedades</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Gestionar propiedades
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -400,9 +461,16 @@ export default function ManagePage() {
                 <SidebarMenuButton
                   isActive={section === "reviews"}
                   onClick={() => setSection("reviews")}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Gestionar reseñas" : ""}
                 >
-                  <Star className="h-4 w-4" />
-                  <span>Gestionar reseñas</span>
+                  <Star className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Gestionar reseñas</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Gestionar reseñas
+                    </div>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -412,9 +480,16 @@ export default function ManagePage() {
                   <SidebarMenuButton
                     isActive={section === "team"}
                     onClick={() => setSection("team")}
+                    className="relative group"
+                    title={sidebarCollapsed ? "Gestionar mi equipo" : ""}
                   >
-                    <Users className="h-4 w-4" />
-                    <span>Gestionar mi equipo</span>
+                    <Users className="h-4 w-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>Gestionar mi equipo</span>}
+                    {sidebarCollapsed && (
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                        Gestionar mi equipo
+                      </div>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
