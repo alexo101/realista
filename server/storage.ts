@@ -1444,4 +1444,16 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage: IStorage = new DatabaseStorage();
+class DatabaseStorageWithConnection extends DatabaseStorage {
+  async testConnection(): Promise<void> {
+    try {
+      await db.execute(sql`SELECT 1`);
+      console.log('Database connection successful');
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      throw new Error('Database connection failed');
+    }
+  }
+}
+
+export const storage: IStorage = new DatabaseStorageWithConnection();

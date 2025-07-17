@@ -38,36 +38,50 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Inicializar el servicio de email
-  await initEmailService();
+  try {
+    // Inicializar el servicio de email
+    await initEmailService();
 
-  const server = await registerRoutes(app);
+    const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
-  });
+      console.error('Server error:', err);
+      res.status(status).json({ message });
+    });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+    // importantly only setup vite in development and after
+    // setting up all the other routes so the catch-all route
+    // doesn't interfere with the other routes
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    const port = parseInt(process.env.PORT || "5000");
+    server.listen(port, "0.0.0.0", () => {
+      log(`serving on port ${port}`);
+    }).on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use. Trying port ${port + 1}...`);
+        server.listen(port + 1, "0.0.0.0", () => {
+          log(`serving on port ${port + 1}`);
+        });
+      } else {
+        console.error('Server error:', err);
+      }
+    });
+
+    // Handle graceful shutdown  
+    process.on('SIGINT', () => {
+      console.log('Server shutting down gracefully');
+      process.exit(0);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
-
-  const port = parseInt(process.env.PORT || "5000");
-  server.listen(port, "0.0.0.0", () => {
-    log(`serving on port ${port}`);
-  });
-
-  // Handle graceful shutdown  
-  process.on('SIGINT', () => {
-    console.log('Server shutting down gracefully');
-    process.exit(0);
-  });
 })();
