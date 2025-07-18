@@ -40,7 +40,7 @@ export const agents = pgTable("agents", {
   avatar: text("avatar"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   // Barrios de influencia para agentes
-  influence_neighborhoods: text("influence_neighborhoods").array(),
+  influenceNeighborhoods: text("influence_neighborhoods").array(),
   // Detalles específicos del agente
   yearsOfExperience: integer("years_of_experience"), // Años de experiencia del agente
   languagesSpoken: text("languages_spoken").array(), // Idiomas que habla el agente

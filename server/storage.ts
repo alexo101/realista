@@ -190,12 +190,7 @@ export class DatabaseStorage implements IStorage {
           key !== "limit" &&
           key !== "join"
         ) {
-          // Map frontend field names to database field names
-          if (key === "influenceNeighborhoods") {
-            cleanedUserData["influence_neighborhoods"] = userData[key as keyof typeof userData];
-          } else {
-            cleanedUserData[key] = userData[key as keyof typeof userData];
-          }
+          cleanedUserData[key] = userData[key as keyof typeof userData];
         }
       }
 
@@ -203,12 +198,21 @@ export class DatabaseStorage implements IStorage {
         "Updating user with cleaned data:",
         Object.keys(cleanedUserData),
       );
+      console.log(
+        "Full cleaned user data:",
+        JSON.stringify(cleanedUserData, null, 2),
+      );
 
       const [updatedUser] = await db
         .update(agents)
         .set(cleanedUserData)
         .where(eq(agents.id, id))
         .returning();
+
+      console.log(
+        "User after update:",
+        JSON.stringify(updatedUser, null, 2),
+      );
 
       return updatedUser;
     } catch (error) {
