@@ -320,8 +320,8 @@ export default function ManagePage() {
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
-        <Sidebar className={`border-r hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
-          <SidebarContent>
+        <Sidebar className={`border-r hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'} pt-16`}>
+          <SidebarContent className="pt-4">
             <SidebarMenu>
               {/* CRM Section */}
               <SidebarMenuItem>
