@@ -249,13 +249,11 @@ export class DatabaseStorage implements IStorage {
         const neighborhoods = neighborhoodsStr.split(",");
         console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
 
-        // Usamos arrayOverlaps para una correcta comparación de arrays
+        // Usamos la sintaxis directa de PostgreSQL para arrays
+        const arrayQuery = `ARRAY[${neighborhoods.map(n => `'${n.replace(/'/g, "''")}'`).join(',')}]::text[]`;
+        
         dbQuery = dbQuery.where(
-          arrayOverlaps(
-            agents.influenceNeighborhoods,
-            // Convertimos el array JavaScript a un array SQL
-            sql`ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
-          )
+          sql`${agents.influenceNeighborhoods} && ${sql.raw(arrayQuery)}`
         );
       }
 
