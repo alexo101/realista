@@ -112,6 +112,13 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- July 18, 2025. Enhanced UI layout and messaging system
+  - Fixed sidebar toggle button positioning at border between sidebar and main content
+  - Implemented dynamic main content expansion/contraction based on sidebar state
+  - Fixed header overlap issues with proper top padding (pt-20 md:pt-24)
+  - Enhanced database queries to include property information in conversational messages
+  - Fixed property address display in Messages section with proper JOIN queries
+  - Improved responsive layout transitions with smooth animations
 - January 17, 2025. Enhanced Messages section with conversational interface
   - Replaced basic inquiry list with WhatsApp-style chat interface
   - Added client search functionality by name and property address

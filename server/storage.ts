@@ -190,7 +190,12 @@ export class DatabaseStorage implements IStorage {
           key !== "limit" &&
           key !== "join"
         ) {
-          cleanedUserData[key] = userData[key as keyof typeof userData];
+          // Map frontend field names to database field names
+          if (key === "influenceNeighborhoods") {
+            cleanedUserData["influence_neighborhoods"] = userData[key as keyof typeof userData];
+          } else {
+            cleanedUserData[key] = userData[key as keyof typeof userData];
+          }
         }
       }
 
