@@ -589,7 +589,7 @@ export default function ManagePage() {
           </Button>
         </div>
 
-        <main className="flex-1 p-4 md:p-6 pt-20 md:pt-24 relative">
+        <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
           {section === "calendar" && user?.id && (
             <div className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />
