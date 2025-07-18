@@ -577,18 +577,19 @@ export default function ManagePage() {
           </div>
         </div>
 
+        {/* Sidebar Toggle Button - Positioned at the border */}
+        <div className={`fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ${sidebarCollapsed ? 'left-14' : 'left-60'}`}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="h-8 w-8 p-0 bg-white shadow-md border rounded-full"
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        </div>
+
         <main className="flex-1 p-4 md:p-6 pt-4 md:pt-6 relative">
-          {/* Sidebar Toggle Button - Moved to top right */}
-          <div className="fixed top-4 right-4 z-50 md:block">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="h-8 w-8 p-0 bg-white shadow-md border"
-            >
-              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
-          </div>
           {section === "calendar" && user?.id && (
             <div className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />
