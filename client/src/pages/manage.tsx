@@ -320,19 +320,8 @@ export default function ManagePage() {
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
-        <Sidebar className={`pt-16 border-r hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+        <Sidebar className={`border-r hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
           <SidebarContent>
-            {/* Collapse/Expand Button */}
-            <div className="flex justify-end p-2 border-b">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="h-8 w-8 p-0"
-              >
-                {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-              </Button>
-            </div>
             <SidebarMenu>
               {/* CRM Section */}
               <SidebarMenuItem>
@@ -588,7 +577,18 @@ export default function ManagePage() {
           </div>
         </div>
 
-        <main className="flex-1 p-4 md:p-6 pt-24 md:pt-20">
+        <main className="flex-1 p-4 md:p-6 pt-4 md:pt-6 relative">
+          {/* Sidebar Toggle Button - Moved to top right */}
+          <div className="fixed top-4 right-4 z-50 md:block">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="h-8 w-8 p-0 bg-white shadow-md border"
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
           {section === "calendar" && user?.id && (
             <div className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />
