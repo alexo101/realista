@@ -102,17 +102,7 @@ export function PropertyVisitRequest({ propertyId, agentId }: PropertyVisitReque
     createVisitRequestMutation.mutate(data);
   };
 
-  if (!user || !user.isClient) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">
-            Debes estar logueado como cliente para solicitar una visita a esta propiedad.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  
 
   return (
     <Card>
