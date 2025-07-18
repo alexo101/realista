@@ -1160,11 +1160,29 @@ export class DatabaseStorage implements IStorage {
 
   // Inquiries
   async getInquiriesByAgent(agentId: number): Promise<Inquiry[]> {
-    return await db
-      .select()
+    const results = await db
+      .select({
+        id: inquiries.id,
+        name: inquiries.name,
+        email: inquiries.email,
+        phone: inquiries.phone,
+        message: inquiries.message,
+        propertyId: inquiries.propertyId,
+        agentId: inquiries.agentId,
+        status: inquiries.status,
+        createdAt: inquiries.createdAt,
+        property: {
+          title: properties.title,
+          address: properties.address,
+          reference: properties.reference,
+        },
+      })
       .from(inquiries)
+      .leftJoin(properties, eq(inquiries.propertyId, properties.id))
       .where(eq(inquiries.agentId, agentId))
       .orderBy(sql`${inquiries.createdAt} DESC`);
+    
+    return results as Inquiry[];
   }
 
   async getInquiryById(id: number): Promise<Inquiry | undefined> {
