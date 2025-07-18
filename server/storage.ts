@@ -252,7 +252,7 @@ export class DatabaseStorage implements IStorage {
         // Usamos arrayOverlaps para una correcta comparación de arrays
         dbQuery = dbQuery.where(
           arrayOverlaps(
-            agents.influence_neighborhoods,
+            agents.influenceNeighborhoods,
             // Convertimos el array JavaScript a un array SQL
             sql`ARRAY[${neighborhoods.map(n => `'${n}'`).join(',')}]::text[]`
           )
