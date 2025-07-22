@@ -133,6 +133,7 @@ export interface IStorage {
   getFavoriteAgentsByClient(clientId: number): Promise<User[]>;
   toggleFavoriteAgent(clientId: number, agentId: number): Promise<boolean>;
   isFavoriteAgent(clientId: number, agentId: number): Promise<boolean>;
+  getBatchFavoriteAgentStatus(clientId: number, agentIds: number[]): Promise<{ [key: number]: boolean }>;
 
   // Client favorite properties
   getFavoritePropertiesByClient(clientId: number): Promise<Property[]>;
@@ -1280,6 +1281,27 @@ export class DatabaseStorage implements IStorage {
       );
 
     return favorite.length > 0;
+  }
+
+  async getBatchFavoriteAgentStatus(clientId: number, agentIds: number[]): Promise<{ [key: number]: boolean }> {
+    if (agentIds.length === 0) return {};
+    
+    const favorites = await db
+      .select({ agentId: clientFavoriteAgents.agentId })
+      .from(clientFavoriteAgents)
+      .where(
+        and(
+          eq(clientFavoriteAgents.clientId, clientId),
+          inArray(clientFavoriteAgents.agentId, agentIds)
+        )
+      );
+
+    const result: { [key: number]: boolean } = {};
+    agentIds.forEach(id => {
+      result[id] = favorites.some(fav => fav.agentId === id);
+    });
+    
+    return result;
   }
 
   async getFavoritePropertiesByClient(clientId: number): Promise<Property[]> {

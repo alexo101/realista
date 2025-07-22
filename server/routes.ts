@@ -471,6 +471,25 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  // Batch agent favorites status endpoint for performance optimization
+  app.get("/api/clients/:clientId/favorites/agents/status", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const agentIdsParam = req.query.agentIds as string;
+      
+      if (!agentIdsParam) {
+        return res.status(400).json({ message: "Agent IDs are required" });
+      }
+
+      const agentIds = agentIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      const favoriteStatuses = await storage.getBatchFavoriteAgentStatus(clientId, agentIds);
+      res.status(200).json(favoriteStatuses);
+    } catch (error) {
+      console.error('Error checking batch agent favorite status:', error);
+      res.status(500).json({ message: "Failed to check batch agent favorite status" });
+    }
+  });
+
   // Property favorites routes
   app.post("/api/clients/favorites/properties/:propertyId", async (req, res) => {
     try {
