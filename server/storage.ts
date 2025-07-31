@@ -24,6 +24,7 @@ import {
   inquiries,
   reviews,
   type User,
+  type UserWithReviews,
   type Agent,
   type Agency,
   type Property,
@@ -64,7 +65,7 @@ export interface IStorage {
   updateUser(id: number, userData: Partial<InsertAgent>): Promise<User>;
 
   // Agents/Agencies Search & Profiles
-  searchAgents(query: string): Promise<User[]>;
+  searchAgents(query: string): Promise<UserWithReviews[]>;
   searchAgencies(query: string): Promise<User[]>;
   getAgentById(id: number): Promise<User | undefined>;
   getAgencyById(id: number): Promise<User | undefined>;
@@ -223,7 +224,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Agents
-  async searchAgents(queryString: string): Promise<User[]> {
+  async searchAgents(queryString: string): Promise<UserWithReviews[]> {
     try {
       // Parseamos los parámetros de la URL
       const params = new URLSearchParams(queryString);
@@ -233,6 +234,7 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
 
+      // First, get the agents with standard filtering
       let dbQuery = db.select().from(agents);
 
       // Filtrar por nombre o apellido de agente si se proporciona
@@ -265,7 +267,32 @@ export class DatabaseStorage implements IStorage {
       const agentResults = await dbQuery;
       console.log(`Found ${agentResults.length} agents in the database`);
 
-      return agentResults;
+      // Now enhance each agent with review statistics
+      const enhancedAgents = await Promise.all(
+        agentResults.map(async (agent) => {
+          const reviewStats = await db
+            .select({
+              reviewCount: sql<number>`COUNT(*)`,
+              reviewAverage: sql<number>`ROUND(AVG(rating), 2)`,
+            })
+            .from(reviews)
+            .where(
+              and(
+                eq(reviews.targetId, agent.id),
+                eq(reviews.targetType, 'agent')
+              )
+            );
+
+          const stats = reviewStats[0];
+          return {
+            ...agent,
+            reviewCount: Number(stats?.reviewCount) || 0,
+            reviewAverage: Number(stats?.reviewAverage) || 0,
+          };
+        })
+      );
+
+      return enhancedAgents;
     } catch (error) {
       console.error("Error en searchAgents:", error);
       throw error;

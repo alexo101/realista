@@ -206,6 +206,12 @@ export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 // Mantener compatibilidad con código antiguo
 export type User = Agent;
 
+// Extended User type with review statistics
+export type UserWithReviews = User & {
+  reviewCount?: number;
+  reviewAverage?: number;
+};
+
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   targetId: integer("target_id").notNull(), // Puede ser un id de agente o agencia
