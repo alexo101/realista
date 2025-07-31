@@ -13,7 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
-import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle } from "lucide-react";
+import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink } from "lucide-react";
 
 // Extended Property type with additional fields for features
 interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms'> {
@@ -27,9 +27,15 @@ interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms'> {
 interface Agent {
   id: number;
   name: string;
+  surname?: string;
   email: string;
   phone?: string;
   photo?: string;
+  avatar?: string;
+  description?: string;
+  influenceNeighborhoods?: string[];
+  reviewCount?: number;
+  reviewAverage?: number;
 }
 
 export default function PropertyPage() {
@@ -317,24 +323,66 @@ export default function PropertyPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
-                    <div className="relative w-24 h-24 mx-auto mb-4">
-                      <img
-                        src={agent.photo}
-                        alt={agent.name}
-                        className="rounded-full object-cover w-full h-full"
-                      />
+                    <div className="relative w-20 h-20 mx-auto mb-4">
+                      {agent.avatar || agent.photo ? (
+                        <img
+                          src={agent.avatar || agent.photo}
+                          alt={`${agent.name || ''} ${agent.surname || ''}`}
+                          className="rounded-full object-cover w-full h-full border-2 border-primary/20"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-primary text-xl font-semibold">
+                            {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <h3 className="font-semibold text-lg">{agent.name}</h3>
-                    <div className="mt-4 space-y-2 text-sm">
-                      <div className="flex items-center justify-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        <span>{agent.phone}</span>
+                    
+                    <h3 className="font-semibold text-lg mb-2">
+                      {agent.name || ''} {agent.surname || ''}
+                    </h3>
+                    
+                    {/* Review score display */}
+                    {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
+                      <div className="flex items-center justify-center gap-1 mb-3">
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <span className="text-sm font-medium">{agent.reviewAverage.toFixed(1)}</span>
+                        <span className="text-xs text-gray-500">({agent.reviewCount})</span>
                       </div>
-                      <div className="flex items-center justify-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        <span>{agent.email}</span>
+                    ) : (
+                      <p className="text-gray-600 text-sm mb-3">Sin reseñas</p>
+                    )}
+                    
+                    {/* Influence neighborhoods */}
+                    {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-500 mb-2">Barrios de influencia:</p>
+                        <div className="space-y-1">
+                          {agent.influenceNeighborhoods.slice(0, 3).map((neighborhood) => (
+                            <div key={neighborhood} className="flex items-center justify-center gap-1 text-sm text-primary">
+                              <MapPin className="w-3 h-3" />
+                              <span>{neighborhood}</span>
+                            </div>
+                          ))}
+                          {agent.influenceNeighborhoods.length > 3 && (
+                            <span className="text-xs text-gray-500">
+                              +{agent.influenceNeighborhoods.length - 3} más
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    
+                    {/* Ver perfil button */}
+                    <Button 
+                      variant="outline" 
+                      className="w-full mt-4"
+                      onClick={() => navigate(`/agent/${agent.id}`)}
+                    >
+                      Ver perfil
+                      <ExternalLink className="w-4 h-4 ml-2" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

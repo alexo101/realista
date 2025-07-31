@@ -385,12 +385,24 @@ export class DatabaseStorage implements IStorage {
     const [agent] = await db.select().from(agents).where(eq(agents.id, id));
     if (!agent) return undefined;
 
-    // Añadimos propiedades adicionales para identificar que es un agente
+    // Get review statistics for this agent using a direct query
+    const reviewResults = await db.execute(
+      sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
+          FROM reviews 
+          WHERE target_id = ${id} AND target_type = 'agent'`
+    );
+
+    const reviewCount = reviewResults.rows[0]?.count || 0;
+    const reviewAverage = reviewResults.rows[0]?.average || 0;
+
+    // Return agent with review statistics
     return {
       ...agent,
       isAgent: true,
       isAgency: false,
-    } as User;
+      reviewCount: Number(reviewCount),
+      reviewAverage: Number(reviewAverage),
+    } as any;
   }
 
   // Función auxiliar para procesar campos de array en formato PostgreSQL
