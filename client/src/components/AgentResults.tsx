@@ -171,15 +171,16 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
                 <h3 className="font-semibold">
                   {agent.name || ''} {agent.surname || ''}
                 </h3>
-                <p className="text-gray-600">{agent.email}</p>
                 
                 {/* Review score display */}
-                {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage && (
+                {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
                   <div className="flex items-center gap-1 mt-1">
                     <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                     <span className="text-sm font-medium">{agent.reviewAverage.toFixed(1)}</span>
-                    <span className="text-xs text-gray-500">({agent.reviewCount} reseñas)</span>
+                    <span className="text-xs text-gray-500">({agent.reviewCount})</span>
                   </div>
+                ) : (
+                  <p className="text-gray-600 text-sm mt-1">Sin reseñas</p>
                 )}
                 
                 {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
