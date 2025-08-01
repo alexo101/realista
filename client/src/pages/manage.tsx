@@ -1133,24 +1133,38 @@ export default function ManagePage() {
                         </div>
 
                         <div className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="font-medium truncate">{property.title || property.address}</h3>
-                              {property.neighborhood && (
-                                <p className="text-sm text-blue-600 font-medium truncate">{property.neighborhood}</p>
-                              )}
-                              <p className="text-sm text-gray-500 truncate">{property.address}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className="font-semibold text-lg">{property.price?.toLocaleString('es-ES')}{property.operationType === 'alquiler' ? '€/mes' : '€'}</span>
-                            </div>
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-semibold text-base line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
                           </div>
 
-                          <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="text-2xl font-bold text-primary">€{property.price?.toLocaleString()}</p>
+                            {property.previousPrice && property.previousPrice > property.price && (
+                              <span className="text-sm font-medium text-red-600">
+                                {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓
+                              </span>
+                            )}
+                          </div>
+                          
+                          {(property.superficie || property.size) && (
+                            <p className="text-sm font-medium text-gray-800 mb-2">
+                              {Math.round(property.price / (property.superficie || property.size))}€/m²
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                            <span>{property.type}</span>
+                            {property.housingType && <span>{property.housingType}</span>}
+                            <span>{property.neighborhood}</span>
+                          </div>
+                          
+                          <p className="text-sm text-gray-600 line-clamp-1 mb-3">{property.address}</p>
+
+                          <div className="flex gap-4 text-sm text-gray-500 mb-3">
                             {property.superficie ? (
-                              <div>{property.superficie} m²</div>
+                              <div>{property.superficie}m²</div>
                             ) : property.size ? (
-                              <div>{property.size} m²</div>
+                              <div>{property.size}m²</div>
                             ) : null}
                             {property.bedrooms && (
                               <div>{property.bedrooms} hab.</div>
@@ -1158,19 +1172,13 @@ export default function ManagePage() {
                             {property.bathrooms && (
                               <div>{property.bathrooms} baños</div>
                             )}
+                            {property.reference && (
+                              <div className="text-gray-400">Ref: {property.reference}</div>
+                            )}
                           </div>
 
-                          {property.previousPrice && property.previousPrice > property.price && (
-                            <div className="mt-2 text-sm text-red-600">
-                              Antes: {property.previousPrice.toLocaleString('es-ES')}€ 
-                              <span className="ml-2 font-medium">
-                                ({Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓)
-                              </span>
-                            </div>
-                          )}
-
                           {property.features && property.features.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
+                            <div className="flex flex-wrap gap-1">
                               {property.features.slice(0, 3).map(feature => (
                                 <span key={feature} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
                                   {feature}
@@ -1183,8 +1191,6 @@ export default function ManagePage() {
                               )}
                             </div>
                           )}
-
-
                         </div>
                       </div>
                     ))

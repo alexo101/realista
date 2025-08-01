@@ -307,6 +307,21 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
               </div>
               <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
 
+              <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                {property.superficie && (
+                  <div>{property.superficie}m²</div>
+                )}
+                {(property as any).bedrooms && (
+                  <div>{(property as any).bedrooms} hab.</div>
+                )}
+                {(property as any).bathrooms && (
+                  <div>{(property as any).bathrooms} baños</div>
+                )}
+                {(property as any).reference && (
+                  <div className="text-gray-400">Ref: {(property as any).reference}</div>
+                )}
+              </div>
+
               {/* Mostrar características si existen */}
               {property.features && property.features.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
