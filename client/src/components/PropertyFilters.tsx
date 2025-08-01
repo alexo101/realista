@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Euro, Bath, BedDouble, Building, List, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
+import { PROPERTY_FEATURES } from "@/utils/property-features";
 
 interface PropertyFiltersProps {
   onFilterChange: (filters: PropertyFilters) => void;
@@ -84,21 +85,7 @@ export function PropertyFilters({
     ]
   };
 
-  // Características disponibles
-  const features = [
-    { id: "elevator", label: "Ascensor" },
-    { id: "parking", label: "Parking" },
-    { id: "terrace", label: "Terraza" },
-    { id: "garden", label: "Jardín" },
-    { id: "pool", label: "Piscina" },
-    { id: "gym", label: "Gimnasio" },
-    { id: "security", label: "Seguridad 24h" },
-    { id: "furnished", label: "Amueblado" },
-    { id: "airConditioning", label: "Aire acondicionado" },
-    { id: "heating", label: "Calefacción" },
-    { id: "fireplace", label: "Chimenea" },
-    { id: "balcony", label: "Balcón" }
-  ];
+  // Using unified features from shared configuration
 
   // Actualizar filtros cuando cambien los valores
   const debouncedFilterChange = debounce((filters: PropertyFilters) => {
@@ -475,7 +462,7 @@ export function PropertyFilters({
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
-                  {features.map((feature) => (
+                  {PROPERTY_FEATURES.map((feature) => (
                     <label 
                       key={feature.id}
                       className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
@@ -525,7 +512,7 @@ export function PropertyFilters({
           <div className="border-t pt-4">
             <div className="flex flex-wrap gap-2">
               {selectedFeatures.map((featureId) => {
-                const feature = features.find(f => f.id === featureId);
+                const feature = PROPERTY_FEATURES.find(f => f.id === featureId);
                 return feature ? (
                   <Badge
                     key={featureId}

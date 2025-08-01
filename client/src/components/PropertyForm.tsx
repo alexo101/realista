@@ -44,6 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { PROPERTY_FEATURES } from "@/utils/property-features";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -87,27 +88,6 @@ const availabilityOptions = [
   "Inmediatamente",
   "A partir de"
 ] as const;
-
-const features = [
-  { id: "aire-acondicionado", label: "Aire acondicionado" },
-  { id: "calefaccion", label: "Calefacción" },
-  { id: "armarios-empotrados", label: "Armarios empotrados" },
-  { id: "ascensor", label: "Ascensor" },
-  { id: "terraza", label: "Terraza" },
-  { id: "balcon", label: "Balcón" },
-  { id: "exterior", label: "Exterior" },
-  { id: "garaje", label: "Garaje" },
-  { id: "jardin", label: "Jardín" },
-  { id: "piscina", label: "Piscina" },
-  { id: "trastero", label: "Trastero" },
-  { id: "accesible", label: "Accesible" },
-  { id: "permite-mascota", label: "Permite mascota" },
-  { id: "vistas-mar", label: "Vistas al mar" },
-  { id: "bien-conectado", label: "Bien conectado" },
-  { id: "amueblado", label: "Amueblado" },
-  { id: "electrodomesticos", label: "Electrodomésticos" },
-  { id: "bano-suite", label: "Baño en-suite" }
-];
 
 const formSchema = z.object({
   reference: z.string().optional(), // Campo de referencia para identificación interna
@@ -777,7 +757,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   <FormLabel>Características</FormLabel>
                   <div className="border rounded-md p-4">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {features.map((feature) => (
+                      {PROPERTY_FEATURES.map((feature) => (
                         <FormField
                           key={feature.id}
                           control={form.control}
