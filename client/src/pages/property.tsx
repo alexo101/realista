@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
-import { ContactForm } from "@/components/ContactForm";
-import { PropertyVisitRequest } from "@/components/PropertyVisitRequest";
+import { PropertyApplicationForm } from "@/components/PropertyApplicationForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink } from "lucide-react";
 
 // Extended Property type with additional fields for features
-interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms'> {
+interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms' | 'features'> {
   bedrooms: number | null;
   bathrooms: number | null;
   viewCount: number;
@@ -58,7 +57,7 @@ export default function PropertyPage() {
   });
 
   // Check if property is favorited
-  const { data: favoriteStatus } = useQuery({
+  const { data: favoriteStatus } = useQuery<{ isFavorite: boolean }>({
     queryKey: [`/api/clients/${user?.id}/favorites/properties/${propertyId}/status`],
     enabled: !!user?.isClient && !!propertyId,
   });
@@ -390,17 +389,13 @@ export default function PropertyPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <h3 className="font-semibold text-lg mb-4">Aplica por esta propiedad</h3>
-                <ContactForm propertyId={property.id} />
+                <h3 className="font-semibold text-lg mb-4">Aplicar por esta propiedad</h3>
+                <PropertyApplicationForm 
+                  propertyId={property.id} 
+                  agentId={property.agentId}
+                />
               </CardContent>
             </Card>
-
-            {property.agentId && (
-              <PropertyVisitRequest 
-                propertyId={property.id} 
-                agentId={property.agentId} 
-              />
-            )}
           </div>
         </div>
       </div>
