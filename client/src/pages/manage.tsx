@@ -1083,7 +1083,7 @@ export default function ManagePage() {
                   isEditing={!!editingProperty}
                 />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                   {isLoadingProperties ? (
                     <div className="col-span-full text-center py-8">
                       <p>Cargando propiedades...</p>
@@ -1132,13 +1132,13 @@ export default function ManagePage() {
                           )}
                         </div>
 
-                        <div className="p-4">
+                        <div className="p-3 md:p-4">
                           <div className="flex items-start justify-between mb-2">
                             <h3 className="font-semibold text-base line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
                           </div>
 
                           <div className="flex items-center gap-2 mb-2">
-                            <p className="text-2xl font-bold text-primary">€{property.price?.toLocaleString()}</p>
+                            <p className="text-xl md:text-2xl font-bold text-primary">€{property.price?.toLocaleString()}</p>
                             {property.previousPrice && property.previousPrice > property.price && (
                               <span className="text-sm font-medium text-red-600">
                                 {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓
@@ -1152,28 +1152,28 @@ export default function ManagePage() {
                             </p>
                           )}
                           
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                            <span>{property.type}</span>
-                            {property.housingType && <span>{property.housingType}</span>}
-                            <span>{property.neighborhood}</span>
+                          <div className="flex items-center gap-2 md:gap-4 text-sm text-gray-600 mb-2 flex-wrap">
+                            <span className="truncate">{property.type}</span>
+                            {property.housingType && <span className="truncate">{property.housingType}</span>}
+                            <span className="truncate">{property.neighborhood}</span>
                           </div>
                           
                           <p className="text-sm text-gray-600 line-clamp-1 mb-3">{property.address}</p>
 
-                          <div className="flex gap-4 text-sm text-gray-500 mb-3">
+                          <div className="flex gap-2 md:gap-4 text-sm text-gray-500 mb-3 flex-wrap">
                             {property.superficie ? (
-                              <div>{property.superficie}m²</div>
+                              <div className="whitespace-nowrap">{property.superficie}m²</div>
                             ) : property.size ? (
-                              <div>{property.size}m²</div>
+                              <div className="whitespace-nowrap">{property.size}m²</div>
                             ) : null}
                             {property.bedrooms && (
-                              <div>{property.bedrooms} hab.</div>
+                              <div className="whitespace-nowrap">{property.bedrooms} hab.</div>
                             )}
                             {property.bathrooms && (
-                              <div>{property.bathrooms} baños</div>
+                              <div className="whitespace-nowrap">{property.bathrooms} baños</div>
                             )}
                             {property.reference && (
-                              <div className="text-gray-400">Ref: {property.reference}</div>
+                              <div className="text-gray-400 whitespace-nowrap">Ref: {property.reference}</div>
                             )}
                           </div>
 
