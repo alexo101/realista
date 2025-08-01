@@ -101,16 +101,23 @@ const DraggableImage = ({ url, index, isMain, moveImage, onDelete, onSetMain }: 
 
 type DraggableImageGalleryProps = {
   images: string[];
+  mainImageIndex?: number;
   onChange: (newImages: string[], mainImageIndex: number) => void;
 };
 
-export function DraggableImageGallery({ images, onChange }: DraggableImageGalleryProps) {
+export function DraggableImageGallery({ images, mainImageIndex: propMainImageIndex, onChange }: DraggableImageGalleryProps) {
   const [imageList, setImageList] = useState<string[]>(images || []);
-  const [mainImageIndex, setMainImageIndex] = useState<number>(-1);
+  const [mainImageIndex, setMainImageIndex] = useState<number>(propMainImageIndex ?? -1);
 
   useEffect(() => {
     setImageList(images || []);
   }, [images]);
+
+  useEffect(() => {
+    if (propMainImageIndex !== undefined) {
+      setMainImageIndex(propMainImageIndex);
+    }
+  }, [propMainImageIndex]);
 
   useEffect(() => {
     if (imageList.length === 0) {

@@ -756,6 +756,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           <h4 className="text-sm font-medium mb-2">Organiza las imágenes (arrastra para reordenar, haz clic en ✓ para establecer como imagen principal)</h4>
                           <DraggableImageGallery 
                             images={field.value} 
+                            mainImageIndex={form.watch("mainImageIndex")}
                             onChange={handleImageChange} 
                           />
                         </div>
