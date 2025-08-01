@@ -1,9 +1,4 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -34,76 +29,34 @@ export function ImageGallery({ images, mainImageIndex = 0 }: ImageGalleryProps) 
 
   return (
     <div className="space-y-4">
-      <Dialog>
-        <DialogTrigger asChild>
-          <div className="aspect-video relative overflow-hidden rounded-lg cursor-pointer group">
-            <img
-              src={images[currentImage]}
-              alt="Property main"
-              className="object-cover w-full h-full hover:scale-105 transition-transform"
-            />
-            {images.length > 1 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    previousImage();
-                  }}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    nextImage();
-                  }}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogTrigger>
-        
-        <DialogContent className="max-w-4xl w-full">
-          <div className="relative aspect-video">
-            <img
-              src={images[currentImage]}
-              alt={`Property ${currentImage + 1}`}
-              className="object-contain w-full h-full"
-            />
+      <div className="aspect-video relative overflow-hidden rounded-lg group">
+        <img
+          src={images[currentImage]}
+          alt="Property main"
+          className="object-cover w-full h-full"
+        />
+        {images.length > 1 && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={previousImage}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
             
-            {images.length > 1 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white"
-                  onClick={previousImage}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white"
-                  onClick={nextImage}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={nextImage}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </Button>
+          </>
+        )}
+      </div>
 
       {images.length > 1 && (
         <div className="grid grid-cols-4 gap-2">
