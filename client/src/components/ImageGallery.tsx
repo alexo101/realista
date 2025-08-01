@@ -36,12 +36,39 @@ export function ImageGallery({ images, mainImageIndex = 0 }: ImageGalleryProps) 
     <div className="space-y-4">
       <Dialog>
         <DialogTrigger asChild>
-          <div className="aspect-video relative overflow-hidden rounded-lg cursor-pointer">
+          <div className="aspect-video relative overflow-hidden rounded-lg cursor-pointer group">
             <img
-              src={images[mainImageIndex]}
+              src={images[currentImage]}
               alt="Property main"
               className="object-cover w-full h-full hover:scale-105 transition-transform"
             />
+            {images.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    previousImage();
+                  }}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </>
+            )}
           </div>
         </DialogTrigger>
         
