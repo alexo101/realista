@@ -317,9 +317,10 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
       const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
       const mostViewed = req.query.mostViewed === 'true';
+      const includeInactive = req.query.includeInactive === 'true';
       const operationType = req.query.operationType as string | undefined;
 
-      console.log(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}, agencyId=${agencyId}`);
+      console.log(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}, agencyId=${agencyId}, includeInactive=${includeInactive}`);
 
       let properties;
       if (mostViewed) {
@@ -341,7 +342,10 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         properties = await storage.getMostViewedProperties(limit, operationType);
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
-        properties = await storage.getPropertiesByAgent(agentId);
+        // Use getAllPropertiesByAgent for management purposes when includeInactive is true
+        properties = includeInactive 
+          ? await storage.getAllPropertiesByAgent(agentId)
+          : await storage.getPropertiesByAgent(agentId);
       } else if (agencyId) {
         properties = await storage.getPropertiesByAgency(agencyId);
       } else {

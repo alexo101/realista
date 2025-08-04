@@ -90,6 +90,7 @@ export interface IStorage {
   getProperty(id: number): Promise<Property | undefined>;
   getMostViewedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
+  getAllPropertiesByAgent(agentId: number): Promise<Property[]>;
   getPropertiesByAgency(agencyId: number): Promise<Property[]>;
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
@@ -870,14 +871,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {
-    console.log(`Fetching properties for agent ID: ${agentId}`);
+    console.log(`Fetching active properties for agent ID: ${agentId}`);
+    const result = await db
+      .select()
+      .from(properties)
+      .where(and(eq(properties.agentId, agentId), eq(properties.isActive, true)))
+      .orderBy(sql`${properties.createdAt} DESC`);
+
+    console.log(`Found ${result.length} active properties for agent ID: ${agentId}`);
+    return result;
+  }
+
+  async getAllPropertiesByAgent(agentId: number): Promise<Property[]> {
+    console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}`);
     const result = await db
       .select()
       .from(properties)
       .where(eq(properties.agentId, agentId))
       .orderBy(sql`${properties.createdAt} DESC`);
 
-    console.log(`Found ${result.length} properties for agent ID: ${agentId}`);
+    console.log(`Found ${result.length} total properties for agent ID: ${agentId}`);
     return result;
   }
 
@@ -889,7 +902,7 @@ export class DatabaseStorage implements IStorage {
       const directProperties = await db
         .select()
         .from(properties)
-        .where(eq(properties.agencyId, agencyId))
+        .where(and(eq(properties.agencyId, agencyId), eq(properties.isActive, true)))
         .orderBy(sql`${properties.createdAt} DESC`);
 
       console.log(`Encontradas ${directProperties.length} propiedades directamente vinculadas a la agencia ${agencyId}`);

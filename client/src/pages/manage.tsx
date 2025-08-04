@@ -139,9 +139,9 @@ export default function ManagePage() {
   }, [user, location]);
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
-    queryKey: ['/api/properties', user?.id],
+    queryKey: ['/api/properties', user?.id, 'includeInactive'],
     queryFn: async () => {
-      const response = await fetch(`/api/properties?agentId=${user?.id}`);
+      const response = await fetch(`/api/properties?agentId=${user?.id}&includeInactive=true`);
       if (!response.ok) throw new Error('Failed to fetch properties');
       return response.json();
     },
@@ -543,7 +543,7 @@ export default function ManagePage() {
               <Star className="h-4 w-4 mr-1" />
               Reseñas
             </Button>
-            {user?.isAgency && (
+            {user?.isAdmin && (
               <>
                 <Button
                   variant={section === "agency-profile" ? "default" : "ghost"}
@@ -1146,9 +1146,9 @@ export default function ManagePage() {
                             )}
                           </div>
                           
-                          {(property.superficie || property.size) && (
+                          {property.superficie && (
                             <p className="text-sm font-medium text-gray-800 mb-2">
-                              {Math.round(property.price / (property.superficie || property.size))}€/m²
+                              {Math.round(property.price / property.superficie)}€/m²
                             </p>
                           )}
                           
@@ -1161,11 +1161,9 @@ export default function ManagePage() {
                           <p className="text-sm text-gray-600 line-clamp-1 mb-3">{property.address}</p>
 
                           <div className="flex gap-2 md:gap-4 text-sm text-gray-500 mb-3 flex-wrap">
-                            {property.superficie ? (
+                            {property.superficie && (
                               <div className="whitespace-nowrap">{property.superficie}m²</div>
-                            ) : property.size ? (
-                              <div className="whitespace-nowrap">{property.size}m²</div>
-                            ) : null}
+                            )}
                             {property.bedrooms && (
                               <div className="whitespace-nowrap">{property.bedrooms} hab.</div>
                             )}
