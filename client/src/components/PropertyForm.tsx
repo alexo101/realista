@@ -204,6 +204,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       // Invalidate queries to refresh the property list
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       queryClient.invalidateQueries({ queryKey: ["/api/properties", initialData?.id] });
+      // Also invalidate search results to update neighborhood results
+      queryClient.invalidateQueries({ queryKey: ["/api/search"] });
     },
     onError: () => {
       toast({
@@ -898,16 +900,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         checked={isActive}
                         onCheckedChange={(checked) => {
                           if (initialData?.id) {
-                            // Optimistic update - immediately update UI
-                            setIsActive(checked);
                             toggleStatusMutation.mutate({
                               propertyId: initialData.id,
                               isActive: checked,
-                            }, {
-                              // Revert on error
-                              onError: () => {
-                                setIsActive(!checked);
-                              }
                             });
                           }
                         }}
