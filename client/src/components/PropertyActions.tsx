@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -32,6 +32,11 @@ export function PropertyActions({ property, onUpdate }: PropertyActionsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isActive, setIsActive] = useState(property.isActive ?? true);
+  
+  // Sync state when property prop changes
+  useEffect(() => {
+    setIsActive(property.isActive ?? true);
+  }, [property.isActive]);
 
   const deleteMutation = useMutation({
     mutationFn: async (propertyId: number) => {
