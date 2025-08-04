@@ -121,7 +121,7 @@ export default function NeighborhoodMap({
     mapInstanceRef.current = map;
     markersLayerRef.current = markersLayer;
     
-    setIsLoading(false);
+    setIsLoading(false);alse);
 
     // Cleanup on unmount
     return () => {
@@ -195,6 +195,82 @@ export default function NeighborhoodMap({
             onPropertyClick(property);
           }
         });
+
+      markersLayerRef.current!.addLayer(marker);
+    });
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update markers when properties or geocoding results change
+  useEffect(() => {
+    if (!mapInstanceRef.current || !markersLayerRef.current || isLoading) return;
+
+    // Clear existing markers
+    markersLayerRef.current.clearLayers();
+
+    // Add markers for each property
+    properties.forEach(property => {
+      const geocoded = geocodedCoords.get(property.id);
+      let coordinates: [number, number];
+
+      if (geocoded) {
+        coordinates = [geocoded.lat, geocoded.lng];
+      } else {
+        // Use fallback coordinates with slight randomization
+        const fallback = getFallbackCoordinates(property.neighborhood);
+        const offsetLat = ((property.id * 7) % 100 - 50) * 0.002;
+        const offsetLng = ((property.id * 13) % 100 - 50) * 0.002;
+        coordinates = [fallback[0] + offsetLat, fallback[1] + offsetLng];
+      }
+
+      // Create custom marker HTML
+      const markerHtml = `
+        <div class="house-marker ${property.operationType.toLowerCase()}">
+          <svg class="house-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+          <div class="price-badge">
+            <div class="marker-price">${property.price.toLocaleString()}€</div>
+          </div>
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        html: markerHtml,
+        className: 'custom-property-marker',
+        iconSize: [40, 50],
+        iconAnchor: [20, 50],
+        popupAnchor: [0, -50]
+      });
+
+      const marker = L.marker(coordinates, { icon: customIcon });
+
+      // Create popup content
+      const popupContent = `
+        <div class="property-popup">
+          <h3>${property.title || property.address}</h3>
+          <p><strong>Dirección:</strong> ${property.address}</p>
+          <p><strong>Precio:</strong> ${property.price.toLocaleString()}€</p>
+          ${property.bedrooms ? `<p><strong>Habitaciones:</strong> ${property.bedrooms}</p>` : ''}
+          ${property.superficie ? `<p><strong>Superficie:</strong> ${property.superficie}m²</p>` : ''}
+          <button class="property-details-btn" onclick="window.location.href='/property/${property.id}'">
+            Ver detalles
+          </button>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+
+      // Add click handler if provided
+      if (onPropertyClick) {
+        marker.on('click', () => onPropertyClick(property));
+      }
 
       markersLayerRef.current!.addLayer(marker);
     });

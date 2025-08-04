@@ -21,12 +21,18 @@ export async function geocodeAddress(address: string, neighborhood?: string): Pr
 
   try {
     const encodedAddress = encodeURIComponent(fullAddress);
+    // Use more specific Barcelona bounding box and better query parameters
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1&addressdetails=1&bounded=1&viewbox=1.9,41.5,2.4,41.3`
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1&addressdetails=1&bounded=1&viewbox=2.0523,41.4695,2.2280,41.3200&countrycodes=es`,
+      {
+        headers: {
+          'User-Agent': 'PropertySearchApp/1.0'
+        }
+      }
     );
 
     if (!response.ok) {
-      console.warn(`Geocoding failed for address: ${fullAddress}`);
+      console.warn(`Geocoding failed for address: ${fullAddress}, Status: ${response.status}`);
       return null;
     }
 
@@ -44,6 +50,7 @@ export async function geocodeAddress(address: string, neighborhood?: string): Pr
       return result;
     }
 
+    console.warn(`No geocoding results found for: ${fullAddress}`);
     return null;
   } catch (error) {
     console.error('Geocoding error:', error);
@@ -55,26 +62,19 @@ export async function geocodeAddress(address: string, neighborhood?: string): Pr
 export async function geocodeAddresses(addresses: Array<{ address: string; neighborhood?: string; id: number }>): Promise<Map<number, GeocodingResult>> {
   const results = new Map<number, GeocodingResult>();
   
-  // Process addresses in batches to avoid overwhelming the API
-  const batchSize = 5;
-  for (let i = 0; i < addresses.length; i += batchSize) {
-    const batch = addresses.slice(i, i + batchSize);
-    
-    const promises = batch.map(async (item) => {
+  // Process addresses sequentially to avoid rate limiting
+  for (const item of addresses) {
+    try {
       const result = await geocodeAddress(item.address, item.neighborhood);
       if (result) {
         results.set(item.id, result);
       }
-      // Add delay between requests to be respectful to the API
-      await new Promise(resolve => setTimeout(resolve, 100));
-    });
-    
-    await Promise.all(promises);
-    
-    // Add delay between batches
-    if (i + batchSize < addresses.length) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      console.warn(`Failed to geocode address: ${item.address}`, error);
     }
+    
+    // Add delay between requests to be respectful to the API
+    await new Promise(resolve => setTimeout(resolve, 200));
   }
   
   return results;

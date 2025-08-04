@@ -1,6 +1,8 @@
+
 import { useEffect, useRef, useState } from "react";
 import { type Property } from "@shared/schema";
 import { MapPin, Home } from "lucide-react";
+import { geocodeAddresses, GeocodingResult, getFallbackCoordinates } from '../utils/geocoding';
 
 interface PropertyMapProps {
   properties: Property[];
@@ -11,49 +13,69 @@ interface PropertyMapProps {
 export function PropertyMap({ properties, neighborhood, className }: PropertyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [geocodedCoords, setGeocodedCoords] = useState<Map<number, GeocodingResult>>(new Map());
 
-  // Mock coordinates for Barcelona neighborhoods - in a real app, you'd use a geocoding service
-  const getNeighborhoodCoordinates = (neighborhood: string) => {
-    const coordinates: Record<string, { lat: number; lng: number; zoom: number }> = {
-      "Barcelona": { lat: 41.3851, lng: 2.1734, zoom: 11 },
-      "Eixample": { lat: 41.3912, lng: 2.1649, zoom: 13 },
-      "Gràcia": { lat: 41.4036, lng: 2.1581, zoom: 14 },
-      "Sants-Montjuïc": { lat: 41.3748, lng: 2.1394, zoom: 13 },
-      "Les Corts": { lat: 41.3870, lng: 2.1247, zoom: 14 },
-      "Sarrià-Sant Gervasi": { lat: 41.4067, lng: 2.1404, zoom: 13 },
-      "Horta-Guinardó": { lat: 41.4181, lng: 2.1581, zoom: 13 },
-      "Nou Barris": { lat: 41.4287, lng: 2.1759, zoom: 13 },
-      "Sant Andreu": { lat: 41.4359, lng: 2.1887, zoom: 13 },
-      "Sant Martí": { lat: 41.4111, lng: 2.2008, zoom: 13 },
-      "Ciutat Vella": { lat: 41.3825, lng: 2.1769, zoom: 14 },
-      "La Barceloneta": { lat: 41.3755, lng: 2.1901, zoom: 15 },
-      "El Raval": { lat: 41.3794, lng: 2.1694, zoom: 15 },
-      "Barrio Gótico": { lat: 41.3828, lng: 2.1761, zoom: 15 },
-      "El Born": { lat: 41.3847, lng: 2.1818, zoom: 15 },
+  // Geocode property addresses when properties change
+  useEffect(() => {
+    if (properties.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+
+    const geocodeProperties = async () => {
+      setIsLoading(true);
+      
+      const addressesToGeocode = properties.map(property => ({
+        address: property.address,
+        neighborhood: property.neighborhood,
+        id: property.id
+      }));
+
+      try {
+        const geocodedResults = await geocodeAddresses(addressesToGeocode);
+        setGeocodedCoords(geocodedResults);
+      } catch (error) {
+        console.error('Error geocoding addresses:', error);
+        // Continue with fallback coordinates
+      }
+      
+      setIsLoading(false);
     };
-    
-    return coordinates[neighborhood] || { lat: 41.3851, lng: 2.1734, zoom: 12 };
+
+    geocodeProperties();
+  }, [properties]);
+
+  // Get neighborhood center coordinates
+  const getNeighborhoodCenter = (): [number, number] => {
+    return getFallbackCoordinates(neighborhood);
   };
 
-  // Generate mock coordinates for properties based on neighborhood
-  const generatePropertyCoordinates = (property: Property, baseCoords: { lat: number; lng: number }) => {
-    // Use property ID to generate consistent but varied coordinates within the neighborhood
-    const seed = property.id;
-    const offsetLat = ((seed * 7) % 100 - 50) * 0.001; // ±0.05 degrees
-    const offsetLng = ((seed * 13) % 100 - 50) * 0.001;
+  const neighborhoodCenter = getNeighborhoodCenter();
+  
+  // Create properties with real or fallback coordinates
+  const propertiesWithCoords = properties.map(property => {
+    const geocoded = geocodedCoords.get(property.id);
+    if (geocoded) {
+      return {
+        ...property,
+        coordinates: { lat: geocoded.lat, lng: geocoded.lng }
+      };
+    }
+    
+    // Use fallback coordinates with slight randomization for properties in same neighborhood
+    const [baseLat, baseLng] = getFallbackCoordinates(property.neighborhood);
+    const offsetLat = ((property.id * 7) % 100 - 50) * 0.002; // ±0.1 degrees
+    const offsetLng = ((property.id * 13) % 100 - 50) * 0.002;
     
     return {
-      lat: baseCoords.lat + offsetLat,
-      lng: baseCoords.lng + offsetLng
+      ...property,
+      coordinates: {
+        lat: baseLat + offsetLat,
+        lng: baseLng + offsetLng
+      }
     };
-  };
-
-  const neighborhoodCoords = getNeighborhoodCoordinates(neighborhood);
-  
-  const propertiesWithCoords = properties.map(property => ({
-    ...property,
-    coordinates: generatePropertyCoordinates(property, neighborhoodCoords)
-  }));
+  });
 
   return (
     <div className={`relative ${className}`}>
@@ -68,7 +90,18 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
           `
         }}
       >
-        {/* Neighborhood boundary (mock) */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center z-20">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="text-gray-600 text-sm">
+                Ubicando propiedades en el mapa...
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Neighborhood boundary (visual representation) */}
         <div 
           className="absolute border-2 border-primary/30 bg-primary/5 rounded-lg"
           style={{
@@ -85,18 +118,30 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
         </div>
 
         {/* Property pins */}
-        {propertiesWithCoords.map((property, index) => {
-          // Convert coordinates to pixel positions (mock calculation)
-          const x = 15 + (70 * Math.random());
-          const y = 15 + (70 * Math.random());
+        {propertiesWithCoords.map((property) => {
+          // Convert real coordinates to pixel positions within the neighborhood area
+          const centerLat = neighborhoodCenter[0];
+          const centerLng = neighborhoodCenter[1];
+          
+          // Calculate relative position based on coordinate difference
+          const latDiff = property.coordinates.lat - centerLat;
+          const lngDiff = property.coordinates.lng - centerLng;
+          
+          // Convert to pixels (approximate scale for Barcelona area)
+          const x = 50 + (lngDiff * 2000); // Longitude difference to X position
+          const y = 50 + (latDiff * -2000); // Latitude difference to Y position (inverted)
+          
+          // Clamp to visible area
+          const clampedX = Math.max(20, Math.min(80, x));
+          const clampedY = Math.max(20, Math.min(80, y));
           
           return (
             <div
               key={property.id}
               className="absolute transform -translate-x-1/2 -translate-y-full cursor-pointer group"
               style={{
-                left: `${x}%`,
-                top: `${y}%`,
+                left: `${clampedX}%`,
+                top: `${clampedY}%`,
               }}
               onClick={() => setSelectedProperty(property)}
             >
@@ -150,6 +195,12 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
             <div className="w-4 h-2 bg-primary/30 border border-primary/30 rounded-sm"></div>
             <span className="text-xs text-gray-600">Límites del barrio</span>
           </div>
+          {isLoading && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+              <span className="text-xs text-gray-600">Ubicando...</span>
+            </div>
+          )}
         </div>
       </div>
 
