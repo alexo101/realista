@@ -121,7 +121,7 @@ export default function NeighborhoodMap({
     mapInstanceRef.current = map;
     markersLayerRef.current = markersLayer;
     
-    setIsLoading(false);alse);
+    setIsLoading(false);
 
     // Cleanup on unmount
     return () => {
