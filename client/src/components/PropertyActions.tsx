@@ -93,7 +93,10 @@ export function PropertyActions({ property, onUpdate }: PropertyActionsProps) {
   };
 
   const handleToggleStatus = (checked: boolean) => {
-    toggleStatusMutation.mutate({ propertyId: property.id, isActive: checked });
+    // Use setTimeout to prevent DOM coordinate calculation issues
+    setTimeout(() => {
+      toggleStatusMutation.mutate({ propertyId: property.id, isActive: checked });
+    }, 0);
   };
 
   return (

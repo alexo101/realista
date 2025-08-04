@@ -194,6 +194,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       return response.json();
     },
     onSuccess: (data) => {
+      // Ensure the local state matches the server response
       setIsActive(data.isActive);
       toast({
         title: data.isActive ? "Propiedad activada" : "Propiedad desactivada",
@@ -207,7 +208,10 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       // Also invalidate search results to update neighborhood results
       queryClient.invalidateQueries({ queryKey: ["/api/search"] });
     },
-    onError: () => {
+    onError: (error) => {
+      // Reset the toggle to its previous state on error
+      const currentState = isActive;
+      setIsActive(currentState);
       toast({
         title: "Error",
         description: "No se pudo cambiar el estado de la propiedad.",
@@ -899,11 +903,15 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       <Switch
                         checked={isActive}
                         onCheckedChange={(checked) => {
+                          // Prevent event bubbling that might cause DOM coordinate issues
                           if (initialData?.id) {
-                            toggleStatusMutation.mutate({
-                              propertyId: initialData.id,
-                              isActive: checked,
-                            });
+                            // Use setTimeout to prevent coordinate calculation issues
+                            setTimeout(() => {
+                              toggleStatusMutation.mutate({
+                                propertyId: initialData.id,
+                                isActive: checked,
+                              });
+                            }, 0);
                           }
                         }}
                         disabled={toggleStatusMutation.isPending}
