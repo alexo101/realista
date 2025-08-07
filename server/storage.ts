@@ -1071,7 +1071,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     // Clear relevant cache entries when property is updated
-    cache.flushAll(); // Clear all cache to ensure search results are fresh
+    cache.clear(); // Clear all cache to ensure search results are fresh
 
     return {
       ...updatedProperty,
