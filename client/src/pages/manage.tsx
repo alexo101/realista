@@ -171,7 +171,18 @@ export default function ManagePage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.id] });
+      // Invalidate all property-related queries
+      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      // Invalidate search results to update neighborhood results immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/search'] });
+      // Invalidate most viewed properties cache
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && key[0] === '/api/properties' && 
+                 typeof key[1] === 'object' && key[1] !== null && 'mostViewed' in key[1];
+        }
+      });
       setIsAddingProperty(false);
       setEditingProperty(null);
     },
@@ -190,7 +201,18 @@ export default function ManagePage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.id] });
+      // Invalidate all property-related queries to ensure operation type changes appear immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      // Invalidate search results to update neighborhood results immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/search'] });
+      // Invalidate most viewed properties cache to reflect changes
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && key[0] === '/api/properties' && 
+                 typeof key[1] === 'object' && key[1] !== null && 'mostViewed' in key[1];
+        }
+      });
       setEditingProperty(null);
     },
   });
