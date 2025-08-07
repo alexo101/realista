@@ -342,6 +342,22 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         properties = await storage.getMostViewedProperties(limit, operationType);
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
+        // Add HTTP caching headers for agent property management
+        const cacheKey = `agent-properties-${agentId}-${includeInactive}`;
+        const etag = `"${cacheKey}-${Math.floor(Date.now() / 120000)}"`;
+        
+        res.set({
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
+          'ETag': etag,
+          'Content-Encoding': 'gzip',
+          'Vary': 'Accept-Encoding'
+        });
+
+        // Check if client has cached version
+        if (req.headers['if-none-match'] === etag) {
+          return res.status(304).end();
+        }
+
         // Use getAllPropertiesByAgent for management purposes when includeInactive is true
         properties = includeInactive 
           ? await storage.getAllPropertiesByAgent(agentId)
