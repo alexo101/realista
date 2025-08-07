@@ -147,11 +147,6 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     initialData?.neighborhood
   );
 
-  // Dummy user object for the sake of the example, replace with actual user context if available
-  const user = { id: 1 }; 
-  // Dummy setEditingProperty function, replace with actual state management if needed
-  const setEditingProperty = (property: any) => {};
-
   // Actualizar el barrio local cuando cambia el initialData
   useEffect(() => {
     if (initialData?.neighborhood) {
@@ -201,10 +196,10 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     onMutate: async ({ isActive: newStatus }) => {
       // Store previous value for rollback
       const previousStatus = isActive;
-
+      
       // Optimistically update the UI
       setIsActive(newStatus);
-
+      
       return { previousStatus };
     },
     onSuccess: (data) => {
@@ -274,13 +269,6 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
         title: `La propiedad ha sido ${isEditing ? 'actualizada' : 'creada'}`,
         duration: 3000,
       });
-      // Invalidate property queries and search results after successful submission
-      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/search'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/search/buy'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/search/rent'] });
-      setEditingProperty(null); // Assuming setEditingProperty is used to close the form or reset state
     } catch (error) {
       toast({
         title: "Error",
