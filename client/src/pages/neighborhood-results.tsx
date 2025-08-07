@@ -28,27 +28,27 @@ export default function NeighborhoodResultsPage() {
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
   const queryClient = useQueryClient();
-  
+
   // Extract URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const bedroomsFromUrl = urlParams.get('bedrooms');
   const minPriceFromUrl = urlParams.get('minPrice');
   const maxPriceFromUrl = urlParams.get('maxPrice');
-  
+
   // Parse bedrooms - could be a single number or comma-separated list
   let defaultBedroomsList: number[] = [];
   if (bedroomsFromUrl) {
     defaultBedroomsList = bedroomsFromUrl.split(',').map(b => parseInt(b)).filter(b => !isNaN(b));
   }
   const defaultBedrooms = defaultBedroomsList.length > 0 ? Math.min(...defaultBedroomsList) : null;
-  
+
   // Filtros para cada pestaña
   const [agenciesFilter, setAgenciesFilter] = useState<string>("best_rating");
   const [agentsFilter, setAgentsFilter] = useState<string>("best_rating");
-  
+
   // Estado para el toggle de vista (lista/mapa)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-  
+
   // Filtros específicos para propiedades
   const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
     operationType: "Venta",
@@ -58,21 +58,21 @@ export default function NeighborhoodResultsPage() {
     bathrooms: null,
     features: []
   });
-  
+
   // Verificar si estamos en Barcelona general
   const isBarcelonaPage = decodedNeighborhood === 'Barcelona';
-  
+
   // Verificar si el valor seleccionado es un distrito
   const isDistrictPage = isDistrict(decodedNeighborhood);
-  
+
   // Manejo especial para Sant Andreu del Palomar (que es en realidad Sant Andreu barrio)
   const isSantAndreuBarrio = decodedNeighborhood === "Sant Andreu del Palomar";
   // Mantenemos el nombre original para consultas de valoraciones
   const effectiveNeighborhood = decodedNeighborhood;
-  
+
   // Determinar el distrito correspondiente al barrio (solo si no es un distrito o Barcelona)
   const district = !isDistrictPage && !isBarcelonaPage ? findDistrictByNeighborhood(effectiveNeighborhood) : null;
-  
+
   // Determinar la pestaña activa según la ruta
   const getActiveTab = () => {
     if (currentLocation.includes('/properties')) return 'properties';
@@ -83,7 +83,7 @@ export default function NeighborhoodResultsPage() {
   };
 
   const activeTab = getActiveTab();
-  
+
   // Preload data for all tabs on component mount for faster switching
   useEffect(() => {
     const preloadData = () => {
@@ -104,27 +104,27 @@ export default function NeighborhoodResultsPage() {
           params.append('neighborhoods', effectiveNeighborhood);
           params.append('operationType', propertyFilters.operationType);
           params.append('mostViewed', 'false');
-          
+
           if (propertyFilters.priceMin !== null) {
             params.append('priceMin', propertyFilters.priceMin.toString());
           }
-          
+
           if (propertyFilters.priceMax !== null) {
             params.append('priceMax', propertyFilters.priceMax.toString());
           }
-          
+
           if (propertyFilters.bedrooms !== null) {
             params.append('bedrooms', propertyFilters.bedrooms.toString());
           }
-          
+
           if (propertyFilters.bathrooms !== null) {
             params.append('bathrooms', propertyFilters.bathrooms.toString());
           }
-          
+
           if (propertyFilters.features && propertyFilters.features.length > 0) {
             params.append('features', propertyFilters.features.join(','));
           }
-          
+
           const response = await fetch(`/api/properties?${params.toString()}`);
           if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
           return response.json();
@@ -187,36 +187,36 @@ export default function NeighborhoodResultsPage() {
       params.append('neighborhoods', effectiveNeighborhood);
       params.append('operationType', propertyFilters.operationType);
       params.append('mostViewed', 'false');
-      
+
       if (propertyFilters.priceMin !== null) {
         params.append('priceMin', propertyFilters.priceMin.toString());
       }
-      
+
       if (propertyFilters.priceMax !== null) {
         params.append('priceMax', propertyFilters.priceMax.toString());
       }
-      
+
       if (propertyFilters.bedrooms !== null) {
         params.append('bedrooms', propertyFilters.bedrooms.toString());
       }
-      
+
       if (propertyFilters.bathrooms !== null) {
         params.append('bathrooms', propertyFilters.bathrooms.toString());
       }
-      
+
       // Add feature filters if they exist
       if (propertyFilters.features && propertyFilters.features.length > 0) {
         params.append('features', propertyFilters.features.join(','));
       }
-      
+
       console.log(`Fetching properties with operationType: ${propertyFilters.operationType}`);
       const response = await fetch(`/api/properties?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();
     },
-    staleTime: 600000, // 10 minutes cache for better performance
-    gcTime: 900000, // 15 minutes in cache
-    refetchOnWindowFocus: false,
+    staleTime: 60000, // 1 minute cache to ensure fresher data
+    gcTime: 300000, // 5 minutes in cache
+    refetchOnWindowFocus: true, // Refetch when window gains focus
     retry: 2, // Retry failed requests up to 2 times
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -231,9 +231,9 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch agencies for ${effectiveNeighborhood}`);
       return response.json();
     },
-    staleTime: 600000, // 10 minutes cache for better performance
-    gcTime: 900000, // 15 minutes in cache
-    refetchOnWindowFocus: false,
+    staleTime: 60000, // 1 minute cache to ensure fresher data
+    gcTime: 300000, // 5 minutes in cache
+    refetchOnWindowFocus: true, // Refetch when window gains focus
     retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -248,20 +248,20 @@ export default function NeighborhoodResultsPage() {
       if (!response.ok) throw new Error(`Failed to fetch agents for ${effectiveNeighborhood}`);
       return response.json();
     },
-    staleTime: 600000, // 10 minutes cache for better performance
-    gcTime: 900000, // 15 minutes in cache
-    refetchOnWindowFocus: false,
+    staleTime: 60000, // 1 minute cache to ensure fresher data
+    gcTime: 300000, // 5 minutes in cache
+    refetchOnWindowFocus: true, // Refetch when window gains focus
     retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
-  
+
   // Consulta para las valoraciones del barrio
   const { data: ratings, isLoading: ratingsLoading, refetch: refetchRatings } = useQuery({
     queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('neighborhood', effectiveNeighborhood);
-      
+
       const response = await fetch(`/api/neighborhoods/ratings/average?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch ratings for ${effectiveNeighborhood}`);
       const data = await response.json();
@@ -288,7 +288,7 @@ export default function NeighborhoodResultsPage() {
             <ChevronLeft className="h-4 w-4 mr-2" />
             Volver a inicio
           </Button>
-          
+
           {/* Breadcrumb */}
           <div className="flex items-center text-sm text-gray-500 mb-4">
             {/* Barcelona siempre está en el nivel superior */}
@@ -298,7 +298,7 @@ export default function NeighborhoodResultsPage() {
             >
               Barcelona
             </span>
-            
+
             {/* Si es un distrito o tiene distrito, mostrar el siguiente nivel */}
             {(isDistrictPage || district) && (
               <>
@@ -322,15 +322,15 @@ export default function NeighborhoodResultsPage() {
                 )}
               </>
             )}
-            
+
             {/* Si es Barcelona general, no mostrar más niveles */}
             {isBarcelonaPage && (
               <span className="font-medium ml-0">Todos los barrios</span>
             )}
           </div>
-          
-          
-          
+
+
+
           {/* Tabs para diferentes tipos de resultados */}
           <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid grid-cols-4 mb-8">
@@ -370,9 +370,9 @@ export default function NeighborhoodResultsPage() {
                 <PropertyResults 
                   results={useMemo(() => {
                     if (!properties) return [];
-                    
+
                     const sortedProperties = [...properties];
-                    
+
                     // Use the sortBy from propertyFilters instead of the removed propertiesFilter
                     switch (propertyFilters.sortBy) {
                       case 'price-asc':
@@ -403,9 +403,9 @@ export default function NeighborhoodResultsPage() {
                 <NeighborhoodMap
                   properties={useMemo(() => {
                     if (!properties) return [];
-                    
+
                     const sortedProperties = [...properties];
-                    
+
                     // Apply the same sorting logic as the list view
                     switch (propertyFilters.sortBy) {
                       case 'price-asc':
@@ -458,9 +458,9 @@ export default function NeighborhoodResultsPage() {
               <AgencyResults 
                 results={useMemo(() => {
                   if (!agencies) return [];
-                  
+
                   const sortedAgencies = [...agencies];
-                  
+
                   switch (agenciesFilter) {
                     case 'best_rating':
                       return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -502,9 +502,9 @@ export default function NeighborhoodResultsPage() {
               <AgentResults 
                 results={useMemo(() => {
                   if (!agents) return [];
-                  
+
                   const sortedAgents = [...agents];
-                  
+
                   switch (agentsFilter) {
                     case 'best_rating':
                       return sortedAgents.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -538,7 +538,7 @@ export default function NeighborhoodResultsPage() {
                 {!isBarcelonaPage && !isDistrictPage && (
                   <h2 className="text-2xl font-bold mb-4">Barrio de {decodedNeighborhood}</h2>
                 )}
-                
+
                 {/* Información de distrito para barrios */}
                 {district && !isDistrictPage && !isBarcelonaPage && (
                   <div className="flex items-center mb-4">
@@ -546,7 +546,7 @@ export default function NeighborhoodResultsPage() {
                     <span>Distrito: <strong>{district}</strong></span>
                   </div>
                 )}
-                
+
                 {/* Información del distrito cuando estamos viendo un distrito */}
                 {isDistrictPage && (
                   <div className="mb-6">
@@ -579,7 +579,7 @@ export default function NeighborhoodResultsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Información de Barcelona cuando estamos en la página general */}
                 {isBarcelonaPage && (
                   <div className="mb-6">
@@ -599,14 +599,14 @@ export default function NeighborhoodResultsPage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Información genérica del barrio */}
                 {!isBarcelonaPage && !isDistrictPage && (
                   <>
                     <p className="text-gray-600 mb-6">
                       Información general sobre el barrio de {decodedNeighborhood}.
                     </p>
-                    
+
                     {/* Valoraciones del barrio */}
                     {!ratingsLoading && ratings && (
                       <div className="mb-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -619,7 +619,7 @@ export default function NeighborhoodResultsPage() {
                             </span>
                           )}
                         </h3>
-                        
+
                         {ratings.count > 0 && (
                           <div className="flex flex-wrap gap-2 mb-4">
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
@@ -648,7 +648,7 @@ export default function NeighborhoodResultsPage() {
                             </div>
                           </div>
                         )}
-                        
+
                         {ratings.count > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                             <div className="space-y-3">
@@ -659,7 +659,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.security * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Facilidad de aparcar</span>
@@ -667,7 +667,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.parking * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Amigable para peques</span>
@@ -676,7 +676,7 @@ export default function NeighborhoodResultsPage() {
                                 <Progress value={ratings.familyFriendly * 10} className="h-2" />
                               </div>
                             </div>
-                            
+
                             <div className="space-y-3">
                               <div>
                                 <div className="flex justify-between mb-1">
@@ -685,7 +685,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.publicTransport * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Parques y espacios verdes</span>
@@ -693,7 +693,7 @@ export default function NeighborhoodResultsPage() {
                                 </div>
                                 <Progress value={ratings.greenSpaces * 10} className="h-2" />
                               </div>
-                              
+
                               <div>
                                 <div className="flex justify-between mb-1">
                                   <span className="text-sm font-medium">Disponibilidad de servicios</span>
@@ -723,7 +723,7 @@ export default function NeighborhoodResultsPage() {
                     )}
                   </>
                 )}
-                
+
                 {/* Estadísticas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                   <div className="bg-gray-50 p-4 rounded-lg">

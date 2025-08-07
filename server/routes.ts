@@ -304,6 +304,10 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       console.log('Attempting to update property:', req.params.id, req.body);
       const property = insertPropertySchema.parse(req.body);
       const result = await storage.updateProperty(parseInt(req.params.id), property);
+      
+      // Clear cache to ensure fresh search results
+      cache.flushAll();
+      
       console.log('Property updated successfully:', result);
       res.json(result);
     } catch (error) {

@@ -255,7 +255,7 @@ export class DatabaseStorage implements IStorage {
 
         // Usamos la sintaxis directa de PostgreSQL para arrays
         const arrayQuery = `ARRAY[${neighborhoods.map(n => `'${n.replace(/'/g, "''")}'`).join(',')}]::text[]`;
-        
+
         dbQuery = dbQuery.where(
           sql`${agents.influenceNeighborhoods} && ${sql.raw(arrayQuery)}`
         );
@@ -796,7 +796,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       console.log(`Database query for most viewed properties: ${operationType || 'all'}`);
-      
+
       // Construir la consulta base con campos específicos para mejor rendimiento
       let query = db
         .select({
@@ -845,7 +845,7 @@ export class DatabaseStorage implements IStorage {
 
       // Aplicar el límite y ejecutar la consulta
       const results = await query.limit(limit);
-      
+
       // Procesar los arrays JSON
       const processedResults = results.map((property) => ({
         ...property,
@@ -855,7 +855,7 @@ export class DatabaseStorage implements IStorage {
 
       // Cache results for 5 minutes to dramatically improve loading performance
       cache.set(cacheKey, processedResults, 300);
-      
+
       return processedResults;
     } catch (error) {
       console.error('Error al obtener propiedades más vistas:', error);
@@ -1033,7 +1033,7 @@ export class DatabaseStorage implements IStorage {
 
     // Build query with all conditions
     let query = db.select().from(properties);
-    
+
     if (whereConditions.length > 0) {
       console.log(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
       query = query.where(and(...whereConditions));
@@ -1045,10 +1045,10 @@ export class DatabaseStorage implements IStorage {
     console.log("Ejecutando consulta de propiedades con filtros");
     const result = await query;
     console.log(`Consulta completada. Encontradas ${result.length} propiedades que coinciden con los filtros.`);
-    
+
     // Cache the results for 5 minutes for fast tab switching
     cache.set(cacheKey, result, 300);
-    
+
     return result;
   }
 
@@ -1062,14 +1062,22 @@ export class DatabaseStorage implements IStorage {
 
   async updateProperty(
     id: number,
-    property: InsertProperty,
-  ): Promise<Property> {
+    propertyData: any,
+  ): Promise<any> {
     const [updatedProperty] = await db
       .update(properties)
-      .set(property)
+      .set(propertyData)
       .where(eq(properties.id, id))
       .returning();
-    return updatedProperty;
+
+    // Clear relevant cache entries when property is updated
+    cache.flushAll(); // Clear all cache to ensure search results are fresh
+
+    return {
+      ...updatedProperty,
+      images: this.parseArrayField(updatedProperty.images),
+      features: this.parseArrayField(updatedProperty.features),
+    };
   }
 
   async deleteProperty(id: number): Promise<void> {
@@ -1149,7 +1157,7 @@ export class DatabaseStorage implements IStorage {
 
     // Cache for 10 minutes to eliminate repeated API calls
     cache.set(cacheKey, ratings, 600);
-    
+
     return ratings;
   }
 
@@ -1241,7 +1249,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(properties, eq(inquiries.propertyId, properties.id))
       .where(eq(inquiries.agentId, agentId))
       .orderBy(sql`${inquiries.createdAt} DESC`);
-    
+
     return results as Inquiry[];
   }
 
@@ -1339,7 +1347,7 @@ export class DatabaseStorage implements IStorage {
 
   async getBatchFavoriteAgentStatus(clientId: number, agentIds: number[]): Promise<{ [key: number]: boolean }> {
     if (agentIds.length === 0) return {};
-    
+
     const favorites = await db
       .select({ agentId: clientFavoriteAgents.agentId })
       .from(clientFavoriteAgents)
@@ -1354,7 +1362,7 @@ export class DatabaseStorage implements IStorage {
     agentIds.forEach(id => {
       result[id] = favorites.some(fav => fav.agentId === id);
     });
-    
+
     return result;
   }
 
@@ -1441,7 +1449,7 @@ export class DatabaseStorage implements IStorage {
 
   async getBatchFavoritePropertyStatus(clientId: number, propertyIds: number[]): Promise<{ [key: number]: boolean }> {
     if (propertyIds.length === 0) return {};
-    
+
     const favorites = await db
       .select({ propertyId: clientFavoriteProperties.propertyId })
       .from(clientFavoriteProperties)
@@ -1456,7 +1464,7 @@ export class DatabaseStorage implements IStorage {
     propertyIds.forEach(id => {
       result[id] = favorites.some(fav => fav.propertyId === id);
     });
-    
+
     return result;
   }
 
@@ -1512,7 +1520,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(agentEvents)
       .where(eq(agentEvents.agentId, agentId));
-    
+
     if (startDate && endDate) {
       query = query.where(
         and(
@@ -1522,7 +1530,7 @@ export class DatabaseStorage implements IStorage {
         )
       );
     }
-    
+
     return await query.orderBy(agentEvents.eventDate, agentEvents.eventTime);
   }
 
@@ -1532,11 +1540,11 @@ export class DatabaseStorage implements IStorage {
       .set(eventData)
       .where(eq(agentEvents.id, id))
       .returning();
-    
+
     if (!result) {
       throw new Error("Agent event not found");
     }
-    
+
     return result;
   }
 
