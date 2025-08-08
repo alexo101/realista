@@ -1954,9 +1954,10 @@ La descripción debe:
 - Ser profesional y atractiva para potenciales compradores/inquilinos
 - Destacar las mejores características de la propiedad
 - Mencionar el barrio y sus ventajas
-- Tener entre 150-200 palabras
+- Tener MÁXIMO 500 caracteres (incluye espacios y puntuación)
 - Estar escrita en español
 - Usar un tono persuasivo pero honesto
+- Ser concisa y directa
 
 Responde solo con la descripción, sin introducción ni explicaciones adicionales.`;
 
@@ -1965,18 +1966,23 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
         messages: [
           {
             role: "system",
-            content: "Eres un experto en marketing inmobiliario especializado en Barcelona. Generas descripciones atractivas y profesionales para propiedades."
+            content: "Eres un experto en marketing inmobiliario especializado en Barcelona. Generas descripciones atractivas y profesionales para propiedades. SIEMPRE respeta el límite de 500 caracteres."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        max_tokens: 300,
+        max_tokens: 150, // Reduced to limit response length
         temperature: 0.7,
       });
 
-      const description = response.choices[0].message.content;
+      let description = response.choices[0].message.content || "";
+
+      // Ensure the description doesn't exceed 500 characters
+      if (description.length > 500) {
+        description = description.substring(0, 497) + "...";
+      }
 
       res.json({ description });
     } catch (error) {
