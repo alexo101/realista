@@ -147,6 +147,19 @@ export default function ManagePage() {
     retry: 1, // Reduce retry attempts for faster error handling
   });
 
+  // Property toggle mutation
+  const togglePropertyMutation = useMutation({
+    mutationFn: (data: { propertyId: number; isActive: boolean }) =>
+      apiRequest('PATCH', `/api/properties/${data.propertyId}/toggle`, { isActive: data.isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
+      toast({ title: 'Estado de propiedad actualizado correctamente' });
+    },
+    onError: () => {
+      toast({ title: 'Error al cambiar el estado', variant: 'destructive' });
+    }
+  });
+
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: ['/api/clients', user?.id],
     queryFn: async () => {
@@ -1121,7 +1134,11 @@ export default function ManagePage() {
                     properties.map((property) => (
                       <div 
                         key={property.id} 
-                        className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
+                        className={`rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border ${
+                          property.isActive 
+                            ? 'bg-white border-gray-100' 
+                            : 'bg-gray-50 border-gray-200 opacity-75'
+                        }`}
                         onClick={() => {
                           setEditingProperty(property);
                           setIsAddingProperty(false);
@@ -1194,6 +1211,35 @@ export default function ManagePage() {
                             {property.reference && (
                               <div className="text-gray-400 whitespace-nowrap">Ref: {property.reference}</div>
                             )}
+                          </div>
+
+                          {/* Status and Action Buttons */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${
+                                property.isActive 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {property.isActive ? 'Activa' : 'Inactiva'}
+                              </span>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePropertyMutation.mutate({
+                                  propertyId: property.id,
+                                  isActive: !property.isActive
+                                });
+                              }}
+                              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                                property.isActive
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                            >
+                              {property.isActive ? 'Desactivar' : 'Activar'}
+                            </button>
                           </div>
 
                           {property.features && property.features.length > 0 && (
