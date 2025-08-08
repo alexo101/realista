@@ -139,8 +139,7 @@ export default function ManagePage() {
   }, [user, location]);
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
-    queryKey: ['/api/properties', user?.id, 'includeInactive'],
-    queryFn: () => apiRequest(`/api/properties?agentId=${user?.id}&includeInactive=true`),
+    queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`],
     enabled: section === 'properties' && Boolean(user?.id),
     staleTime: 30000, // 30 seconds - data stays fresh for 30 seconds
     cacheTime: 300000, // 5 minutes - keep in cache for 5 minutes
