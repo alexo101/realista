@@ -140,18 +140,9 @@ export default function ManagePage() {
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: ['/api/properties', user?.id, 'includeInactive'],
-    queryFn: async () => {
-      const response = await fetch(`/api/properties?agentId=${user?.id}&includeInactive=true`, {
-        headers: {
-          'Cache-Control': 'private, max-age=60',
-          'Accept': 'application/json',
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch properties');
-      return response.json();
-    },
+    queryFn: () => apiRequest(`/api/properties?agentId=${user?.id}&includeInactive=true`),
     enabled: section === 'properties' && Boolean(user?.id),
-    staleTime: 60000, // 1 minute - data stays fresh for 1 minute
+    staleTime: 30000, // 30 seconds - data stays fresh for 30 seconds
     cacheTime: 300000, // 5 minutes - keep in cache for 5 minutes
     refetchOnWindowFocus: false, // Don't refetch on tab switch for performance
     retry: 1, // Reduce retry attempts for faster error handling
