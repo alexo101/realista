@@ -3,6 +3,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Form,
   FormControl,
@@ -28,7 +29,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff } from "lucide-react";
+import { Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff, Sparkles } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,7 +49,6 @@ import { PROPERTY_FEATURES } from "@/utils/property-features";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { apiRequest } from "@/lib/queryClient";
 
 const propertyTypes = [
   "Vivienda",
@@ -142,6 +142,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
     initialData?.neighborhood
@@ -229,6 +230,48 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       });
     },
   });
+
+  const generateDescription = async () => {
+    try {
+      setIsGeneratingDescription(true);
+      
+      // Get current form values
+      const formValues = form.getValues();
+      
+      const response = await apiRequest('POST', '/api/generate-description', {
+        propertyType: formValues.type,
+        operationType: formValues.operationType,
+        neighborhood: formValues.neighborhood,
+        bedrooms: formValues.bedrooms,
+        bathrooms: formValues.bathrooms,
+        size: formValues.surfaceArea,
+        price: formValues.price,
+        features: formValues.features || [],
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error generating description');
+      }
+      
+      const data = await response.json();
+      form.setValue('description', data.description);
+      
+      toast({
+        title: "Descripción generada",
+        description: "La descripción ha sido generada con éxito.",
+      });
+      
+    } catch (error) {
+      console.error('Error generating description:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar la descripción. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -904,10 +947,12 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           if (initialData?.id) {
                             // Use setTimeout to prevent coordinate calculation issues
                             setTimeout(() => {
-                              toggleStatusMutation.mutate({
-                                propertyId: initialData.id,
-                                isActive: checked,
-                              });
+                              if (initialData?.id) {
+                                toggleStatusMutation.mutate({
+                                  propertyId: initialData.id,
+                                  isActive: checked,
+                                });
+                              }
                             }, 0);
                           }
                         }}
@@ -965,7 +1010,26 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 <FormItem>
                   <FormLabel>Descripción</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder="Describe la propiedad" />
+                    <div className="relative">
+                      <Textarea {...field} placeholder="Describe la propiedad" className="pr-20" />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={generateDescription}
+                        disabled={isGeneratingDescription}
+                        className="absolute top-2 right-2 h-8 px-3 text-primary hover:text-primary/80"
+                      >
+                        {isGeneratingDescription ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-1" />
+                            <span className="text-xs">Generar</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

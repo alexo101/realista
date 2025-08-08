@@ -1917,6 +1917,74 @@ Gracias!
     }
   });
 
+  // AI Description Generation
+  app.post("/api/generate-description", async (req, res) => {
+    try {
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      const { OpenAI } = await import("openai");
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const {
+        propertyType,
+        operationType,
+        neighborhood,
+        bedrooms,
+        bathrooms,
+        size,
+        price,
+        features
+      } = req.body;
+
+      // Create a descriptive prompt in Spanish
+      const prompt = `Genera una descripción atractiva y profesional para una propiedad inmobiliaria en Barcelona con las siguientes características:
+
+Tipo de propiedad: ${propertyType}
+Operación: ${operationType}
+Barrio: ${neighborhood}
+Habitaciones: ${bedrooms || 'No especificado'}
+Baños: ${bathrooms || 'No especificado'}
+Superficie: ${size ? `${size} m²` : 'No especificada'}
+Precio: ${price ? `${price}€` : 'A consultar'}
+Características: ${features && features.length > 0 ? features.join(', ') : 'No especificadas'}
+
+La descripción debe:
+- Ser profesional y atractiva para potenciales compradores/inquilinos
+- Destacar las mejores características de la propiedad
+- Mencionar el barrio y sus ventajas
+- Tener entre 150-200 palabras
+- Estar escrita en español
+- Usar un tono persuasivo pero honesto
+
+Responde solo con la descripción, sin introducción ni explicaciones adicionales.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "Eres un experto en marketing inmobiliario especializado en Barcelona. Generas descripciones atractivas y profesionales para propiedades."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.7,
+      });
+
+      const description = response.choices[0].message.content;
+
+      res.json({ description });
+    } catch (error) {
+      console.error("Error generating description:", error);
+      res.status(500).json({ error: "Error al generar la descripción" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
