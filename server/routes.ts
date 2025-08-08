@@ -154,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (agencyId) {
         const agency = await storage.getAgencyById(parseInt(agencyId));
         if (agency) {
-          agencyName = (agency as any).agencyName || 'Realista';
+          agencyName = agency.agencyName || 'Realista';
         }
       }
 
@@ -220,17 +220,18 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
           user = {
             id: client.id,
             email: client.email,
-            password: client.password || '',
+            password: client.password,
             name: client.name,
             surname: client.surname,
             description: null,
             avatar: null,
             createdAt: client.createdAt,
-            influenceNeighborhoods: null,
+            influence_neighborhoods: null,
             yearsOfExperience: null,
             languagesSpoken: null,
             agencyId: null,
-            isAdmin: false
+            isAdmin: false,
+            phone: client.phone
           };
           isClient = true;
         }
@@ -338,25 +339,9 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         }
 
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
-        properties = await storage.getMostViewedProperties(limit);
+        properties = await storage.getMostViewedProperties(limit, operationType);
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
-        // Add HTTP caching headers for agent property management
-        const cacheKey = `agent-properties-${agentId}-${includeInactive}`;
-        const etag = `"${cacheKey}-${Math.floor(Date.now() / 120000)}"`;
-        
-        res.set({
-          'Cache-Control': 'private, max-age=60, stale-while-revalidate=120',
-          'ETag': etag,
-          'Content-Encoding': 'gzip',
-          'Vary': 'Accept-Encoding'
-        });
-
-        // Check if client has cached version
-        if (req.headers['if-none-match'] === etag) {
-          return res.status(304).end();
-        }
-
         // Use getAllPropertiesByAgent for management purposes when includeInactive is true
         properties = includeInactive 
           ? await storage.getAllPropertiesByAgent(agentId)
@@ -950,7 +935,7 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       }
 
       // Procesamos los resultados para asegurar que se usen las propiedades correctas
-      const processedResults = (agencies as any[]).map((agency: any) => {
+      const processedResults = agencies.map(agency => {
         return {
           ...agency,
           // Usamos el avatar del administrador
@@ -964,7 +949,7 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       console.log('Agency resultsbefore normalization:', JSON.stringify(processedResults, null, 2));
 
       // Normalize field names to ensure consistent API responses
-      const normalizedResults = processedResults.map((agency: any) => {
+      const normalizedResults = processedResults.map(agency => {
         console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
 
         // Get the agency neighborhoods from the standardized field
@@ -996,7 +981,7 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
             }
 
             console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
-          } catch (e: any) {
+          } catch (e) {
             console.log('- Failed to parse neighborhoods:', e.message);
             neighborhoodsArray = [];
           }
@@ -1086,7 +1071,7 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         console.log('Cache hit for agents search');
       }
       
-      console.log('Search agents results:', (agents as any[]).length);
+      console.log('Search agents results:', agents.length);
       res.json(agents);
     } catch (error) {
       console.error('Error searching agents:', error);
@@ -1586,8 +1571,8 @@ Gracias!
         } else if (review.targetType === 'agency') {
           const agency = await storage.getAgencyById(review.targetId);
           if (agency) {
-            targetName = (agency as any).agencyName || '';
-            targetAvatar = (agency as any).agencyLogo || '';
+            targetName = agency.agencyName || '';
+            targetAvatar = agency.agencyLogo || '';
           }
         }
 
@@ -1712,9 +1697,9 @@ Gracias!
       // Si se proporciona adminAgentId, obtener solo las agencias de ese administrador
       const agencies = adminAgentId 
         ? await storage.getAgenciesByAdmin(adminAgentId)
-        : await storage.getAgenciesByAdmin((req as any).user?.id || 0);
+        : await storage.getAgenciesByAdmin(req.user?.id || 0);
 
-      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || (req as any).user?.id}`);
+      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || req.user?.id}`);
       res.json(agencies);
     } catch (error) {
       console.error('Error fetching agencies:', error);
@@ -1725,13 +1710,13 @@ Gracias!
   app.post("/api/agencies", async (req, res) => {
     try {
       console.log('Creating agency with data:', req.body);
-      if (!req.body.adminAgentId && !(req as any).user?.id) {
+      if (!req.body.adminAgentId && !req.user?.id) {
         return res.status(400).json({ message: "Missing adminAgentId" });
       }
 
       const agencyData = {
         ...req.body,
-        adminAgentId: req.body.adminAgentId || (req as any).user?.id
+        adminAgentId: req.body.adminAgentId || req.user?.id
       };
 
       const result = await storage.createAgency(agencyData);
@@ -1859,8 +1844,8 @@ Gracias!
         clientEmail: inquiry.email,
         clientPhone: inquiry.phone,
         propertyId: inquiry.propertyId,
-        propertyTitle: "Sin título",
-        propertyAddress: "Dirección no disponible",
+        propertyTitle: inquiry.property?.title || "Sin título",
+        propertyAddress: inquiry.property?.address || "Dirección no disponible",
         lastMessage: inquiry.message,
         lastMessageTime: inquiry.createdAt,
         unreadCount: inquiry.status === 'pendiente' ? 1 : 0,
@@ -1871,7 +1856,7 @@ Gracias!
             senderId: inquiry.id,
             senderName: inquiry.name,
             senderType: 'client',
-            content: `Hola, estoy interesado en la propiedad. ${inquiry.message}`,
+            content: `Hola, estoy interesado en la propiedad en ${inquiry.property?.address || 'esta dirección'}. ${inquiry.message}`,
             timestamp: inquiry.createdAt,
             isRead: true
           }

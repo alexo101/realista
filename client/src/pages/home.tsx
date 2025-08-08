@@ -9,14 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function Home() {
   // Consulta para propiedades más vistas en venta
   const { data: mostViewedSaleProperties, isLoading: isLoadingSales } = useQuery<Property[]>({
-    queryKey: ["/api/properties", { mostViewed: true, operationType: "Venta" }],
-    queryFn: async () => {
-      const response = await fetch("/api/properties?mostViewed=true&operationType=Venta");
-      if (!response.ok) {
-        throw new Error("Error al cargar las propiedades más vistas en venta");
-      }
-      return response.json();
-    },
+    queryKey: ["/api/properties?mostViewed=true&operationType=Venta"],
     staleTime: 300000, // 5 minutes cache
     gcTime: 600000, // 10 minutes in cache
     refetchOnWindowFocus: false,
@@ -24,14 +17,7 @@ export default function Home() {
 
   // Consulta para propiedades más vistas en alquiler
   const { data: mostViewedRentProperties, isLoading: isLoadingRental } = useQuery<Property[]>({
-    queryKey: ["/api/properties", { mostViewed: true, operationType: "Alquiler" }],
-    queryFn: async () => {
-      const response = await fetch("/api/properties?mostViewed=true&operationType=Alquiler");
-      if (!response.ok) {
-        throw new Error("Error al cargar las propiedades más vistas en alquiler");
-      }
-      return response.json();
-    },
+    queryKey: ["/api/properties?mostViewed=true&operationType=Alquiler"],
     staleTime: 300000, // 5 minutes cache
     gcTime: 600000, // 10 minutes in cache
     refetchOnWindowFocus: false,

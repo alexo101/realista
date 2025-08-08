@@ -211,18 +211,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
           ? "La propiedad ahora es visible para los clientes." 
           : "La propiedad está oculta para los clientes.",
       });
-      // Invalidate all property-related queries to ensure changes appear immediately
+      // Invalidate queries to refresh the property list
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      // Invalidate search results to update neighborhood results immediately
+      queryClient.invalidateQueries({ queryKey: ["/api/properties", initialData?.id] });
+      // Also invalidate search results to update neighborhood results
       queryClient.invalidateQueries({ queryKey: ["/api/search"] });
-      // Invalidate most viewed properties cache to reflect visibility changes
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey;
-          return Array.isArray(key) && key[0] === '/api/properties' && 
-                 typeof key[1] === 'object' && key[1] !== null && 'mostViewed' in key[1];
-        }
-      });
     },
     onError: (error, variables, context) => {
       // Rollback to previous state

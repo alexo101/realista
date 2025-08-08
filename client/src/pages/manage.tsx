@@ -141,32 +141,10 @@ export default function ManagePage() {
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`],
     enabled: section === 'properties' && Boolean(user?.id),
-    staleTime: 30000, // 30 seconds - data stays fresh for 30 seconds
-    cacheTime: 300000, // 5 minutes - keep in cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch on tab switch for performance
-    retry: 1, // Reduce retry attempts for faster error handling
-  });
-
-  // Property toggle mutation
-  const togglePropertyMutation = useMutation({
-    mutationFn: (data: { propertyId: number; isActive: boolean }) =>
-      apiRequest('PATCH', `/api/properties/${data.propertyId}/toggle`, { isActive: data.isActive }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
-      toast({ title: 'Estado de propiedad actualizado correctamente' });
-    },
-    onError: () => {
-      toast({ title: 'Error al cambiar el estado', variant: 'destructive' });
-    }
   });
 
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
-    queryKey: ['/api/clients', user?.id],
-    queryFn: async () => {
-      const response = await fetch(`/api/clients?agentId=${user?.id}`);
-      if (!response.ok) throw new Error('Failed to fetch clients');
-      return response.json();
-    },
+    queryKey: [`/api/clients?agentId=${user?.id}`],
     enabled: (section === 'clients' || section === 'reviews') && Boolean(user?.id),
   });
 
@@ -183,18 +161,7 @@ export default function ManagePage() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate all property-related queries
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
-      // Invalidate search results to update neighborhood results immediately
-      queryClient.invalidateQueries({ queryKey: ['/api/search'] });
-      // Invalidate most viewed properties cache
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey;
-          return Array.isArray(key) && key[0] === '/api/properties' && 
-                 typeof key[1] === 'object' && key[1] !== null && 'mostViewed' in key[1];
-        }
-      });
+      queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
       setIsAddingProperty(false);
       setEditingProperty(null);
     },
@@ -213,18 +180,7 @@ export default function ManagePage() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate all property-related queries to ensure operation type changes appear immediately
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
-      // Invalidate search results to update neighborhood results immediately
-      queryClient.invalidateQueries({ queryKey: ['/api/search'] });
-      // Invalidate most viewed properties cache to reflect changes
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const key = query.queryKey;
-          return Array.isArray(key) && key[0] === '/api/properties' && 
-                 typeof key[1] === 'object' && key[1] !== null && 'mostViewed' in key[1];
-        }
-      });
+      queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
       setEditingProperty(null);
     },
   });
@@ -242,7 +198,7 @@ export default function ManagePage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
       setIsAddingClient(false);
       setEditingClient(null);
     },
@@ -261,7 +217,7 @@ export default function ManagePage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/clients', user?.id] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
       setEditingClient(null);
     },
   });
@@ -1102,7 +1058,7 @@ export default function ManagePage() {
                     bedrooms: editingProperty.bedrooms,
                     bathrooms: editingProperty.bathrooms,
                     images: editingProperty.images || [],
-                    type: editingProperty.type,
+                    type: editingProperty.type as any,
                     housingType: editingProperty.housingType || undefined,
                     housingStatus: editingProperty.housingStatus || undefined,
                     floor: editingProperty.floor || undefined,
@@ -1134,11 +1090,7 @@ export default function ManagePage() {
                     properties.map((property) => (
                       <div 
                         key={property.id} 
-                        className={`rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border ${
-                          property.isActive 
-                            ? 'bg-white border-gray-100' 
-                            : 'bg-gray-50 border-gray-200 opacity-75'
-                        }`}
+                        className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
                         onClick={() => {
                           setEditingProperty(property);
                           setIsAddingProperty(false);
@@ -1211,35 +1163,6 @@ export default function ManagePage() {
                             {property.reference && (
                               <div className="text-gray-400 whitespace-nowrap">Ref: {property.reference}</div>
                             )}
-                          </div>
-
-                          {/* Status and Action Buttons */}
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${
-                                property.isActive 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {property.isActive ? 'Activa' : 'Inactiva'}
-                              </span>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePropertyMutation.mutate({
-                                  propertyId: property.id,
-                                  isActive: !property.isActive
-                                });
-                              }}
-                              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                                property.isActive
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
-                              }`}
-                            >
-                              {property.isActive ? 'Desactivar' : 'Activar'}
-                            </button>
                           </div>
 
                           {property.features && property.features.length > 0 && (

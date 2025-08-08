@@ -871,102 +871,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {
-    // Check cache first for performance optimization
-    const cacheKey = `agent_properties_active_${agentId}`;
-    const cached = cache.get<Property[]>(cacheKey);
-    if (cached) {
-      console.log(`Returning cached active properties for agent ID: ${agentId}`);
-      return cached;
-    }
-
     console.log(`Fetching active properties for agent ID: ${agentId}`);
     const result = await db
       .select()
       .from(properties)
       .where(and(eq(properties.agentId, agentId), eq(properties.isActive, true)))
-      .orderBy(desc(properties.createdAt));
+      .orderBy(sql`${properties.createdAt} DESC`);
 
-    const processedResults = result.map((property) => ({
-      ...property,
-      images: this.parseArrayField(property.images),
-      features: this.parseArrayField(property.features),
-    }));
-
-    console.log(`Found ${processedResults.length} active properties for agent ID: ${agentId}`);
-
-    // Cache for 2 minutes
-    cache.set(cacheKey, processedResults, 120);
-    
-    return processedResults;
+    console.log(`Found ${result.length} active properties for agent ID: ${agentId}`);
+    return result;
   }
 
   async getAllPropertiesByAgent(agentId: number): Promise<Property[]> {
-    // Check cache first for significant performance improvement
-    const cacheKey = `agent_properties_all_${agentId}`;
-    const cached = cache.get<Property[]>(cacheKey);
-    if (cached) {
-      console.log(`Returning cached properties for agent ID: ${agentId}`);
-      return cached;
-    }
-
     console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}`);
-    
-    // Optimized query: select specific fields, avoid images for list view performance
     const result = await db
-      .select({
-        id: properties.id,
-        reference: properties.reference,
-        title: properties.title,
-        address: properties.address,
-        neighborhood: properties.neighborhood,
-        type: properties.type,
-        operationType: properties.operationType,
-        price: properties.price,
-        previousPrice: properties.previousPrice,
-        superficie: properties.superficie,
-        bedrooms: properties.bedrooms,
-        bathrooms: properties.bathrooms,
-        // Only get first image for list view performance
-        images: properties.images,
-        mainImageIndex: properties.mainImageIndex,
-        features: properties.features,
-        viewCount: properties.viewCount,
-        createdAt: properties.createdAt,
-        agentId: properties.agentId,
-        agencyId: properties.agencyId,
-        isActive: properties.isActive,
-        housingType: properties.housingType,
-        housingStatus: properties.housingStatus,
-        floor: properties.floor,
-        availability: properties.availability,
-        availabilityDate: properties.availabilityDate,
-        description: properties.description,
-      })
+      .select()
       .from(properties)
       .where(eq(properties.agentId, agentId))
-      .orderBy(desc(properties.createdAt)); // Use desc() for better performance
+      .orderBy(sql`${properties.createdAt} DESC`);
 
-    // Process the arrays and optimize images for management view
-    const processedResults = result.map((property) => {
-      const images = this.parseArrayField(property.images);
-      // For management view, only keep the main image to reduce payload size
-      const optimizedImages = images.length > 0 && property.mainImageIndex >= 0 && property.mainImageIndex < images.length
-        ? [images[property.mainImageIndex], ...images.slice(0, 2).filter((_, idx) => idx !== property.mainImageIndex)]
-        : images.slice(0, 3); // Maximum 3 images for list view
-
-      return {
-        ...property,
-        images: optimizedImages,
-        features: this.parseArrayField(property.features),
-      };
-    });
-
-    console.log(`Found ${processedResults.length} total properties for agent ID: ${agentId}`);
-
-    // Cache for 2 minutes to balance freshness with performance
-    cache.set(cacheKey, processedResults, 120);
-    
-    return processedResults;
+    console.log(`Found ${result.length} total properties for agent ID: ${agentId}`);
+    return result;
   }
 
   async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
@@ -1132,16 +1057,6 @@ export class DatabaseStorage implements IStorage {
       .insert(properties)
       .values(property)
       .returning();
-    
-    // Invalidate caches for significant performance improvement on next loads
-    if (property.agentId) {
-      cache.delete(`agent_properties_all_${property.agentId}`);
-      cache.delete(`agent_properties_active_${property.agentId}`);
-      // Clear most viewed cache as rankings may change
-      cache.delete(`most_viewed_properties_6_${property.operationType}`);
-      cache.delete(`most_viewed_properties_6_all`);
-    }
-    
     return newProperty;
   }
 
@@ -1154,21 +1069,6 @@ export class DatabaseStorage implements IStorage {
       .set(property)
       .where(eq(properties.id, id))
       .returning();
-    
-    // Invalidate all relevant caches for immediate UI updates
-    if (property.agentId) {
-      cache.delete(`agent_properties_all_${property.agentId}`);
-      cache.delete(`agent_properties_active_${property.agentId}`);
-      // Clear search caches that might include this property
-      const clearSearchCache = (key: string) => {
-        if (key.includes('search_properties_') || key.includes('most_viewed_properties_')) {
-          cache.delete(key);
-        }
-      };
-      // Clear property search cache to ensure operation type changes appear immediately
-      cache.forEach((_, key) => clearSearchCache(key));
-    }
-    
     return updatedProperty;
   }
 
@@ -1182,16 +1082,6 @@ export class DatabaseStorage implements IStorage {
       .set({ isActive })
       .where(eq(properties.id, id))
       .returning();
-    
-    // Invalidate caches to reflect visibility changes immediately  
-    if (updatedProperty.agentId) {
-      cache.delete(`agent_properties_all_${updatedProperty.agentId}`);
-      cache.delete(`agent_properties_active_${updatedProperty.agentId}`);
-      // Clear most viewed properties as active status affects visibility
-      cache.delete(`most_viewed_properties_6_${updatedProperty.operationType}`);
-      cache.delete(`most_viewed_properties_6_all`);
-    }
-    
     return updatedProperty;
   }
 
