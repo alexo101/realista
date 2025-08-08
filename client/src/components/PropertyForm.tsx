@@ -466,19 +466,6 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               />
             )}
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descripción</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} placeholder="Describe la propiedad" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
@@ -970,6 +957,20 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 </div>
               </div>
             )}
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descripción</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder="Describe la propiedad" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end gap-3">
               <Button
