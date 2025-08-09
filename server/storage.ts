@@ -1671,7 +1671,7 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(fraudReports.propertyId, propertyId),
           eq(fraudReports.reporterIp, reporterIp),
-          gte(fraudReports.reportedAt, twentyFourHoursAgo)
+          gte(fraudReports.createdAt, twentyFourHoursAgo)
         )
       )
       .limit(1);
