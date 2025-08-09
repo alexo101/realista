@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Navbar } from "@/components/Navbar";
 import { UserProvider } from "@/contexts/user-context";
+import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
 import Home from "@/pages/home";
 import Search from "@/pages/search";
 import Property from "@/pages/property";
@@ -55,6 +56,7 @@ function App() {
       <UserProvider>
         <Navbar />
         <Router />
+        <GlobalLoadingOverlay />
         <Toaster />
       </UserProvider>
     </QueryClientProvider>

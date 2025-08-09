@@ -17,6 +17,30 @@ import { cache } from "./cache";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
 
+  // Client metrics configuration endpoint
+  app.get("/api/client-metrics-config", async (req, res) => {
+    try {
+      // Server configuration for intelligent loading
+      const config = {
+        showLoaderOnFirst: true, // Enable skeleton loader on first visits
+        cacheTimeouts: {
+          visited: 86400000, // 24 hours in milliseconds
+          metrics: 300000 // 5 minutes
+        },
+        loadingThresholds: {
+          imageCount: 4,
+          estimatedBytes: 500000,
+          slowNetworkTypes: ['2g', 'slow-2g']
+        }
+      };
+      
+      res.json(config);
+    } catch (error) {
+      console.error('Error fetching client metrics config:', error);
+      res.status(500).json({ message: "Failed to fetch client metrics configuration" });
+    }
+  });
+
   // Endpoint para registro de clientes desde la web
   app.post("/api/clients/register", async (req, res) => {
     try {
