@@ -338,11 +338,11 @@ export class DatabaseStorage implements IStorage {
       const agencyResults = await dbQuery;
       console.log(`Found ${agencyResults.length} agencies in the database`);
 
-      // Enrich agencies with review statistics
+      // Enrich agencies with review statistics (matching agency profile calculation)
       const enhancedAgencies = await Promise.all(
         agencyResults.map(async (agency) => {
-          // Get review statistics for this agency
-          const reviewStats = await db
+          // Get direct agency reviews
+          const agencyReviewStats = await db
             .select({
               reviewCount: sql<number>`count(*)::integer`,
               reviewAverage: sql<number>`COALESCE(ROUND(AVG(${reviews.rating}), 2), 0)::float`,
@@ -355,7 +355,40 @@ export class DatabaseStorage implements IStorage {
               )
             );
 
-          const stats = reviewStats[0];
+          const agencyStats = agencyReviewStats[0];
+          const agencyScore = Number(agencyStats?.reviewAverage) || 0;
+          const agencyReviewCount = Number(agencyStats?.reviewCount) || 0;
+
+          // Get reviews from linked agents (matching agency profile logic)
+          const linkedAgentReviews = await db.execute(
+            sql`SELECT COUNT(r.*)::integer as agent_review_count, 
+                       COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average
+                FROM reviews r 
+                JOIN agents a ON r.target_id = a.id 
+                WHERE a.agency_id = ${agency.id.toString()} AND r.target_type = 'agent'`
+          );
+
+          const agentReviewCount = linkedAgentReviews.rows[0]?.agent_review_count || 0;
+          const agentReviewAverage = linkedAgentReviews.rows[0]?.agent_review_average || 0;
+
+          // Calculate combined score (matching agency profile logic)
+          const totalReviews = agencyReviewCount + Number(agentReviewCount);
+          let finalScore = 0;
+          
+          if (totalReviews > 0) {
+            if (agencyScore > 0 && agentReviewAverage > 0) {
+              finalScore = (agencyScore + Number(agentReviewAverage)) / 2;
+            } else if (agencyScore > 0) {
+              finalScore = agencyScore;
+            } else {
+              finalScore = Number(agentReviewAverage);
+            }
+          }
+
+          const stats = {
+            reviewCount: totalReviews,
+            reviewAverage: finalScore
+          };
 
           // Procesar los campos que deberían ser arrays
           const neighborhoods = this.parseArrayField(agency.agencyInfluenceNeighborhoods);
@@ -503,15 +536,45 @@ export class DatabaseStorage implements IStorage {
       .where(eq(agencies.id, id));
     if (!agency) return undefined;
 
-    // Get review statistics for this agency
-    const reviewResults = await db.execute(
+    // Get review statistics for this agency (matching agency profile calculation)
+    // Get direct agency reviews
+    const agencyReviewResults = await db.execute(
       sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
           FROM reviews 
           WHERE target_id = ${id} AND target_type = 'agency'`
     );
 
-    const reviewCount = reviewResults.rows[0]?.count || 0;
-    const reviewAverage = reviewResults.rows[0]?.average || 0;
+    const agencyReviewCount = agencyReviewResults.rows[0]?.count || 0;
+    const agencyScore = agencyReviewResults.rows[0]?.average || 0;
+
+    // Get reviews from linked agents
+    const linkedAgentReviews = await db.execute(
+      sql`SELECT COUNT(r.*)::integer as agent_review_count, 
+                 COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average
+          FROM reviews r 
+          JOIN agents a ON r.target_id = a.id 
+          WHERE a.agency_id = ${id.toString()} AND r.target_type = 'agent'`
+    );
+
+    const agentReviewCount = linkedAgentReviews.rows[0]?.agent_review_count || 0;
+    const agentReviewAverage = linkedAgentReviews.rows[0]?.agent_review_average || 0;
+
+    // Calculate combined score (matching agency profile logic)
+    const totalReviews = Number(agencyReviewCount) + Number(agentReviewCount);
+    let finalScore = 0;
+    
+    if (totalReviews > 0) {
+      if (agencyScore > 0 && agentReviewAverage > 0) {
+        finalScore = (Number(agencyScore) + Number(agentReviewAverage)) / 2;
+      } else if (agencyScore > 0) {
+        finalScore = Number(agencyScore);
+      } else {
+        finalScore = Number(agentReviewAverage);
+      }
+    }
+
+    const reviewCount = totalReviews;
+    const reviewAverage = finalScore;
 
     // Procesar los campos que deberían ser arrays
     const neighborhoods = this.parseArrayField(
