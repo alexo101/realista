@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -26,10 +26,29 @@ const TIME_INTERVALS = [
   { id: "19:00-21:00", label: "19:00 - 21:00" }
 ];
 
+// Enhanced validation schema with specific rules
 const applicationSchema = z.object({
-  name: z.string().min(2, "El nombre es obligatorio"),
-  phone: z.string().min(6, "El número de teléfono es obligatorio"),
-  email: z.string().email("Dirección de correo electrónico inválida"),
+  name: z.string()
+    .min(2, "El nombre debe tener al menos 2 caracteres")
+    .max(50, "El nombre no puede exceder 50 caracteres")
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "El nombre solo puede contener letras y espacios")
+    .refine(val => val.trim().length > 0, "El nombre es obligatorio"),
+  
+  phone: z.string()
+    .min(9, "El teléfono debe tener exactamente 9 dígitos")
+    .max(9, "El teléfono debe tener exactamente 9 dígitos")
+    .regex(/^[6-9]\d{8}$/, "Ingresa un número de teléfono español válido (9 dígitos, comenzando con 6, 7, 8 o 9)"),
+  
+  email: z.string()
+    .min(1, "El correo electrónico es obligatorio")
+    .email("Ingresa una dirección de correo electrónico válida")
+    .max(100, "El correo electrónico no puede exceder 100 caracteres")
+    .refine(val => {
+      // Additional email validation for common patterns
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      return emailRegex.test(val);
+    }, "Formato de correo electrónico no válido"),
+  
   visitDate: z.date().optional(),
   visitTimeSlots: z.array(z.string()).max(3, "Máximo 3 horarios permitidos").optional(),
   message: z.string().optional(),
@@ -61,6 +80,16 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
 
   const selectedTimeSlots = form.watch("visitTimeSlots") || [];
   const visitDate = form.watch("visitDate");
+  
+  // Watch field values for real-time validation feedback
+  const nameValue = form.watch("name");
+  const phoneValue = form.watch("phone");
+  const emailValue = form.watch("email");
+  
+  // Check validation status for each field
+  const isNameValid = nameValue && nameValue.trim().length >= 2 && /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(nameValue.trim());
+  const isPhoneValid = phoneValue && /^[6-9]\d{8}$/.test(phoneValue);
+  const isEmailValid = emailValue && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(emailValue);
 
   const handleTimeSlotChange = (timeSlotId: string, checked: boolean) => {
     const currentSlots = selectedTimeSlots;
@@ -205,10 +234,30 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Nombre
+                {isNameValid && (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                )}
+              </FormLabel>
               <FormControl>
-                <Input {...field} />
+                <div className="relative">
+                  <Input 
+                    {...field} 
+                    placeholder="Introduce tu nombre completo"
+                    className={cn(
+                      isNameValid && "border-green-500 focus:border-green-600",
+                      field.value && !isNameValid && "border-red-500 focus:border-red-600"
+                    )}
+                  />
+                </div>
               </FormControl>
+              {isNameValid && (
+                <div className="text-sm text-green-600 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  Nombre válido
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -219,10 +268,42 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Teléfono</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Teléfono
+                {isPhoneValid && (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                )}
+              </FormLabel>
               <FormControl>
-                <Input type="tel" {...field} />
+                <div className="relative">
+                  <Input 
+                    type="tel" 
+                    {...field} 
+                    placeholder="Ej: 612345678"
+                    maxLength={9}
+                    className={cn(
+                      isPhoneValid && "border-green-500 focus:border-green-600",
+                      field.value && !isPhoneValid && "border-red-500 focus:border-red-600"
+                    )}
+                    onChange={(e) => {
+                      // Only allow digits
+                      const value = e.target.value.replace(/\D/g, '');
+                      field.onChange(value);
+                    }}
+                  />
+                </div>
               </FormControl>
+              {isPhoneValid && (
+                <div className="text-sm text-green-600 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  Número de teléfono válido
+                </div>
+              )}
+              {field.value && field.value.length > 0 && !isPhoneValid && (
+                <div className="text-sm text-muted-foreground">
+                  Formato: 9 dígitos comenzando con 6, 7, 8 o 9
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -233,10 +314,36 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Correo electrónico</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Correo electrónico
+                {isEmailValid && (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                )}
+              </FormLabel>
               <FormControl>
-                <Input type="email" {...field} />
+                <div className="relative">
+                  <Input 
+                    type="email" 
+                    {...field} 
+                    placeholder="ejemplo@correo.com"
+                    className={cn(
+                      isEmailValid && "border-green-500 focus:border-green-600",
+                      field.value && !isEmailValid && "border-red-500 focus:border-red-600"
+                    )}
+                  />
+                </div>
               </FormControl>
+              {isEmailValid && (
+                <div className="text-sm text-green-600 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  Dirección de correo válida
+                </div>
+              )}
+              {field.value && field.value.length > 0 && !isEmailValid && (
+                <div className="text-sm text-muted-foreground">
+                  Introduce una dirección de correo válida
+                </div>
+              )}
               <FormMessage />
             </FormItem>
           )}
