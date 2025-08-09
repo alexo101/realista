@@ -14,7 +14,7 @@ export function UserMenu() {
 
   if (!user) return null;
 
-  const displayName = user.name || user.email.split('@')[0];
+  const displayName = user.name || (user.email ? user.email.split('@')[0] : 'Usuario');
 
   return (
     <DropdownMenu>

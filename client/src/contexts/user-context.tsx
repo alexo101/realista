@@ -49,12 +49,36 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
+  // Check for existing session on app load
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include"
+        });
+        
+        if (response.ok) {
+          const sessionUser = await response.json();
+          setUser(sessionUser);
+        }
+      } catch (error) {
+        // No active session, user remains null
+        console.log("No active session found");
+      }
+    };
+
+    checkSession();
+  }, []);
+
   const logout = async () => {
     try {
       await apiRequest("POST", "/api/auth/logout");
       setUser(null);
     } catch (error) {
       console.error("Error logging out:", error);
+      // Clear user state even if logout request fails
+      setUser(null);
     }
   };
 

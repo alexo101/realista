@@ -276,12 +276,52 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         isClient: isClient
       });
 
+      // Store user data in session
+      (req as any).session.user = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
+        isAdmin: user.isAdmin,
+        isClient: isClient,
+        phone: user.phone
+      };
+
       // Remover la contraseña antes de enviar la respuesta
       const { password: _, ...userResponse } = user;
       res.json({ ...userResponse, isClient });
     } catch (error) {
       console.error('Error during login:', error);
       res.status(500).json({ message: "Error en el inicio de sesión" });
+    }
+  });
+
+  // Session management endpoints
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      (req as any).session.destroy((err: any) => {
+        if (err) {
+          console.error('Error destroying session:', err);
+          return res.status(500).json({ message: "Error al cerrar sesión" });
+        }
+        res.json({ message: "Sesión cerrada exitosamente" });
+      });
+    } catch (error) {
+      console.error('Error during logout:', error);
+      res.status(500).json({ message: "Error al cerrar sesión" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const sessionUser = (req as any).session?.user;
+      if (!sessionUser) {
+        return res.status(401).json({ message: "No hay sesión activa" });
+      }
+      res.json(sessionUser);
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      res.status(500).json({ message: "Error al obtener información del usuario" });
     }
   });
 
