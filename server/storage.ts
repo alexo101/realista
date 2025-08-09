@@ -55,6 +55,9 @@ import {
   agentEvents,
   type AgentEvent,
   type InsertAgentEvent,
+  fraudReports,
+  type FraudReport,
+  type InsertFraudReport,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -154,6 +157,12 @@ export interface IStorage {
   getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]>;
   updateAgentEvent(id: number, eventData: Partial<InsertAgentEvent>): Promise<AgentEvent>;
   deleteAgentEvent(id: number): Promise<void>;
+
+  // Fraud Reporting
+  createFraudReport(reportData: InsertFraudReport): Promise<FraudReport>;
+  checkRecentFraudReport(propertyId: number, reporterIp: string): Promise<boolean>;
+  incrementPropertyFraudCount(propertyId: number): Promise<Property | undefined>;
+  getPropertyById(propertyId: number): Promise<Property | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1640,6 +1649,55 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgentEvent(id: number): Promise<void> {
     await db.delete(agentEvents).where(eq(agentEvents.id, id));
+  }
+
+  // Fraud Reporting methods
+  async createFraudReport(reportData: InsertFraudReport): Promise<FraudReport> {
+    const [newReport] = await db
+      .insert(fraudReports)
+      .values(reportData)
+      .returning();
+    return newReport;
+  }
+
+  async checkRecentFraudReport(propertyId: number, reporterIp: string): Promise<boolean> {
+    // Check for reports from the same IP within the last 24 hours
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const [report] = await db
+      .select()
+      .from(fraudReports)
+      .where(
+        and(
+          eq(fraudReports.propertyId, propertyId),
+          eq(fraudReports.reporterIp, reporterIp),
+          gte(fraudReports.reportedAt, twentyFourHoursAgo)
+        )
+      )
+      .limit(1);
+    
+    return !!report;
+  }
+
+  async incrementPropertyFraudCount(propertyId: number): Promise<Property | undefined> {
+    const [updatedProperty] = await db
+      .update(properties)
+      .set({
+        fraudCount: sql`COALESCE(${properties.fraudCount}, 0) + 1`
+      })
+      .where(eq(properties.id, propertyId))
+      .returning();
+    
+    return updatedProperty;
+  }
+
+  async getPropertyById(propertyId: number): Promise<Property | undefined> {
+    const [property] = await db
+      .select()
+      .from(properties)
+      .where(eq(properties.id, propertyId));
+    
+    return property;
   }
 }
 

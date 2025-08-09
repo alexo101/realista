@@ -77,6 +77,7 @@ export const properties = pgTable("properties", {
   agentId: integer("agent_id").notNull(), // ID del agente que publicó la propiedad
   agencyId: integer("agency_id"), // ID de la agencia a la que pertenece la propiedad (opcional)
   isActive: boolean("is_active").default(true).notNull(), // Para activar/desactivar la visibilidad de la propiedad
+  fraudCount: integer("fraud_count").default(0).notNull(), // Contador de reportes de fraude
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -322,3 +323,20 @@ export const insertAgentEventSchema = createInsertSchema(agentEvents).omit({
 
 export type AgentEvent = typeof agentEvents.$inferSelect;
 export type InsertAgentEvent = z.infer<typeof insertAgentEventSchema>;
+
+// Fraud reports table
+export const fraudReports = pgTable("fraud_reports", {
+  id: serial("id").primaryKey(),
+  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  reporterIp: text("reporter_ip"), // IP address to prevent spam
+  reporterAgent: text("reporter_agent"), // User agent string for additional tracking
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertFraudReportSchema = createInsertSchema(fraudReports).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type FraudReport = typeof fraudReports.$inferSelect;
+export type InsertFraudReport = z.infer<typeof insertFraudReportSchema>;

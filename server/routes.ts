@@ -643,6 +643,64 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  // Fraud reporting endpoints
+  app.post("/api/properties/:propertyId/report-fraud", async (req, res) => {
+    try {
+      const propertyId = parseInt(req.params.propertyId);
+      
+      if (isNaN(propertyId)) {
+        return res.status(400).json({ message: "Invalid property ID" });
+      }
+
+      // Get client IP and user agent for spam prevention
+      const reporterIp = req.ip || req.connection.remoteAddress || '';
+      const reporterAgent = req.get('User-Agent') || '';
+
+      // Check if this IP has already reported this property recently (within 24 hours)
+      const recentReport = await storage.checkRecentFraudReport(propertyId, reporterIp);
+      if (recentReport) {
+        return res.status(429).json({ message: "Ya has reportado esta propiedad recientemente" });
+      }
+
+      // Create fraud report and increment property fraud count
+      const fraudReport = await storage.createFraudReport({
+        propertyId,
+        reporterIp,
+        reporterAgent
+      });
+
+      const updatedProperty = await storage.incrementPropertyFraudCount(propertyId);
+      
+      res.status(201).json({ 
+        message: "Reporte de fraude enviado exitosamente",
+        fraudCount: updatedProperty?.fraudCount || 0
+      });
+    } catch (error) {
+      console.error('Error reporting property fraud:', error);
+      res.status(500).json({ message: "Error al reportar la propiedad" });
+    }
+  });
+
+  app.get("/api/properties/:propertyId/fraud-count", async (req, res) => {
+    try {
+      const propertyId = parseInt(req.params.propertyId);
+      
+      if (isNaN(propertyId)) {
+        return res.status(400).json({ message: "Invalid property ID" });
+      }
+
+      const property = await storage.getPropertyById(propertyId);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+
+      res.status(200).json({ fraudCount: property.fraudCount || 0 });
+    } catch (error) {
+      console.error('Error getting property fraud count:', error);
+      res.status(500).json({ message: "Error al obtener el contador de reportes" });
+    }
+  });
+
   // Agent Calendar Events
   app.post("/api/agent-events", async (req, res) => {
     try {

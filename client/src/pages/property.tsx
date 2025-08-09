@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
-import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink } from "lucide-react";
+import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag } from "lucide-react";
 
 // Extended Property type with additional fields for features
 interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms' | 'features'> {
@@ -41,6 +42,8 @@ export default function PropertyPage() {
   const { id } = useParams<{ id: string }>();
   const propertyId = parseInt(id);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showFraudDialog, setShowFraudDialog] = useState(false);
+  const [fraudCount, setFraudCount] = useState(0);
 
   const { user } = useUser();
   const { toast } = useToast();
@@ -62,11 +65,23 @@ export default function PropertyPage() {
     enabled: !!user?.isClient && !!propertyId,
   });
 
+  // Get fraud count for property
+  const { data: fraudCountData } = useQuery<{ fraudCount: number }>({
+    queryKey: [`/api/properties/${propertyId}/fraud-count`],
+    enabled: !!propertyId,
+  });
+
   useEffect(() => {
     if (favoriteStatus?.isFavorite !== undefined) {
       setIsFavorite(favoriteStatus.isFavorite);
     }
   }, [favoriteStatus]);
+
+  useEffect(() => {
+    if (fraudCountData?.fraudCount !== undefined) {
+      setFraudCount(fraudCountData.fraudCount);
+    }
+  }, [fraudCountData]);
 
   // Mutation for toggling favorites
   const toggleFavoriteMutation = useMutation({
@@ -146,6 +161,54 @@ export default function PropertyPage() {
 
     if (!id) return;
     toggleFavoriteMutation.mutate(id);
+  };
+
+  // Fraud reporting mutation
+  const reportFraudMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/properties/${propertyId}/report-fraud`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al reportar la propiedad");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setFraudCount(data.fraudCount);
+      setShowFraudDialog(false);
+      
+      // Invalidate fraud count query
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/properties/${propertyId}/fraud-count`] 
+      });
+
+      toast({
+        title: "Reporte enviado",
+        description: "Gracias por reportar esta propiedad. Tu reporte ha sido registrado.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al reportar",
+        description: (error as Error).message || "No se pudo enviar el reporte",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFraudReport = () => {
+    setShowFraudDialog(true);
+  };
+
+  const confirmFraudReport = () => {
+    reportFraudMutation.mutate();
   };
 
   // Function to handle sharing
@@ -273,6 +336,31 @@ export default function PropertyPage() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+
+                  {/* Flag button for fraud reporting */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={handleFraudReport}
+                          disabled={reportFraudMutation.isPending}
+                          className="relative"
+                        >
+                          <Flag className="h-4 w-4" />
+                          {fraudCount > 0 && (
+                            <span className="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1 min-w-[16px] h-4 flex items-center justify-center">
+                              {fraudCount}
+                            </span>
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Reportar como posible estafa
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </div>
@@ -399,6 +487,34 @@ export default function PropertyPage() {
           </div>
         </div>
       </div>
+
+      {/* Fraud reporting confirmation dialog */}
+      <Dialog open={showFraudDialog} onOpenChange={setShowFraudDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reportar propiedad</DialogTitle>
+            <DialogDescription>
+              ¿Quieres marcar esta propiedad como posible estafa?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowFraudDialog(false)}
+              disabled={reportFraudMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmFraudReport}
+              disabled={reportFraudMutation.isPending}
+              variant="destructive"
+            >
+              {reportFraudMutation.isPending ? "Enviando..." : "Reportar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
