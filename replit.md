@@ -112,6 +112,13 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- August 9, 2025. Fixed critical session management bug
+  - Implemented express-session middleware with proper cookie-based authentication
+  - Added session persistence endpoints (/api/auth/me and /api/auth/logout)
+  - Updated user context to check for existing sessions on app load
+  - Fixed UserMenu component error handling for null email values
+  - Users can now maintain login state across property page navigation
+  - Session cookies persist for 24 hours with secure configuration
 - July 18, 2025. Enhanced UI layout and messaging system
   - Fixed sidebar toggle button positioning at border between sidebar and main content
   - Implemented dynamic main content expansion/contraction based on sidebar state
