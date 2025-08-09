@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
 import { CalendarIcon, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 // Two-hour time intervals for visit scheduling
@@ -158,7 +159,7 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
         if (!user || !user.isClient) {
           // For non-logged in users, we can't create visit requests
           // But we still send the inquiry with visit information in the message
-          const visitInfo = `\n\nSolicitud de visita:\nFecha: ${format(data.visitDate, "PPP")}\nHorarios preferidos: ${data.visitTimeSlots.map(slot => 
+          const visitInfo = `\n\nSolicitud de visita:\nFecha: ${format(data.visitDate, "PPP", { locale: es })}\nHorarios preferidos: ${data.visitTimeSlots.map(slot => 
             TIME_INTERVALS.find(t => t.id === slot)?.label
           ).join(", ")}`;
           
@@ -366,7 +367,7 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
                       )}
                     >
                       {field.value ? (
-                        format(field.value, "PPP")
+                        format(field.value, "PPP", { locale: es })
                       ) : (
                         <span>Selecciona una fecha</span>
                       )}
@@ -382,6 +383,7 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
                     disabled={(date) =>
                       date < new Date() || date < new Date("1900-01-01")
                     }
+                    locale={es}
                     initialFocus
                   />
                 </PopoverContent>
