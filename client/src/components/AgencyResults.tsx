@@ -1,4 +1,4 @@
-import { Building, MapPin, ExternalLink } from "lucide-react";
+import { Building, MapPin, ExternalLink, Star } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +12,8 @@ interface Agency {
   agencyNeighborhoods?: string[] | any; // Alternative field name used in some API responses
   agencyDescription?: string;
   description?: string; // Alternative description field
+  reviewCount?: number;
+  reviewAverage?: number;
 }
 
 interface AgencyResultsProps {
@@ -72,11 +74,28 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
                 </div>
               )}
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold">{agency.agencyName}</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm">
                 {agency.agencyAddress || "Sin dirección"}
               </p>
+
+              {/* Reviews Section */}
+              {(agency.reviewCount !== undefined && agency.reviewAverage !== undefined) && (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span className="text-sm font-medium">
+                      {agency.reviewAverage > 0 ? agency.reviewAverage.toFixed(1) : "Sin valoración"}
+                    </span>
+                  </div>
+                  {agency.reviewCount > 0 && (
+                    <span className="text-sm text-gray-500">
+                      ({agency.reviewCount} {agency.reviewCount === 1 ? "reseña" : "reseñas"})
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Get neighborhoods from any available field with enhanced handling */}
               {(() => {
@@ -128,7 +147,7 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
                       Barrios de influencia:
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {neighborhoods.slice(0, 2).map((neighborhood) => (
+                      {neighborhoods.slice(0, 4).map((neighborhood) => (
                         <span
                           key={neighborhood}
                           className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5 flex items-center"
@@ -137,12 +156,17 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
                           {neighborhood}
                         </span>
                       ))}
-                      {neighborhoods.length > 2 && (
+                      {neighborhoods.length > 4 && (
                         <span className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5">
-                          +{neighborhoods.length - 2}
+                          +{neighborhoods.length - 4}
                         </span>
                       )}
                     </div>
+                    {neighborhoods.length > 4 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Haz clic en "Ver agencia" para ver todos los barrios
+                      </p>
+                    )}
                   </div>
                 ) : null;
               })()}

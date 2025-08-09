@@ -338,44 +338,66 @@ export class DatabaseStorage implements IStorage {
       const agencyResults = await dbQuery;
       console.log(`Found ${agencyResults.length} agencies in the database`);
 
-      // Convertimos los resultados al formato esperado por el frontend
-      const processedResults = agencyResults.map(agency => {
-        // Procesar los campos que deberían ser arrays
-        const neighborhoods = this.parseArrayField(agency.agencyInfluenceNeighborhoods);
-        const languages = this.parseArrayField(agency.agencySupportedLanguages);
+      // Enrich agencies with review statistics
+      const enhancedAgencies = await Promise.all(
+        agencyResults.map(async (agency) => {
+          // Get review statistics for this agency
+          const reviewStats = await db
+            .select({
+              reviewCount: sql<number>`count(*)::integer`,
+              reviewAverage: sql<number>`COALESCE(ROUND(AVG(${reviews.rating}), 2), 0)::float`,
+            })
+            .from(reviews)
+            .where(
+              and(
+                eq(reviews.targetId, agency.id),
+                eq(reviews.targetType, 'agency')
+              )
+            );
 
-        // Asegurarnos de que agencySocialMedia sea un objeto
-        const socialMedia = agency.agencySocialMedia
-          ? this.parseJsonField(agency.agencySocialMedia as object | string)
-          : {};
+          const stats = reviewStats[0];
 
-        // Formato compatible con User
-        return {
-          id: agency.id,
-          email: agency.agencyEmailToDisplay || "agency@example.com",
-          password: "",
-          name: agency.agencyName,
-          surname: null,
-          description: agency.agencyDescription,
-          avatar: agency.agencyLogo,
-          agencyLogo: agency.agencyLogo,
-          createdAt: agency.createdAt || new Date(),
-          influenceNeighborhoods: neighborhoods,
-          yearsOfExperience: null,
-          languagesSpoken: languages,
-          agencyId: String(agency.adminAgentId),
-          isAdmin: false,
-          agencyName: agency.agencyName,
-          agencyWebsite: agency.agencyWebsite,
-          agencySocialMedia: socialMedia,
-          agencyActiveSince: agency.agencyActiveSince,
-          agencyAddress: agency.agencyAddress,
-          isAgent: false,
-          isAgency: true,
-        } as User;
-      });
+          // Procesar los campos que deberían ser arrays
+          const neighborhoods = this.parseArrayField(agency.agencyInfluenceNeighborhoods);
+          const languages = this.parseArrayField(agency.agencySupportedLanguages);
 
-      return processedResults;
+          // Asegurarnos de que agencySocialMedia sea un objeto
+          const socialMedia = agency.agencySocialMedia
+            ? this.parseJsonField(agency.agencySocialMedia as object | string)
+            : {};
+
+          // Formato compatible con User
+          return {
+            id: agency.id,
+            email: agency.agencyEmailToDisplay || "agency@example.com",
+            password: "",
+            name: agency.agencyName,
+            surname: null,
+            description: agency.agencyDescription,
+            avatar: agency.agencyLogo,
+            agencyLogo: agency.agencyLogo,
+            createdAt: agency.createdAt || new Date(),
+            influenceNeighborhoods: neighborhoods,
+            yearsOfExperience: null,
+            languagesSpoken: languages,
+            agencyId: String(agency.adminAgentId),
+            isAdmin: false,
+            agencyName: agency.agencyName,
+            agencyWebsite: agency.agencyWebsite,
+            agencySocialMedia: socialMedia,
+            agencyActiveSince: agency.agencyActiveSince,
+            agencyAddress: agency.agencyAddress,
+            agencyInfluenceNeighborhoods: neighborhoods,
+            // Review statistics
+            reviewCount: Number(stats?.reviewCount) || 0,
+            reviewAverage: Number(stats?.reviewAverage) || 0,
+            isAgent: false,
+            isAgency: true,
+          } as User;
+        })
+      );
+
+      return enhancedAgencies;
     } catch (error) {
       console.error("Error en searchAgencies:", error);
       throw error;
@@ -481,6 +503,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(agencies.id, id));
     if (!agency) return undefined;
 
+    // Get review statistics for this agency
+    const reviewResults = await db.execute(
+      sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
+          FROM reviews 
+          WHERE target_id = ${id} AND target_type = 'agency'`
+    );
+
+    const reviewCount = reviewResults.rows[0]?.count || 0;
+    const reviewAverage = reviewResults.rows[0]?.average || 0;
+
     // Procesar los campos que deberían ser arrays
     const neighborhoods = this.parseArrayField(
       agency.agencyInfluenceNeighborhoods,
@@ -517,6 +549,9 @@ export class DatabaseStorage implements IStorage {
       agencySocialMedia: socialMedia,
       agencyActiveSince: agency.agencyActiveSince,
       agencyAddress: agency.agencyAddress,
+      // Review statistics
+      reviewCount: Number(reviewCount),
+      reviewAverage: Number(reviewAverage),
       // Flag para diferenciar agentes de agencias
       isAgent: false,
       isAgency: true,
