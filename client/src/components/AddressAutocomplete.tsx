@@ -47,7 +47,10 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (inputValue.length < 3) {
+    // Allow shorter queries for numbers or when searching within Barcelona
+    const minLength = /^\d/.test(inputValue.trim()) ? 2 : 3; // Allow 2 chars if starts with number
+    
+    if (inputValue.length < minLength) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -65,30 +68,74 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
   }, [inputValue]);
 
   const searchAddresses = async (query: string) => {
-    if (query.length < 3) return;
+    const minLength = /^\d/.test(query.trim()) ? 2 : 3;
+    if (query.length < minLength) return;
 
     setLoading(true);
     try {
-      const encodedQuery = encodeURIComponent(`${query}, Barcelona, Spain`);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1&bounded=1&viewbox=2.0523,41.4695,2.2280,41.3200&countrycodes=es`,
-        {
-          headers: {
-            'User-Agent': 'PropertySearchApp/1.0'
-          }
-        }
-      );
+      // Try multiple search strategies to improve address recognition
+      const searchQueries = [
+        // Primary search with Barcelona context
+        encodeURIComponent(`${query}, Barcelona, Spain`),
+        // Secondary search if query already contains Barcelona context
+        encodeURIComponent(query.includes('Barcelona') ? query : `${query} Barcelona`),
+        // Fallback search for specific street numbers
+        encodeURIComponent(`${query} Spain`)
+      ];
 
-      if (response.ok) {
-        const data: AddressResult[] = await response.json();
-        // Filter to only Barcelona addresses and format them nicely
-        const barcelonaAddresses = data.filter(addr => 
-          addr.display_name.includes('Barcelona') &&
-          addr.address?.road // Must have a street name
+      let allResults: AddressResult[] = [];
+      
+      // Try the primary search first
+      for (let i = 0; i < searchQueries.length && allResults.length < 5; i++) {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${searchQueries[i]}&limit=${5 - allResults.length}&addressdetails=1&bounded=1&viewbox=2.0523,41.4695,2.2280,41.3200&countrycodes=es`,
+          {
+            headers: {
+              'User-Agent': 'PropertySearchApp/1.0'
+            }
+          }
         );
-        setSuggestions(barcelonaAddresses);
-        setShowSuggestions(barcelonaAddresses.length > 0);
+
+        if (response.ok) {
+          const data: AddressResult[] = await response.json();
+          allResults = [...allResults, ...data];
+        }
+        
+        // Break early if we have good results
+        if (allResults.length >= 3) break;
       }
+
+      // Filter and sort Barcelona addresses with enhanced logic
+      const barcelonaAddresses = allResults
+        .filter((addr, index, self) => 
+          // Remove duplicates by place_id
+          self.findIndex(a => a.place_id === addr.place_id) === index &&
+          addr.display_name.includes('Barcelona') &&
+          (addr.address?.road || addr.address?.house_number) // Must have either street name or house number
+        )
+        .sort((a, b) => {
+          // Priority scoring system
+          let scoreA = 0, scoreB = 0;
+          
+          // Boost addresses with house numbers
+          if (a.address.house_number) scoreA += 10;
+          if (b.address.house_number) scoreB += 10;
+          
+          // Boost exact or partial query matches
+          const queryLower = query.toLowerCase();
+          if (a.display_name.toLowerCase().includes(queryLower)) scoreA += 5;
+          if (b.display_name.toLowerCase().includes(queryLower)) scoreB += 5;
+          
+          // Boost addresses with road names
+          if (a.address.road) scoreA += 3;
+          if (b.address.road) scoreB += 3;
+          
+          return scoreB - scoreA;
+        })
+        .slice(0, 5); // Limit to 5 results
+
+      setSuggestions(barcelonaAddresses);
+      setShowSuggestions(barcelonaAddresses.length > 0);
     } catch (error) {
       console.error('Error searching addresses:', error);
     } finally {
@@ -125,26 +172,41 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
 
   const formatAddress = (address: AddressResult): string => {
     const parts = [];
-    if (address.address.road) {
+    
+    // Handle different address formats properly
+    if (address.address.road && address.address.house_number) {
+      // Complete address with street name and number
+      parts.push(`${address.address.road} ${address.address.house_number}`);
+    } else if (address.address.road) {
+      // Street name only
       parts.push(address.address.road);
+    } else if (address.address.house_number) {
+      // Edge case: house number without street name
+      parts.push(address.address.house_number);
     }
-    if (address.address.house_number) {
-      parts[0] = `${address.address.road} ${address.address.house_number}`;
-    }
-    return parts.join(', ');
+    
+    return parts.join(', ') || address.display_name.split(',')[0]; // Fallback to first part of display_name
   };
 
   const formatDisplayName = (address: AddressResult): string => {
     const parts = [];
+    
+    // Primary address line
     if (address.address.house_number && address.address.road) {
       parts.push(`${address.address.road} ${address.address.house_number}`);
     } else if (address.address.road) {
       parts.push(address.address.road);
+    } else if (address.address.house_number) {
+      // Show house number even without street name
+      parts.push(`Número ${address.address.house_number}`);
     }
+    
+    // Add suburb for context
     if (address.address.suburb) {
       parts.push(address.address.suburb);
     }
-    return parts.join(', ');
+    
+    return parts.join(', ') || address.display_name.split(',').slice(0, 2).join(', '); // Fallback
   };
 
   // Close suggestions when clicking outside
