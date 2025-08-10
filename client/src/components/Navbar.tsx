@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, Menu, X } from "lucide-react";
+import { Home, Menu, X, Sparkles } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { useUser } from "@/contexts/user-context";
 import { useState } from "react";
@@ -21,6 +21,14 @@ export function Navbar() {
 
             {/* Desktop navigation */}
             <div className="hidden md:flex items-center space-x-4">
+              {/* RealistaPro link - always visible */}
+              <Link href="/realista-pro">
+                <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  RealistaPro
+                </Button>
+              </Link>
+              
               {user ? (
                 <>
                   {user.isClient ? (
@@ -40,12 +48,6 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/register">
-                    <Button variant="outline">
-                      Registra tu agencia
-                    </Button>
-                  </Link>
-
                   <Link href="/login">
                     <Button variant="outline">
                       Iniciar sesión
@@ -72,6 +74,14 @@ export function Navbar() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-200">
             <div className="px-4 py-2 space-y-2">
+              {/* RealistaPro link - always visible */}
+              <Link href="/realista-pro" className="block">
+                <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold shadow-lg">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  RealistaPro
+                </Button>
+              </Link>
+              
               {user ? (
                 <>
                   {user.isClient ? (
@@ -93,12 +103,6 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/register" className="block">
-                    <Button variant="outline" className="w-full justify-start">
-                      Registra tu agencia
-                    </Button>
-                  </Link>
-
                   <Link href="/login" className="block">
                     <Button variant="outline" className="w-full justify-start">
                       Iniciar sesión

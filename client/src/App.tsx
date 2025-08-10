@@ -17,11 +17,13 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
 import ClientProfile from "@/pages/client-profile";
+import RealistaPro from "@/pages/RealistaPro";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/realista-pro" component={RealistaPro} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       <Route path="/client-register" component={ClientRegisterPage} />
