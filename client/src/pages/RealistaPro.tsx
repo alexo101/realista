@@ -315,16 +315,7 @@ export default function RealistaPro() {
           </div>
         </div>
 
-        {/* CTA Section */}
-        <div className="text-center mt-20 p-12 bg-gradient-to-r from-blue-600 to-green-600 rounded-2xl text-white">
-          <h3 className="text-3xl font-bold mb-4">¿Listo para transformar tu agencia?</h3>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Únete a las agencias que ya están liderando el mercado inmobiliario con RealistaPro
-          </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
-            Hablar con un experto
-          </Button>
-        </div>
+        
       </div>
     </div>
   );
