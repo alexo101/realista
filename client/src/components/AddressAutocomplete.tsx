@@ -200,7 +200,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
 
       {/* Map confirmation dialog */}
       <Dialog open={showMapConfirm} onOpenChange={setShowMapConfirm}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Confirmar dirección</DialogTitle>
           </DialogHeader>
@@ -214,7 +214,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
                 </p>
               </div>
               
-              <div className="h-96 w-full border rounded-lg overflow-hidden">
+              <div className="h-64 w-full border rounded-lg overflow-hidden">
                 <iframe
                   src={`https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(selectedAddress.lon) - 0.002},${parseFloat(selectedAddress.lat) - 0.002},${parseFloat(selectedAddress.lon) + 0.002},${parseFloat(selectedAddress.lat) + 0.002}&layer=mapnik&marker=${selectedAddress.lat},${selectedAddress.lon}`}
                   width="100%"
