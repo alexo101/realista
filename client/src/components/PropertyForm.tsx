@@ -44,6 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import { Calendar } from "@/components/ui/calendar";
@@ -362,7 +363,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 <FormItem>
                   <FormLabel>Dirección</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Introduce la dirección" />
+                    <AddressAutocomplete
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Escribe la dirección y selecciona de las sugerencias..."
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
