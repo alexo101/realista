@@ -276,7 +276,7 @@ export default function RealistaPro() {
         {/* Additional Features Section */}
         <div className="mt-20">
           <h3 className="text-3xl font-bold text-center mb-12">¿Qué incluyen las Ventajas IA?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             <Card className="text-center p-6">
               <div className="flex justify-center mb-4">
                 <div className="p-3 rounded-full bg-purple-100">
@@ -298,18 +298,6 @@ export default function RealistaPro() {
               <h4 className="text-xl font-semibold mb-3">Respuestas inteligentes</h4>
               <p className="text-muted-foreground">
                 Sugerencias automáticas para responder consultas de clientes
-              </p>
-            </Card>
-
-            <Card className="text-center p-6">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 rounded-full bg-green-100">
-                  <FileText className="h-8 w-8 text-green-600" />
-                </div>
-              </div>
-              <h4 className="text-xl font-semibold mb-3">Análisis de mercado</h4>
-              <p className="text-muted-foreground">
-                Informes automáticos sobre tendencias y valoraciones de propiedades
               </p>
             </Card>
           </div>
