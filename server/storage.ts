@@ -98,6 +98,7 @@ export interface IStorage {
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(id: number, property: InsertProperty): Promise<Property>;
+  updatePropertyAddress(id: number, address: string, lat?: number, lng?: number): Promise<Property>;
   deleteProperty(id: number): Promise<void>;
   togglePropertyStatus(id: number, isActive: boolean): Promise<Property>;
   incrementPropertyViewCount(id: number): Promise<void>;
@@ -1174,6 +1175,21 @@ export class DatabaseStorage implements IStorage {
     const [updatedProperty] = await db
       .update(properties)
       .set(property)
+      .where(eq(properties.id, id))
+      .returning();
+    return updatedProperty;
+  }
+
+  async updatePropertyAddress(id: number, address: string, lat?: number, lng?: number): Promise<Property> {
+    const updateData: any = { address };
+    if (lat !== undefined && lng !== undefined) {
+      updateData.lat = lat;
+      updateData.lng = lng;
+    }
+    
+    const [updatedProperty] = await db
+      .update(properties)
+      .set(updateData)
       .where(eq(properties.id, id))
       .returning();
     return updatedProperty;

@@ -13,6 +13,7 @@ import {
 import { sendWelcomeEmail, sendReviewRequest } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
 import { cache } from "./cache";
+import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
@@ -2110,6 +2111,25 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
     } catch (error) {
       console.error("Error generating description:", error);
       res.status(500).json({ error: "Error al generar la descripción" });
+    }
+  });
+
+  // Fix geocoding for existing properties
+  app.post("/api/admin/fix-geocoding", async (req, res) => {
+    try {
+      console.log("Starting property geocoding fix...");
+      await fixPropertyGeocodingData();
+      res.json({ 
+        success: true, 
+        message: "Property geocoding fix completed successfully" 
+      });
+    } catch (error) {
+      console.error("Error fixing property geocoding:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fix property geocoding", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
