@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,7 +17,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
-import { Building, User as UserIcon, Users, Eye, EyeOff } from "lucide-react";
+import { Building, User as UserIcon, Users, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Esquema de validación para el formulario
 const formSchema = z.object({
@@ -26,6 +27,9 @@ const formSchema = z.object({
   }),
   email: z.string().email("Por favor introduce un correo electrónico válido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+  subscriptionPlan: z.string().optional(),
+  subscriptionType: z.string().optional(),
+  isYearlyBilling: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -33,9 +37,49 @@ type FormData = z.infer<typeof formSchema>;
 export default function RegisterPage() {
   const { toast } = useToast();
   const { setUser } = useUser();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  // Plan configurations for display
+  const getPlanDetails = (planId: string, subscriptionType: string) => {
+    if (subscriptionType === 'agency') {
+      const agencyPlans: Record<string, { name: string, monthlyPrice: number, yearlyPrice: number, color: string }> = {
+        "basica": { name: "Básica", monthlyPrice: 0, yearlyPrice: 0, color: "bg-gray-50 border-gray-200" },
+        "pequeña": { name: "Pequeña", monthlyPrice: 29, yearlyPrice: 290, color: "bg-blue-50 border-blue-200" },
+        "mediana": { name: "Mediana", monthlyPrice: 79, yearlyPrice: 790, color: "bg-purple-50 border-purple-200" },
+        "lider": { name: "Líder", monthlyPrice: 249, yearlyPrice: 2490, color: "bg-amber-50 border-amber-200" },
+      };
+      return agencyPlans[planId];
+    } else {
+      const agentPlans: Record<string, { name: string, monthlyPrice: number, yearlyPrice: number, color: string }> = {
+        "basico": { name: "Básico", monthlyPrice: 0, yearlyPrice: 0, color: "bg-gray-50 border-gray-200" },
+        "lider": { name: "Líder", monthlyPrice: 20, yearlyPrice: 200, color: "bg-blue-50 border-blue-200" }
+      };
+      return agentPlans[planId];
+    }
+  };
+
+  // Parse URL parameters on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const plan = params.get('plan');
+    const type = params.get('type'); // "agency" or "agent"  
+    const billing = params.get('billing'); // "monthly" or "yearly"
+    
+    if (plan) {
+      setSelectedPlan(plan);
+      form.setValue('subscriptionPlan', plan);
+    }
+    if (type) {
+      form.setValue('subscriptionType', type);
+      form.setValue('profileType', type === 'agency' ? 'agency' : 'agent');
+    }
+    if (billing) {
+      form.setValue('isYearlyBilling', billing === 'yearly');
+    }
+  }, [location, form]);
 
   // Configuración del formulario
   const form = useForm<FormData>({
@@ -44,6 +88,9 @@ export default function RegisterPage() {
       profileType: "agent",
       email: "",
       password: "",
+      subscriptionPlan: "",
+      subscriptionType: "",
+      isYearlyBilling: false,
     },
   });
 
@@ -61,7 +108,9 @@ export default function RegisterPage() {
         password: data.password,
         isAgent: true, // Todos los usuarios son agentes en la base de datos
         isAdmin: isAdmin, // Para agencias y redes de agencias
-        // Para redes de agencias, podemos añadir propiedades adicionales en el futuro
+        subscriptionPlan: data.subscriptionPlan || null,
+        subscriptionType: data.subscriptionType || null,
+        isYearlyBilling: data.isYearlyBilling || false,
       };
 
       console.log("Enviando datos de registro:", payload);
@@ -120,6 +169,44 @@ export default function RegisterPage() {
         {/* Columna de formulario */}
         <div className="lg:w-1/2 bg-white p-8 rounded-lg shadow">
           <h1 className="text-3xl font-bold mb-6">Crear una cuenta</h1>
+          
+          {/* Plan Selection Display */}
+          {selectedPlan && (() => {
+            const planInfo = getPlanDetails(selectedPlan, form.getValues('subscriptionType') || 'agent');
+            return planInfo ? (
+              <Card className={`mb-6 border-2 ${planInfo.color}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CardTitle className="text-lg">Plan Seleccionado</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold text-lg">{planInfo.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        {form.getValues('subscriptionType') === 'agency' ? 'Plan para agencias' : 'Plan para agentes'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">
+                        {planInfo.monthlyPrice === 0 ? 'Gratis' : 
+                         form.getValues('isYearlyBilling') ? 
+                           `${Math.floor(planInfo.yearlyPrice / 12)}€` : 
+                           `${planInfo.monthlyPrice}€`}
+                      </div>
+                      <p className="text-sm text-gray-500">por mes</p>
+                      {form.getValues('isYearlyBilling') && planInfo.monthlyPrice > 0 && (
+                        <p className="text-xs text-green-600 font-medium">2 meses gratis</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null;
+          })()}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField

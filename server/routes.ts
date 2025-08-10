@@ -120,7 +120,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Asegurar que isAgent sea un booleano
       const userData = {
         ...req.body,
-        isAgent: req.body.isAgent === true
+        isAgent: req.body.isAgent === true,
+        // Handle subscription plan fields
+        subscriptionPlan: req.body.subscriptionPlan || null,
+        subscriptionType: req.body.subscriptionType || null,
+        isYearlyBilling: req.body.isYearlyBilling || false
       };
 
       console.log('Registro - Datos procesados:', userData);

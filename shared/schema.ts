@@ -47,6 +47,10 @@ export const agents = pgTable("agents", {
   // Relación con la agencia
   agencyId: text("agency_id"), // ID de la agencia a la que pertenece
   isAdmin: boolean("is_admin").notNull().default(false), // Indica si es un agente administrador
+  // Subscription information
+  subscriptionPlan: text("subscription_plan"), // Plan: "basica", "pequeña", "mediana", "lider"
+  subscriptionType: text("subscription_type"), // "agency" o "agent"
+  isYearlyBilling: boolean("is_yearly_billing").default(false), // Facturación anual
 });
 
 export const properties = pgTable("properties", {

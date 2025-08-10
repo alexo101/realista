@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, Star, Users, Building, FileText, MessageSquare, Sparkles, User } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 const agencyPlans = [
   {
@@ -113,6 +114,7 @@ const agentPlans = [
 export default function RealistaPro() {
   const [isYearly, setIsYearly] = useState(false);
   const [profileType, setProfileType] = useState<"agencies" | "agents">("agencies");
+  const [, navigate] = useLocation();
   
   const currentPlans = profileType === "agencies" ? agencyPlans : agentPlans;
   
@@ -124,6 +126,16 @@ export default function RealistaPro() {
       return `${monthlyEquivalent}€`;
     }
     return `${plan.monthlyPrice}€`;
+  };
+
+  const handlePlanSelection = (plan: any) => {
+    // Redirect to registration with plan parameters
+    const params = new URLSearchParams({
+      plan: plan.id,
+      type: profileType === "agencies" ? "agency" : "agent",
+      billing: isYearly ? "yearly" : "monthly"
+    });
+    navigate(`/register?${params.toString()}`);
   };
 
   return (
@@ -264,6 +276,7 @@ export default function RealistaPro() {
                   <Button 
                     className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
                     size="lg"
+                    onClick={() => handlePlanSelection(plan)}
                   >
                     {plan.monthlyPrice === 0 ? "Empezar gratis" : "Empezar ahora"}
                   </Button>
