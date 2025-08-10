@@ -53,6 +53,10 @@ export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   reference: text("reference"), // Nuevo campo de referencia para identificación interna
   address: text("address").notNull(),
+  // Campos adicionales de dirección (privados, no se muestran públicamente)
+  escalera: text("escalera"), // Escalera: A, B, C
+  planta: text("planta"), // Planta: 1-20
+  puerta: text("puerta"), // Puerta: 1-12, A-J
   type: text("type").notNull(),
   operationType: text("operation_type").notNull(), // "Venta" or "Alquiler"
   // Nuevos campos

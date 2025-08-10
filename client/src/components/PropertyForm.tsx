@@ -89,9 +89,22 @@ const availabilityOptions = [
   "A partir de"
 ] as const;
 
+// Escalera options
+const escaleraOptions = ["A", "B", "C"] as const;
+
+// Planta options
+const plantaOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"] as const;
+
+// Puerta options
+const puertaOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
+
 const formSchema = z.object({
   reference: z.string().optional(), // Campo de referencia para identificación interna
   address: z.string().min(1, "La dirección es obligatoria"),
+  // Campos adicionales de dirección (privados)
+  escalera: z.enum(escaleraOptions).optional(),
+  planta: z.enum(plantaOptions).optional(), 
+  puerta: z.enum(puertaOptions).optional(),
   type: z.enum(propertyTypes, {
     required_error: "Selecciona el tipo de inmueble",
   }),
@@ -244,7 +257,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
         neighborhood: formValues.neighborhood,
         bedrooms: formValues.bedrooms,
         bathrooms: formValues.bathrooms,
-        size: formValues.surfaceArea,
+        size: formValues.superficie,
         price: formValues.price,
         features: formValues.features || [],
       });
@@ -355,6 +368,87 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 </FormItem>
               )}
             />
+
+            {/* Campos adicionales de dirección (privados) */}
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="escalera"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Escalera</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {escaleraOptions.map((escalera) => (
+                          <SelectItem key={escalera} value={escalera}>
+                            {escalera}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="planta"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Planta</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {plantaOptions.map((planta) => (
+                          <SelectItem key={planta} value={planta}>
+                            {planta}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="puerta"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Puerta</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {puertaOptions.map((puerta) => (
+                          <SelectItem key={puerta} value={puerta}>
+                            {puerta}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              * Los campos Escalera, Planta y Puerta son opcionales y no se mostrarán públicamente
+            </p>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
