@@ -766,6 +766,19 @@ export default function AgentProfile() {
                         </TooltipProvider>
 
                         {review.comment && <p className="text-gray-700">{review.comment}</p>}
+                        
+                        {/* Agent Response */}
+                        {(review as any).agentResponse && (
+                          <div className="mt-4 pl-4 border-l-2 border-primary bg-gray-50 rounded-r-md p-3">
+                            <p className="text-sm font-medium text-primary mb-2">Respuesta del agente:</p>
+                            <p className="text-gray-700 text-sm">{(review as any).agentResponse}</p>
+                            {(review as any).responseDate && (
+                              <p className="text-xs text-gray-500 mt-2">
+                                {new Date((review as any).responseDate).toLocaleDateString('es-ES')}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
