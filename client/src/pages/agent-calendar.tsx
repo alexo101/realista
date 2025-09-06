@@ -177,7 +177,10 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
             Gestiona tus eventos y citas
           </p>
         </div>
-        <Button onClick={() => setShowEventForm(true)} className="flex items-center gap-2">
+        <Button onClick={() => {
+          setSelectedEvent(null);
+          setShowEventForm(true);
+        }} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Nuevo evento
         </Button>
