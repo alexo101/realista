@@ -19,7 +19,9 @@ interface AgentCalendarProps {
 
 export function AgentCalendar({ agentId }: AgentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<"today" | "week">("today");
+  const [viewMode, setViewMode] = useState<"today" | "week" | "all">("today");
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 20;
   const [showEventForm, setShowEventForm] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [eventToDelete, setEventToDelete] = useState<AgentEvent | null>(null);
@@ -32,25 +34,39 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
         startDate: format(startOfDay(currentDate), "yyyy-MM-dd"),
         endDate: format(endOfDay(currentDate), "yyyy-MM-dd")
       };
-    } else {
+    } else if (viewMode === "week") {
       return {
         startDate: format(startOfWeek(currentDate, { weekStartsOn: 1 }), "yyyy-MM-dd"),
         endDate: format(endOfWeek(currentDate, { weekStartsOn: 1 }), "yyyy-MM-dd")
       };
+    } else {
+      // For "all" mode, we don't use date filtering
+      return { startDate: null, endDate: null };
     }
   };
 
   const { startDate, endDate } = getDateRange();
 
   // Fetch agent events
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ["/api/agents", agentId, "events", startDate, endDate],
+  const { data: eventsResponse = { events: [], total: 0 }, isLoading } = useQuery({
+    queryKey: ["/api/agents", agentId, "events", viewMode === "all" ? "all" : startDate, viewMode === "all" ? currentPage : endDate],
     queryFn: async () => {
-      const response = await fetch(`/api/agents/${agentId}/events?startDate=${startDate}&endDate=${endDate}`);
-      if (!response.ok) throw new Error("Failed to fetch events");
-      return response.json();
+      if (viewMode === "all") {
+        const response = await fetch(`/api/agents/${agentId}/events/all?page=${currentPage}&limit=${eventsPerPage}`);
+        if (!response.ok) throw new Error("Failed to fetch events");
+        return response.json();
+      } else {
+        const response = await fetch(`/api/agents/${agentId}/events?startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) throw new Error("Failed to fetch events");
+        const events = await response.json();
+        return { events, total: events.length };
+      }
     }
   });
+
+  const events = eventsResponse.events || [];
+  const totalEvents = eventsResponse.total || 0;
+  const totalPages = Math.ceil(totalEvents / eventsPerPage);
 
   // Fetch properties to get addresses
   const { data: properties = [] } = useQuery({
@@ -113,8 +129,24 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       const newDate = new Date(currentDate);
       newDate.setDate(newDate.getDate() + (direction === "next" ? 1 : -1));
       setCurrentDate(newDate);
-    } else {
+    } else if (viewMode === "week") {
       setCurrentDate(direction === "next" ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1));
+    }
+  };
+
+  const navigatePage = (direction: "prev" | "next") => {
+    if (direction === "next" && currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    } else if (direction === "prev" && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Reset page when changing view modes
+  const handleViewModeChange = (value: "today" | "week" | "all") => {
+    setViewMode(value);
+    if (value === "all") {
+      setCurrentPage(1);
     }
   };
 
@@ -153,27 +185,37 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
 
       {/* View Controls */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigateDate("prev")}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigateDate("next")}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {viewMode !== "all" ? (
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigateDate("prev")}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigateDate("next")}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <h2 className="text-xl font-semibold">
+              {viewMode === "today" 
+                ? format(currentDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es })
+                : `Semana del ${format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })} al ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })}`
+              }
+            </h2>
           </div>
-          <h2 className="text-xl font-semibold">
-            {viewMode === "today" 
-              ? format(currentDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es })
-              : `Semana del ${format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })} al ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })}`
-            }
-          </h2>
-        </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold">Todos los eventos</h2>
+            <div className="text-sm text-muted-foreground">
+              {totalEvents} eventos en total
+            </div>
+          </div>
+        )}
         
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "today" | "week")}>
+        <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as "today" | "week" | "all")}>
           <TabsList>
             <TabsTrigger value="today">Ver Hoy</TabsTrigger>
             <TabsTrigger value="week">Ver Semana</TabsTrigger>
+            <TabsTrigger value="all">Todos</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -263,6 +305,35 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination for "all" view */}
+              {viewMode === "all" && totalPages > 1 && (
+                <div className="flex items-center justify-between p-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    Página {currentPage} de {totalPages} ({totalEvents} eventos)
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigatePage("prev")}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigatePage("next")}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
       </div>

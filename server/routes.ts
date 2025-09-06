@@ -793,6 +793,21 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  app.get("/api/agents/:agentId/events/all", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.agentId);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const result = await storage.getAllAgentEventsPaginated(agentId, page, limit);
+      
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error getting all agent events:', error);
+      res.status(500).json({ message: "Failed to get all agent events" });
+    }
+  });
+
   app.patch("/api/agent-events/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

@@ -12,6 +12,7 @@ import {
   isNull,
   desc,
   inArray,
+  count,
 } from "drizzle-orm";
 import {
   agents,
@@ -156,6 +157,7 @@ export interface IStorage {
   // Agent Calendar Events
   createAgentEvent(eventData: InsertAgentEvent): Promise<AgentEvent>;
   getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]>;
+  getAllAgentEventsPaginated(agentId: number, page: number, limit: number): Promise<{ events: AgentEvent[], total: number }>;
   updateAgentEvent(id: number, eventData: Partial<InsertAgentEvent>): Promise<AgentEvent>;
   deleteAgentEvent(id: number): Promise<void>;
 
@@ -1647,6 +1649,30 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query.orderBy(agentEvents.eventDate, agentEvents.eventTime);
+  }
+
+  async getAllAgentEventsPaginated(agentId: number, page: number, limit: number): Promise<{ events: AgentEvent[], total: number }> {
+    const offset = (page - 1) * limit;
+    
+    // Get total count
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(agentEvents)
+      .where(eq(agentEvents.agentId, agentId));
+    
+    // Get paginated events
+    const events = await db
+      .select()
+      .from(agentEvents)
+      .where(eq(agentEvents.agentId, agentId))
+      .orderBy(desc(agentEvents.eventDate), desc(agentEvents.eventTime))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      events,
+      total: totalResult.count
+    };
   }
 
   async updateAgentEvent(id: number, eventData: Partial<InsertAgentEvent>): Promise<AgentEvent> {
