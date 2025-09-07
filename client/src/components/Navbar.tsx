@@ -4,10 +4,12 @@ import { Home, Menu, X, Sparkles } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { LanguageSelector } from "./LanguageSelector";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useState } from "react";
 
 export function Navbar() {
   const { user } = useUser();
+  const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -27,7 +29,7 @@ export function Navbar() {
               <Link href="/realista-pro">
                 <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
                   <Sparkles className="h-4 w-4 mr-2" />
-                  RealistaPro
+                  {t('nav.realista_pro')}
                 </Button>
               </Link>
               
@@ -36,13 +38,13 @@ export function Navbar() {
                   {user.isClient ? (
                     <Link href="/client-profile">
                       <Button variant="outline">
-                        Mi perfil
+                        {t('nav.profile')}
                       </Button>
                     </Link>
                   ) : (
                     <Link href="/manage">
                       <Button variant="outline">
-                        Gestionar todo
+                        {t('nav.manage')}
                       </Button>
                     </Link>
                   )}
@@ -52,7 +54,7 @@ export function Navbar() {
                 <>
                   <Link href="/login">
                     <Button variant="outline">
-                      Iniciar sesión
+                      {t('nav.login')}
                     </Button>
                   </Link>
                 </>
@@ -81,7 +83,7 @@ export function Navbar() {
               <Link href="/realista-pro" className="block">
                 <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold shadow-lg">
                   <Sparkles className="h-4 w-4 mr-2" />
-                  RealistaPro
+                  {t('nav.realista_pro')}
                 </Button>
               </Link>
               
@@ -90,13 +92,13 @@ export function Navbar() {
                   {user.isClient ? (
                     <Link href="/client-profile" className="block">
                       <Button variant="outline" className="w-full justify-start">
-                        Mi perfil
+                        {t('nav.profile')}
                       </Button>
                     </Link>
                   ) : (
                     <Link href="/manage" className="block">
                       <Button variant="outline" className="w-full justify-start">
-                        Gestionar todo
+                        {t('nav.manage')}
                       </Button>
                     </Link>
                   )}
@@ -108,7 +110,7 @@ export function Navbar() {
                 <>
                   <Link href="/login" className="block">
                     <Button variant="outline" className="w-full justify-start">
-                      Iniciar sesión
+                      {t('nav.login')}
                     </Button>
                   </Link>
                 </>
