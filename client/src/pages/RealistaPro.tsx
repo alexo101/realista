@@ -226,7 +226,7 @@ export default function RealistaPro() {
             return (
               <Card 
                 key={plan.id} 
-                className={`relative transition-all duration-300 hover:scale-105 hover:shadow-xl ${plan.color}`}
+                className={`relative transition-all duration-300 hover:scale-105 hover:shadow-xl flex flex-col h-full ${plan.color}`}
               >
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-4">
@@ -257,7 +257,7 @@ export default function RealistaPro() {
                   </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="flex-grow">
                   <ul className="space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-3">
@@ -268,7 +268,7 @@ export default function RealistaPro() {
                   </ul>
                 </CardContent>
 
-                <CardFooter>
+                <CardFooter className="mt-auto">
                   <Button 
                     className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
                     size="lg"
