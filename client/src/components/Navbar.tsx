@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Home, Menu, X, Sparkles } from "lucide-react";
 import { UserMenu } from "./UserMenu";
+import { LanguageSelector } from "./LanguageSelector";
 import { useUser } from "@/contexts/user-context";
 import { useState } from "react";
 
@@ -21,6 +22,7 @@ export function Navbar() {
 
             {/* Desktop navigation */}
             <div className="hidden md:flex items-center space-x-4">
+              <LanguageSelector />
               {/* RealistaPro link - always visible */}
               <Link href="/realista-pro">
                 <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
@@ -58,7 +60,8 @@ export function Navbar() {
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center space-x-2">
+              <LanguageSelector />
               <Button
                 variant="ghost"
                 size="sm"

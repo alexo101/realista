@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/language-context";
 
 import { AutocompleteSearch } from "./AutocompleteSearch";
 import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS, isDistrict } from "@/utils/neighborhoods";
@@ -77,6 +78,7 @@ export function SearchBar() {
   const [, setLocation] = useLocation();
   const [currentLocation] = useLocation();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
   const [showNeighborhoodResults, setShowNeighborhoodResults] = useState(false);
@@ -135,8 +137,8 @@ export function SearchBar() {
     // Verificar si se ha seleccionado al menos una ubicación para todos los tipos de búsqueda
     if (selectedNeighborhoods.length === 0) {
       toast({
-        title: "Ubicación requerida",
-        description: "Por favor, selecciona un barrio, distrito o Barcelona para buscar",
+        title: t('search.location_required'),
+        description: t('search.location_required_desc'),
         variant: "destructive",
       });
       return;
@@ -319,7 +321,7 @@ export function SearchBar() {
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('rent')}
           >
-            Alquilar
+            {t('search.rent')}
           </Button>
           <Button
             variant={searchType === 'buy' ? 'default' : 'ghost'}
@@ -327,7 +329,7 @@ export function SearchBar() {
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('buy')}
           >
-            Comprar
+            {t('search.buy')}
           </Button>
           <Button
             variant={searchType === 'agencies' ? 'default' : 'ghost'}
@@ -335,7 +337,7 @@ export function SearchBar() {
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('agencies')}
           >
-            Agencias
+            {t('search.agencies')}
           </Button>
           <Button
             variant={searchType === 'agents' ? 'default' : 'ghost'}
@@ -343,7 +345,7 @@ export function SearchBar() {
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('agents')}
           >
-            Agentes
+            {t('search.agents')}
           </Button>
         </div>
 
@@ -379,7 +381,7 @@ export function SearchBar() {
                   onChange={handleNeighborhoodInputChange}
                   onFocus={() => setShowNeighborhoodResults(neighborhoodSearch.length >= 3)}
                   onKeyDown={handleNeighborhoodKeyDown}
-                  placeholder="Buscar barrio..."
+                  placeholder={t('search.neighborhood')}
                   className="w-full"
                 />
                 
@@ -416,7 +418,7 @@ export function SearchBar() {
                   onChange={handleNeighborhoodInputChange}
                   onFocus={() => setShowNeighborhoodResults(neighborhoodSearch.length >= 3)}
                   onKeyDown={handleNeighborhoodKeyDown}
-                  placeholder="Buscar barrio..."
+                  placeholder={t('search.neighborhood')}
                   className="w-full"
                 />
                 
@@ -446,7 +448,7 @@ export function SearchBar() {
             className="flex items-center gap-2 px-6 flex-shrink-0"
             style={{ flex: 1, minWidth: '120px' }}
           >
-            <Search className="h-4 w-4" /> Buscar
+            <Search className="h-4 w-4" /> {t('search.button')}
           </Button>
         </div>
 
