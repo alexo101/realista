@@ -267,7 +267,7 @@ export function SearchBar() {
         <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-4">
           <Button
             variant={searchType === 'rent' ? 'default' : 'ghost'}
-            className="rounded-none px-4 md:px-8 text-sm md:text-base flex-shrink-0"
+            className="px-4 md:px-8 text-sm md:text-base flex-shrink-0"
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('rent')}
           >
@@ -275,7 +275,7 @@ export function SearchBar() {
           </Button>
           <Button
             variant={searchType === 'buy' ? 'default' : 'ghost'}
-            className="rounded-none px-4 md:px-8 text-sm md:text-base flex-shrink-0"
+            className="px-4 md:px-8 text-sm md:text-base flex-shrink-0"
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('buy')}
           >
@@ -283,7 +283,7 @@ export function SearchBar() {
           </Button>
           <Button
             variant={searchType === 'agencies' ? 'default' : 'ghost'}
-            className="rounded-none px-4 md:px-8 text-sm md:text-base flex-shrink-0"
+            className="px-4 md:px-8 text-sm md:text-base flex-shrink-0"
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('agencies')}
           >
@@ -291,7 +291,7 @@ export function SearchBar() {
           </Button>
           <Button
             variant={searchType === 'agents' ? 'default' : 'ghost'}
-            className="rounded-none px-4 md:px-8 text-sm md:text-base flex-shrink-0"
+            className="px-4 md:px-8 text-sm md:text-base flex-shrink-0"
             style={{ flex: 1, minWidth: '120px' }}
             onClick={() => handleSearchTypeChange('agents')}
           >
