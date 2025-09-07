@@ -418,7 +418,35 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       } else if (agencyId) {
         properties = await storage.getPropertiesByAgency(agencyId);
       } else {
-        properties = await storage.searchProperties(req.query);
+        // Apply neighborhood hierarchy expansion to property search
+        let updatedQuery = { ...req.query };
+        const hasNeighborhoods = updatedQuery.neighborhoods !== undefined && 
+                                 typeof updatedQuery.neighborhoods === 'string' && 
+                                 updatedQuery.neighborhoods.trim() !== '';
+
+        // If there are neighborhoods selected, expand the search according to hierarchy
+        if (hasNeighborhoods && typeof updatedQuery.neighborhoods === 'string') {
+          const neighborhood = updatedQuery.neighborhoods;
+
+          // If it's a city-wide search, remove neighborhood filter
+          if (isCityWideSearch(neighborhood)) {
+            console.log('City-wide search for Barcelona - showing all properties');
+            delete updatedQuery.neighborhoods; // Don't filter by specific neighborhoods
+          } 
+          // If it's a district or specific neighborhood, expand the search
+          else {
+            // Expand the neighborhood or district to a list of neighborhoods
+            const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
+            console.log(`Expanded search for ${neighborhood} includes: ${expandedNeighborhoods.join(', ')}`);
+
+            if (expandedNeighborhoods.length > 0) {
+              // Replace the original filter with the expanded list
+              updatedQuery.neighborhoods = expandedNeighborhoods.join(',');
+            }
+          }
+        }
+
+        properties = await storage.searchProperties(updatedQuery);
       }
       res.json(properties);
     } catch (error) {
