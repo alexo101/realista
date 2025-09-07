@@ -352,12 +352,12 @@ export default function AgentProfile() {
           <div className="flex items-center text-sm text-gray-500 mb-2">
             <Badge variant="outline" className="mr-2">Agente inmobiliario</Badge>
             {agent.agencyName && agent.agencyId && (
-              <span className="flex items-center">
-                <Building2 className="h-4 w-4 mr-1" /> 
-                <Link href={`/agencias/${agent.agencyId}`} className="text-gray-600 hover:text-primary hover:underline">
+              <Link href={`/agencias/${agent.agencyId}`}>
+                <Badge variant="outline" className="hover:bg-primary hover:text-white transition-colors cursor-pointer">
+                  <Building2 className="h-3 w-3 mr-1" />
                   {agent.agencyName}
-                </Link>
-              </span>
+                </Badge>
+              </Link>
             )}
           </div>
 
