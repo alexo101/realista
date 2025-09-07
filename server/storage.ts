@@ -463,13 +463,30 @@ export class DatabaseStorage implements IStorage {
     const reviewCount = reviewResults.rows[0]?.count || 0;
     const reviewAverage = reviewResults.rows[0]?.average || 0;
 
-    // Return agent with review statistics
+    // Get agency information if the agent has an agency_id
+    let agencyName = null;
+    let agencyId = null;
+    if (agent.agencyId) {
+      const [agency] = await db.select({
+        id: agencies.id,
+        agencyName: agencies.agencyName
+      }).from(agencies).where(eq(agencies.id, agent.agencyId));
+      
+      if (agency) {
+        agencyName = agency.agencyName;
+        agencyId = agency.id;
+      }
+    }
+
+    // Return agent with review statistics and agency information
     return {
       ...agent,
       isAgent: true,
       isAgency: false,
       reviewCount: Number(reviewCount),
       reviewAverage: Number(reviewAverage),
+      agencyName: agencyName,
+      agencyId: agencyId,
     } as any;
   }
 
