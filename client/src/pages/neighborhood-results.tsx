@@ -296,38 +296,34 @@ export default function NeighborhoodResultsPage() {
               Inicio
             </span>
             <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
-            {/* Barcelona en el segundo nivel - dropdown solo si no estamos en la página de Barcelona */}
-            {!isBarcelonaPage ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
-                    Barcelona
-                  </span>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
-                  {BARCELONA_DISTRICTS.map(districtOption => (
-                    <DropdownMenuItem
-                      key={districtOption}
-                      onClick={() => {
-                        window.location.href = `/neighborhood/${encodeURIComponent(districtOption)}/properties`;
-                      }}
-                      className="cursor-pointer"
-                    >
-                      {districtOption}
-                    </DropdownMenuItem>
-                  ))}
-                  {/* Add option to view Barcelona overview */}
+            {/* Barcelona en el segundo nivel - siempre con dropdown de distritos */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
+                  Barcelona
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
+                {BARCELONA_DISTRICTS.map(districtOption => (
                   <DropdownMenuItem
-                    onClick={() => window.location.href = '/neighborhood/Barcelona/properties'}
-                    className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                    key={districtOption}
+                    onClick={() => {
+                      window.location.href = `/neighborhood/${encodeURIComponent(districtOption)}/properties`;
+                    }}
+                    className="cursor-pointer"
                   >
-                    Ver toda Barcelona
+                    {districtOption}
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <span className="font-medium">Barcelona</span>
-            )}
+                ))}
+                {/* Add option to view Barcelona overview */}
+                <DropdownMenuItem
+                  onClick={() => window.location.href = '/neighborhood/Barcelona/properties'}
+                  className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                >
+                  Ver toda Barcelona
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {/* Si es un distrito o tiene distrito, mostrar el siguiente nivel */}
             {(isDistrictPage || district) && (
