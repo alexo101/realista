@@ -538,10 +538,8 @@ export default function PropertyPage() {
             <Card>
               <CardContent className="pt-6">
                 {!applicationFormExpanded ? (
-                  // Collapsed view - CTA button
+                  // Collapsed view - CTA button only
                   <div className="text-center">
-                    <h3 className="font-semibold text-lg mb-4">¿Interesado en esta propiedad?</h3>
-                    <p className="text-gray-600 mb-6">Contacta con el agente para obtener más información o solicitar una visita</p>
                     <Button 
                       className="w-full"
                       onClick={() => setApplicationFormExpanded(true)}
