@@ -77,6 +77,7 @@ export interface IStorage {
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
   respondToReview(reviewId: number, response: string): Promise<Review>; // Responder a una reseña
+  pinReview(reviewId: number, pinned: boolean): Promise<Review>; // Destacar/quitar destaque de una reseña
 
   // Multi-agency management
   getAgenciesByAdmin(adminAgentId: number): Promise<Agency[]>; // Obtener todas las agencias de un administrador
@@ -711,6 +712,53 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error al responder a la reseña ${reviewId}:`, error);
       throw new Error(`No se pudo guardar la respuesta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  }
+
+  // Método para destacar/quitar destaque de una reseña
+  async pinReview(reviewId: number, pinned: boolean): Promise<Review> {
+    try {
+      console.log(`${pinned ? 'Destacando' : 'Quitando destaque de'} reseña ${reviewId}`);
+
+      // Primero obtenemos la reseña para conocer su targetId y targetType
+      const [currentReview] = await db
+        .select()
+        .from(reviews)
+        .where(eq(reviews.id, reviewId));
+
+      if (!currentReview) {
+        throw new Error(`No se encontró la reseña con ID ${reviewId}`);
+      }
+
+      // Si estamos destacando la reseña, primero quitamos el destaque de todas las otras reseñas del mismo target
+      if (pinned) {
+        await db
+          .update(reviews)
+          .set({ pinned: false })
+          .where(
+            and(
+              eq(reviews.targetId, currentReview.targetId),
+              eq(reviews.targetType, currentReview.targetType),
+              not(eq(reviews.id, reviewId))
+            )
+          );
+      }
+
+      // Ahora actualizamos la reseña actual
+      const [updatedReview] = await db
+        .update(reviews)
+        .set({ pinned })
+        .where(eq(reviews.id, reviewId))
+        .returning();
+
+      if (!updatedReview) {
+        throw new Error(`No se pudo actualizar la reseña con ID ${reviewId}`);
+      }
+
+      return updatedReview;
+    } catch (error) {
+      console.error(`Error al actualizar el estado de la reseña ${reviewId}:`, error);
+      throw new Error(`No se pudo actualizar la reseña: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 

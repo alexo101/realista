@@ -1801,6 +1801,26 @@ Gracias!
     }
   });
 
+  // Ruta para destacar/quitar destaque de una reseña
+  app.post("/api/reviews/:id/pin", async (req, res) => {
+    try {
+      const reviewId = parseInt(req.params.id);
+      const { pinned } = req.body;
+
+      if (typeof pinned !== 'boolean') {
+        return res.status(400).json({ message: "El campo 'pinned' debe ser un booleano" });
+      }
+
+      // Actualizar la reseña con el estado de destacado
+      const updatedReview = await storage.pinReview(reviewId, pinned);
+
+      res.json(updatedReview);
+    } catch (error) {
+      console.error('Error actualizando el estado de la reseña:', error);
+      res.status(500).json({ message: "Error al actualizar el estado de la reseña" });
+    }
+  });
+
   // API para agencias múltiples
   app.get("/api/admin/agencies", async (req, res) => {
     try {

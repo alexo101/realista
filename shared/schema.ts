@@ -227,6 +227,7 @@ export const reviews = pgTable("reviews", {
   targetType: text("target_type"), // Tipo de objetivo: 'agent' o 'agency'
   propertyId: integer("property_id"),
   verified: boolean("verified").notNull().default(false),
+  pinned: boolean("pinned").notNull().default(false), // Nueva columna para marcar reseñas destacadas
   comment: text("comment"), // Campo para los comentarios
   agentResponse: text("agent_response"), // Respuesta del agente a la reseña
   responseDate: timestamp("response_date"), // Fecha en que el agente respondió

@@ -36,6 +36,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Pin,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,7 @@ interface Review {
   targetType: 'agent' | 'agency';
   propertyId?: number;
   verified: boolean;
+  pinned: boolean;
   comment: string;
   agentResponse?: string;
   responseDate?: string;
@@ -170,10 +172,12 @@ const ReviewResponseDialog = ({
 // Componente para mostrar los detalles de una reseña
 const ReviewDetails = ({ 
   review, 
-  onRespond 
+  onRespond,
+  onPin 
 }: { 
   review: Review; 
   onRespond: (review: Review) => void;
+  onPin: (review: Review) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   
@@ -290,6 +294,39 @@ const ReviewDetails = ({
             </TooltipProvider>
           ) : null}
           
+          {review.pinned ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                    <Pin className="h-3 w-3 mr-1" /> Destacada
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Esta reseña está destacada</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : null}
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant={review.pinned ? "default" : "outline"}
+                  onClick={() => onPin(review)}
+                >
+                  <Pin className={`h-4 w-4 mr-1 ${review.pinned ? 'text-white' : ''}`} />
+                  {review.pinned ? "Quitar destaque" : "Destacar"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{review.pinned ? "Quitar reseña destacada" : "Destacar esta reseña"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
           <Button
             size="sm"
             variant={review.agentResponse ? "outline" : "default"}
@@ -356,6 +393,37 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
       });
     },
   });
+
+  // Mutación para destacar/quitar destaque de una reseña
+  const pinMutation = useMutation({
+    mutationFn: async ({ id, pinned }: { id: number; pinned: boolean }) => {
+      const res = await fetch(`/api/reviews/${id}/pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned }),
+      });
+      
+      if (!res.ok) {
+        throw new Error("Error al actualizar el estado de la reseña");
+      }
+      
+      return res.json();
+    },
+    onSuccess: (_, { pinned }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reviews/manage", userId] });
+      toast({
+        title: pinned ? "Reseña destacada" : "Destaque removido",
+        description: pinned ? "La reseña ahora aparece como destacada." : "La reseña ya no está destacada.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `No se pudo actualizar la reseña: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
   
   // Filtrar reseñas según la pestaña activa
   const filteredReviews = reviews.filter((review: Review) => {
@@ -372,6 +440,11 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   // Handler para enviar la respuesta
   const handleSubmitResponse = (id: number, response: string) => {
     respondMutation.mutate({ id, response });
+  };
+
+  // Handler para destacar/quitar destaque de una reseña
+  const handlePin = (review: Review) => {
+    pinMutation.mutate({ id: review.id, pinned: !review.pinned });
   };
   
   if (isLoading) {
@@ -471,6 +544,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
               key={review.id}
               review={review}
               onRespond={handleRespond}
+              onPin={handlePin}
             />
           ))}
         </div>
