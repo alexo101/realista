@@ -457,31 +457,11 @@ export default function PropertyPage() {
                   ) : (
                     // Expanded view - full detailed view
                     <div>
-                      {/* Collapse header */}
+                      {/* Collapse button */}
                       <div 
-                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors mb-4"
+                        className="flex justify-end cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors mb-4"
                         onClick={() => setAgentCardExpanded(false)}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-10 h-10">
-                            {agent.avatar || agent.photo ? (
-                              <img
-                                src={agent.avatar || agent.photo}
-                                alt={`${agent.name || ''} ${agent.surname || ''}`}
-                                className="rounded-full object-cover w-full h-full border-2 border-primary/20"
-                              />
-                            ) : (
-                              <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
-                                <span className="text-primary text-sm font-semibold">
-                                  {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <h3 className="font-semibold text-base">
-                            {agent.name || ''} {agent.surname || ''}
-                          </h3>
-                        </div>
                         <ChevronUp className="h-5 w-5 text-gray-400" />
                       </div>
                       
