@@ -286,18 +286,17 @@ export default function NeighborhoodResultsPage() {
     <div className="min-h-screen pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
         <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            className="mb-2"
-            onClick={() => window.location.href = '/'}
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Volver a inicio
-          </Button>
-          
           {/* Breadcrumb */}
           <div className="flex items-center text-sm text-gray-500 mb-4">
-            {/* Barcelona siempre está en el nivel superior */}
+            {/* Inicio siempre está en el nivel superior */}
+            <span 
+              className="cursor-pointer hover:text-primary"
+              onClick={() => window.location.href = '/'}
+            >
+              Inicio
+            </span>
+            <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+            {/* Barcelona en el segundo nivel */}
             <span 
               className="cursor-pointer hover:text-primary"
               onClick={() => window.location.href = '/neighborhood/Barcelona/properties'}
