@@ -1082,9 +1082,15 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por barrio(s)
       if (filters.neighborhoods) {
-        const neighborhoods = Array.isArray(filters.neighborhoods)
-          ? filters.neighborhoods
-          : [filters.neighborhoods];
+        let neighborhoods;
+        if (Array.isArray(filters.neighborhoods)) {
+          neighborhoods = filters.neighborhoods;
+        } else if (typeof filters.neighborhoods === 'string' && filters.neighborhoods.includes(',')) {
+          // Split comma-separated string into array of neighborhoods
+          neighborhoods = filters.neighborhoods.split(',').map((n: string) => n.trim());
+        } else {
+          neighborhoods = [filters.neighborhoods];
+        }
 
         console.log(`Filtrando por barrios: ${neighborhoods.join(", ")}`);
 
