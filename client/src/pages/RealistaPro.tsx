@@ -213,11 +213,7 @@ export default function RealistaPro() {
           <span className={`text-lg ${isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
             Anual
           </span>
-          {isYearly && (
-            <Badge variant="secondary" className="ml-2">
-              2 meses gratis
-            </Badge>
-          )}
+          
         </div>
 
         <div className={`grid gap-8 max-w-7xl mx-auto ${
