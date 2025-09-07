@@ -14,8 +14,8 @@ export function LanguageSelector() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <span className="text-lg">
-            {language === 'es' ? '🇪🇸' : 'EN'}
+          <span className="text-sm font-medium">
+            {language === 'es' ? 'ES' : 'EN'}
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -24,7 +24,7 @@ export function LanguageSelector() {
           onClick={() => setLanguage('es')}
           className={`cursor-pointer ${language === 'es' ? 'bg-accent' : ''}`}
         >
-          <span className="mr-2">🇪🇸</span>
+          <span className="mr-2">ES</span>
           Español
         </DropdownMenuItem>
         <DropdownMenuItem
