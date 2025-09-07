@@ -36,6 +36,19 @@ interface User {
   
   // Campos adicionales para clientes
   phone?: string;
+  
+  // Review statistics
+  reviewCount?: number; // Número total de reseñas recibidas
+  reviewAverage?: number; // Puntuación promedio de las reseñas
+  
+  // Pinned review data
+  pinnedReview?: {
+    id: number;
+    rating: number;
+    comment: string | null;
+    author: string | null;
+    date: Date;
+  };
 }
 
 interface UserContextType {
