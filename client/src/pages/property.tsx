@@ -45,6 +45,7 @@ export default function PropertyPage() {
   const [showFraudDialog, setShowFraudDialog] = useState(false);
   const [fraudCount, setFraudCount] = useState(0);
   const [agentCardExpanded, setAgentCardExpanded] = useState(false);
+  const [applicationFormExpanded, setApplicationFormExpanded] = useState(false);
 
   const { user } = useUser();
   const { toast } = useToast();
@@ -536,11 +537,36 @@ export default function PropertyPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <h3 className="font-semibold text-lg mb-4">Aplicar por esta propiedad</h3>
-                <PropertyApplicationForm 
-                  propertyId={property.id} 
-                  agentId={property.agentId}
-                />
+                {!applicationFormExpanded ? (
+                  // Collapsed view - CTA button
+                  <div className="text-center">
+                    <h3 className="font-semibold text-lg mb-4">¿Interesado en esta propiedad?</h3>
+                    <p className="text-gray-600 mb-6">Contacta con el agente para obtener más información o solicitar una visita</p>
+                    <Button 
+                      className="w-full"
+                      onClick={() => setApplicationFormExpanded(true)}
+                    >
+                      Aplicar por esta propiedad
+                    </Button>
+                  </div>
+                ) : (
+                  // Expanded view - full application form
+                  <div>
+                    {/* Collapse button */}
+                    <div 
+                      className="flex justify-end cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors mb-4"
+                      onClick={() => setApplicationFormExpanded(false)}
+                    >
+                      <ChevronUp className="h-5 w-5 text-gray-400" />
+                    </div>
+                    
+                    <h3 className="font-semibold text-lg mb-4">Aplicar por esta propiedad</h3>
+                    <PropertyApplicationForm 
+                      propertyId={property.id} 
+                      agentId={property.agentId}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
