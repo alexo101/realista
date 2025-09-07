@@ -1351,27 +1351,55 @@ export class DatabaseStorage implements IStorage {
   async getNeighborhoodRatingsAverage(
     neighborhood: string,
   ): Promise<Record<string, number>> {
-    // Check cache first to dramatically improve tab switching performance
-    const cacheKey = `neighborhood_ratings_${neighborhood}`;
-    const cached = cache.get<Record<string, number>>(cacheKey);
-    if (cached) {
-      return cached;
+    try {
+      // Check cache first to dramatically improve tab switching performance
+      const cacheKey = `neighborhood_ratings_${neighborhood}`;
+      const cached = cache.get<Record<string, number>>(cacheKey);
+      if (cached) {
+        console.log(`Cache hit for neighborhood ratings: ${neighborhood}`);
+        return cached;
+      }
+
+      console.log(`Calculating averages for neighborhood: ${neighborhood}`);
+
+      // Query the database for actual ratings
+      const ratings = await db
+        .select()
+        .from(neighborhoodRatings)
+        .where(eq(neighborhoodRatings.neighborhood, neighborhood));
+
+      if (!ratings || ratings.length === 0) {
+        console.log(`No ratings found for neighborhood: ${neighborhood}`);
+        const result = { count: 0 };
+        // Cache for 5 minutes to reduce database load even for empty results
+        cache.set(cacheKey, result, 300);
+        return result;
+      }
+
+      console.log(`Found ${ratings.length} ratings for ${neighborhood}`);
+
+      // Calculate averages
+      const averages = {
+        count: ratings.length,
+        security: Number((ratings.reduce((sum, r) => sum + Number(r.security), 0) / ratings.length).toFixed(1)),
+        parking: Number((ratings.reduce((sum, r) => sum + Number(r.parking), 0) / ratings.length).toFixed(1)),
+        familyFriendly: Number((ratings.reduce((sum, r) => sum + Number(r.familyFriendly), 0) / ratings.length).toFixed(1)),
+        publicTransport: Number((ratings.reduce((sum, r) => sum + Number(r.publicTransport), 0) / ratings.length).toFixed(1)),
+        greenSpaces: Number((ratings.reduce((sum, r) => sum + Number(r.greenSpaces), 0) / ratings.length).toFixed(1)),
+        services: Number((ratings.reduce((sum, r) => sum + Number(r.services), 0) / ratings.length).toFixed(1)),
+      };
+
+      console.log(`Calculated averages for ${neighborhood}:`, averages);
+
+      // Cache for 10 minutes to eliminate repeated API calls
+      cache.set(cacheKey, averages, 600);
+      
+      return averages;
+    } catch (error) {
+      console.error(`Error calculating averages for neighborhood ${neighborhood}:`, error);
+      // Return empty result on error
+      return { count: 0 };
     }
-
-    // Versión simplificada
-    const ratings = {
-      security: 7.5,
-      parking: 6.8,
-      familyFriendly: 8.2,
-      publicTransport: 7.0,
-      greenSpaces: 6.5,
-      services: 8.0,
-    };
-
-    // Cache for 10 minutes to eliminate repeated API calls
-    cache.set(cacheKey, ratings, 600);
-    
-    return ratings;
   }
 
   async createNeighborhoodRating(
