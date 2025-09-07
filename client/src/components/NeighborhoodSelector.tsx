@@ -1,13 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
-import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS } from "@/utils/neighborhoods";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS } from "@/utils/neighborhoods";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
@@ -21,203 +16,198 @@ export function NeighborhoodSelector({
   selectedNeighborhoods,
   onChange,
   title = "BARRIOS DE BARCELONA",
-  buttonText = "Selecciona barrios",
+  buttonText = "Buscar barrios...",
   singleSelection = false
 }: NeighborhoodSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [localNeighborhoods, setLocalNeighborhoods] = useState<string[]>(selectedNeighborhoods);
+  const [showResults, setShowResults] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
-  // Filtramos los barrios o distritos que coincidan con la búsqueda
-  const filteredDistricts = BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.filter(district => {
-    // Si el distrito coincide con la búsqueda
-    if (district.district.toLowerCase().includes(search.toLowerCase())) {
-      return true;
-    }
-    // Si algún barrio del distrito coincide con la búsqueda
-    return district.neighborhoods.some(n => 
-      n.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  // Filter neighborhoods, districts, and Barcelona option based on search
+  const filteredResults = search.length >= 3 
+    ? [
+        ...("Barcelona (Todos los barrios)".toLowerCase().includes(search.toLowerCase()) ? ["Barcelona (Todos los barrios)"] : []),
+        ...BARCELONA_DISTRICTS.filter(d =>
+          d.toLowerCase().includes(search.toLowerCase())
+        ),
+        ...BARCELONA_NEIGHBORHOODS.filter(n =>
+          n.toLowerCase().includes(search.toLowerCase())
+        )
+      ].slice(0, 10) // Limit to 10 results
+    : [];
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearch(value);
+    setHighlightedIndex(-1);
+    setShowResults(value.length >= 3);
+  };
 
   const toggleNeighborhood = (neighborhood: string) => {
     if (singleSelection) {
-      // En modo de selección única, simplemente reemplazar la selección actual
-      const newNeighborhoods = localNeighborhoods.includes(neighborhood) ? [] : [neighborhood];
-      setLocalNeighborhoods(newNeighborhoods);
-      
-      // Si está en modo de selección única, aplicar cambios inmediatamente
+      // Single selection mode
+      const newNeighborhoods = selectedNeighborhoods.includes(neighborhood) ? [] : [neighborhood];
+      onChange(newNeighborhoods);
+      setSearch(neighborhood);
+      setShowResults(false);
+    } else {
+      // Multi-selection mode
+      const newNeighborhoods = selectedNeighborhoods.includes(neighborhood)
+        ? selectedNeighborhoods.filter(n => n !== neighborhood)
+        : [...selectedNeighborhoods, neighborhood];
       onChange(newNeighborhoods);
       
-      // Y cerrar el popover
-      if (neighborhood && !localNeighborhoods.includes(neighborhood)) {
-        setIsOpen(false);
+      // Clear search after selection but keep focus
+      setSearch("");
+      setShowResults(false);
+      if (inputRef.current) {
+        inputRef.current.focus();
       }
-    } else {
-      // En modo multi-selección, mantener el comportamiento original
-      setLocalNeighborhoods(
-        localNeighborhoods.includes(neighborhood)
-          ? localNeighborhoods.filter(n => n !== neighborhood)
-          : [...localNeighborhoods, neighborhood]
-      );
+    }
+  };
+
+  const removeNeighborhood = (neighborhood: string) => {
+    const newNeighborhoods = selectedNeighborhoods.filter(n => n !== neighborhood);
+    onChange(newNeighborhoods);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!filteredResults.length) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredResults.length - 1 ? prev + 1 : prev
+        );
+        break;
+
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : 0
+        );
+        break;
+
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredResults.length) {
+          toggleNeighborhood(filteredResults[highlightedIndex]);
+        }
+        break;
+
+      case 'Escape':
+        setShowResults(false);
+        break;
     }
   };
 
   const selectAll = () => {
-    const newNeighborhoods = [...BARCELONA_NEIGHBORHOODS];
-    setLocalNeighborhoods(newNeighborhoods);
+    onChange([...BARCELONA_NEIGHBORHOODS]);
   };
-  
-  // Este método se llama cuando el usuario confirma su selección
-  const handleConfirm = () => {
-    onChange(localNeighborhoods);
-    setIsOpen(false);
+
+  const clearAll = () => {
+    onChange([]);
   };
+
+  // Click outside effect
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-full justify-start h-auto py-2 px-3"
-          onClick={() => {
-            // Restablecer selección local al abrir
-            setLocalNeighborhoods(selectedNeighborhoods);
-            setIsOpen(true);
-          }}
-        >
-          {selectedNeighborhoods.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {selectedNeighborhoods.map(n => (
-                <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
-                  {n}
-                </span>
-              ))}
-            </div>
-          ) : (
-            buttonText
-          )}
-        </Button>
-      </PopoverTrigger>
-      
-      <PopoverContent className="w-[425px] max-h-[500px] overflow-y-auto p-4" align="start">
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          
-          <Input
-            placeholder="Buscar barrio..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-
-          {localNeighborhoods.length > 0 && (
-            <div>
-              <p className="text-sm text-gray-500 mb-2">{singleSelection ? "BARRIO SELECCIONADO" : "SELECCIONADOS"}</p>
-              <div className="flex flex-wrap gap-2">
-                {localNeighborhoods.map(neighborhood => (
-                  <span
-                    key={neighborhood}
-                    className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
-                    onClick={() => toggleNeighborhood(neighborhood)}
-                  >
-                    {neighborhood}
-                    <X className="h-3 w-3" />
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Opción para seleccionar toda Barcelona */}
-          <div className="border-b pb-2 mb-3">
-            <Button
-              variant="ghost"
-              className={`w-full justify-start font-bold ${
-                localNeighborhoods.includes("Barcelona (Todos los barrios)")
-                  ? "bg-primary/10"
-                  : ""
-              }`}
-              onClick={() => toggleNeighborhood("Barcelona (Todos los barrios)")}
-              type="button"
-            >
-              Barcelona (Todos los barrios)
-            </Button>
-          </div>
-          
-          <div className="max-h-[300px] overflow-auto">
-            {filteredDistricts.map((district) => (
-              <div key={district.district}>
-                {/* El distrito en negrita y también seleccionable */}
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start font-bold ${
-                    localNeighborhoods.includes(district.district)
-                      ? "bg-primary/10"
-                      : ""
-                  }`}
-                  onClick={() => toggleNeighborhood(district.district)}
+    <div className="space-y-2">
+      {/* Selected neighborhoods display */}
+      {selectedNeighborhoods.length > 0 && (
+        <div>
+          <p className="text-sm text-gray-500 mb-2">{singleSelection ? "BARRIO SELECCIONADO" : "SELECCIONADOS"}</p>
+          <div className="flex flex-wrap gap-2">
+            {selectedNeighborhoods.map(neighborhood => (
+              <span
+                key={neighborhood}
+                className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1"
+              >
+                {neighborhood}
+                <button
                   type="button"
+                  onClick={() => removeNeighborhood(neighborhood)}
+                  className="hover:text-red-500"
                 >
-                  {district.district}
-                </Button>
-
-                {/* Los barrios de ese distrito */}
-                {district.neighborhoods
-                  .filter(n => n.toLowerCase().includes(search.toLowerCase()))
-                  .map(neighborhood => (
-                    <Button
-                      key={neighborhood}
-                      variant="ghost"
-                      className={`w-full justify-start pl-8 ${
-                        localNeighborhoods.includes(neighborhood)
-                          ? "bg-primary/10"
-                          : ""
-                      }`}
-                      onClick={() => toggleNeighborhood(neighborhood)}
-                      type="button"
-                    >
-                      {neighborhood}
-                    </Button>
-                  ))}
-              </div>
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
             ))}
           </div>
-
-          {!singleSelection && (
-            <div className="flex justify-between">
-              <div>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setLocalNeighborhoods([]);
-                    onChange([]);
-                  }}
-                  className="mr-2"
-                  type="button"
-                >
-                  Limpiar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    selectAll();
-                    onChange([...BARCELONA_NEIGHBORHOODS]);
-                  }}
-                  type="button"
-                >
-                  Seleccionar todos
-                </Button>
-              </div>
-              <Button 
-                onClick={handleConfirm}
-                type="button"
-              >
-                Hecho
-              </Button>
-            </div>
-          )}
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+
+      {/* Search input with autocomplete */}
+      <div className="relative" ref={containerRef}>
+        <Input
+          ref={inputRef}
+          type="text"
+          value={search}
+          onChange={handleInputChange}
+          onFocus={() => setShowResults(search.length >= 3)}
+          onKeyDown={handleKeyDown}
+          placeholder={buttonText}
+          className="w-full"
+        />
+        
+        {showResults && filteredResults.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto" style={{ maxHeight: '200px' }}>
+            {filteredResults.map((result, index) => (
+              <button
+                key={result}
+                type="button"
+                className={`w-full text-left p-3 hover:bg-gray-100 border-b border-gray-100 last:border-0 flex items-center justify-between ${
+                  highlightedIndex === index ? 'bg-gray-100' : ''
+                }`}
+                onClick={() => toggleNeighborhood(result)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+              >
+                <span>{result}</span>
+                {selectedNeighborhoods.includes(result) && (
+                  <span className="text-green-600 text-sm">✓</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons for multi-selection */}
+      {!singleSelection && (
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={clearAll}
+            size="sm"
+            type="button"
+          >
+            Limpiar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={selectAll}
+            size="sm"
+            type="button"
+          >
+            Seleccionar todos
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
