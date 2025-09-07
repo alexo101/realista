@@ -299,7 +299,7 @@ export function SearchBar() {
           {/* Buscador para Agencias y Agentes */}
           {(searchType === 'agencies' || searchType === 'agents') && (
             <>
-              <div className="flex-1 relative" style={{ flex: 2 }}>
+              <div className="flex-1 relative" style={{ flex: 5 }}>
                 <AutocompleteSearch 
                   type={searchType as 'agencies' | 'agents'} 
                   placeholder={'Buscar ' + (searchType === 'agencies' ? 'agencias' : 'agentes') + ' por nombre...'}
@@ -319,7 +319,7 @@ export function SearchBar() {
               </div>
 
               {/* Selector de barrio para Agencias y Agentes */}
-              <div className="flex-1">
+              <div className="flex-1" style={{ flex: 3 }}>
                 <Button
                   variant="outline"
                   className="w-full justify-start h-auto py-2 px-3"
@@ -345,7 +345,7 @@ export function SearchBar() {
           {(searchType === 'buy' || searchType === 'rent') && (
             <>
               {/* 3. Selección de barrio */}
-              <div className="flex-1">
+              <div className="flex-1" style={{ flex: 4 }}>
                 <Button
                   variant="outline"
                   className="w-full justify-start h-auto py-2 px-3"
@@ -369,7 +369,8 @@ export function SearchBar() {
 
           <Button
             onClick={handleSearch}
-            className="flex items-center gap-2 px-6"
+            className="flex items-center gap-2 px-6 flex-shrink-0"
+            style={{ flex: 1, minWidth: '120px' }}
           >
             <Search className="h-4 w-4" /> Buscar
           </Button>
