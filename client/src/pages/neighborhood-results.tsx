@@ -69,7 +69,8 @@ export default function NeighborhoodResultsPage() {
   const isBarcelonaPage = decodedNeighborhood === 'Barcelona';
   
   // Verificar si el valor seleccionado es un distrito
-  const isDistrictPage = isDistrict(decodedNeighborhood);
+  // Caso especial: "Les Corts" puede ser tanto distrito como barrio - priorizar barrio
+  const isDistrictPage = isDistrict(decodedNeighborhood) && decodedNeighborhood !== "Les Corts";
   
   // Manejo especial para Sant Andreu del Palomar (que es en realidad Sant Andreu barrio)
   const isSantAndreuBarrio = decodedNeighborhood === "Sant Andreu del Palomar";
