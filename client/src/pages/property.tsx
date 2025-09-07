@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
-import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag } from "lucide-react";
+import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag, ChevronDown, ChevronUp } from "lucide-react";
 
 // Extended Property type with additional fields for features
 interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms' | 'features'> {
@@ -44,6 +44,7 @@ export default function PropertyPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showFraudDialog, setShowFraudDialog] = useState(false);
   const [fraudCount, setFraudCount] = useState(0);
+  const [agentCardExpanded, setAgentCardExpanded] = useState(false);
 
   const { user } = useUser();
   const { toast } = useToast();
@@ -409,68 +410,146 @@ export default function PropertyPage() {
             {agent && !agentLoading && (
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-center">
-                    <div className="relative w-20 h-20 mx-auto mb-4">
-                      {agent.avatar || agent.photo ? (
-                        <img
-                          src={agent.avatar || agent.photo}
-                          alt={`${agent.name || ''} ${agent.surname || ''}`}
-                          className="rounded-full object-cover w-full h-full border-2 border-primary/20"
-                        />
-                      ) : (
-                        <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary text-xl font-semibold">
-                            {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <h3 className="font-semibold text-lg mb-2">
-                      {agent.name || ''} {agent.surname || ''}
-                    </h3>
-                    
-                    {/* Review score display */}
-                    {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
-                      <div className="flex items-center justify-center gap-1 mb-3">
-                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                        <span className="text-sm font-medium">{agent.reviewAverage.toFixed(1)}</span>
-                        <span className="text-xs text-gray-500">({agent.reviewCount})</span>
-                      </div>
-                    ) : (
-                      <p className="text-gray-600 text-sm mb-3">Sin reseñas</p>
-                    )}
-                    
-                    {/* Influence neighborhoods */}
-                    {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-xs text-gray-500 mb-2">Barrios de influencia:</p>
-                        <div className="space-y-1">
-                          {agent.influenceNeighborhoods.slice(0, 3).map((neighborhood) => (
-                            <div key={neighborhood} className="flex items-center justify-center gap-1 text-sm text-primary">
-                              <MapPin className="w-3 h-3" />
-                              <span>{neighborhood}</span>
-                            </div>
-                          ))}
-                          {agent.influenceNeighborhoods.length > 3 && (
-                            <span className="text-xs text-gray-500">
-                              +{agent.influenceNeighborhoods.length - 3} más
+                  {!agentCardExpanded ? (
+                    // Collapsed view - horizontal layout
+                    <div 
+                      className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                      onClick={() => setAgentCardExpanded(true)}
+                    >
+                      {/* Agent avatar */}
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        {agent.avatar || agent.photo ? (
+                          <img
+                            src={agent.avatar || agent.photo}
+                            alt={`${agent.name || ''} ${agent.surname || ''}`}
+                            className="rounded-full object-cover w-full h-full border-2 border-primary/20"
+                          />
+                        ) : (
+                          <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-primary text-sm font-semibold">
+                              {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
                             </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Agent name and reviews */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base truncate">
+                          {agent.name || ''} {agent.surname || ''}
+                        </h3>
+                        
+                        {/* Review score display */}
+                        {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-medium">{agent.reviewAverage.toFixed(1)}</span>
+                            <span className="text-xs text-gray-500">({agent.reviewCount})</span>
+                          </div>
+                        ) : (
+                          <p className="text-gray-600 text-xs mt-1">Sin reseñas</p>
+                        )}
+                      </div>
+                      
+                      {/* Expand arrow */}
+                      <ChevronDown className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                    </div>
+                  ) : (
+                    // Expanded view - full detailed view
+                    <div>
+                      {/* Collapse header */}
+                      <div 
+                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors mb-4"
+                        onClick={() => setAgentCardExpanded(false)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-10 h-10">
+                            {agent.avatar || agent.photo ? (
+                              <img
+                                src={agent.avatar || agent.photo}
+                                alt={`${agent.name || ''} ${agent.surname || ''}`}
+                                className="rounded-full object-cover w-full h-full border-2 border-primary/20"
+                              />
+                            ) : (
+                              <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
+                                <span className="text-primary text-sm font-semibold">
+                                  {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-base">
+                            {agent.name || ''} {agent.surname || ''}
+                          </h3>
+                        </div>
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      </div>
+                      
+                      {/* Detailed content */}
+                      <div className="text-center">
+                        <div className="relative w-20 h-20 mx-auto mb-4">
+                          {agent.avatar || agent.photo ? (
+                            <img
+                              src={agent.avatar || agent.photo}
+                              alt={`${agent.name || ''} ${agent.surname || ''}`}
+                              className="rounded-full object-cover w-full h-full border-2 border-primary/20"
+                            />
+                          ) : (
+                            <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-primary text-xl font-semibold">
+                                {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
+                              </span>
+                            </div>
                           )}
                         </div>
+                        
+                        <h3 className="font-semibold text-lg mb-2">
+                          {agent.name || ''} {agent.surname || ''}
+                        </h3>
+                        
+                        {/* Review score display */}
+                        {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
+                          <div className="flex items-center justify-center gap-1 mb-3">
+                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-medium">{agent.reviewAverage.toFixed(1)}</span>
+                            <span className="text-xs text-gray-500">({agent.reviewCount})</span>
+                          </div>
+                        ) : (
+                          <p className="text-gray-600 text-sm mb-3">Sin reseñas</p>
+                        )}
+                        
+                        {/* Influence neighborhoods */}
+                        {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-2">Barrios de influencia:</p>
+                            <div className="space-y-1">
+                              {agent.influenceNeighborhoods.slice(0, 3).map((neighborhood) => (
+                                <div key={neighborhood} className="flex items-center justify-center gap-1 text-sm text-primary">
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{neighborhood}</span>
+                                </div>
+                              ))}
+                              {agent.influenceNeighborhoods.length > 3 && (
+                                <span className="text-xs text-gray-500">
+                                  +{agent.influenceNeighborhoods.length - 3} más
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Ver perfil button */}
+                        <Button 
+                          variant="outline" 
+                          className="w-full mt-4"
+                          onClick={() => navigate(`/agent/${agent.id}`)}
+                        >
+                          Ver perfil
+                          <ExternalLink className="w-4 h-4 ml-2" />
+                        </Button>
                       </div>
-                    )}
-                    
-                    {/* Ver perfil button */}
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4"
-                      onClick={() => navigate(`/agent/${agent.id}`)}
-                    >
-                      Ver perfil
-                      <ExternalLink className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
