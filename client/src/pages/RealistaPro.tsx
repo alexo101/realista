@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, Star, Users, Building, FileText, MessageSquare, Sparkles, User } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/language-context";
 
 const agencyPlans = [
   {
@@ -115,6 +116,7 @@ export default function RealistaPro() {
   const [isYearly, setIsYearly] = useState(false);
   const [profileType, setProfileType] = useState<"agencies" | "agents">("agencies");
   const [, navigate] = useLocation();
+  const { t } = useLanguage();
   
   const currentPlans = profileType === "agencies" ? agencyPlans : agentPlans;
   
@@ -146,24 +148,24 @@ export default function RealistaPro() {
         <div className="relative container mx-auto px-4 py-24 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-              RealistaPro
+              {t('realista_pro.title')}
             </span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed">
-            La plataforma profesional para agencias inmobiliarias que quieren destacar
+            {t('realista_pro.subtitle')}
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-lg">
             <div className="flex items-center gap-2">
               <Building className="h-6 w-6" />
-              <span>CRM Avanzado</span>
+              <span>{t('realista_pro.crm')}</span>
             </div>
             <div className="flex items-center gap-2">
               <Sparkles className="h-6 w-6" />
-              <span>IA Integrada</span>
+              <span>{t('realista_pro.ai')}</span>
             </div>
             <div className="flex items-center gap-2">
               <MessageSquare className="h-6 w-6" />
-              <span>Gestión de Reseñas</span>
+              <span>{t('realista_pro.reviews')}</span>
             </div>
           </div>
         </div>
@@ -172,9 +174,9 @@ export default function RealistaPro() {
       {/* Pricing Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">Elige tu plan perfecto</h2>
+          <h2 className="text-4xl font-bold mb-4">{t('realista_pro.choose_plan')}</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Planes flexibles para agencias y agentes individuales
+            {t('realista_pro.flexible_plans')}
           </p>
         </div>
 
@@ -187,7 +189,7 @@ export default function RealistaPro() {
               className="px-6 py-2"
             >
               <Building className="h-4 w-4 mr-2" />
-              Agencias
+              {t('realista_pro.agencies')}
             </Button>
             <Button
               variant={profileType === "agents" ? "default" : "ghost"}
@@ -195,7 +197,7 @@ export default function RealistaPro() {
               className="px-6 py-2"
             >
               <User className="h-4 w-4 mr-2" />
-              Agentes
+              {t('realista_pro.agents')}
             </Button>
           </div>
         </div>
@@ -203,7 +205,7 @@ export default function RealistaPro() {
         {/* Billing Toggle */}
         <div className="flex justify-center items-center gap-4 mb-12">
           <span className={`text-lg ${!isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-            Mensual
+            {t('realista_pro.monthly')}
           </span>
           <Switch
             checked={isYearly}
@@ -211,7 +213,7 @@ export default function RealistaPro() {
             className="scale-125"
           />
           <span className={`text-lg ${isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-            Anual
+            {t('realista_pro.yearly')}
           </span>
           
         </div>
@@ -248,7 +250,7 @@ export default function RealistaPro() {
                   <CardDescription className="text-lg">{plan.description}</CardDescription>
                   <div className="text-center mt-4">
                     <span className="text-4xl font-bold">{displayPrice}</span>
-                    <span className="text-muted-foreground">/mes</span>
+                    <span className="text-muted-foreground">{t('realista_pro.per_month')}</span>
                     {isYearly && plan.monthlyPrice > 0 && (
                       <div className="text-sm text-muted-foreground mt-1">
                         Facturado anualmente: {plan.yearlyPrice}€
@@ -274,7 +276,7 @@ export default function RealistaPro() {
                     size="lg"
                     onClick={() => handlePlanSelection(plan)}
                   >
-                    {plan.monthlyPrice === 0 ? "Empezar gratis" : "Empezar ahora"}
+                    {plan.monthlyPrice === 0 ? t('realista_pro.start_free') : t('realista_pro.start_now')}
                   </Button>
                 </CardFooter>
               </Card>
@@ -284,7 +286,7 @@ export default function RealistaPro() {
 
         {/* Additional Features Section */}
         <div className="mt-20">
-          <h3 className="text-3xl font-bold text-center mb-12">¿Qué incluyen las Ventajas IA?</h3>
+          <h3 className="text-3xl font-bold text-center mb-12">{t('realista_pro.ai_features')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             <Card className="text-center p-6">
               <div className="flex justify-center mb-4">
@@ -292,9 +294,9 @@ export default function RealistaPro() {
                   <Sparkles className="h-8 w-8 text-purple-600" />
                 </div>
               </div>
-              <h4 className="text-xl font-semibold mb-3">Descripciones automáticas</h4>
+              <h4 className="text-xl font-semibold mb-3">{t('realista_pro.auto_descriptions')}</h4>
               <p className="text-muted-foreground">
-                IA genera descripciones atractivas y profesionales para tus propiedades
+                {t('realista_pro.auto_descriptions_desc')}
               </p>
             </Card>
 
@@ -304,9 +306,9 @@ export default function RealistaPro() {
                   <MessageSquare className="h-8 w-8 text-blue-600" />
                 </div>
               </div>
-              <h4 className="text-xl font-semibold mb-3">Respuestas inteligentes</h4>
+              <h4 className="text-xl font-semibold mb-3">{t('realista_pro.smart_responses')}</h4>
               <p className="text-muted-foreground">
-                Sugerencias automáticas para responder consultas de clientes
+                {t('realista_pro.smart_responses_desc')}
               </p>
             </Card>
           </div>
