@@ -382,7 +382,10 @@ export default function NeighborhoodResultsPage() {
             
             {/* Si es Barcelona general, no mostrar más niveles */}
             {isBarcelonaPage && (
-              <span className="font-medium ml-0">Todos los barrios</span>
+              <>
+                <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+                <span className="font-medium">Barcelona</span>
+              </>
             )}
           </div>
           
