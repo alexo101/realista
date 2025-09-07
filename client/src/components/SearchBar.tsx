@@ -1,11 +1,6 @@
-import { useState, useEffect, KeyboardEvent } from "react";
+import { useState, useEffect, KeyboardEvent, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -14,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, X, Pencil } from "lucide-react";
+import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 import { AutocompleteSearch } from "./AutocompleteSearch";
@@ -82,9 +77,12 @@ export function SearchBar() {
   const [, setLocation] = useLocation();
   const [currentLocation] = useLocation();
   const { toast } = useToast();
-  const [isNeighborhoodOpen, setIsNeighborhoodOpen] = useState(false);
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState("");
+  const [showNeighborhoodResults, setShowNeighborhoodResults] = useState(false);
+  const [highlightedNeighborhoodIndex, setHighlightedNeighborhoodIndex] = useState(-1);
+  const neighborhoodContainerRef = useRef<HTMLDivElement>(null);
+  const neighborhoodInputRef = useRef<HTMLInputElement>(null);
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: "any", max: "any" });
   const [agencyName, setAgencyName] = useState('');
   const [agentName, setAgentName] = useState('');
@@ -107,9 +105,31 @@ export function SearchBar() {
 
   const [searchType, setSearchType] = useState<SearchType>(getInitialSearchType());
 
-  const filteredNeighborhoods = BARCELONA_NEIGHBORHOODS.filter(n =>
-    n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-  );
+  // Click outside effect for neighborhood autocomplete
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (neighborhoodContainerRef.current && !neighborhoodContainerRef.current.contains(e.target as Node)) {
+        setShowNeighborhoodResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const filteredNeighborhoods = neighborhoodSearch.length >= 3 
+    ? [
+        ...("Barcelona".toLowerCase().includes(neighborhoodSearch.toLowerCase()) ? ["Barcelona"] : []),
+        ...BARCELONA_DISTRICTS.filter(d =>
+          d.toLowerCase().includes(neighborhoodSearch.toLowerCase())
+        ),
+        ...BARCELONA_NEIGHBORHOODS.filter(n =>
+          n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
+        )
+      ].slice(0, 10) // Limit to 10 results
+    : [];
 
   const handleSearch = () => {
     // Verificar si se ha seleccionado al menos una ubicación para todos los tipos de búsqueda
@@ -232,6 +252,55 @@ export function SearchBar() {
     // Ahora el usuario debe hacer clic en "Buscar" para iniciar la búsqueda
   };
 
+  const handleNeighborhoodInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNeighborhoodSearch(value);
+    setHighlightedNeighborhoodIndex(-1);
+    setShowNeighborhoodResults(value.length >= 3);
+    
+    // If input is cleared, clear selected neighborhoods
+    if (value === '') {
+      setSelectedNeighborhoods([]);
+    }
+  };
+
+  const selectNeighborhood = (neighborhood: string) => {
+    setSelectedNeighborhoods([neighborhood]);
+    setNeighborhoodSearch(neighborhood);
+    setShowNeighborhoodResults(false);
+  };
+
+  const handleNeighborhoodKeyDown = (e: React.KeyboardEvent) => {
+    if (!filteredNeighborhoods.length) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedNeighborhoodIndex(prev => 
+          prev < filteredNeighborhoods.length - 1 ? prev + 1 : prev
+        );
+        break;
+
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedNeighborhoodIndex(prev => 
+          prev > 0 ? prev - 1 : 0
+        );
+        break;
+
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedNeighborhoodIndex >= 0 && highlightedNeighborhoodIndex < filteredNeighborhoods.length) {
+          selectNeighborhood(filteredNeighborhoods[highlightedNeighborhoodIndex]);
+        }
+        break;
+
+      case 'Escape':
+        setShowNeighborhoodResults(false);
+        break;
+    }
+  };
+
   // Handler for Enter key press in search inputs
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -239,27 +308,6 @@ export function SearchBar() {
     }
   };
 
-  // Handler for Enter key press in neighborhood search
-  const handleNeighborhoodKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      if (filteredNeighborhoods.length > 0) {
-        // If there's only one filtered neighborhood, select it
-        if (filteredNeighborhoods.length === 1) {
-          toggleNeighborhood(filteredNeighborhoods[0]);
-        }
-        // If the exact search term matches a neighborhood, select it
-        else if (filteredNeighborhoods.some(n => n.toLowerCase() === neighborhoodSearch.toLowerCase())) {
-          const exactMatch = filteredNeighborhoods.find(n => 
-            n.toLowerCase() === neighborhoodSearch.toLowerCase()
-          );
-          if (exactMatch) toggleNeighborhood(exactMatch);
-        }
-      }
-
-      // Solo cerrar el diálogo de barrios, pero NO ejecutar búsqueda automática
-      setIsNeighborhoodOpen(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -323,24 +371,35 @@ export function SearchBar() {
               </div>
 
               {/* Selector de barrio para Agencias y Agentes */}
-              <div className="flex-1" style={{ flex: 4 }}>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-auto py-2 px-3"
-                  onClick={() => setIsNeighborhoodOpen(true)}
-                >
-                  {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
-                          {n}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    "Selecciona un barrio"
-                  )}
-                </Button>
+              <div className="flex-1 relative" style={{ flex: 4 }} ref={neighborhoodContainerRef}>
+                <Input
+                  ref={neighborhoodInputRef}
+                  type="text"
+                  value={neighborhoodSearch}
+                  onChange={handleNeighborhoodInputChange}
+                  onFocus={() => setShowNeighborhoodResults(neighborhoodSearch.length >= 3)}
+                  onKeyDown={handleNeighborhoodKeyDown}
+                  placeholder="Buscar barrio..."
+                  className="w-full"
+                />
+                
+                {showNeighborhoodResults && filteredNeighborhoods.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto" style={{ maxHeight: '200px' }}>
+                    {filteredNeighborhoods.map((neighborhood, index) => (
+                      <button
+                        key={neighborhood}
+                        type="button"
+                        className={`w-full text-left p-3 hover:bg-gray-100 border-b border-gray-100 last:border-0 ${
+                          highlightedNeighborhoodIndex === index ? 'bg-gray-100' : ''
+                        }`}
+                        onClick={() => selectNeighborhood(neighborhood)}
+                        onMouseEnter={() => setHighlightedNeighborhoodIndex(index)}
+                      >
+                        {neighborhood}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -349,24 +408,35 @@ export function SearchBar() {
           {(searchType === 'buy' || searchType === 'rent') && (
             <>
               {/* 3. Selección de barrio */}
-              <div className="flex-1" style={{ flex: 4 }}>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-auto py-2 px-3"
-                  onClick={() => setIsNeighborhoodOpen(true)}
-                >
-                  {selectedNeighborhoods.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedNeighborhoods.map(n => (
-                        <span key={n} className="bg-primary/10 rounded px-2 py-1 text-sm">
-                          {n}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    "Selecciona un barrio"
-                  )}
-                </Button>
+              <div className="flex-1 relative" style={{ flex: 4 }} ref={neighborhoodContainerRef}>
+                <Input
+                  ref={neighborhoodInputRef}
+                  type="text"
+                  value={neighborhoodSearch}
+                  onChange={handleNeighborhoodInputChange}
+                  onFocus={() => setShowNeighborhoodResults(neighborhoodSearch.length >= 3)}
+                  onKeyDown={handleNeighborhoodKeyDown}
+                  placeholder="Buscar barrio..."
+                  className="w-full"
+                />
+                
+                {showNeighborhoodResults && filteredNeighborhoods.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto" style={{ maxHeight: '200px' }}>
+                    {filteredNeighborhoods.map((neighborhood, index) => (
+                      <button
+                        key={neighborhood}
+                        type="button"
+                        className={`w-full text-left p-3 hover:bg-gray-100 border-b border-gray-100 last:border-0 ${
+                          highlightedNeighborhoodIndex === index ? 'bg-gray-100' : ''
+                        }`}
+                        onClick={() => selectNeighborhood(neighborhood)}
+                        onMouseEnter={() => setHighlightedNeighborhoodIndex(index)}
+                      >
+                        {neighborhood}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -383,103 +453,6 @@ export function SearchBar() {
         {/* Review buttons have been removed */}
       </div>
 
-      {/* Dialog for neighborhood selection */}
-      <Dialog open={isNeighborhoodOpen} onOpenChange={setIsNeighborhoodOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogTitle className="text-lg font-semibold">SELECCIONA UN BARRIO</DialogTitle>
-          <div className="space-y-4">
-            <Input
-              placeholder="Buscar barrio..."
-              value={neighborhoodSearch}
-              onChange={(e) => setNeighborhoodSearch(e.target.value)}
-              onKeyDown={handleNeighborhoodKeyDown}
-            />
-
-            {selectedNeighborhoods.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500 mb-2">BARRIO SELECCIONADO</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedNeighborhoods.map(neighborhood => (
-                    <span
-                      key={neighborhood}
-                      className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1 cursor-pointer"
-                      onClick={() => toggleNeighborhood(neighborhood)}
-                    >
-                      {neighborhood}
-                      <X className="h-3 w-3" />
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="max-h-[300px] overflow-auto">
-              {/* Barcelona option (for no filter) */}
-              <div className="mb-4">
-                <Button
-                  variant="ghost"
-                  className={"w-full justify-start " + (selectedNeighborhoods.includes("Barcelona") ? "bg-primary/10" : "")}
-                  onClick={() => toggleNeighborhood("Barcelona")}
-                >
-                  Barcelona (Todos los barrios)
-                </Button>
-              </div>
-
-              {/* Group neighborhoods by district */}
-              {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => {
-                // Filter neighborhoods in this district
-                const filteredNeighborhoodsInDistrict = district.neighborhoods.filter(n =>
-                  n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-                );
-
-                // Show distrito even if no neighborhoods match (for search)
-                const showDistrict = neighborhoodSearch === "" || 
-                  district.district.toLowerCase().includes(neighborhoodSearch.toLowerCase()) ||
-                  filteredNeighborhoodsInDistrict.length > 0;
-
-                if (!showDistrict) return null;
-
-                return (
-                  <div key={district.district} className="mb-4">
-                    {/* Make distrito selectable */}
-                    <Button
-                      variant="ghost"
-                      className={"w-full justify-start " + (selectedNeighborhoods.includes(district.district) ? "bg-primary/10" : "")}
-                      onClick={() => toggleNeighborhood(district.district)}
-                    >
-                      {district.district}
-                    </Button>
-
-                    {filteredNeighborhoodsInDistrict.length > 0 && filteredNeighborhoodsInDistrict.map(neighborhood => (
-                      <Button
-                        key={neighborhood}
-                        variant="ghost"
-                        className={"w-full justify-start pl-6 " + (selectedNeighborhoods.includes(neighborhood) ? "bg-primary/10" : "")}
-                        onClick={() => toggleNeighborhood(neighborhood)}
-                      >
-                        {neighborhood}
-                      </Button>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-between">
-              <Button 
-                onClick={() => {
-                  setIsNeighborhoodOpen(false);
-                  // No ejecutar búsqueda automáticamente
-                }}
-                className="ml-auto"
-                disabled={selectedNeighborhoods.length === 0}
-              >
-                Seleccionar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Review dialog components have been removed */}
     </div>
