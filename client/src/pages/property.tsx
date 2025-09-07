@@ -499,23 +499,26 @@ export default function PropertyPage() {
                           <p className="text-gray-600 text-sm mb-3">Sin reseñas</p>
                         )}
                         
-                        {/* Influence neighborhoods */}
-                        {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
+                        {/* Pinned Review */}
+                        {agent.pinnedReview && (
                           <div className="mb-4">
-                            <p className="text-xs text-gray-500 mb-2">Barrios de influencia:</p>
-                            <div className="space-y-1">
-                              {agent.influenceNeighborhoods.slice(0, 3).map((neighborhood) => (
-                                <div key={neighborhood} className="flex items-center justify-center gap-1 text-sm text-primary">
-                                  <MapPin className="w-3 h-3" />
-                                  <span>{neighborhood}</span>
-                                </div>
-                              ))}
-                              {agent.influenceNeighborhoods.length > 3 && (
-                                <span className="text-xs text-gray-500">
-                                  +{agent.influenceNeighborhoods.length - 3} más
-                                </span>
-                              )}
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-1">
+                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                <span className="font-semibold text-sm">{agent.pinnedReview.rating}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">Reseña destacada</span>
                             </div>
+                            {agent.pinnedReview.comment && (
+                              <div className="text-sm text-gray-700">
+                                <p className="line-clamp-3">
+                                  {agent.pinnedReview.comment.length > 150 
+                                    ? `${agent.pinnedReview.comment.substring(0, 150)}...` 
+                                    : agent.pinnedReview.comment
+                                  }
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
                         

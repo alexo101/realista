@@ -479,7 +479,31 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Return agent with review statistics and agency information
+    // Get pinned review for this agent
+    let pinnedReview = null;
+    const [pinnedReviewData] = await db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        author: reviews.author,
+        date: reviews.date
+      })
+      .from(reviews)
+      .where(
+        and(
+          eq(reviews.targetId, id),
+          eq(reviews.targetType, 'agent'),
+          eq(reviews.pinned, true)
+        )
+      )
+      .limit(1);
+
+    if (pinnedReviewData) {
+      pinnedReview = pinnedReviewData;
+    }
+
+    // Return agent with review statistics, agency information, and pinned review
     return {
       ...agent,
       isAgent: true,
@@ -488,6 +512,7 @@ export class DatabaseStorage implements IStorage {
       reviewAverage: Number(reviewAverage),
       agencyName: agencyName,
       agencyId: agencyId,
+      pinnedReview: pinnedReview,
     } as any;
   }
 
