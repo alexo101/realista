@@ -330,7 +330,43 @@ export default function NeighborhoodResultsPage() {
               <>
                 <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
                 {isDistrictPage ? (
-                  <span className="font-medium">{decodedNeighborhood}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
+                        {decodedNeighborhood}
+                      </span>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
+                      {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS
+                        .find(d => d.district === decodedNeighborhood)
+                        ?.neighborhoods.map(neighborhoodOption => (
+                          <DropdownMenuItem
+                            key={neighborhoodOption}
+                            onClick={() => {
+                              // Special case for "Sant Andreu" neighborhood within "Sant Andreu" district
+                              if (decodedNeighborhood === "Sant Andreu" && neighborhoodOption === "Sant Andreu") {
+                                window.location.href = `/neighborhood/Sant Andreu del Palomar/properties`;
+                              } else {
+                                window.location.href = `/neighborhood/${encodeURIComponent(neighborhoodOption)}/properties`;
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            {neighborhoodOption === "Sant Andreu" && decodedNeighborhood === "Sant Andreu" 
+                              ? "Sant Andreu del Palomar" 
+                              : neighborhoodOption}
+                          </DropdownMenuItem>
+                        ))
+                      }
+                      {/* Add option to view district overview */}
+                      <DropdownMenuItem
+                        onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(decodedNeighborhood || '')}/properties`}
+                        className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                      >
+                        Ver todo {decodedNeighborhood}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 ) : (
                   <>
                     <DropdownMenu>
