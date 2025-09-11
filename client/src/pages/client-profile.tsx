@@ -1,11 +1,18 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLocation, Redirect } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +61,8 @@ export default function ClientProfile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState("agents");
+  const [section, setSection] = useState("profile");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Redirect if not logged in or not a client
   useEffect(() => {
@@ -62,8 +70,6 @@ export default function ClientProfile() {
       navigate("/login");
     }
   }, [user, navigate]);
-
-
 
   // Query para obtener agentes favoritos
   const { data: favoriteAgents = [] } = useQuery<FavoriteAgent[]>({
@@ -106,44 +112,73 @@ export default function ClientProfile() {
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="mb-4">
-            <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+  const renderMainContent = () => {
+    switch (section) {
+      case "profile":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Perfil</h1>
+              <p className="text-gray-600">Gestiona tu información personal y preferencias</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-blue-500" />
+                  Información Personal
+                </CardTitle>
+                <CardDescription>
+                  Tu información básica de cliente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback className="text-lg">
+                      {user.name?.[0] || user.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="text-xl font-semibold">{user.name || "Cliente"}</h3>
+                    <p className="text-gray-600 flex items-center gap-1">
+                      <Mail className="h-4 w-4" />
+                      {user.email}
+                    </p>
+                    {user.phone && (
+                      <p className="text-gray-600 flex items-center gap-1">
+                        <Phone className="h-4 w-4" />
+                        {user.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-gray-500 mb-2">Miembro desde:</p>
+                  <p className="font-medium">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Fecha no disponible"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        );
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="agents" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Agentes favoritos
-            </TabsTrigger>
-            <TabsTrigger value="properties" className="flex items-center gap-2">
-              <Home className="h-4 w-4" />
-              Propiedades favoritas
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4" />
-              Mensajes
-            </TabsTrigger>
-          </TabsList>
+      case "agents":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agentes Favoritos</h1>
+              <p className="text-gray-600">Agentes inmobiliarios que has marcado como favoritos</p>
+            </div>
 
-          {/* Agentes favoritos */}
-          <TabsContent value="agents" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Heart className="h-5 w-5 text-red-500" />
-                  Agentes favoritos
+                  Agentes favoritos ({favoriteAgents.length})
                 </CardTitle>
-                <CardDescription>
-                  Agentes inmobiliarios que has marcado como favoritos
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {favoriteAgents.length === 0 ? (
@@ -205,19 +240,23 @@ export default function ClientProfile() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        );
 
-          {/* Propiedades favoritas */}
-          <TabsContent value="properties" className="space-y-4">
+      case "properties":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Propiedades Favoritas</h1>
+              <p className="text-gray-600">Propiedades que has guardado para revisar más tarde</p>
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Home className="h-5 w-5 text-blue-500" />
-                  Propiedades favoritas
+                  Propiedades favoritas ({favoriteProperties.length})
                 </CardTitle>
-                <CardDescription>
-                  Propiedades que has guardado para revisar más tarde
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {favoriteProperties.length === 0 ? (
@@ -292,19 +331,23 @@ export default function ClientProfile() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        );
 
-          {/* Mensajes */}
-          <TabsContent value="messages" className="space-y-4">
+      case "messages":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mensajes</h1>
+              <p className="text-gray-600">Conversaciones con agentes inmobiliarios</p>
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5 text-green-500" />
-                  Mensajes
+                  Mensajes ({messages.length})
                 </CardTitle>
-                <CardDescription>
-                  Conversaciones con agentes inmobiliarios
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 {messages.length === 0 ? (
@@ -363,9 +406,93 @@ export default function ClientProfile() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <SidebarProvider>
+        <Sidebar className={`border-r hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'} pt-16`}>
+          <SidebarContent className="pt-4">
+            <SidebarMenu>
+              {/* Profile Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setSection("profile")}
+                  isActive={section === "profile"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-profile"
+                >
+                  <User className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Mi Perfil</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Agents Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setSection("agents")}
+                  isActive={section === "agents"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-agents"
+                >
+                  <Heart className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Agentes favoritos</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Properties Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setSection("properties")}
+                  isActive={section === "properties"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-properties"
+                >
+                  <Home className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Propiedades favoritas</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Messages Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setSection("messages")}
+                  isActive={section === "messages"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-messages"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Mensajes</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+
+        {/* Main content area */}
+        <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} pt-16`}>
+          {/* Sidebar Toggle Button - Positioned at the border */}
+          <Button
+            variant="outline"
+            size="sm"
+            className={`fixed top-20 z-20 transition-all duration-300 ${sidebarCollapsed ? 'left-4' : 'left-60'} hidden md:flex`}
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            data-testid="sidebar-toggle"
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+
+          <div className="container mx-auto px-4 py-8">
+            {renderMainContent()}
+          </div>
+        </div>
+      </SidebarProvider>
     </div>
   );
 }
