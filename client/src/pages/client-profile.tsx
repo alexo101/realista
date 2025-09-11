@@ -356,12 +356,9 @@ export default function ClientProfile() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No tienes mensajes
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-gray-500">
                       Los mensajes de los agentes aparecerán aquí cuando te contacten
                     </p>
-                    <Button onClick={() => navigate("/search/agents")}>
-                      Contactar agentes
-                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
