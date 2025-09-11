@@ -475,23 +475,25 @@ export default function ClientProfile() {
           </SidebarContent>
         </Sidebar>
 
-        {/* Main content area */}
-        <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'} pt-16`}>
-          {/* Sidebar Toggle Button - Positioned at the border */}
+        {/* Sidebar Toggle Button - Positioned at the border like manage page */}
+        <div className={`fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ${sidebarCollapsed ? 'left-14' : 'left-60'}`}>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className={`fixed top-20 z-20 transition-all duration-300 ${sidebarCollapsed ? 'left-4' : 'left-60'} hidden md:flex`}
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="h-8 w-8 p-0 bg-white shadow-md border rounded-full"
             data-testid="sidebar-toggle"
           >
             {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
+        </div>
 
-          <div className="container mx-auto px-4 py-8">
+        {/* Main content area */}
+        <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
+          <div className="max-w-6xl mx-auto">
             {renderMainContent()}
           </div>
-        </div>
+        </main>
       </SidebarProvider>
     </div>
   );
