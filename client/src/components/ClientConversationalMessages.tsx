@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, MessageCircle, Home } from "lucide-react";
+import { Search, Send, MessageCircle, Home, Pin, PinOff } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +43,8 @@ export function ClientConversationalMessages() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [pinnedConversations, setPinnedConversations] = useState<number[]>([]);
+  const [pinningConversation, setPinningConversation] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -54,10 +56,11 @@ export function ClientConversationalMessages() {
     scrollToBottom();
   }, [selectedConversation?.messages]);
 
-  // Load conversations
+  // Load conversations and pinned conversations
   useEffect(() => {
     if (user?.email && user?.isClient) {
       fetchConversations();
+      fetchPinnedConversations();
     }
   }, [user?.email, user?.isClient]);
 
@@ -81,6 +84,98 @@ export function ClientConversationalMessages() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch pinned conversations
+  const fetchPinnedConversations = async () => {
+    try {
+      const response = await fetch(`/api/conversations/pinned?userType=client&userId=0&userEmail=${encodeURIComponent(user!.email)}`);
+      if (response.ok) {
+        const pinnedIds = await response.json();
+        setPinnedConversations(pinnedIds);
+      }
+    } catch (error) {
+      console.error("Error loading pinned conversations:", error);
+    }
+  };
+
+  // Pin a conversation
+  const pinConversation = async (inquiryId: number) => {
+    try {
+      setPinningConversation(inquiryId);
+      const response = await fetch(`/api/conversations/${inquiryId}/pin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userType: 'client',
+          userId: 0,
+          userEmail: user!.email
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al fijar conversación');
+      }
+
+      // Update local state
+      setPinnedConversations(prev => [...prev, inquiryId]);
+      
+      toast({
+        title: "Éxito",
+        description: "Conversación fijada correctamente",
+      });
+    } catch (error) {
+      console.error("Error pinning conversation:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo fijar la conversación",
+        variant: "destructive",
+      });
+    } finally {
+      setPinningConversation(null);
+    }
+  };
+
+  // Unpin a conversation
+  const unpinConversation = async (inquiryId: number) => {
+    try {
+      setPinningConversation(inquiryId);
+      const response = await fetch(`/api/conversations/${inquiryId}/pin`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userType: 'client',
+          userId: 0,
+          userEmail: user!.email
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al desfijar conversación');
+      }
+
+      // Update local state
+      setPinnedConversations(prev => prev.filter(id => id !== inquiryId));
+      
+      toast({
+        title: "Éxito",
+        description: "Conversación desfijada correctamente",
+      });
+    } catch (error) {
+      console.error("Error unpinning conversation:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo desfijar la conversación",
+        variant: "destructive",
+      });
+    } finally {
+      setPinningConversation(null);
     }
   };
 
@@ -154,12 +249,24 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Filter conversations
-  const filteredConversations = conversations.filter(
-    (conversation) =>
-      conversation.agentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      conversation.propertyAddress.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter conversations and sort by pinned status
+  const filteredConversations = conversations
+    .filter(
+      (conversation) =>
+        conversation.agentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        conversation.propertyAddress.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      // Sort pinned conversations first
+      const aIsPinned = pinnedConversations.includes(a.id);
+      const bIsPinned = pinnedConversations.includes(b.id);
+      
+      if (aIsPinned && !bIsPinned) return -1;
+      if (!aIsPinned && bIsPinned) return 1;
+      
+      // For conversations with same pin status, sort by last message time (most recent first)
+      return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
+    });
 
   // Format time
   const formatTime = (dateString: string) => {
@@ -280,20 +387,46 @@ export function ClientConversationalMessages() {
               <>
                 {/* Chat Header */}
                 <div className="p-4 border-b bg-white">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={selectedConversation.agentAvatar} />
-                      <AvatarFallback className="bg-green-500 text-white">
-                        {getInitials(selectedConversation.agentName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium">{selectedConversation.agentName}</h3>
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Home className="h-3 w-3" />
-                        <span>{selectedConversation.propertyAddress}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={selectedConversation.agentAvatar} />
+                        <AvatarFallback className="bg-green-500 text-white">
+                          {getInitials(selectedConversation.agentName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-medium">{selectedConversation.agentName}</h3>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Home className="h-3 w-3" />
+                          <span>{selectedConversation.propertyAddress}</span>
+                        </div>
                       </div>
                     </div>
+                    
+                    {/* Pin Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const isPinned = pinnedConversations.includes(selectedConversation.id);
+                        if (isPinned) {
+                          unpinConversation(selectedConversation.id);
+                        } else {
+                          pinConversation(selectedConversation.id);
+                        }
+                      }}
+                      disabled={pinningConversation === selectedConversation.id}
+                      data-testid={`button-pin-conversation-${selectedConversation.id}`}
+                      className="h-8 w-8 p-0 hover:bg-gray-100"
+                    >
+                      {pinnedConversations.includes(selectedConversation.id) ? (
+                        <Pin className="h-4 w-4 text-green-500 fill-green-500" />
+                      ) : (
+                        <Pin className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
                   </div>
                 </div>
 
