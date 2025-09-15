@@ -2225,6 +2225,82 @@ Gracias!
     }
   });
 
+  // Pin a conversation
+  app.post("/api/conversations/:inquiryId/pin", async (req, res) => {
+    try {
+      const inquiryId = parseInt(req.params.inquiryId);
+      const { userType, userId, userEmail } = req.body;
+
+      const pinnedConversation = await storage.pinConversation(
+        userType,
+        userId,
+        userEmail,
+        inquiryId
+      );
+
+      res.json(pinnedConversation);
+    } catch (error) {
+      console.error("Error pinning conversation:", error);
+      if (error.message === "Cannot pin more than 3 conversations") {
+        res.status(400).json({ error: "No puedes fijar más de 3 conversaciones" });
+      } else {
+        res.status(500).json({ error: "Error al fijar conversación" });
+      }
+    }
+  });
+
+  // Unpin a conversation
+  app.delete("/api/conversations/:inquiryId/pin", async (req, res) => {
+    try {
+      const inquiryId = parseInt(req.params.inquiryId);
+      const { userType, userId, userEmail } = req.body;
+
+      await storage.unpinConversation(userType, userId, userEmail, inquiryId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error unpinning conversation:", error);
+      res.status(500).json({ error: "Error al desfijar conversación" });
+    }
+  });
+
+  // Get pinned conversations for a user
+  app.get("/api/conversations/pinned", async (req, res) => {
+    try {
+      const { userType, userId, userEmail } = req.query;
+
+      const pinnedInquiryIds = await storage.getPinnedConversations(
+        userType as string,
+        parseInt(userId as string),
+        userEmail as string | null
+      );
+
+      res.json(pinnedInquiryIds);
+    } catch (error) {
+      console.error("Error getting pinned conversations:", error);
+      res.status(500).json({ error: "Error al obtener conversaciones fijadas" });
+    }
+  });
+
+  // Check if a conversation is pinned
+  app.get("/api/conversations/:inquiryId/pin-status", async (req, res) => {
+    try {
+      const inquiryId = parseInt(req.params.inquiryId);
+      const { userType, userId, userEmail } = req.query;
+
+      const isPinned = await storage.isConversationPinned(
+        userType as string,
+        parseInt(userId as string),
+        userEmail as string | null,
+        inquiryId
+      );
+
+      res.json({ isPinned });
+    } catch (error) {
+      console.error("Error checking pin status:", error);
+      res.status(500).json({ error: "Error al verificar estado de fijado" });
+    }
+  });
+
   // AI Description Generation
   app.post("/api/generate-description", async (req, res) => {
     try {

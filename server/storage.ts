@@ -25,6 +25,7 @@ import {
   inquiries,
   reviews,
   conversationMessages,
+  pinnedConversations,
   type User,
   type UserWithReviews,
   type Agent,
@@ -37,6 +38,7 @@ import {
   type Inquiry,
   type Review,
   type ConversationMessage,
+  type PinnedConversation,
   type InsertAgent,
   type InsertAgency,
   type InsertProperty,
@@ -47,6 +49,7 @@ import {
   type InsertInquiry,
   type InsertReview,
   type InsertConversationMessage,
+  type InsertPinnedConversation,
   clientFavoriteAgents,
   clientFavoriteProperties,
   propertyVisitRequests,
@@ -144,6 +147,12 @@ export interface IStorage {
   // Conversation Messages
   createConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
   getConversationMessages(inquiryId: number): Promise<ConversationMessage[]>;
+
+  // Pinned Conversations
+  pinConversation(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<PinnedConversation>;
+  unpinConversation(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<void>;
+  getPinnedConversations(userType: string, userId: number, userEmail: string | null): Promise<number[]>;
+  isConversationPinned(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<boolean>;
 
   // Client favorite agents
   getFavoriteAgentsByClient(clientId: number): Promise<User[]>;
@@ -1572,6 +1581,93 @@ export class DatabaseStorage implements IStorage {
       .from(conversationMessages)
       .where(eq(conversationMessages.inquiryId, inquiryId))
       .orderBy(conversationMessages.createdAt);
+  }
+
+  // Pinned Conversations methods
+  async pinConversation(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<PinnedConversation> {
+    // First check if user already has 3 pinned conversations
+    const existingPinned = await db
+      .select()
+      .from(pinnedConversations)
+      .where(
+        and(
+          eq(pinnedConversations.userType, userType),
+          userType === "agent" 
+            ? eq(pinnedConversations.userId, userId)
+            : eq(pinnedConversations.userEmail, userEmail!)
+        )
+      );
+
+    if (existingPinned.length >= 3) {
+      throw new Error("Cannot pin more than 3 conversations");
+    }
+
+    // Check if already pinned
+    const alreadyPinned = existingPinned.find(p => p.inquiryId === inquiryId);
+    if (alreadyPinned) {
+      return alreadyPinned;
+    }
+
+    const [pinnedConversation] = await db
+      .insert(pinnedConversations)
+      .values({
+        userType,
+        userId,
+        userEmail,
+        inquiryId
+      })
+      .returning();
+
+    return pinnedConversation;
+  }
+
+  async unpinConversation(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<void> {
+    await db
+      .delete(pinnedConversations)
+      .where(
+        and(
+          eq(pinnedConversations.userType, userType),
+          userType === "agent" 
+            ? eq(pinnedConversations.userId, userId)
+            : eq(pinnedConversations.userEmail, userEmail!),
+          eq(pinnedConversations.inquiryId, inquiryId)
+        )
+      );
+  }
+
+  async getPinnedConversations(userType: string, userId: number, userEmail: string | null): Promise<number[]> {
+    const pinnedList = await db
+      .select({ inquiryId: pinnedConversations.inquiryId })
+      .from(pinnedConversations)
+      .where(
+        and(
+          eq(pinnedConversations.userType, userType),
+          userType === "agent" 
+            ? eq(pinnedConversations.userId, userId)
+            : eq(pinnedConversations.userEmail, userEmail!)
+        )
+      )
+      .orderBy(desc(pinnedConversations.createdAt));
+
+    return pinnedList.map(p => p.inquiryId);
+  }
+
+  async isConversationPinned(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<boolean> {
+    const pinned = await db
+      .select()
+      .from(pinnedConversations)
+      .where(
+        and(
+          eq(pinnedConversations.userType, userType),
+          userType === "agent" 
+            ? eq(pinnedConversations.userId, userId)
+            : eq(pinnedConversations.userEmail, userEmail!),
+          eq(pinnedConversations.inquiryId, inquiryId)
+        )
+      )
+      .limit(1);
+
+    return pinned.length > 0;
   }
 
   async getFavoriteAgentsByClient(clientId: number): Promise<User[]> {
