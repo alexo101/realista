@@ -16,6 +16,7 @@ import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar, 
 import { useUser } from "@/contexts/user-context";
 import { useLocation, Redirect } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { ClientConversationalMessages } from "@/components/ClientConversationalMessages";
 
 interface FavoriteAgent {
   id: number;
@@ -41,20 +42,6 @@ interface FavoriteProperty {
   operationType: string;
 }
 
-interface Message {
-  id: number;
-  fromAgent: {
-    id: number;
-    name: string;
-    surname: string;
-    avatar?: string;
-  };
-  subject: string;
-  content: string;
-  createdAt: string;
-  isRead: boolean;
-  propertyAddress?: string;
-}
 
 export default function ClientProfile() {
   const { user } = useUser();
@@ -106,38 +93,6 @@ export default function ClientProfile() {
     gcTime: 300000, // Keep in cache for 5 minutes
   });
 
-  // Query para obtener mensajes del cliente
-  const { data: messages = [] } = useQuery<Message[]>({
-    queryKey: [`/api/conversations/client/${user?.email}`],
-    queryFn: async () => {
-      if (!user || !user.isClient) return [];
-
-      const response = await fetch(`/api/conversations/client/${encodeURIComponent(user.email)}`);
-      if (!response.ok) {
-        return [];
-      }
-      const conversations = await response.json();
-      
-      // Transform conversations into messages format for display
-      return conversations.map((conv: any) => ({
-        id: conv.id,
-        fromAgent: {
-          id: conv.agentId,
-          name: conv.agentName.split(' ')[0] || 'Agente',
-          surname: conv.agentName.split(' ')[1] || '',
-          avatar: conv.agentAvatar,
-        },
-        subject: `Consulta sobre ${conv.propertyTitle}`,
-        content: conv.lastMessage,
-        createdAt: conv.lastMessageTime,
-        isRead: conv.status !== 'pendiente',
-        propertyAddress: conv.propertyAddress,
-      }));
-    },
-    enabled: !!user?.isClient && section === 'messages',
-    staleTime: 30000, // Cache for 30 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
-  });
 
   if (!user || !user.isClient) {
     return null;
@@ -373,73 +328,7 @@ export default function ClientProfile() {
               <p className="text-gray-600">Conversaciones con agentes inmobiliarios</p>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-green-500" />
-                  Mensajes ({messages.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {messages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes mensajes
-                    </h3>
-                    <p className="text-gray-500">
-                      Los mensajes de los agentes aparecerán aquí cuando te contacten
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {messages.map((message) => (
-                      <Card key={message.id} className={`${!message.isRead ? 'border-primary' : ''}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={message.fromAgent.avatar} />
-                              <AvatarFallback>
-                                {message.fromAgent.name?.[0]}{message.fromAgent.surname?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-semibold text-gray-900">
-                                  {message.fromAgent.name} {message.fromAgent.surname}
-                                </h3>
-                                <span className="text-sm text-gray-500 flex items-center gap-1">
-                                  <Calendar className="h-4 w-4" />
-                                  {new Date(message.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <h4 className="font-medium text-gray-800 mb-2">
-                                {message.subject}
-                              </h4>
-                              {message.propertyAddress && (
-                                <p className="text-sm text-gray-500 mb-2 flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {message.propertyAddress}
-                                </p>
-                              )}
-                              <p className="text-gray-600 line-clamp-3">
-                                {message.content}
-                              </p>
-                              {!message.isRead && (
-                                <Badge className="mt-2">Nuevo</Badge>
-                              )}
-                              <Button size="sm" className="mt-3">
-                                Responder
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ClientConversationalMessages />
           </div>
         );
 

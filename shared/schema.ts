@@ -150,6 +150,16 @@ export const inquiries = pgTable("inquiries", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const conversationMessages = pgTable("conversation_messages", {
+  id: serial("id").primaryKey(),
+  inquiryId: integer("inquiry_id").notNull(), // References the original inquiry/conversation
+  senderType: text("sender_type").notNull(), // "client" or "agent"
+  senderId: integer("sender_id").notNull(), // Client ID or Agent ID based on sender type
+  senderName: text("sender_name").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Esquemas de inserción
 export const insertAgentSchema = createInsertSchema(agents).omit({
   id: true,
@@ -189,6 +199,10 @@ export const insertInquirySchema = createInsertSchema(inquiries).omit({
   id: true,
   createdAt: true,
 });
+export const insertConversationMessageSchema = createInsertSchema(conversationMessages).omit({
+  id: true,
+  createdAt: true,
+});
 
 // Tipos de selección
 export type Agent = typeof agents.$inferSelect;
@@ -199,6 +213,7 @@ export type NeighborhoodRating = typeof neighborhoodRatings.$inferSelect;
 export type AgencyAgent = typeof agencyAgents.$inferSelect;
 export type Appointment = typeof appointments.$inferSelect;
 export type Inquiry = typeof inquiries.$inferSelect;
+export type ConversationMessage = typeof conversationMessages.$inferSelect;
 
 // Tipos de inserción
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
@@ -211,6 +226,7 @@ export type InsertNeighborhoodRating = z.infer<
 export type InsertAgencyAgent = z.infer<typeof insertAgencyAgentSchema>;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+export type InsertConversationMessage = z.infer<typeof insertConversationMessageSchema>;
 
 // Mantener compatibilidad con código antiguo
 export type User = Agent;

@@ -2026,31 +2026,55 @@ Gracias!
       // Get inquiries and transform them into conversations
       const inquiries = await storage.getInquiriesByAgent(agentId);
       
-      // Transform inquiries into conversations format
-      const conversations = inquiries.map(inquiry => ({
-        id: inquiry.id,
-        clientId: inquiry.id, // Using inquiry ID as client reference
-        clientName: inquiry.name,
-        clientEmail: inquiry.email,
-        clientPhone: inquiry.phone,
-        propertyId: inquiry.propertyId,
-        propertyTitle: inquiry.property?.title || "Sin título",
-        propertyAddress: inquiry.property?.address || "Dirección no disponible",
-        lastMessage: inquiry.message,
-        lastMessageTime: inquiry.createdAt,
-        unreadCount: inquiry.status === 'pendiente' ? 1 : 0,
-        status: inquiry.status === 'finalizado' ? 'closed' : 'active',
-        messages: [
-          {
+      // Transform inquiries into conversations format with actual message history
+      const conversations = await Promise.all(inquiries.map(async inquiry => {
+        // Get the full message history for this conversation
+        const messageHistory = await storage.getConversationMessages(inquiry.id);
+        
+        let messages = [];
+        
+        if (messageHistory.length > 0) {
+          // Use the persisted message history
+          messages = messageHistory.map(msg => ({
+            id: msg.id,
+            senderId: msg.senderId,
+            senderName: msg.senderName,
+            senderType: msg.senderType,
+            content: msg.content,
+            timestamp: msg.createdAt,
+            isRead: true
+          }));
+        } else {
+          // If no persisted messages, create the initial message from the inquiry
+          messages = [{
             id: 1,
             senderId: inquiry.id,
             senderName: inquiry.name,
             senderType: 'client',
-            content: `Hola, estoy interesado en la propiedad en ${inquiry.property?.address || 'esta dirección'}. ${inquiry.message}`,
+            content: inquiry.message || `Consulta sobre la propiedad en ${inquiry.property?.address || 'esta dirección'}.`,
             timestamp: inquiry.createdAt,
             isRead: true
-          }
-        ]
+          }];
+        }
+
+        // Get the last message for display
+        const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+        
+        return {
+          id: inquiry.id,
+          clientId: inquiry.id, // Using inquiry ID as client reference
+          clientName: inquiry.name,
+          clientEmail: inquiry.email,
+          clientPhone: inquiry.phone,
+          propertyId: inquiry.propertyId,
+          propertyTitle: inquiry.property?.title || "Sin título",
+          propertyAddress: inquiry.property?.address || "Dirección no disponible",
+          lastMessage: lastMessage ? lastMessage.content : inquiry.message,
+          lastMessageTime: lastMessage ? lastMessage.timestamp : inquiry.createdAt,
+          unreadCount: inquiry.status === 'pendiente' ? 1 : 0,
+          status: inquiry.status === 'finalizado' ? 'closed' : 'active',
+          messages: messages
+        };
       }));
       
       res.json(conversations);
@@ -2067,31 +2091,55 @@ Gracias!
       // Get inquiries sent by this client and transform them into conversations
       const inquiries = await storage.getInquiriesByClient(clientEmail);
       
-      // Transform inquiries into conversations format from client perspective
-      const conversations = inquiries.map(inquiry => ({
-        id: inquiry.id,
-        agentId: inquiry.agentId,
-        agentName: inquiry.agent?.name && inquiry.agent?.surname 
-          ? `${inquiry.agent.name} ${inquiry.agent.surname}` 
-          : "Agente",
-        agentAvatar: inquiry.agent?.avatar,
-        propertyId: inquiry.propertyId,
-        propertyTitle: inquiry.property?.title || "Sin título",
-        propertyAddress: inquiry.property?.address || "Dirección no disponible",
-        lastMessage: inquiry.message,
-        lastMessageTime: inquiry.createdAt,
-        status: inquiry.status,
-        messages: [
-          {
+      // Transform inquiries into conversations format from client perspective with actual message history
+      const conversations = await Promise.all(inquiries.map(async inquiry => {
+        // Get the full message history for this conversation
+        const messageHistory = await storage.getConversationMessages(inquiry.id);
+        
+        let messages = [];
+        
+        if (messageHistory.length > 0) {
+          // Use the persisted message history
+          messages = messageHistory.map(msg => ({
+            id: msg.id,
+            senderId: msg.senderId,
+            senderName: msg.senderName,
+            senderType: msg.senderType,
+            content: msg.content,
+            timestamp: msg.createdAt,
+            isRead: true
+          }));
+        } else {
+          // If no persisted messages, create the initial message from the inquiry
+          messages = [{
             id: 1,
             senderId: inquiry.id,
             senderName: inquiry.name,
             senderType: 'client',
-            content: `Hola, estoy interesado en la propiedad en ${inquiry.property?.address || 'esta dirección'}. ${inquiry.message}`,
+            content: inquiry.message || `Consulta sobre la propiedad en ${inquiry.property?.address || 'esta dirección'}.`,
             timestamp: inquiry.createdAt,
             isRead: true
-          }
-        ]
+          }];
+        }
+
+        // Get the last message for display
+        const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+        
+        return {
+          id: inquiry.id,
+          agentId: inquiry.agentId,
+          agentName: inquiry.agent?.name && inquiry.agent?.surname 
+            ? `${inquiry.agent.name} ${inquiry.agent.surname}` 
+            : "Agente",
+          agentAvatar: inquiry.agent?.avatar,
+          propertyId: inquiry.propertyId,
+          propertyTitle: inquiry.property?.title || "Sin título",
+          propertyAddress: inquiry.property?.address || "Dirección no disponible",
+          lastMessage: lastMessage ? lastMessage.content : inquiry.message,
+          lastMessageTime: lastMessage ? lastMessage.timestamp : inquiry.createdAt,
+          status: inquiry.status,
+          messages: messages
+        };
       }));
       
       res.json(conversations);
@@ -2106,17 +2154,35 @@ Gracias!
       const conversationId = parseInt(req.params.conversationId);
       const { content, senderType } = req.body;
       
-      // For now, we'll create a simple message response
-      // In a real implementation, you'd save this to a messages table
-      const newMessage = {
-        id: Date.now(), // Simple ID generation
-        senderId: senderType === 'agent' ? conversationId : conversationId,
-        senderName: senderType === 'agent' ? 'Agente' : 'Cliente',
-        senderType: senderType,
-        content: content,
-        timestamp: new Date().toISOString(),
-        isRead: false
+      // Get the inquiry to extract sender information
+      const inquiry = await storage.getInquiryById(conversationId);
+      if (!inquiry) {
+        return res.status(404).json({ message: "Conversación no encontrada" });
+      }
+      
+      let senderId: number;
+      let senderName: string;
+      
+      if (senderType === 'agent') {
+        senderId = inquiry.agentId;
+        const agent = await storage.getAgentById(inquiry.agentId);
+        senderName = agent ? `${agent.name} ${agent.surname}`.trim() : 'Agente';
+      } else {
+        // For client messages, we'll use the inquiry ID as a temporary client ID
+        senderId = conversationId;
+        senderName = inquiry.name;
+      }
+      
+      // Save the message to the database
+      const messageData = {
+        inquiryId: conversationId,
+        senderType,
+        senderId,
+        senderName,
+        content,
       };
+      
+      const savedMessage = await storage.createConversationMessage(messageData);
       
       // Update inquiry status to 'contactado' when agent sends first message
       if (senderType === 'agent') {
@@ -2127,7 +2193,18 @@ Gracias!
         }
       }
       
-      res.json(newMessage);
+      // Return the message in the expected format
+      const responseMessage = {
+        id: savedMessage.id,
+        senderId: savedMessage.senderId,
+        senderName: savedMessage.senderName,
+        senderType: savedMessage.senderType,
+        content: savedMessage.content,
+        timestamp: savedMessage.createdAt,
+        isRead: false
+      };
+      
+      res.json(responseMessage);
     } catch (error) {
       console.error('Error sending message:', error);
       res.status(500).json({ message: "Error al enviar mensaje" });

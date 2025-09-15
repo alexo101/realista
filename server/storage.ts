@@ -24,6 +24,7 @@ import {
   appointments,
   inquiries,
   reviews,
+  conversationMessages,
   type User,
   type UserWithReviews,
   type Agent,
@@ -35,6 +36,7 @@ import {
   type Appointment,
   type Inquiry,
   type Review,
+  type ConversationMessage,
   type InsertAgent,
   type InsertAgency,
   type InsertProperty,
@@ -44,6 +46,7 @@ import {
   type InsertAppointment,
   type InsertInquiry,
   type InsertReview,
+  type InsertConversationMessage,
   clientFavoriteAgents,
   clientFavoriteProperties,
   propertyVisitRequests,
@@ -133,9 +136,14 @@ export interface IStorage {
 
   // Inquiries (Consultas de propiedad)
   getInquiriesByAgent(agentId: number): Promise<Inquiry[]>;
+  getInquiriesByClient(clientEmail: string): Promise<Inquiry[]>;
   getInquiryById(id: number): Promise<Inquiry | undefined>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   updateInquiryStatus(id: number, status: string): Promise<Inquiry>;
+
+  // Conversation Messages
+  createConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
+  getConversationMessages(inquiryId: number): Promise<ConversationMessage[]>;
 
   // Client favorite agents
   getFavoriteAgentsByClient(clientId: number): Promise<User[]>;
@@ -1547,6 +1555,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(inquiries.id, id))
       .returning();
     return updatedInquiry;
+  }
+
+  // Conversation Messages
+  async createConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage> {
+    const [newMessage] = await db
+      .insert(conversationMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
+
+  async getConversationMessages(inquiryId: number): Promise<ConversationMessage[]> {
+    return await db
+      .select()
+      .from(conversationMessages)
+      .where(eq(conversationMessages.inquiryId, inquiryId))
+      .orderBy(conversationMessages.createdAt);
   }
 
   async getFavoriteAgentsByClient(clientId: number): Promise<User[]> {
