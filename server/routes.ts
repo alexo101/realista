@@ -2060,6 +2060,47 @@ Gracias!
     }
   });
 
+  app.get("/api/conversations/client/:clientEmail", async (req, res) => {
+    try {
+      const clientEmail = req.params.clientEmail;
+      
+      // Get inquiries sent by this client and transform them into conversations
+      const inquiries = await storage.getInquiriesByClient(clientEmail);
+      
+      // Transform inquiries into conversations format from client perspective
+      const conversations = inquiries.map(inquiry => ({
+        id: inquiry.id,
+        agentId: inquiry.agentId,
+        agentName: inquiry.agent?.name && inquiry.agent?.surname 
+          ? `${inquiry.agent.name} ${inquiry.agent.surname}` 
+          : "Agente",
+        agentAvatar: inquiry.agent?.avatar,
+        propertyId: inquiry.propertyId,
+        propertyTitle: inquiry.property?.title || "Sin título",
+        propertyAddress: inquiry.property?.address || "Dirección no disponible",
+        lastMessage: inquiry.message,
+        lastMessageTime: inquiry.createdAt,
+        status: inquiry.status,
+        messages: [
+          {
+            id: 1,
+            senderId: inquiry.id,
+            senderName: inquiry.name,
+            senderType: 'client',
+            content: `Hola, estoy interesado en la propiedad en ${inquiry.property?.address || 'esta dirección'}. ${inquiry.message}`,
+            timestamp: inquiry.createdAt,
+            isRead: true
+          }
+        ]
+      }));
+      
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching client conversations:', error);
+      res.status(500).json({ message: "Error al cargar conversaciones del cliente" });
+    }
+  });
+
   app.post("/api/conversations/:conversationId/messages", async (req, res) => {
     try {
       const conversationId = parseInt(req.params.conversationId);

@@ -53,6 +53,7 @@ interface Message {
   content: string;
   createdAt: string;
   isRead: boolean;
+  propertyAddress?: string;
 }
 
 export default function ClientProfile() {
@@ -105,8 +106,38 @@ export default function ClientProfile() {
     gcTime: 300000, // Keep in cache for 5 minutes
   });
 
-  // Mock data for messages - replace with actual API calls when messages feature is implemented
-  const messages: Message[] = [];
+  // Query para obtener mensajes del cliente
+  const { data: messages = [] } = useQuery<Message[]>({
+    queryKey: [`/api/conversations/client/${user?.email}`],
+    queryFn: async () => {
+      if (!user || !user.isClient) return [];
+
+      const response = await fetch(`/api/conversations/client/${encodeURIComponent(user.email)}`);
+      if (!response.ok) {
+        return [];
+      }
+      const conversations = await response.json();
+      
+      // Transform conversations into messages format for display
+      return conversations.map((conv: any) => ({
+        id: conv.id,
+        fromAgent: {
+          id: conv.agentId,
+          name: conv.agentName.split(' ')[0] || 'Agente',
+          surname: conv.agentName.split(' ')[1] || '',
+          avatar: conv.agentAvatar,
+        },
+        subject: `Consulta sobre ${conv.propertyTitle}`,
+        content: conv.lastMessage,
+        createdAt: conv.lastMessageTime,
+        isRead: conv.status !== 'pendiente',
+        propertyAddress: conv.propertyAddress,
+      }));
+    },
+    enabled: !!user?.isClient && section === 'messages',
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
+  });
 
   if (!user || !user.isClient) {
     return null;
@@ -385,6 +416,12 @@ export default function ClientProfile() {
                               <h4 className="font-medium text-gray-800 mb-2">
                                 {message.subject}
                               </h4>
+                              {message.propertyAddress && (
+                                <p className="text-sm text-gray-500 mb-2 flex items-center gap-1">
+                                  <MapPin className="h-4 w-4" />
+                                  {message.propertyAddress}
+                                </p>
+                              )}
                               <p className="text-gray-600 line-clamp-3">
                                 {message.content}
                               </p>

@@ -1494,6 +1494,39 @@ export class DatabaseStorage implements IStorage {
     return results as Inquiry[];
   }
 
+  async getInquiriesByClient(clientEmail: string): Promise<Inquiry[]> {
+    const results = await db
+      .select({
+        id: inquiries.id,
+        name: inquiries.name,
+        email: inquiries.email,
+        phone: inquiries.phone,
+        message: inquiries.message,
+        propertyId: inquiries.propertyId,
+        agentId: inquiries.agentId,
+        status: inquiries.status,
+        createdAt: inquiries.createdAt,
+        property: {
+          title: properties.title,
+          address: properties.address,
+          reference: properties.reference,
+        },
+        agent: {
+          id: users.id,
+          name: users.name,
+          surname: users.surname,
+          avatar: users.avatar,
+        },
+      })
+      .from(inquiries)
+      .leftJoin(properties, eq(inquiries.propertyId, properties.id))
+      .leftJoin(users, eq(inquiries.agentId, users.id))
+      .where(eq(inquiries.email, clientEmail))
+      .orderBy(sql`${inquiries.createdAt} DESC`);
+    
+    return results as Inquiry[];
+  }
+
   async getInquiryById(id: number): Promise<Inquiry | undefined> {
     const [inquiry] = await db
       .select()
