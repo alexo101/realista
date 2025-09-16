@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { useUser } from "@/contexts/user-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Search, Send, MessageCircle, Home, Pin, PinOff } from "lucide-react";
+import { Search, Send, MessageCircle, Home, Pin, PinOff, User } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +48,8 @@ export function ConversationalMessages() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [pinnedConversations, setPinnedConversations] = useState<number[]>([]);
   const [pinningConversation, setPinningConversation] = useState<number | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
+  const [showClientModal, setShowClientModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -305,6 +307,13 @@ export function ConversationalMessages() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  // Handle client name click
+  const handleClientNameClick = (clientId: number, event: MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering conversation selection
+    setSelectedClientId(clientId);
+    setShowClientModal(true);
+  };
+
   if (loading) {
     return (
       <Card className="h-[600px]">
@@ -369,7 +378,13 @@ export function ConversationalMessages() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-medium text-sm truncate">
+                          <h3 
+                            className="font-medium text-sm truncate text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
+                            onClick={(e) => handleClientNameClick(conversation.clientId, e)}
+                            data-testid={`link-client-name-${conversation.clientId}`}
+                            title="Ver información del cliente"
+                          >
+                            <User className="h-3 w-3" />
                             {conversation.clientName}
                           </h3>
                           <span className="text-xs text-gray-500 ml-2">
@@ -412,7 +427,15 @@ export function ConversationalMessages() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-medium">{selectedConversation.clientName}</h3>
+                        <h3 
+                          className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
+                          onClick={(e) => handleClientNameClick(selectedConversation.clientId, e)}
+                          data-testid={`link-client-header-${selectedConversation.clientId}`}
+                          title="Ver información del cliente"
+                        >
+                          <User className="h-4 w-4" />
+                          {selectedConversation.clientName}
+                        </h3>
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Home className="h-3 w-3" />
                           <span>{selectedConversation.propertyAddress}</span>
