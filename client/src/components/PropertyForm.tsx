@@ -1012,98 +1012,57 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 <h3 className="text-lg font-semibold">Estado de la Propiedad</h3>
 
                 {/* Property Visibility Buttons */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Visibilidad</label>
-                    <div className="space-y-3 p-4 border rounded-lg">
-                      <div className="flex items-center space-x-2 mb-3">
-                        {isActive ? (
-                          <Eye className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        )}
-                        <span className="text-sm font-medium">
-                          {isActive ? "Visible para clientes" : "Oculta para clientes"}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant={isActive ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            if (initialData?.id && !isActive) {
-                              toggleStatusMutation.mutate({
-                                propertyId: initialData.id,
-                                isActive: true,
-                              });
-                            }
-                          }}
-                          disabled={toggleStatusMutation.isPending || isActive}
-                          className="flex-1"
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Visible
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={!isActive ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            if (initialData?.id && isActive) {
-                              toggleStatusMutation.mutate({
-                                propertyId: initialData.id,
-                                isActive: false,
-                              });
-                            }
-                          }}
-                          disabled={toggleStatusMutation.isPending || !isActive}
-                          className="flex-1"
-                        >
-                          <EyeOff className="h-4 w-4 mr-1" />
-                          No visible
-                        </Button>
-                      </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Visibilidad</label>
+                  <div className="space-y-3 p-4 border rounded-lg">
+                    <div className="flex items-center space-x-2 mb-3">
+                      {isActive ? (
+                        <Eye className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      )}
+                      <span className="text-sm font-medium">
+                        {isActive ? "Visible para clientes" : "Oculta para clientes"}
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Delete Property */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-red-700">Eliminar Propiedad</label>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="destructive"
-                          className="w-full"
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Eliminar Propiedad
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta acción eliminará permanentemente la propiedad y no se puede deshacer.
-                            Toda la información y las imágenes asociadas se perderán.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => {
-                              if (initialData?.id) {
-                                deleteMutation.mutate(initialData.id);
-                              }
-                            }}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Sí, eliminar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={isActive ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          if (initialData?.id && !isActive) {
+                            toggleStatusMutation.mutate({
+                              propertyId: initialData.id,
+                              isActive: true,
+                            });
+                          }
+                        }}
+                        disabled={toggleStatusMutation.isPending || isActive}
+                        className="flex-1"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Visible
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={!isActive ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          if (initialData?.id && isActive) {
+                            toggleStatusMutation.mutate({
+                              propertyId: initialData.id,
+                              isActive: false,
+                            });
+                          }
+                        }}
+                        disabled={toggleStatusMutation.isPending || !isActive}
+                        className="flex-1"
+                      >
+                        <EyeOff className="h-4 w-4 mr-1" />
+                        No visible
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1142,28 +1101,72 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               )}
             />
 
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                type="button"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  isSubmitting || 
-                  ((form.watch("images")?.length || 0) > 0 && (form.watch("mainImageIndex") ?? -1) === -1)
-                }
-              >
-                {isSubmitting 
-                  ? 'Guardando...' 
-                  : ((form.watch("images")?.length || 0) > 0 && (form.watch("mainImageIndex") ?? -1) === -1)
-                    ? 'Selecciona imagen principal'
-                    : `${isEditing ? 'Actualizar' : 'Crear'} propiedad`
-                }
-              </Button>
+            <div className="flex justify-between items-center">
+              {/* Delete button - only show when editing */}
+              {isEditing && initialData?.id ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-red-500 text-red-500 hover:bg-red-50"
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar Propiedad
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción eliminará permanentemente la propiedad y no se puede deshacer.
+                        Toda la información y las imágenes asociadas se perderán.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          if (initialData?.id) {
+                            deleteMutation.mutate(initialData.id);
+                          }
+                        }}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Sí, eliminar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <div></div>
+              )}
+              
+              {/* Right side buttons */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  type="button"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    isSubmitting || 
+                    ((form.watch("images")?.length || 0) > 0 && (form.watch("mainImageIndex") ?? -1) === -1)
+                  }
+                >
+                  {isSubmitting 
+                    ? 'Guardando...' 
+                    : ((form.watch("images")?.length || 0) > 0 && (form.watch("mainImageIndex") ?? -1) === -1)
+                      ? 'Selecciona imagen principal'
+                      : `${isEditing ? 'Actualizar' : 'Crear'} propiedad`
+                  }
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
