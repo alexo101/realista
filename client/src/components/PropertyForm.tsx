@@ -208,17 +208,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       }
       return response.json();
     },
-    onMutate: async ({ isActive: newStatus }) => {
-      // Store previous value for rollback
-      const previousStatus = isActive;
-      
-      // Optimistically update the UI
-      setIsActive(newStatus);
-      
-      return { previousStatus };
-    },
     onSuccess: (data) => {
-      // Confirm the state matches server response
+      // Update state only from server response to avoid conflicts
       setIsActive(data.isActive);
       toast({
         title: data.isActive ? "Propiedad activada" : "Propiedad desactivada",
@@ -232,11 +223,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       // Also invalidate search results to update neighborhood results
       queryClient.invalidateQueries({ queryKey: ["/api/search"] });
     },
-    onError: (error, variables, context) => {
-      // Rollback to previous state
-      if (context?.previousStatus !== undefined) {
-        setIsActive(context.previousStatus);
-      }
+    onError: (error) => {
       toast({
         title: "Error",
         description: "No se pudo cambiar el estado de la propiedad.",
@@ -1042,17 +1029,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       <Switch
                         checked={isActive}
                         onCheckedChange={(checked) => {
-                          // Prevent event bubbling that might cause DOM coordinate issues
                           if (initialData?.id) {
-                            // Use setTimeout to prevent coordinate calculation issues
-                            setTimeout(() => {
-                              if (initialData?.id) {
-                                toggleStatusMutation.mutate({
-                                  propertyId: initialData.id,
-                                  isActive: checked,
-                                });
-                              }
-                            }, 0);
+                            toggleStatusMutation.mutate({
+                              propertyId: initialData.id,
+                              isActive: checked,
+                            });
                           }
                         }}
                         disabled={toggleStatusMutation.isPending}
