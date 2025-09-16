@@ -66,7 +66,8 @@ export default function GoogleMapsNeighborhoodMap({
           ],
           mapTypeControl: false,
           streetViewControl: false,
-          fullscreenControl: false
+          fullscreenControl: false,
+          zoomControl: true
         });
 
         setIsMapReady(true);
