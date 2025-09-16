@@ -36,7 +36,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLocation, Redirect } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -309,21 +309,51 @@ export default function ClientProfile() {
                       <FormField
                         control={form.control}
                         name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-sm font-medium text-gray-700">
-                              Teléfono <span className="text-red-500">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Tu número de teléfono" 
-                                {...field}
-                                data-testid="input-phone"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          // Real-time validation check
+                          const isPhoneValid = field.value && /^[6-9]\d{8}$/.test(field.value);
+                          
+                          return (
+                            <FormItem>
+                              <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                Teléfono <span className="text-red-500">*</span>
+                                {isPhoneValid && (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                )}
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="tel"
+                                  placeholder="Ej: 612345678"
+                                  maxLength={9}
+                                  {...field}
+                                  className={cn(
+                                    isPhoneValid && "border-green-500 focus:border-green-600",
+                                    field.value && !isPhoneValid && "border-red-500 focus:border-red-600"
+                                  )}
+                                  onChange={(e) => {
+                                    // Only allow digits
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    field.onChange(value);
+                                  }}
+                                  data-testid="input-phone"
+                                />
+                              </FormControl>
+                              {isPhoneValid && (
+                                <div className="text-sm text-green-600 flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  Número de teléfono válido
+                                </div>
+                              )}
+                              {field.value && field.value.length > 0 && !isPhoneValid && (
+                                <div className="text-sm text-muted-foreground">
+                                  Formato: 9 dígitos comenzando con 6, 7, 8 o 9
+                                </div>
+                              )}
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
                     </div>
                   </CardContent>
