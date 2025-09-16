@@ -2,10 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
-import { PropertyMap } from "@/components/PropertyMap";
+import { GoogleMapsPropertyMap } from "@/components/GoogleMapsPropertyMap";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
-import NeighborhoodMap from "@/components/NeighborhoodMap";
+import GoogleMapsNeighborhoodMap from "@/components/GoogleMapsNeighborhoodMap";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -489,7 +489,7 @@ export default function NeighborhoodResultsPage() {
                   isLoading={propertiesLoading} 
                 />
               ) : (
-                <NeighborhoodMap
+                <GoogleMapsNeighborhoodMap
                   properties={useMemo(() => {
                     if (!properties) return [];
                     

@@ -351,6 +351,66 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  // Google Maps configuration endpoint
+  app.get("/api/maps-config", async (req, res) => {
+    try {
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "Google Maps API key not configured" });
+      }
+      
+      res.json({ apiKey });
+    } catch (error) {
+      console.error('Error getting maps config:', error);
+      res.status(500).json({ message: "Maps configuration error" });
+    }
+  });
+
+  // Google Maps Geocoding API endpoint
+  app.post("/api/geocode", async (req, res) => {
+    try {
+      const { address } = req.body;
+      
+      if (!address) {
+        return res.status(400).json({ message: "Address is required" });
+      }
+
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: "Google Maps API key not configured" });
+      }
+
+      const encodedAddress = encodeURIComponent(address);
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&region=es&components=country:ES&key=${apiKey}`
+      );
+
+      if (!response.ok) {
+        console.warn(`Google Maps Geocoding failed for address: ${address}, Status: ${response.status}`);
+        return res.status(response.status).json({ message: "Geocoding service unavailable" });
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        const result = {
+          lat: location.lat,
+          lng: location.lng,
+          formatted_address: data.results[0].formatted_address
+        };
+        
+        res.json(result);
+      } else {
+        console.warn(`No geocoding results found for: ${address}, Status: ${data.status}`);
+        res.status(404).json({ message: "Address not found" });
+      }
+    } catch (error) {
+      console.error('Google Maps Geocoding error:', error);
+      res.status(500).json({ message: "Geocoding service error" });
+    }
+  });
+
   // Properties
   app.delete("/api/properties/:id", async (req, res) => {
     try {

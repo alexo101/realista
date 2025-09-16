@@ -1,5 +1,4 @@
-// Geocoding utilities for address to coordinates conversion
-import { cache } from '../../../server/cache';
+// Geocoding utilities for address to coordinates conversion using Google Maps API
 
 export interface GeocodingResult {
   lat: number;
@@ -10,9 +9,22 @@ export interface GeocodingResult {
 // Cache for geocoding results to avoid repeated API calls
 const geocodingCache = new Map<string, GeocodingResult>();
 
-// Nominatim API for geocoding (free OpenStreetMap service)
+// Google Maps Geocoding API - calls through backend to secure API key
 export async function geocodeAddress(address: string, neighborhood?: string): Promise<GeocodingResult | null> {
-  const fullAddress = neighborhood ? `${address}, ${neighborhood}, Barcelona, Spain` : `${address}, Barcelona, Spain`;
+  // Build full address, avoiding duplication of neighborhood/locality
+  let fullAddress = address;
+  
+  if (neighborhood && !address.toLowerCase().includes(neighborhood.toLowerCase())) {
+    fullAddress = `${address}, ${neighborhood}`;
+  }
+  
+  if (!fullAddress.toLowerCase().includes('barcelona')) {
+    fullAddress = `${fullAddress}, Barcelona`;
+  }
+  
+  if (!fullAddress.toLowerCase().includes('spain')) {
+    fullAddress = `${fullAddress}, Spain`;
+  }
   
   // Check cache first
   if (geocodingCache.has(fullAddress)) {
@@ -20,16 +32,14 @@ export async function geocodeAddress(address: string, neighborhood?: string): Pr
   }
 
   try {
-    const encodedAddress = encodeURIComponent(fullAddress);
-    // Use more specific Barcelona bounding box and better query parameters
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1&addressdetails=1&bounded=1&viewbox=2.0523,41.4695,2.2280,41.3200&countrycodes=es`,
-      {
-        headers: {
-          'User-Agent': 'PropertySearchApp/1.0'
-        }
-      }
-    );
+    // Make API call through our backend to avoid exposing the API key
+    const response = await fetch('/api/geocode', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ address: fullAddress })
+    });
 
     if (!response.ok) {
       console.warn(`Geocoding failed for address: ${fullAddress}, Status: ${response.status}`);
@@ -38,11 +48,11 @@ export async function geocodeAddress(address: string, neighborhood?: string): Pr
 
     const data = await response.json();
     
-    if (data && data.length > 0) {
+    if (data.lat && data.lng) {
       const result: GeocodingResult = {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
-        address: fullAddress
+        lat: data.lat,
+        lng: data.lng,
+        address: data.formatted_address || fullAddress
       };
       
       // Cache the result
@@ -92,7 +102,6 @@ export const NEIGHBORHOOD_FALLBACK_COORDS: Record<string, [number, number]> = {
   'Horta-Guinardó': [41.4186, 2.1635],
   'Nou Barris': [41.4430, 2.1774],
   'Sant Martí': [41.4066, 2.2042],
-  // Specific neighborhoods
   'El Raval': [41.3792, 2.1695],
   'Barrio Gótico': [41.3837, 2.1765],
   'La Barceloneta': [41.3826, 2.1900],
@@ -117,31 +126,7 @@ export const NEIGHBORHOOD_FALLBACK_COORDS: Record<string, [number, number]> = {
   'Castelldefels': [41.2817, 1.9756],
   'Sitges': [41.2368, 1.8058],
   'Vilanova i la Geltrú': [41.2237, 1.7256],
-  'Garraf': [41.2667, 1.9167],
-  'Begues': [41.3333, 1.9167],
-  'Torrelles de Llobregat': [41.3667, 1.9833],
-  'Cervelló': [41.4000, 1.9667],
-  'La Palma de Cervelló': [41.4000, 1.9667],
-  'Corbera de Llobregat': [41.4167, 1.9667],
-  'Sant Esteve Sesrovires': [41.4833, 1.9000],
-  'Gelida': [41.4333, 1.8667],
-  'Subirats': [41.4333, 1.8333],
-  'Avinyonet del Penedès': [41.4333, 1.8000],
-  'Olivella': [41.3333, 1.8000],
-  'Canyelles': [41.3333, 1.8333],
-  'Cubelles': [41.2000, 1.6667],
-  'Cunit': [41.2167, 1.6333],
-  'Calafell': [41.2000, 1.6333],
-  'Segur de Calafell': [41.1833, 1.6333],
-  'Vendrell': [41.2167, 1.5333],
-  'Santa Margarida i els Monjos': [41.3333, 1.6833],
-  'Sant Pere de Ribes': [41.2667, 1.7667],
-  'Vallirana': [41.3833, 1.9167],
-  'Molins de Rei': [41.4167, 2.0167],
-  'Sant Feliu de Llobregat': [41.3833, 2.0500],
-  'Sant Joan Despí': [41.3667, 2.0667],
-  'Sant Just Desvern': [41.3833, 2.0833],
-  'Barcelona': [41.3851, 2.1734] // Default Barcelona center
+  'Barcelona': [41.3851, 2.1734]
 };
 
 // Get fallback coordinates for a neighborhood
