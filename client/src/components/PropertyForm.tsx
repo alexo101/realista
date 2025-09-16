@@ -1011,33 +1011,59 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Estado de la Propiedad</h3>
 
-                {/* Property Visibility Toggle */}
+                {/* Property Visibility Buttons */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Visibilidad</label>
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                      <div className="flex items-center space-x-2">
+                    <div className="space-y-3 p-4 border rounded-lg">
+                      <div className="flex items-center space-x-2 mb-3">
                         {isActive ? (
                           <Eye className="h-4 w-4 text-green-600" />
                         ) : (
                           <EyeOff className="h-4 w-4 text-gray-400" />
                         )}
-                        <span className="text-sm">
+                        <span className="text-sm font-medium">
                           {isActive ? "Visible para clientes" : "Oculta para clientes"}
                         </span>
                       </div>
-                      <Switch
-                        checked={isActive}
-                        onCheckedChange={(checked) => {
-                          if (initialData?.id) {
-                            toggleStatusMutation.mutate({
-                              propertyId: initialData.id,
-                              isActive: checked,
-                            });
-                          }
-                        }}
-                        disabled={toggleStatusMutation.isPending}
-                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            if (initialData?.id && !isActive) {
+                              toggleStatusMutation.mutate({
+                                propertyId: initialData.id,
+                                isActive: true,
+                              });
+                            }
+                          }}
+                          disabled={toggleStatusMutation.isPending || isActive}
+                          className="flex-1"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Visible
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={!isActive ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            if (initialData?.id && isActive) {
+                              toggleStatusMutation.mutate({
+                                propertyId: initialData.id,
+                                isActive: false,
+                              });
+                            }
+                          }}
+                          disabled={toggleStatusMutation.isPending || !isActive}
+                          className="flex-1"
+                        >
+                          <EyeOff className="h-4 w-4 mr-1" />
+                          No visible
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
