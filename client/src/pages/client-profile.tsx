@@ -105,6 +105,20 @@ export default function ClientProfile() {
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
 
+  // Query to fetch existing client profile data
+  const { data: clientProfileData, isLoading: isLoadingProfile } = useQuery({
+    queryKey: [`/api/clients/${user?.id}`],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const response = await fetch(`/api/clients/${user.id}`);
+      if (!response.ok) {
+        return null;
+      }
+      return response.json();
+    },
+    enabled: !!user?.id && !!user?.isClient,
+  });
+
   // Form initialization
   const form = useForm<ClientProfileFormData>({
     resolver: zodResolver(clientProfileSchema),
@@ -135,6 +149,36 @@ export default function ClientProfile() {
     }
   }, [user, navigate]);
 
+  // Update form with loaded profile data
+  useEffect(() => {
+    if (clientProfileData) {
+      
+      // Reset form with existing data
+      form.reset({
+        name: clientProfileData.name || user?.name || "",
+        surname: clientProfileData.surname || user?.surname || "",
+        phone: clientProfileData.phone || user?.phone || "",
+        avatar: clientProfileData.avatar || user?.avatar || "",
+        employmentStatus: clientProfileData.employmentStatus || "",
+        position: clientProfileData.position || "",
+        yearsAtPosition: clientProfileData.yearsAtPosition,
+        monthlyIncome: clientProfileData.monthlyIncome,
+        numberOfPeople: clientProfileData.numberOfPeople || 1,
+        relationship: clientProfileData.relationship || "",
+        hasMinors: clientProfileData.hasMinors || false,
+        hasAdolescents: clientProfileData.hasAdolescents || false,
+        petsStatus: clientProfileData.petsStatus || "",
+        petsDescription: clientProfileData.petsDescription || "",
+        moveInTiming: clientProfileData.moveInTiming || "",
+        moveInDate: clientProfileData.moveInDate ? new Date(clientProfileData.moveInDate) : undefined,
+      });
+
+      // Update state variables
+      setNumberOfPeople(clientProfileData.numberOfPeople || 1);
+      setProfilePicture(clientProfileData.avatar || null);
+    }
+  }, [clientProfileData, user, form]);
+
   // Handle form submission
   const onSubmit = async (data: ClientProfileFormData) => {
     try {
@@ -157,6 +201,7 @@ export default function ClientProfile() {
 
       // Invalidate queries to refresh user data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${user?.id}`] });
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
