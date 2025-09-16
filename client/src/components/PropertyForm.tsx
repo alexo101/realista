@@ -29,6 +29,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff, Sparkles } from "lucide-react";
 import {
   AlertDialog,
@@ -1011,65 +1012,48 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Estado de la Propiedad</h3>
 
-                {/* Property Visibility Buttons */}
+                {/* Property Visibility */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Visibilidad</label>
-                  <div className="space-y-3 p-4 border rounded-lg">
-                    {/* Status Badge - First thing users see */}
-                    <div className="flex items-center justify-center mb-4">
-                      <div className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
-                        isActive 
-                          ? "bg-green-100 text-green-800 border border-green-200" 
-                          : "bg-gray-100 text-gray-600 border border-gray-200"
-                      }`}>
-                        {isActive ? (
-                          <Eye className="h-4 w-4 mr-2" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 mr-2" />
-                        )}
-                        Currently: {isActive ? "Visible to clients" : "Hidden from clients"}
-                      </div>
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                    <div className="text-sm text-gray-700">
+                      Esta propiedad está actualmente: {' '}
+                      <span className={isActive ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                        {isActive ? "Visible" : "No Visible"}
+                      </span>
                     </div>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (initialData?.id && !isActive) {
-                            toggleStatusMutation.mutate({
-                              propertyId: initialData.id,
-                              isActive: true,
-                            });
-                          }
-                        }}
-                        disabled={toggleStatusMutation.isPending || isActive}
-                        className="flex-1"
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Mostrar a los clientes
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (initialData?.id && isActive) {
-                            toggleStatusMutation.mutate({
-                              propertyId: initialData.id,
-                              isActive: false,
-                            });
-                          }
-                        }}
-                        disabled={toggleStatusMutation.isPending || !isActive}
-                        className="flex-1"
-                      >
-                        <EyeOff className="h-4 w-4 mr-1" />
-                        Hide from clients
-                      </Button>
-                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (initialData?.id) {
+                                toggleStatusMutation.mutate({
+                                  propertyId: initialData.id,
+                                  isActive: !isActive,
+                                });
+                              }
+                            }}
+                            disabled={toggleStatusMutation.isPending}
+                            className={`h-8 w-8 p-0 hover:bg-transparent ${
+                              isActive ? "text-blue-600 hover:text-blue-700" : "text-gray-400 hover:text-gray-500"
+                            }`}
+                          >
+                            {isActive ? (
+                              <Eye className="h-5 w-5" />
+                            ) : (
+                              <EyeOff className="h-5 w-5" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{isActive ? "Ocultar de los clientes" : "Mostrar a los clientes"}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               </div>
