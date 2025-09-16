@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Search, Send, MessageCircle, Home, Pin, PinOff, User } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Send, MessageCircle, Home, Pin, PinOff, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, Heart, Clock, Euro } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface Message {
   id: number;
@@ -314,6 +316,26 @@ export function ConversationalMessages() {
     setShowClientModal(true);
   };
 
+  // Fetch client details for modal
+  const { data: clientDetails, isLoading: loadingClientDetails } = useQuery({
+    queryKey: ['/api/clients', selectedClientId],
+    queryFn: async () => {
+      if (!selectedClientId) return null;
+      const response = await fetch(`/api/clients/${selectedClientId}`);
+      if (!response.ok) {
+        throw new Error('Error fetching client details');
+      }
+      return response.json();
+    },
+    enabled: !!selectedClientId && showClientModal,
+  });
+
+  // Close client modal
+  const handleCloseClientModal = () => {
+    setShowClientModal(false);
+    setSelectedClientId(null);
+  };
+
   if (loading) {
     return (
       <Card className="h-[600px]">
@@ -527,6 +549,179 @@ export function ConversationalMessages() {
           </div>
         </div>
       </CardContent>
+
+      {/* Client Information Modal */}
+      <Dialog open={showClientModal} onOpenChange={setShowClientModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Información del Cliente
+            </DialogTitle>
+          </DialogHeader>
+          
+          {loadingClientDetails ? (
+            <div className="p-8 text-center">
+              <div className="text-gray-500">Cargando información del cliente...</div>
+            </div>
+          ) : clientDetails ? (
+            <div className="space-y-6">
+              {/* Client Header */}
+              <div className="flex items-center gap-4 pb-4 border-b">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={clientDetails.avatar} />
+                  <AvatarFallback className="bg-blue-500 text-white text-lg">
+                    {getInitials(`${clientDetails.name} ${clientDetails.surname}`)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-xl font-semibold">{clientDetails.name} {clientDetails.surname}</h2>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    {clientDetails.email && (
+                      <div className="flex items-center gap-1">
+                        <Mail className="h-4 w-4" />
+                        <span>{clientDetails.email}</span>
+                      </div>
+                    )}
+                    {clientDetails.phone && (
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-4 w-4" />
+                        <span>{clientDetails.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Employment Information */}
+              {clientDetails.employmentStatus && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Información Laboral
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Estado laboral:</span>
+                      <p className="text-sm">{clientDetails.employmentStatus}</p>
+                    </div>
+                    {clientDetails.position && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Posición:</span>
+                        <p className="text-sm">{clientDetails.position}</p>
+                      </div>
+                    )}
+                    {clientDetails.yearsAtPosition && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Años en el puesto:</span>
+                        <p className="text-sm">{clientDetails.yearsAtPosition}</p>
+                      </div>
+                    )}
+                    {clientDetails.monthlyIncome && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Ingresos mensuales:</span>
+                        <p className="text-sm flex items-center gap-1">
+                          <Euro className="h-4 w-4" />
+                          {clientDetails.monthlyIncome.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Housing Information */}
+              {(clientDetails.numberOfPeople || clientDetails.relationship || clientDetails.hasMinors || clientDetails.hasAdolescents) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Composición Familiar
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {clientDetails.numberOfPeople && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Número de personas:</span>
+                        <p className="text-sm">{clientDetails.numberOfPeople}</p>
+                      </div>
+                    )}
+                    {clientDetails.relationship && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Estado civil:</span>
+                        <p className="text-sm">{clientDetails.relationship}</p>
+                      </div>
+                    )}
+                    {clientDetails.hasMinors !== null && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Menores de edad:</span>
+                        <p className="text-sm">{clientDetails.hasMinors ? 'Sí' : 'No'}</p>
+                      </div>
+                    )}
+                    {clientDetails.hasAdolescents !== null && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Adolescentes:</span>
+                        <p className="text-sm">{clientDetails.hasAdolescents ? 'Sí' : 'No'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Pet Information */}
+              {clientDetails.petsStatus && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Heart className="h-5 w-5" />
+                    Mascotas
+                  </h3>
+                  <div className="grid grid-cols-1 gap-2">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Estado:</span>
+                      <p className="text-sm">{clientDetails.petsStatus}</p>
+                    </div>
+                    {clientDetails.petsDescription && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Descripción:</span>
+                        <p className="text-sm">{clientDetails.petsDescription}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Move-in Timeline */}
+              {(clientDetails.moveInTiming || clientDetails.moveInDate) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Fecha de Mudanza
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {clientDetails.moveInTiming && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Urgencia:</span>
+                        <p className="text-sm">{clientDetails.moveInTiming}</p>
+                      </div>
+                    )}
+                    {clientDetails.moveInDate && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Fecha específica:</span>
+                        <p className="text-sm flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(clientDetails.moveInDate), "dd/MM/yyyy", { locale: es })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <div className="text-red-500">Error al cargar la información del cliente</div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
