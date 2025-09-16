@@ -415,7 +415,7 @@ export default function ClientProfile() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-sm font-medium text-gray-700">Situación actual</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="select-employment-status">
                                   <SelectValue placeholder="Selecciona tu situación laboral" />
@@ -553,7 +553,7 @@ export default function ClientProfile() {
                             <FormControl>
                               <RadioGroup
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                                 className="space-y-2"
                                 data-testid="radio-relationship"
                               >
@@ -626,7 +626,7 @@ export default function ClientProfile() {
                             <FormControl>
                               <RadioGroup
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                                 className="space-y-2"
                                 data-testid="radio-pets"
                               >
@@ -682,7 +682,7 @@ export default function ClientProfile() {
                             <FormControl>
                               <RadioGroup
                                 onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                value={field.value}
                                 className="space-y-2"
                                 data-testid="radio-move-timing"
                               >
