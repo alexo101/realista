@@ -101,6 +101,23 @@ export const clients = pgTable("clients", {
   notes: text("notes"), // Notas adicionales
   agentId: integer("agent_id"), // Ahora opcional para clientes auto-registrados
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  
+  // New client profile fields
+  avatar: text("avatar"), // Photo upload field
+  employmentStatus: text("employment_status"), // "Jornada completa", "Jornada parcial", "Autónomo", "Desempleado", "Estudiante", "Pensionista"
+  position: text("position"), // Position text field
+  yearsAtPosition: integer("years_at_position"), // Years of permanence
+  monthlyIncome: integer("monthly_income"), // Monthly income in euros
+  
+  // Housing questions
+  numberOfPeople: integer("number_of_people"), // Number of people living in property
+  relationship: text("relationship"), // "Amigos", "Familia", "Otra"
+  hasMinors: boolean("has_minors").default(false), // Niños (0-12 años)
+  hasAdolescents: boolean("has_adolescents").default(false), // Adolescentes (13-17 años)
+  petsStatus: text("pets_status"), // "No tengo mascota", "Tengo mascota"
+  petsDescription: text("pets_description"), // Description of pets if they have any
+  moveInTiming: text("move_in_timing"), // "Lo antes posible", "Tengo flexibilidad", "Fecha exacta"
+  moveInDate: timestamp("move_in_date"), // Specific date if "Fecha exacta" is selected
 });
 
 export const neighborhoodRatings = pgTable("neighborhood_ratings", {
