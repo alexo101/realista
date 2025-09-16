@@ -1011,26 +1011,64 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Estado de la Propiedad</h3>
 
-                {/* Property Status */}
+                {/* Property Visibility Buttons */}
                 <div className="space-y-2">
-                  <div className="p-4 bg-gray-50 border rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Property Status</h4>
-                        <p className="text-sm text-gray-600">
-                          This property is currently: {' '}
-                          <span className={isActive ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                            {isActive ? "Visible" : "Not Visible"}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0">
+                  <label className="text-sm font-medium">Visibilidad</label>
+                  <div className="space-y-3 p-4 border rounded-lg">
+                    {/* Status Badge - First thing users see */}
+                    <div className="flex items-center justify-center mb-4">
+                      <div className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
+                        isActive 
+                          ? "bg-green-100 text-green-800 border border-green-200" 
+                          : "bg-gray-100 text-gray-600 border border-gray-200"
+                      }`}>
                         {isActive ? (
-                          <Eye className="h-5 w-5 text-blue-500" />
+                          <Eye className="h-4 w-4 mr-2" />
                         ) : (
-                          <EyeOff className="h-5 w-5 text-gray-400" />
+                          <EyeOff className="h-4 w-4 mr-2" />
                         )}
+                        Currently: {isActive ? "Visible to clients" : "Hidden from clients"}
                       </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (initialData?.id && !isActive) {
+                            toggleStatusMutation.mutate({
+                              propertyId: initialData.id,
+                              isActive: true,
+                            });
+                          }
+                        }}
+                        disabled={toggleStatusMutation.isPending || isActive}
+                        className="flex-1"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Mostrar a los clientes
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (initialData?.id && isActive) {
+                            toggleStatusMutation.mutate({
+                              propertyId: initialData.id,
+                              isActive: false,
+                            });
+                          }
+                        }}
+                        disabled={toggleStatusMutation.isPending || !isActive}
+                        className="flex-1"
+                      >
+                        <EyeOff className="h-4 w-4 mr-1" />
+                        Hide from clients
+                      </Button>
                     </div>
                   </div>
                 </div>
