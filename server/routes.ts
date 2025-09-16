@@ -10,6 +10,27 @@ import {
   insertAgencySchema,
   insertPropertyVisitRequestSchema
 } from "@shared/schema";
+import { z } from "zod";
+
+// Client profile update schema - only allow specific fields
+const updateClientProfileSchema = insertClientSchema.pick({
+  name: true,
+  surname: true,
+  phone: true,
+  avatar: true,
+  employmentStatus: true,
+  position: true,
+  yearsAtPosition: true,
+  monthlyIncome: true,
+  numberOfPeople: true,
+  relationship: true,
+  hasMinors: true,
+  hasAdolescents: true,
+  petsStatus: true,
+  petsDescription: true,
+  moveInTiming: true,
+  moveInDate: true,
+}).partial();
 import { sendWelcomeEmail, sendReviewRequest } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
 import { cache } from "./cache";
@@ -885,8 +906,82 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       
       res.status(200).json(client);
     } catch (error) {
-      console.error('Error getting client:', error);
+      console.error("Error getting client:", error);
       res.status(500).json({ message: "Failed to get client" });
+    }
+  });
+
+  // Update client profile
+  app.put("/api/clients/:clientId/profile", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      
+      if (isNaN(clientId)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+      
+      // Authentication check - ensure user is logged in
+      const sessionUser = (req as any).session?.user;
+      if (!sessionUser) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Check if client exists first
+      const existingClient = await storage.getClient(clientId);
+      if (!existingClient) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      // Authorization check - only allow updates if:
+      // 1. User is the client owner (logged in as client with matching ID)
+      // 2. User is the assigned agent for this client
+      // 3. User is an admin
+      let isAuthorized = false;
+      
+      if (sessionUser.isClient && sessionUser.id === clientId) {
+        // Client updating their own profile
+        isAuthorized = true;
+      } else if (!sessionUser.isClient && sessionUser.isAdmin) {
+        // Admin can update any client profile
+        isAuthorized = true;
+      } else if (!sessionUser.isClient && existingClient.agentId === sessionUser.id) {
+        // Agent updating their assigned client's profile
+        isAuthorized = true;
+      }
+      
+      if (!isAuthorized) {
+        return res.status(403).json({ 
+          message: "You are not authorized to update this client profile" 
+        });
+      }
+      
+      // Validate the request body using Zod schema
+      const validationResult = updateClientProfileSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid profile data", 
+          errors: validationResult.error.issues 
+        });
+      }
+      
+      const profileData = validationResult.data;
+      
+      // Convert moveInDate string to Date if provided
+      if (profileData.moveInDate) {
+        profileData.moveInDate = new Date(profileData.moveInDate);
+      }
+
+      // Update the client profile
+      const updatedClient = await storage.updateClientProfile(clientId, profileData);
+      
+      if (!updatedClient) {
+        return res.status(404).json({ message: "Failed to update client profile" });
+      }
+      
+      res.status(200).json(updatedClient);
+    } catch (error) {
+      console.error('Error updating client profile:', error);
+      res.status(500).json({ message: "Failed to update client profile" });
     }
   });
 

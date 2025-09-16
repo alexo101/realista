@@ -117,6 +117,7 @@ export interface IStorage {
   getClientsByAgent(agentId: number): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: InsertClient): Promise<Client>;
+  updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined>;
 
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
@@ -1353,6 +1354,20 @@ export class DatabaseStorage implements IStorage {
       .where(eq(clients.id, id))
       .returning();
     return updatedClient;
+  }
+
+  async updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined> {
+    try {
+      const [updatedClient] = await db
+        .update(clients)
+        .set(profileData)
+        .where(eq(clients.id, id))
+        .returning();
+      return updatedClient;
+    } catch (error) {
+      console.error('Error updating client profile:', error);
+      return undefined;
+    }
   }
 
   // Neighborhood Ratings
