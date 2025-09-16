@@ -72,7 +72,10 @@ interface FavoriteProperty {
 const clientProfileSchema = z.object({
   name: z.string().min(1, "Nombre es obligatorio"),
   surname: z.string().min(1, "Apellidos es obligatorio"),
-  phone: z.string().min(1, "Teléfono es obligatorio"),
+  phone: z.string()
+    .min(9, "El teléfono debe tener exactamente 9 dígitos")
+    .max(9, "El teléfono debe tener exactamente 9 dígitos")
+    .regex(/^[6-9]\d{8}$/, "Ingresa un número de teléfono español válido (9 dígitos, comenzando con 6, 7, 8 o 9)"),
   avatar: z.string().optional(),
   employmentStatus: z.string().optional(),
   position: z.string().optional(),
