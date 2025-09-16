@@ -1015,20 +1015,27 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Visibilidad</label>
                   <div className="space-y-3 p-4 border rounded-lg">
-                    <div className="flex items-center space-x-2 mb-3">
-                      {isActive ? (
-                        <Eye className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      )}
-                      <span className="text-sm font-medium">
-                        {isActive ? "Visible para clientes" : "Oculta para clientes"}
-                      </span>
+                    {/* Status Badge - First thing users see */}
+                    <div className="flex items-center justify-center mb-4">
+                      <div className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
+                        isActive 
+                          ? "bg-green-100 text-green-800 border border-green-200" 
+                          : "bg-gray-100 text-gray-600 border border-gray-200"
+                      }`}>
+                        {isActive ? (
+                          <Eye className="h-4 w-4 mr-2" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 mr-2" />
+                        )}
+                        Currently: {isActive ? "Visible to clients" : "Hidden from clients"}
+                      </div>
                     </div>
+                    
+                    {/* Action Buttons */}
                     <div className="flex gap-2">
                       <Button
                         type="button"
-                        variant={isActive ? "default" : "outline"}
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           if (initialData?.id && !isActive) {
@@ -1042,11 +1049,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         className="flex-1"
                       >
                         <Eye className="h-4 w-4 mr-1" />
-                        Visible
+                        Mostrar a los clientes
                       </Button>
                       <Button
                         type="button"
-                        variant={!isActive ? "default" : "outline"}
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           if (initialData?.id && isActive) {
@@ -1060,7 +1067,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         className="flex-1"
                       >
                         <EyeOff className="h-4 w-4 mr-1" />
-                        No visible
+                        Hide from clients
                       </Button>
                     </div>
                   </div>
