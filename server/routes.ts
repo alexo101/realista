@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { 
   insertPropertySchema,
   insertClientSchema,
@@ -2550,6 +2551,69 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
         message: "Failed to fix property geocoding", 
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+
+  // Object Storage Routes for Property Images
+
+  // Serve public property images
+  app.get("/property-images/:filePath(*)", async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(`property-images/${filePath}`);
+      if (!file) {
+        return res.status(404).json({ error: "Image not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error serving property image:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get upload URL for property images
+  app.post("/api/property-images/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getPropertyImageUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Update property with new image URL after upload
+  app.put("/api/properties/:id/add-image", async (req, res) => {
+    try {
+      const propertyId = parseInt(req.params.id);
+      const { imageURL } = req.body;
+      
+      if (!imageURL) {
+        return res.status(400).json({ error: "imageURL is required" });
+      }
+
+      // Get current property
+      const property = await storage.getProperty(propertyId);
+      if (!property) {
+        return res.status(404).json({ error: "Property not found" });
+      }
+
+      // Add the new image URL to the imageUrls array
+      const currentImageUrls = property.imageUrls || [];
+      const updatedImageUrls = [...currentImageUrls, imageURL];
+
+      // Update property with new image URL
+      const updatedProperty = await storage.updateProperty(propertyId, {
+        ...property,
+        imageUrls: updatedImageUrls,
+      });
+
+      res.json(updatedProperty);
+    } catch (error) {
+      console.error("Error adding image to property:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
