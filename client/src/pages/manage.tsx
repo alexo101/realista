@@ -1058,6 +1058,7 @@ export default function ManagePage() {
                     bedrooms: editingProperty.bedrooms,
                     bathrooms: editingProperty.bathrooms,
                     images: editingProperty.images || [],
+                    imageUrls: editingProperty.imageUrls || [],
                     type: editingProperty.type as any,
                     housingType: editingProperty.housingType || undefined,
                     housingStatus: editingProperty.housingStatus || undefined,
