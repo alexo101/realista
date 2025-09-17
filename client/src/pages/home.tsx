@@ -52,7 +52,7 @@ export default function Home() {
             <TabsTrigger value="alquiler">En Alquiler</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="venta">
+          <TabsContent value="venta" className="min-h-[400px]">
             {isLoadingSales ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
@@ -64,17 +64,28 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mostViewedSaleProperties && mostViewedSaleProperties.map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    property={property}
-                  />
-                ))}
+                {mostViewedSaleProperties && mostViewedSaleProperties.length > 0 ? (
+                  mostViewedSaleProperties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-16">
+                    <p className="text-gray-500 text-lg">
+                      No hay propiedades en venta disponibles en este momento.
+                    </p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Vuelve pronto para ver nuevas oportunidades.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
           
-          <TabsContent value="alquiler">
+          <TabsContent value="alquiler" className="min-h-[400px]">
             {isLoadingRental ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
@@ -86,12 +97,23 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mostViewedRentProperties && mostViewedRentProperties.map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    property={property}
-                  />
-                ))}
+                {mostViewedRentProperties && mostViewedRentProperties.length > 0 ? (
+                  mostViewedRentProperties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-16">
+                    <p className="text-gray-500 text-lg">
+                      No hay propiedades en alquiler disponibles en este momento.
+                    </p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Vuelve pronto para ver nuevas oportunidades.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
