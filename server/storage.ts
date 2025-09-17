@@ -1132,8 +1132,6 @@ export class DatabaseStorage implements IStorage {
       isActive: properties.isActive,
       createdAt: properties.createdAt,
       title: properties.title,
-      lat: properties.lat,
-      lng: properties.lng,
       images: properties.images, // Include for backward compatibility
       imageUrls: properties.imageUrls, // Include URL-based images
       // Exclude only description field for performance
@@ -1335,8 +1333,6 @@ export class DatabaseStorage implements IStorage {
       isActive: properties.isActive,
       createdAt: properties.createdAt,
       title: properties.title,
-      lat: properties.lat,
-      lng: properties.lng,
       images: properties.images, // Include for backward compatibility
       imageUrls: properties.imageUrls, // Include URL-based images
       // Exclude description for performance
