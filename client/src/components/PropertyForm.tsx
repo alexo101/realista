@@ -43,6 +43,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { ImageUploader } from "./ImageUploader";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { AddressAutocomplete } from "./AddressAutocomplete";
@@ -139,7 +140,8 @@ const formSchema = z.object({
     .optional()
     .nullable(),
   title: z.string().optional(),
-  images: z.array(z.string()).optional(),
+  images: z.array(z.string()).optional(), // Legacy base64 images (deprecated)
+  imageUrls: z.array(z.string()).default([]), // New URL-based images
   mainImageIndex: z.number().default(-1),
   features: z.array(z.string()).default([]),
   availability: z.enum(availabilityOptions).default("Inmediatamente"),
@@ -306,7 +308,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       superficie: "" as any, // Nuevo campo para superficie en m²
       neighborhood: undefined as any,
       title: "",
-      images: [],
+      images: [], // Legacy field
+      imageUrls: [], // New URL-based images
       mainImageIndex: -1,
       features: [],
       availability: "Inmediatamente",
@@ -314,7 +317,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     },
   });
 
-  // Handler for image changes with main image index
+  // Handler for URL-based image changes with main image index
+  const handleImageUrlChange = (newImageUrls: string[], mainImageIndex: number) => {
+    form.setValue("imageUrls", newImageUrls);
+    form.setValue("mainImageIndex", mainImageIndex);
+  };
+
+  // Legacy handler for backwards compatibility (deprecated)
   const handleImageChange = (newImages: string[], mainImageIndex: number) => {
     form.setValue("images", newImages);
     form.setValue("mainImageIndex", mainImageIndex);
@@ -828,63 +837,31 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
             <FormField
               control={form.control}
-              name="images"
+              name="imageUrls"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Subir imágenes</FormLabel>
                   <FormControl>
                     <div className="flex flex-col space-y-2">
-                      <div className="border-2 border-dashed border-gray-300 rounded-md p-4 hover:border-primary cursor-pointer">
-                        <Input 
-                          type="file" 
-                          accept="image/*"
-                          multiple
-                          id="imageUpload" 
-                          className="hidden"
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files || []);
-                            if (files.length > 0) {
-                              const currentImages = field.value || [];
-                              const newImages: string[] = [];
-
-                              let loadedCount = 0;
-                              const totalFiles = files.length;
-
-                              // Convert each file to base64
-                              files.forEach(file => {
-                                const reader = new FileReader();
-                                reader.onload = (e) => {
-                                  const base64String = e.target?.result as string;
-                                  newImages.push(base64String);
-                                  loadedCount++;
-
-                                  // Update the form once all files are loaded
-                                  if (loadedCount === totalFiles) {
-                                    field.onChange([...currentImages, ...newImages]);
-                                    // Reset mainImageIndex to -1 (no main image selected)
-                                    form.setValue("mainImageIndex", -1);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              });
-                            }
-                          }}
-                        />
-                        <label htmlFor="imageUpload" className="flex flex-col items-center justify-center cursor-pointer">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <p className="mt-2 text-sm text-gray-600">Haz clic para subir o arrastra y suelta</p>
-                          <p className="text-xs text-gray-500">PNG, JPG, GIF hasta 10MB</p>
-                        </label>
-                      </div>
+                      <ImageUploader
+                        onImageUploaded={(imageUrl: string) => {
+                          const currentUrls = field.value || [];
+                          const allUrls = [...currentUrls, imageUrl];
+                          field.onChange(allUrls);
+                          // Set first uploaded image as main image if none selected
+                          if (form.watch("mainImageIndex") === -1 && allUrls.length > 0) {
+                            form.setValue("mainImageIndex", 0);
+                          }
+                        }}
+                        maxFiles={10}
+                      />
                       {field.value && field.value.length > 0 && (
                         <div className="mt-4">
                           <h4 className="text-sm font-medium mb-2">Organiza las imágenes (arrastra para reordenar, haz clic en ✓ para establecer como imagen principal)</h4>
                           <DraggableImageGallery 
                             images={field.value} 
                             mainImageIndex={form.watch("mainImageIndex")}
-                            onChange={handleImageChange} 
+                            onChange={handleImageUrlChange} 
                           />
                         </div>
                       )}
