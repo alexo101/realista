@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { UserProvider } from "@/contexts/user-context";
 import { LanguageProvider } from "@/contexts/language-context";
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
@@ -58,8 +59,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <UserProvider>
-          <Navbar />
-          <Router />
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-1">
+              <Router />
+            </main>
+            <Footer />
+          </div>
           <GlobalLoadingOverlay />
           <Toaster />
         </UserProvider>
