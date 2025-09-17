@@ -141,7 +141,7 @@ export default function RealistaPro() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-green-50">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-green-600 text-white">
         <div className="absolute inset-0 bg-black/20"></div>
