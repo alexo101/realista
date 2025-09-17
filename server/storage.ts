@@ -1103,42 +1103,44 @@ export class DatabaseStorage implements IStorage {
   async getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]> {
     console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}, limit: ${limit}, offset: ${offset}`);
     
-    // Use lean projection - exclude only description for better performance
+    // Lean projection with all required fields (never undefined)
+    const baseFields = {
+      id: properties.id,
+      reference: properties.reference,
+      address: properties.address,
+      escalera: properties.escalera,
+      planta: properties.planta,
+      puerta: properties.puerta,
+      type: properties.type,
+      operationType: properties.operationType,
+      housingType: properties.housingType,
+      housingStatus: properties.housingStatus,
+      floor: properties.floor,
+      features: properties.features,
+      availability: properties.availability,
+      availabilityDate: properties.availabilityDate,
+      previousPrice: properties.previousPrice,
+      price: properties.price,
+      neighborhood: properties.neighborhood,
+      bedrooms: properties.bedrooms,
+      bathrooms: properties.bathrooms,
+      superficie: properties.superficie,
+      mainImageIndex: properties.mainImageIndex,
+      viewCount: properties.viewCount,
+      agentId: properties.agentId,
+      agencyId: properties.agencyId,
+      isActive: properties.isActive,
+      createdAt: properties.createdAt,
+      title: properties.title,
+      lat: properties.lat,
+      lng: properties.lng,
+      images: properties.images, // Include for backward compatibility
+      imageUrls: properties.imageUrls, // Include URL-based images
+      // Exclude only description field for performance
+    };
+
     let query = db
-      .select({
-        id: properties.id,
-        reference: properties.reference,
-        address: properties.address,
-        escalera: properties.escalera,
-        planta: properties.planta,
-        puerta: properties.puerta,
-        type: properties.type,
-        operationType: properties.operationType,
-        housingType: properties.housingType,
-        housingStatus: properties.housingStatus,
-        floor: properties.floor,
-        features: properties.features,
-        availability: properties.availability,
-        availabilityDate: properties.availabilityDate,
-        previousPrice: properties.previousPrice,
-        price: properties.price,
-        neighborhood: properties.neighborhood,
-        bedrooms: properties.bedrooms,
-        bathrooms: properties.bathrooms,
-        superficie: properties.superficie,
-        mainImageIndex: properties.mainImageIndex,
-        viewCount: properties.viewCount,
-        agentId: properties.agentId,
-        agencyId: properties.agencyId,
-        isActive: properties.isActive,
-        createdAt: properties.createdAt,
-        title: properties.title,
-        lat: properties.lat,
-        lng: properties.lng,
-        images: properties.images, // Include images for frontend display
-        imageUrls: properties.imageUrls, // Include new URL-based images
-        // Exclude only description field for performance
-      })
+      .select(baseFields)
       .from(properties)
       .where(eq(properties.agentId, agentId))
       .orderBy(sql`${properties.createdAt} DESC`);
@@ -1153,7 +1155,12 @@ export class DatabaseStorage implements IStorage {
 
     const result = await query;
     console.log(`Found ${result.length} total properties for agent ID: ${agentId} (lean projection with pagination)`);
-    return result;
+    
+    // Compatibility layer: ensure imageUrls is always an array
+    return result.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls ?? [],
+    }));
   }
 
   async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
@@ -1299,8 +1306,43 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Build query with all conditions
-    let query = db.select().from(properties);
+    // Build query with all conditions using defined fields
+    const searchFields = {
+      id: properties.id,
+      reference: properties.reference,
+      address: properties.address,
+      escalera: properties.escalera,
+      planta: properties.planta,
+      puerta: properties.puerta,
+      type: properties.type,
+      operationType: properties.operationType,
+      housingType: properties.housingType,
+      housingStatus: properties.housingStatus,
+      floor: properties.floor,
+      features: properties.features,
+      availability: properties.availability,
+      availabilityDate: properties.availabilityDate,
+      previousPrice: properties.previousPrice,
+      price: properties.price,
+      neighborhood: properties.neighborhood,
+      bedrooms: properties.bedrooms,
+      bathrooms: properties.bathrooms,
+      superficie: properties.superficie,
+      mainImageIndex: properties.mainImageIndex,
+      viewCount: properties.viewCount,
+      agentId: properties.agentId,
+      agencyId: properties.agencyId,
+      isActive: properties.isActive,
+      createdAt: properties.createdAt,
+      title: properties.title,
+      lat: properties.lat,
+      lng: properties.lng,
+      images: properties.images, // Include for backward compatibility
+      imageUrls: properties.imageUrls, // Include URL-based images
+      // Exclude description for performance
+    };
+
+    let query = db.select(searchFields).from(properties);
     
     if (whereConditions.length > 0) {
       console.log(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
@@ -1314,10 +1356,16 @@ export class DatabaseStorage implements IStorage {
     const result = await query;
     console.log(`Consulta completada. Encontradas ${result.length} propiedades que coinciden con los filtros.`);
     
-    // Cache the results for 5 minutes for fast tab switching
-    cache.set(cacheKey, result, 300);
+    // Compatibility layer: ensure imageUrls is always an array
+    const compatibleResult = result.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls ?? [],
+    }));
     
-    return result;
+    // Cache the results for 5 minutes for fast tab switching
+    cache.set(cacheKey, compatibleResult, 300);
+    
+    return compatibleResult;
   }
 
   async createProperty(property: InsertProperty): Promise<Property> {
