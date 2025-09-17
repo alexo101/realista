@@ -1103,7 +1103,7 @@ export class DatabaseStorage implements IStorage {
   async getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]> {
     console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}, limit: ${limit}, offset: ${offset}`);
     
-    // Use lean projection - exclude heavy fields like images and description for better performance
+    // Use lean projection - exclude only description for better performance
     let query = db
       .select({
         id: properties.id,
@@ -1135,7 +1135,9 @@ export class DatabaseStorage implements IStorage {
         title: properties.title,
         lat: properties.lat,
         lng: properties.lng,
-        // Exclude heavy fields: images, description
+        images: properties.images, // Include images for frontend display
+        imageUrls: properties.imageUrls, // Include new URL-based images
+        // Exclude only description field for performance
       })
       .from(properties)
       .where(eq(properties.agentId, agentId))
