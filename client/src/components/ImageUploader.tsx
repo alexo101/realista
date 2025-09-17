@@ -61,9 +61,18 @@ export function ImageUploader({
         const formData = new FormData();
         formData.append('image', file);
         
-        const uploadResponse = await apiRequest("POST", "/api/property-images/upload-direct", formData);
+        // Use fetch directly for file uploads (apiRequest doesn't handle FormData properly)
+        const uploadResponse = await fetch("/api/property-images/upload-direct", {
+          method: "POST",
+          body: formData,
+          credentials: "include", // Include session cookies
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed: ${uploadResponse.status}`);
+        }
         
-        const { imageUrl } = uploadResponse as { imageUrl: string };
+        const { imageUrl } = await uploadResponse.json() as { imageUrl: string };
         uploadedUrls.push(imageUrl);
         
         // For single file mode, call the single callback immediately
