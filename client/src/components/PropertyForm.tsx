@@ -844,9 +844,19 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   <FormControl>
                     <div className="flex flex-col space-y-2">
                       <ImageUploader
+                        multiple={true}
                         onImageUploaded={(imageUrl: string) => {
                           const currentUrls = field.value || [];
                           const allUrls = [...currentUrls, imageUrl];
+                          field.onChange(allUrls);
+                          // Set first uploaded image as main image if none selected
+                          if (form.watch("mainImageIndex") === -1 && allUrls.length > 0) {
+                            form.setValue("mainImageIndex", 0);
+                          }
+                        }}
+                        onMultipleImagesUploaded={(imageUrls: string[]) => {
+                          const currentUrls = field.value || [];
+                          const allUrls = [...currentUrls, ...imageUrls];
                           field.onChange(allUrls);
                           // Set first uploaded image as main image if none selected
                           if (form.watch("mainImageIndex") === -1 && allUrls.length > 0) {

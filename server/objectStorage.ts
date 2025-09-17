@@ -154,6 +154,35 @@ export class ObjectStorageService {
     });
   }
 
+  // Direct upload property image (avoids CORS issues)
+  async uploadPropertyImageDirect(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    if (!privateObjectDir) {
+      throw new Error(
+        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
+          "tool and set PRIVATE_OBJECT_DIR env var."
+      );
+    }
+
+    const imageId = randomUUID();
+    const fullPath = `${privateObjectDir}/property-images/${imageId}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    // Get bucket and file reference
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    // Upload the file buffer directly
+    await file.save(fileBuffer, {
+      metadata: {
+        contentType: mimeType,
+      },
+    });
+
+    // Return the public URL for the uploaded image
+    return `https://storage.googleapis.com/${bucketName}/${objectName}`;
+  }
+
   // Gets the object entity file from the object path.
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {

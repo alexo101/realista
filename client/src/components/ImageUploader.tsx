@@ -6,11 +6,19 @@ import { Upload, X } from "lucide-react";
 
 interface ImageUploaderProps {
   onImageUploaded: (imageUrl: string) => void;
+  onMultipleImagesUploaded?: (imageUrls: string[]) => void;
   maxFiles?: number;
+  multiple?: boolean;
   className?: string;
 }
 
-export function ImageUploader({ onImageUploaded, maxFiles = 5, className }: ImageUploaderProps) {
+export function ImageUploader({ 
+  onImageUploaded, 
+  onMultipleImagesUploaded, 
+  maxFiles = 5, 
+  multiple = false, 
+  className 
+}: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
@@ -18,57 +26,60 @@ export function ImageUploader({ onImageUploaded, maxFiles = 5, className }: Imag
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    const file = files[0];
+    const fileArray = Array.from(files);
     
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Archivo inválido",
-        description: "Por favor selecciona un archivo de imagen.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Validate all files
+    for (const file of fileArray) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Archivo inválido",
+          description: `${file.name} no es una imagen válida.`,
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "Archivo muy grande",
-        description: "El archivo debe ser menor a 10MB.",
-        variant: "destructive",
-      });
-      return;
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Archivo muy grande",
+          description: `${file.name} debe ser menor a 10MB.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsUploading(true);
+    const uploadedUrls: string[] = [];
 
     try {
-      // Get upload URL from backend
-      const uploadResponse = await apiRequest("POST", "/api/property-images/upload", {});
-      const { uploadURL } = uploadResponse;
-
-      // Upload file directly to object storage
-      const uploadResult = await fetch(uploadURL, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-
-      if (!uploadResult.ok) {
-        throw new Error("Failed to upload image");
+      // Upload each file
+      for (const file of fileArray) {
+        // Upload to our backend instead of direct object storage to avoid CORS
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const uploadResponse = await apiRequest("POST", "/api/property-images/upload-direct", formData, {
+          'Content-Type': undefined // Let browser set multipart boundary
+        });
+        
+        const { imageUrl } = uploadResponse;
+        uploadedUrls.push(imageUrl);
+        
+        // For single file mode, call the single callback immediately
+        if (!multiple) {
+          onImageUploaded(imageUrl);
+        }
       }
 
-      // Extract the image URL from the upload URL (remove query parameters)
-      const imageUrl = uploadURL.split('?')[0];
-      
-      // Call the callback with the image URL
-      onImageUploaded(imageUrl);
+      // For multiple file mode, call the multiple callback
+      if (multiple && onMultipleImagesUploaded) {
+        onMultipleImagesUploaded(uploadedUrls);
+      }
 
       toast({
-        title: "Imagen subida",
-        description: "La imagen se ha subido correctamente.",
+        title: "Imagen(es) subida(s)",
+        description: `${uploadedUrls.length} imagen(es) subida(s) correctamente.`,
       });
 
       // Reset the input
@@ -77,7 +88,7 @@ export function ImageUploader({ onImageUploaded, maxFiles = 5, className }: Imag
       console.error("Error uploading image:", error);
       toast({
         title: "Error",
-        description: "No se pudo subir la imagen. Inténtalo de nuevo.",
+        description: "No se pudo subir la(s) imagen(es). Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -90,6 +101,7 @@ export function ImageUploader({ onImageUploaded, maxFiles = 5, className }: Imag
       <input
         type="file"
         accept="image/*"
+        multiple={multiple}
         onChange={handleFileUpload}
         disabled={isUploading}
         className="hidden"
@@ -105,7 +117,7 @@ export function ImageUploader({ onImageUploaded, maxFiles = 5, className }: Imag
         >
           <span className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            {isUploading ? "Subiendo..." : "Subir imagen"}
+            {isUploading ? "Subiendo..." : multiple ? "Subir imágenes" : "Subir imagen"}
           </span>
         </Button>
       </label>

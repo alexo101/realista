@@ -2584,6 +2584,75 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
     }
   });
 
+  // Direct upload for property images (avoids CORS issues)
+  app.post("/api/property-images/upload-direct", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      
+      // Handle file upload directly from multipart form data
+      const contentType = req.headers['content-type'];
+      if (!contentType || !contentType.includes('multipart/form-data')) {
+        return res.status(400).json({ error: "Multipart form data required" });
+      }
+
+      // Get the uploaded file data
+      let fileBuffer: Buffer;
+      let fileName: string;
+      let mimeType: string;
+
+      // Simple multipart parser (basic implementation)
+      const chunks: Buffer[] = [];
+      req.on('data', chunk => chunks.push(chunk));
+      
+      req.on('end', async () => {
+        try {
+          const buffer = Buffer.concat(chunks);
+          const boundary = contentType.split('boundary=')[1];
+          
+          // Parse multipart data
+          const parts = buffer.toString('binary').split(`--${boundary}`);
+          
+          for (const part of parts) {
+            if (part.includes('Content-Disposition: form-data; name="image"')) {
+              const headerEndIndex = part.indexOf('\r\n\r\n');
+              if (headerEndIndex !== -1) {
+                const headers = part.substring(0, headerEndIndex);
+                const fileData = part.substring(headerEndIndex + 4);
+                
+                // Extract filename and content type
+                const filenameMatch = headers.match(/filename="([^"]+)"/);
+                fileName = filenameMatch ? filenameMatch[1] : `image_${Date.now()}.jpg`;
+                
+                const contentTypeMatch = headers.match(/Content-Type: ([^\r\n]+)/);
+                mimeType = contentTypeMatch ? contentTypeMatch[1] : 'image/jpeg';
+                
+                // Convert binary string back to buffer
+                fileBuffer = Buffer.from(fileData.substring(0, fileData.length - 2), 'binary');
+                break;
+              }
+            }
+          }
+
+          if (!fileBuffer) {
+            return res.status(400).json({ error: "No image file found" });
+          }
+
+          // Upload directly to object storage
+          const imageUrl = await objectStorageService.uploadPropertyImageDirect(fileBuffer, fileName, mimeType);
+          
+          res.json({ imageUrl });
+        } catch (error) {
+          console.error("Error processing upload:", error);
+          res.status(500).json({ error: "Failed to process upload" });
+        }
+      });
+
+    } catch (error) {
+      console.error("Error setting up direct upload:", error);
+      res.status(500).json({ error: "Failed to setup upload" });
+    }
+  });
+
   // Update property with new image URL after upload
   app.put("/api/properties/:id/add-image", async (req, res) => {
     try {
