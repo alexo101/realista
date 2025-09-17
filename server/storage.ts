@@ -1102,13 +1102,46 @@ export class DatabaseStorage implements IStorage {
 
   async getAllPropertiesByAgent(agentId: number): Promise<Property[]> {
     console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}`);
+    
+    // Use lean projection - exclude heavy fields like images and description for better performance
     const result = await db
-      .select()
+      .select({
+        id: properties.id,
+        reference: properties.reference,
+        address: properties.address,
+        escalera: properties.escalera,
+        planta: properties.planta,
+        puerta: properties.puerta,
+        type: properties.type,
+        operationType: properties.operationType,
+        housingType: properties.housingType,
+        housingStatus: properties.housingStatus,
+        floor: properties.floor,
+        features: properties.features,
+        availability: properties.availability,
+        availabilityDate: properties.availabilityDate,
+        previousPrice: properties.previousPrice,
+        price: properties.price,
+        neighborhood: properties.neighborhood,
+        bedrooms: properties.bedrooms,
+        bathrooms: properties.bathrooms,
+        superficie: properties.superficie,
+        mainImageIndex: properties.mainImageIndex,
+        viewCount: properties.viewCount,
+        agentId: properties.agentId,
+        agencyId: properties.agencyId,
+        isActive: properties.isActive,
+        createdAt: properties.createdAt,
+        title: properties.title,
+        lat: properties.lat,
+        lng: properties.lng,
+        // Exclude heavy fields: images, description
+      })
       .from(properties)
       .where(eq(properties.agentId, agentId))
       .orderBy(sql`${properties.createdAt} DESC`);
 
-    console.log(`Found ${result.length} total properties for agent ID: ${agentId}`);
+    console.log(`Found ${result.length} total properties for agent ID: ${agentId} (lean projection)`);
     return result;
   }
 
