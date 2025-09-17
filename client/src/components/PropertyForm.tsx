@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -162,16 +162,20 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
     initialData?.neighborhood
   );
+  const didInitializeState = useRef(false);
 
-  // Actualizar el barrio local cuando cambia el initialData
+  // Initialize state only once per property, don't overwrite after mutations
   useEffect(() => {
+    if (didInitializeState.current) return;
+    
     if (initialData?.neighborhood) {
       setLocalNeighborhood(initialData.neighborhood);
     }
     if (initialData?.isActive !== undefined) {
       setIsActive(initialData.isActive);
     }
-  }, [initialData]);
+    didInitializeState.current = true;
+  }, [initialData?.id]); // Only re-initialize when property ID changes
 
   // Mutations for property management
   const deleteMutation = useMutation({
@@ -210,24 +214,31 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       return response.json();
     },
     onSuccess: (data) => {
-      console.log('Toggle success, received data:', data);
-      // Update state only from server response to avoid conflicts
+      // Update local state with server response
       setIsActive(data.isActive);
-      console.log('Updated isActive state to:', data.isActive);
+      
+      // Update React Query cache immediately to prevent stale data flashes
+      queryClient.setQueryData(["/api/properties", data.id], data);
+      
+      // Update properties list cache
+      queryClient.setQueryData(["/api/properties"], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((property: any) => 
+          property.id === data.id ? data : property
+        );
+      });
+      
       toast({
         title: data.isActive ? "Propiedad activada" : "Propiedad desactivada",
         description: data.isActive 
           ? "La propiedad ahora es visible para los clientes." 
           : "La propiedad está oculta para los clientes.",
       });
-      // Invalidate queries to refresh the property list
-      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/properties", initialData?.id] });
-      // Also invalidate search results to update neighborhood results
+      
+      // Background refresh to verify (optional)
       queryClient.invalidateQueries({ queryKey: ["/api/search"] });
     },
     onError: (error) => {
-      console.error('Toggle error:', error);
       toast({
         title: "Error",
         description: "No se pudo cambiar el estado de la propiedad.",
