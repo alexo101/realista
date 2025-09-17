@@ -67,11 +67,17 @@ export function NeighborhoodRating() {
       // Limpiamos el localStorage para evitar que se seleccione automáticamente en futuras visitas
       localStorage.removeItem('barrio_a_valorar');
       
-      // Hacer scroll al componente para que sea visible
+      // Hacer scroll al componente para que sea visible, accounting for fixed navbar
       const element = document.getElementById('valorar-barrio');
       if (element) {
         setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Get the navbar height (64px) and add some padding
+          const navbarHeight = 80; // 64px navbar + 16px padding
+          const elementPosition = element.offsetTop - navbarHeight;
+          window.scrollTo({
+            top: elementPosition,
+            behavior: 'smooth'
+          });
         }, 500);
       }
     }
