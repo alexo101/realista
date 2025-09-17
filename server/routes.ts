@@ -36,6 +36,23 @@ import { sendWelcomeEmail, sendReviewRequest } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
+import multer from 'multer';
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(), // Store files in memory as Buffer
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Check if the uploaded file is an image
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
@@ -2584,72 +2601,31 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
     }
   });
 
-  // Direct upload for property images (avoids CORS issues)
-  app.post("/api/property-images/upload-direct", async (req, res) => {
+  // Direct upload for property images (avoids CORS issues) - Using multer
+  app.post("/api/property-images/upload-direct", upload.single('image'), async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      
-      // Handle file upload directly from multipart form data
-      const contentType = req.headers['content-type'];
-      if (!contentType || !contentType.includes('multipart/form-data')) {
-        return res.status(400).json({ error: "Multipart form data required" });
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
       }
 
-      // Get the uploaded file data
-      let fileBuffer: Buffer;
-      let fileName: string;
-      let mimeType: string;
-
-      // Simple multipart parser (basic implementation)
-      const chunks: Buffer[] = [];
-      req.on('data', chunk => chunks.push(chunk));
+      const objectStorageService = new ObjectStorageService();
       
-      req.on('end', async () => {
-        try {
-          const buffer = Buffer.concat(chunks);
-          const boundary = contentType.split('boundary=')[1];
-          
-          // Parse multipart data
-          const parts = buffer.toString('binary').split(`--${boundary}`);
-          
-          for (const part of parts) {
-            if (part.includes('Content-Disposition: form-data; name="image"')) {
-              const headerEndIndex = part.indexOf('\r\n\r\n');
-              if (headerEndIndex !== -1) {
-                const headers = part.substring(0, headerEndIndex);
-                const fileData = part.substring(headerEndIndex + 4);
-                
-                // Extract filename and content type
-                const filenameMatch = headers.match(/filename="([^"]+)"/);
-                fileName = filenameMatch ? filenameMatch[1] : `image_${Date.now()}.jpg`;
-                
-                const contentTypeMatch = headers.match(/Content-Type: ([^\r\n]+)/);
-                mimeType = contentTypeMatch ? contentTypeMatch[1] : 'image/jpeg';
-                
-                // Convert binary string back to buffer
-                fileBuffer = Buffer.from(fileData.substring(0, fileData.length - 2), 'binary');
-                break;
-              }
-            }
-          }
+      // Use multer parsed file data
+      const fileBuffer = req.file.buffer;
+      const fileName = req.file.originalname || `image_${Date.now()}.jpg`;
+      const mimeType = req.file.mimetype;
 
-          if (!fileBuffer) {
-            return res.status(400).json({ error: "No image file found" });
-          }
+      console.log(`Uploading image: ${fileName}, type: ${mimeType}, size: ${fileBuffer.length} bytes`);
 
-          // Upload directly to object storage
-          const imageUrl = await objectStorageService.uploadPropertyImageDirect(fileBuffer, fileName, mimeType);
-          
-          res.json({ imageUrl });
-        } catch (error) {
-          console.error("Error processing upload:", error);
-          res.status(500).json({ error: "Failed to process upload" });
-        }
-      });
-
+      // Upload directly to object storage
+      const imageUrl = await objectStorageService.uploadPropertyImageDirect(fileBuffer, fileName, mimeType);
+      
+      console.log(`Image uploaded successfully: ${imageUrl}`);
+      
+      res.json({ imageUrl });
     } catch (error) {
-      console.error("Error setting up direct upload:", error);
-      res.status(500).json({ error: "Failed to setup upload" });
+      console.error("Error processing upload:", error);
+      res.status(500).json({ error: "Failed to process upload" });
     }
   });
 
