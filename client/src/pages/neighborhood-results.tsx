@@ -6,6 +6,7 @@ import { GoogleMapsPropertyMap } from "@/components/GoogleMapsPropertyMap";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
 import GoogleMapsNeighborhoodMap from "@/components/GoogleMapsNeighborhoodMap";
+import { Footer } from "@/components/Footer";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -284,7 +285,7 @@ export default function NeighborhoodResultsPage() {
   });
 
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen flex flex-col pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
         <div className="mb-6">
           {/* Breadcrumb */}
@@ -839,6 +840,11 @@ export default function NeighborhoodResultsPage() {
           </Tabs>
         </div>
       </div>
+      
+      {/* Footer - Only on neighborhood pages */}
+      <footer className="mt-auto">
+        <Footer />
+      </footer>
     </div>
   );
 }

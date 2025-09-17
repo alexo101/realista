@@ -6,13 +6,12 @@ import { Bed, Bath, Square, MapPin, Euro, ChevronLeft, ChevronRight } from "luci
 
 interface Property {
   id: number;
-  title: string;
+  title: string | null; // Match the actual schema
   address: string;
   price: number;
-  bedrooms: number;
-  bathrooms: number;
-  size: number;
-  superficie?: number;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  superficie: number | null; // Match the actual schema
   images?: string[]; // Legacy base64 images (deprecated)
   imageUrls: string[]; // New URL-based images
   mainImageIndex?: number;
@@ -131,7 +130,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         
         <CardContent className="p-3 md:p-4">
           <div className="mb-2">
-            <h3 className="font-semibold text-base md:text-lg truncate">{property.title}</h3>
+            <h3 className="font-semibold text-base md:text-lg truncate">{property.title || 'Propiedad sin título'}</h3>
             <div className="flex items-center text-xs md:text-sm text-gray-500">
               <MapPin className="h-3 w-3 mr-1" /> 
               <span className="truncate">{property.address}</span>
@@ -147,15 +146,15 @@ export function PropertyCard({ property }: PropertyCardProps) {
           <div className="flex items-center justify-between text-xs md:text-sm text-gray-600">
             <div className="flex items-center">
               <Bed className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-              <span>{property.bedrooms}</span>
+              <span>{property.bedrooms || 0}</span>
             </div>
             <div className="flex items-center">
               <Bath className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-              <span>{property.bathrooms}</span>
+              <span>{property.bathrooms || 0}</span>
             </div>
             <div className="flex items-center">
               <Square className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-              <span>{property.superficie || property.size}m²</span>
+              <span>{property.superficie || 0}m²</span>
             </div>
           </div>
         </CardContent>

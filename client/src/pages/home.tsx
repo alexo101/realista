@@ -5,6 +5,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { NeighborhoodRating } from "@/components/NeighborhoodRating";
 import { MessageCarousel } from "@/components/MessageCarousel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Footer } from "@/components/Footer";
 
 export default function Home() {
   // Consulta para propiedades más vistas en venta
@@ -26,7 +27,7 @@ export default function Home() {
   const isLoading = isLoadingSales || isLoadingRental;
 
   return (
-    <div className="pt-16">
+    <div className="min-h-screen flex flex-col pt-16">
       <section className="bg-primary/5 py-8 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-2xl md:text-4xl font-bold text-center mb-4">
@@ -119,6 +120,11 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </section>
+      
+      {/* Footer - Import and use Footer component */}
+      <footer className="mt-auto">
+        <Footer />
+      </footer>
     </div>
   );
 }
