@@ -492,9 +492,13 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         properties = await storage.getMostViewedProperties(limit, operationType);
         console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
+        // Add pagination support for better performance
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+        const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+        
         // Use getAllPropertiesByAgent for management purposes when includeInactive is true
         properties = includeInactive 
-          ? await storage.getAllPropertiesByAgent(agentId)
+          ? await storage.getAllPropertiesByAgent(agentId, limit, offset)
           : await storage.getPropertiesByAgent(agentId);
       } else if (agencyId) {
         properties = await storage.getPropertiesByAgency(agencyId);

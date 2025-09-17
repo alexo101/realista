@@ -101,7 +101,7 @@ export interface IStorage {
   getProperty(id: number): Promise<Property | undefined>;
   getMostViewedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
-  getAllPropertiesByAgent(agentId: number): Promise<Property[]>;
+  getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]>;
   getPropertiesByAgency(agencyId: number): Promise<Property[]>;
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
@@ -1100,11 +1100,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAllPropertiesByAgent(agentId: number): Promise<Property[]> {
-    console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}`);
+  async getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]> {
+    console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}, limit: ${limit}, offset: ${offset}`);
     
     // Use lean projection - exclude heavy fields like images and description for better performance
-    const result = await db
+    let query = db
       .select({
         id: properties.id,
         reference: properties.reference,
@@ -1141,7 +1141,16 @@ export class DatabaseStorage implements IStorage {
       .where(eq(properties.agentId, agentId))
       .orderBy(sql`${properties.createdAt} DESC`);
 
-    console.log(`Found ${result.length} total properties for agent ID: ${agentId} (lean projection)`);
+    // Add pagination if specified
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    if (offset !== undefined) {
+      query = query.offset(offset);
+    }
+
+    const result = await query;
+    console.log(`Found ${result.length} total properties for agent ID: ${agentId} (lean projection with pagination)`);
     return result;
   }
 
