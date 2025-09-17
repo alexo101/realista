@@ -69,11 +69,14 @@ export default function Home() {
                   mostViewedSaleProperties.map((property) => (
                     <PropertyCard
                       key={property.id}
-                      property={property}
+                      property={{
+                        ...property,
+                        mainImageIndex: property.mainImageIndex ?? 0
+                      }}
                     />
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-16">
+                  <div className="py-8">
                     <p className="text-gray-500 text-lg">
                       No hay propiedades en venta disponibles en este momento.
                     </p>
@@ -102,11 +105,14 @@ export default function Home() {
                   mostViewedRentProperties.map((property) => (
                     <PropertyCard
                       key={property.id}
-                      property={property}
+                      property={{
+                        ...property,
+                        mainImageIndex: property.mainImageIndex ?? 0
+                      }}
                     />
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-16">
+                  <div className="py-8">
                     <p className="text-gray-500 text-lg">
                       No hay propiedades en alquiler disponibles en este momento.
                     </p>
