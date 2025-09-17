@@ -210,8 +210,10 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('Toggle success, received data:', data);
       // Update state only from server response to avoid conflicts
       setIsActive(data.isActive);
+      console.log('Updated isActive state to:', data.isActive);
       toast({
         title: data.isActive ? "Propiedad activada" : "Propiedad desactivada",
         description: data.isActive 
@@ -225,6 +227,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       queryClient.invalidateQueries({ queryKey: ["/api/search"] });
     },
     onError: (error) => {
+      console.error('Toggle error:', error);
       toast({
         title: "Error",
         description: "No se pudo cambiar el estado de la propiedad.",
