@@ -12,8 +12,8 @@ interface Property {
   bedrooms: number | null;
   bathrooms: number | null;
   superficie: number | null; // Match the actual schema
-  images?: string[]; // Legacy base64 images (deprecated)
-  imageUrls: string[]; // New URL-based images
+  images?: string[] | null; // Legacy base64 images (deprecated)
+  imageUrls: string[] | null; // New URL-based images
   mainImageIndex?: number;
   type: string;
   operationType: string;
@@ -34,9 +34,9 @@ export function PropertyCard({ property }: PropertyCardProps) {
   }).format(property.price);
 
   // Process images using URL-based system with fallback
-  const images = property.imageUrls && property.imageUrls.length > 0
+  const images = (property.imageUrls && property.imageUrls.length > 0)
     ? property.imageUrls
-    : property.images && property.images.length > 0 
+    : (property.images && property.images.length > 0) 
     ? property.images  // Backward compatibility
     : ["https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=2070&auto=format&fit=crop"]; // Placeholder
   

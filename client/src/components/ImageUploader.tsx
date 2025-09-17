@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Image, FileImage } from "lucide-react";
 
 interface ImageUploaderProps {
   onImageUploaded: (imageUrl: string) => void;
@@ -20,7 +20,9 @@ export function ImageUploader({
   className 
 }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -59,11 +61,9 @@ export function ImageUploader({
         const formData = new FormData();
         formData.append('image', file);
         
-        const uploadResponse = await apiRequest("POST", "/api/property-images/upload-direct", formData, {
-          'Content-Type': undefined // Let browser set multipart boundary
-        });
+        const uploadResponse = await apiRequest("POST", "/api/property-images/upload-direct", formData);
         
-        const { imageUrl } = uploadResponse;
+        const { imageUrl } = uploadResponse as { imageUrl: string };
         uploadedUrls.push(imageUrl);
         
         // For single file mode, call the single callback immediately
@@ -96,31 +96,118 @@ export function ImageUploader({
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Create a fake event to reuse our existing upload logic
+      const fakeEvent = {
+        target: { files, value: '' }
+      } as React.ChangeEvent<HTMLInputElement>;
+      handleFileUpload(fakeEvent);
+    }
+  };
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className={className}>
       <input
+        ref={fileInputRef}
         type="file"
         accept="image/*"
         multiple={multiple}
         onChange={handleFileUpload}
         disabled={isUploading}
         className="hidden"
-        id="image-upload"
       />
-      <label htmlFor="image-upload">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isUploading}
-          className="cursor-pointer"
-          asChild
-        >
-          <span className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            {isUploading ? "Subiendo..." : multiple ? "Subir imágenes" : "Subir imagen"}
-          </span>
-        </Button>
-      </label>
+      
+      {/* Enhanced drag and drop zone */}
+      <div
+        onClick={handleClick}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={`
+          relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200 hover:bg-gray-50/50
+          ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-gray-300'}
+          ${isUploading ? 'cursor-not-allowed opacity-60' : 'hover:border-primary'}
+        `}
+        data-testid={multiple ? "drag-drop-multiple-images" : "drag-drop-single-image"}
+      >
+        {isUploading ? (
+          <div className="flex flex-col items-center space-y-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="text-sm text-gray-600">Subiendo imágenes...</p>
+          </div>
+        ) : (
+          <>
+            {/* Icon */}
+            <div className="mx-auto mb-4">
+              {multiple ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <FileImage className={`h-8 w-8 ${isDragActive ? 'text-primary' : 'text-gray-400'}`} />
+                  <FileImage className={`h-6 w-6 ${isDragActive ? 'text-primary' : 'text-gray-400'} -ml-3`} />
+                </div>
+              ) : (
+                <Image className={`h-12 w-12 mx-auto ${isDragActive ? 'text-primary' : 'text-gray-400'}`} />
+              )}
+            </div>
+            
+            {/* Text content */}
+            <div className="space-y-2">
+              <h3 className={`text-lg font-medium ${isDragActive ? 'text-primary' : 'text-gray-900'}`}>
+                {isDragActive 
+                  ? (multiple ? 'Suelta las imágenes aquí' : 'Suelta la imagen aquí')
+                  : (multiple ? 'Arrastra y suelta imágenes' : 'Arrastra y suelta una imagen')
+                }
+              </h3>
+              <p className="text-sm text-gray-500">
+                o haz clic para seleccionar {multiple ? 'archivos' : 'un archivo'}
+              </p>
+              <p className="text-xs text-gray-400">
+                {multiple ? `Máximo ${maxFiles} archivos` : 'Máximo 1 archivo'} • PNG, JPG hasta 10MB
+              </p>
+            </div>
+            
+            {/* Action button */}
+            <div className="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                className="cursor-pointer"
+                data-testid={multiple ? "button-upload-images" : "button-upload-image"}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {multiple ? "Seleccionar imágenes" : "Seleccionar imagen"}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
