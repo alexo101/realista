@@ -13,7 +13,9 @@ interface Property {
   bathrooms: number;
   size: number;
   superficie?: number;
-  images: string[];
+  images?: string[]; // Legacy base64 images (deprecated)
+  imageUrls: string[]; // New URL-based images
+  mainImageIndex?: number;
   type: string;
   operationType: string;
 }
@@ -23,7 +25,7 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(property.mainImageIndex ?? 0);
   
   // Formato del precio en euros con puntos como separadores de miles
   const formattedPrice = new Intl.NumberFormat('es-ES', {
@@ -32,10 +34,15 @@ export function PropertyCard({ property }: PropertyCardProps) {
     maximumFractionDigits: 0
   }).format(property.price);
 
-  // Procesar imágenes con fallback
-  const images = property.images && property.images.length > 0
-    ? property.images
-    : ["https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=2070&auto=format&fit=crop"];
+  // Process images using URL-based system with fallback
+  const images = property.imageUrls && property.imageUrls.length > 0
+    ? property.imageUrls
+    : property.images && property.images.length > 0 
+    ? property.images  // Backward compatibility
+    : ["https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=2070&auto=format&fit=crop"]; // Placeholder
+  
+  // Use mainImageIndex for starting image
+  const startingIndex = property.mainImageIndex ?? 0;
   
   const hasMultipleImages = images.length > 1;
 
