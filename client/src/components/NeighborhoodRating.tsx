@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Star, Search } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Star, Search, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const POPULAR_NEIGHBORHOODS = [
   "Gracia",
@@ -22,13 +25,62 @@ interface NeighborhoodAverages {
   services: number;
 }
 
+interface StarRatingProps {
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+}
+
+const StarRatingInput = ({ value, onChange, disabled = false }: StarRatingProps) => {
+  const [hoverValue, setHoverValue] = useState(0);
+
+  return (
+    <div className="flex gap-1 mt-2">
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={disabled}
+          className={`text-lg ${disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+          onClick={() => !disabled && onChange(star)}
+          onMouseEnter={() => !disabled && setHoverValue(star)}
+          onMouseLeave={() => !disabled && setHoverValue(0)}
+        >
+          <Star 
+            className={`h-5 w-5 ${
+              (hoverValue || value) >= star
+                ? 'text-yellow-500 fill-yellow-500'
+                : 'text-gray-300'
+            }`}
+          />
+        </button>
+      ))}
+      <span className="ml-2 text-sm text-gray-600 font-medium">
+        {value > 0 ? `${value}/10` : 'Sin calificar'}
+      </span>
+    </div>
+  );
+};
+
 export function NeighborhoodRating() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("Gracia");
   const [searchValue, setSearchValue] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const [showRatingForm, setShowRatingForm] = useState<boolean>(false);
+  const [userRatings, setUserRatings] = useState<Record<string, number>>({
+    security: 0,
+    parking: 0,
+    familyFriendly: 0,
+    publicTransport: 0,
+    greenSpaces: 0,
+    services: 0,
+  });
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch all neighborhoods with ratings
   const { data: allNeighborhoods } = useQuery<string[]>({
@@ -47,6 +99,39 @@ export function NeighborhoodRating() {
   const filteredNeighborhoods = allNeighborhoods?.filter(neighborhood =>
     neighborhood.toLowerCase().includes(searchValue.toLowerCase())
   ) || [];
+
+  // Rating submission mutation
+  const ratingMutation = useMutation({
+    mutationFn: async (ratingData: any) => {
+      return await apiRequest('POST', '/api/neighborhoods/ratings', ratingData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "¡Valoración enviada!",
+        description: `Tu valoración para ${selectedNeighborhood} ha sido guardada con éxito.`,
+      });
+      setShowRatingForm(false);
+      setUserRatings({
+        security: 0,
+        parking: 0,
+        familyFriendly: 0,
+        publicTransport: 0,
+        greenSpaces: 0,
+        services: 0,
+      });
+      // Invalidate and refetch ratings to show updated data
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/neighborhoods/ratings/average?neighborhood=${selectedNeighborhood}`] 
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al enviar valoración",
+        description: error?.message || "No se pudo enviar tu valoración. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Click outside to close suggestions
   useEffect(() => {
@@ -126,6 +211,35 @@ export function NeighborhoodRating() {
     }
   };
 
+  const handleRatingChange = (category: string, value: number) => {
+    setUserRatings(prev => ({
+      ...prev,
+      [category]: value
+    }));
+  };
+
+  const handleSubmitRating = () => {
+    // Check if all ratings are filled
+    const hasAllRatings = Object.values(userRatings).every(rating => rating > 0);
+    
+    if (!hasAllRatings) {
+      toast({
+        title: "Faltan calificaciones",
+        description: "Por favor, califica todas las categorías antes de enviar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const ratingData = {
+      neighborhood: selectedNeighborhood,
+      ...userRatings,
+      userId: -1, // Anonymous user
+    };
+
+    ratingMutation.mutate(ratingData);
+  };
+
   return (
     <div className="w-full">
       <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6 text-left">
@@ -195,6 +309,76 @@ export function NeighborhoodRating() {
         ))}
       </div>
 
+      {/* Rate this neighborhood button */}
+      {selectedNeighborhood && !showRatingForm && (
+        <div className="mb-8">
+          <Button 
+            onClick={() => setShowRatingForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+            data-testid="rate-neighborhood-button"
+          >
+            Calificar este barrio
+          </Button>
+        </div>
+      )}
+
+      {/* Rating form */}
+      {showRatingForm && (
+        <Card className="mb-8 border shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                Califica: {selectedNeighborhood}
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowRatingForm(false)}
+                data-testid="close-rating-form"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-6">
+              {ratingCategories.map(({ key, label, icon }) => (
+                <div key={key} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{icon}</span>
+                    <label className="text-sm font-medium text-gray-700">
+                      {label}
+                    </label>
+                  </div>
+                  <StarRatingInput
+                    value={userRatings[key] || 0}
+                    onChange={(value) => handleRatingChange(key, value)}
+                    disabled={ratingMutation.isPending}
+                  />
+                </div>
+              ))}
+              
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handleSubmitRating}
+                  disabled={ratingMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                  data-testid="submit-rating-button"
+                >
+                  {ratingMutation.isPending ? "Enviando..." : "Enviar valoración"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRatingForm(false)}
+                  disabled={ratingMutation.isPending}
+                  data-testid="cancel-rating-button"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Ratings display */}
       {isLoading ? (
