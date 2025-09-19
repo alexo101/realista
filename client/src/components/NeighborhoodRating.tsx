@@ -41,9 +41,11 @@ export function NeighborhoodRating() {
 
   const ratingCategories = [
     { key: 'security' as keyof NeighborhoodAverages, label: 'Seguridad', icon: '🔒' },
+    { key: 'parking' as keyof NeighborhoodAverages, label: 'Aparcamiento', icon: '🚗' },
+    { key: 'familyFriendly' as keyof NeighborhoodAverages, label: 'Ambiente familiar', icon: '👨‍👩‍👧‍👦' },
     { key: 'publicTransport' as keyof NeighborhoodAverages, label: 'Conectividad', icon: '🚌' },
-    { key: 'services' as keyof NeighborhoodAverages, label: 'Servicios', icon: '🛍️' },
     { key: 'greenSpaces' as keyof NeighborhoodAverages, label: 'Zonas verdes', icon: '🌳' },
+    { key: 'services' as keyof NeighborhoodAverages, label: 'Servicios', icon: '🛍️' },
   ];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -123,7 +125,7 @@ export function NeighborhoodRating() {
       {/* Ratings display */}
       {isLoading ? (
         <div className="space-y-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(ratingCategories.length)].map((_, i) => (
             <div key={i} className="space-y-2">
               <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
               <div className="h-2 bg-gray-200 rounded animate-pulse"></div>
