@@ -76,7 +76,7 @@ export default function Home() {
                     />
                   ))
                 ) : (
-                  <div className="py-8">
+                  <div className="py-8 text-left">
                     <p className="text-gray-500 text-lg">
                       No hay propiedades en venta disponibles en este momento.
                     </p>
@@ -112,7 +112,7 @@ export default function Home() {
                     />
                   ))
                 ) : (
-                  <div className="py-8">
+                  <div className="py-8 text-left">
                     <p className="text-gray-500 text-lg">
                       No hay propiedades en alquiler disponibles en este momento.
                     </p>

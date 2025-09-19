@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Star, Search } from "lucide-react";
 
 const POPULAR_NEIGHBORHOODS = [
   "Gracia",
@@ -23,6 +24,7 @@ interface NeighborhoodAverages {
 
 export function NeighborhoodRating() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("Barceloneta");
+  const [searchValue, setSearchValue] = useState<string>("");
 
   // Fetch ratings for the selected neighborhood
   const { data: ratings, isLoading } = useQuery<NeighborhoodAverages>({
@@ -38,11 +40,34 @@ export function NeighborhoodRating() {
     { key: 'greenSpaces' as keyof NeighborhoodAverages, label: 'Zonas verdes', icon: '🌳' },
   ];
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      setSelectedNeighborhood(searchValue.trim());
+      setSearchValue("");
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Search bar */}
+      <form onSubmit={handleSearchSubmit} className="relative max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Buscar todos los barrios de Barcelona..."
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            data-testid="neighborhood-search-input"
+          />
+        </div>
+      </form>
+      
       <div className="text-left">
         <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">
-          Barrios más populares
+          Calificaciones de barrios
         </h2>
         
         {/* Neighborhood buttons */}
@@ -108,7 +133,7 @@ export function NeighborhoodRating() {
             })}
           </div>
         ) : (
-          <div data-testid="no-ratings-message" className="text-gray-500 text-center py-8">
+          <div data-testid="no-ratings-message" className="text-gray-500 py-8">
             <p>No hay valoraciones disponibles para {selectedNeighborhood} en este momento.</p>
           </div>
         )}
