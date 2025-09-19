@@ -1520,18 +1520,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Get all neighborhoods that have ratings
+  // Get all Barcelona neighborhoods (for consistency with property search)
   async getAllNeighborhoodsWithRatings(): Promise<string[]> {
-    try {
-      const neighborhoods = await db
-        .selectDistinct({ neighborhood: neighborhoodRatings.neighborhood })
-        .from(neighborhoodRatings);
-      
-      return neighborhoods.map(n => n.neighborhood);
-    } catch (error) {
-      console.error('Error fetching neighborhoods with ratings:', error);
-      return [];
-    }
+    // Import the shared neighborhood list to avoid duplication
+    const { BARCELONA_NEIGHBORHOODS } = await import('./utils/neighborhoods');
+    return [...BARCELONA_NEIGHBORHOODS].sort();
   }
 
   async createNeighborhoodRating(
