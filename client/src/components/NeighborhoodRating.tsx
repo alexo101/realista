@@ -195,31 +195,6 @@ export function NeighborhoodRating() {
         ))}
       </div>
 
-      {/* Available neighborhoods from database */}
-      {allNeighborhoods && allNeighborhoods.length > 0 && (
-        <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-3">Otros barrios disponibles:</p>
-          <div className="flex flex-wrap gap-2">
-            {allNeighborhoods
-              .filter(n => !POPULAR_NEIGHBORHOODS.includes(n))
-              .map((neighborhood) => (
-                <Button
-                  key={neighborhood}
-                  data-testid={`other-neighborhood-button-${neighborhood.toLowerCase().replace(' ', '-')}`}
-                  variant={selectedNeighborhood === neighborhood ? "default" : "outline"}
-                  onClick={() => setSelectedNeighborhood(neighborhood)}
-                  className={`px-3 py-1 rounded-full text-xs ${
-                    selectedNeighborhood === neighborhood 
-                      ? "bg-blue-600 text-white hover:bg-blue-700" 
-                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {neighborhood}
-                </Button>
-              ))}
-          </div>
-        </div>
-      )}
 
       {/* Ratings display */}
       {isLoading ? (
