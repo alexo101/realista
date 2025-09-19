@@ -1,0 +1,130 @@
+Madrid,Centro,Palacio
+Madrid,Centro,Embajadores
+Madrid,Centro,Cortes
+Madrid,Centro,Justicia
+Madrid,Centro,Universidad
+Madrid,Centro,Sol
+Madrid,Arganzuela,Imperial
+Madrid,Arganzuela,Acacias
+Madrid,Arganzuela,Chopera
+Madrid,Arganzuela,Legazpi
+Madrid,Arganzuela,Delicias
+Madrid,Arganzuela,Palos de la Frontera
+Madrid,Arganzuela,Atocha
+Madrid,Retiro,Pacífico
+Madrid,Retiro,Adelfas
+Madrid,Retiro,Estrella
+Madrid,Retiro,Ibiza
+Madrid,Retiro,Jerónimos
+Madrid,Retiro,Niño Jesús
+Madrid,Salamanca,Recoletos
+Madrid,Salamanca,Goya
+Madrid,Salamanca,Fuente del Berro
+Madrid,Salamanca,Guindalera
+Madrid,Salamanca,Lista
+Madrid,Salamanca,Castellana
+Madrid,Chamartín,El Viso
+Madrid,Chamartín,Prosperidad
+Madrid,Chamartín,Ciudad Jardín
+Madrid,Chamartín,Hispanoamérica
+Madrid,Chamartín,Nueva España
+Madrid,Chamartín,Castilla
+Madrid,Tetuán,Bellas Vistas
+Madrid,Tetuán,Cuatro Caminos
+Madrid,Tetuán,Castillejos
+Madrid,Tetuán,Almenara
+Madrid,Tetuán,Valdeacederas
+Madrid,Tetuán,Berruguete
+Madrid,Chamberí,Gaztambide
+Madrid,Chamberí,Arapiles
+Madrid,Chamberí,Trafalgar
+Madrid,Chamberí,Almagro
+Madrid,Chamberí,Ríos Rosas
+Madrid,Chamberí,Vallehermoso
+Madrid,Fuencarral-El Pardo,El Pardo
+Madrid,Fuencarral-El Pardo,Fuentelarreina
+Madrid,Fuencarral-El Pardo,Peñagrande
+Madrid,Fuencarral-El Pardo,Pilar
+Madrid,Fuencarral-El Pardo,La Paz
+Madrid,Fuencarral-El Pardo,Valverde
+Madrid,Fuencarral-El Pardo,Mirasierra
+Madrid,Fuencarral-El Pardo,El Goloso
+Madrid,Moncloa-Aravaca,Casa de Campo
+Madrid,Moncloa-Aravaca,Argüelles
+Madrid,Moncloa-Aravaca,Ciudad Universitaria
+Madrid,Moncloa-Aravaca,Valdezarza
+Madrid,Moncloa-Aravaca,Valdemarín
+Madrid,Moncloa-Aravaca,El Plantío
+Madrid,Moncloa-Aravaca,Aravaca
+Madrid,Latina,Los Cármenes
+Madrid,Latina,Puerta del Ángel
+Madrid,Latina,Lucero
+Madrid,Latina,Aluche
+Madrid,Latina,Campamento
+Madrid,Latina,Cuatro Vientos
+Madrid,Latina,Las Águilas
+Madrid,Carabanchel,Comillas
+Madrid,Carabanchel,Opañel
+Madrid,Carabanchel,San Isidro
+Madrid,Carabanchel,Puerta Bonita
+Madrid,Carabanchel,Buenavista
+Madrid,Carabanchel,Abrantes
+Madrid,Usera,Orcasitas
+Madrid,Usera,Orcasur
+Madrid,Usera,San Fermín
+Madrid,Usera,Almendrales
+Madrid,Usera,Moscardó
+Madrid,Usera,Zofío
+Madrid,Usera,Pradolongo
+Madrid,Puente de Vallecas,Entrevías
+Madrid,Puente de Vallecas,San Diego
+Madrid,Puente de Vallecas,Palomeras Bajas
+Madrid,Puente de Vallecas,Palomeras Sureste
+Madrid,Puente de Vallecas,Portazgo
+Madrid,Puente de Vallecas,Numancia
+Madrid,Moratalaz,Pavones
+Madrid,Moratalaz,Horcajo
+Madrid,Moratalaz,Marroquina
+Madrid,Moratalaz,Media Legua
+Madrid,Moratalaz,Fontarrón
+Madrid,Moratalaz,Vinateros
+Madrid,Ciudad Lineal,Ventas
+Madrid,Ciudad Lineal,Pueblo Nuevo
+Madrid,Ciudad Lineal,Quintana
+Madrid,Ciudad Lineal,Concepción
+Madrid,Ciudad Lineal,San Pascual
+Madrid,Ciudad Lineal,San Juan Bautista
+Madrid,Ciudad Lineal,Colina
+Madrid,Ciudad Lineal,Atalaya
+Madrid,Ciudad Lineal,Costillares
+Madrid,Hortaleza,Palomas
+Madrid,Hortaleza,Piovera
+Madrid,Hortaleza,Canillas
+Madrid,Hortaleza,Pinar del Rey
+Madrid,Hortaleza,Apóstol Santiago
+Madrid,Hortaleza,Valdefuentes
+Madrid,Villaverde,Villaverde Alto
+Madrid,Villaverde,San Cristóbal
+Madrid,Villaverde,Butarque
+Madrid,Villaverde,Los Rosales
+Madrid,Villaverde,Los Ángeles
+Madrid,Villa de Vallecas,Casco histórico de Vallecas
+Madrid,Villa de Vallecas,Santa Eugenia
+Madrid,Villa de Vallecas,Ensanche de Vallecas
+Madrid,Vicálvaro,Casco histórico de Vicálvaro
+Madrid,Vicálvaro,Valdebernardo
+Madrid,Vicálvaro,Valderrivas
+Madrid,Vicálvaro,El Cañaveral
+Madrid,San Blas-Canillejas,Simancas
+Madrid,San Blas-Canillejas,Hellín
+Madrid,San Blas-Canillejas,Amposta
+Madrid,San Blas-Canillejas,Arcos
+Madrid,San Blas-Canillejas,Rosas
+Madrid,San Blas-Canillejas,Rejas
+Madrid,San Blas-Canillejas,Canillejas
+Madrid,San Blas-Canillejas,Salvador
+Madrid,Barajas,Alameda de Osuna
+Madrid,Barajas,Aeropuerto
+Madrid,Barajas,Casco histórico de Barajas
+Madrid,Barajas,Timón
+Madrid,Barajas,Corralejos
