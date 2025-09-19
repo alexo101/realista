@@ -1176,6 +1176,17 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  // Get all neighborhoods that have ratings
+  app.get("/api/neighborhoods", async (req, res) => {
+    try {
+      const neighborhoods = await storage.getAllNeighborhoodsWithRatings();
+      res.json(neighborhoods);
+    } catch (error) {
+      console.error('Error fetching neighborhoods:', error);
+      res.status(500).json({ message: "Failed to fetch neighborhoods" });
+    }
+  });
+
   // Add after the existing agent routes
   app.get("/api/agents/search", async (req, res) => {
     try {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -11,47 +12,38 @@ const POPULAR_NEIGHBORHOODS = [
   "Barceloneta"
 ];
 
-// Static sample data for popular neighborhoods
-const NEIGHBORHOOD_DATA: { [key: string]: any } = {
-  "Gracia": {
-    count: 127,
-    security: 8.2,
-    publicTransport: 9.1,
-    services: 8.7,
-    greenSpaces: 9.3
-  },
-  "Eixample": {
-    count: 203,
-    security: 7.8,
-    publicTransport: 9.5,
-    services: 9.2,
-    greenSpaces: 6.4
-  },
-  "El Born": {
-    count: 89,
-    security: 8.5,
-    publicTransport: 8.9,
-    services: 9.1,
-    greenSpaces: 7.2
-  },
-  "Barceloneta": {
-    count: 156,
-    security: 7.3,
-    publicTransport: 8.4,
-    services: 8.1,
-    greenSpaces: 8.8
-  }
-};
+interface NeighborhoodAverages {
+  count: number;
+  security: number;
+  parking: number;
+  familyFriendly: number;
+  publicTransport: number;
+  greenSpaces: number;
+  services: number;
+}
 
 export function NeighborhoodRating() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("Gracia");
   const [searchValue, setSearchValue] = useState<string>("");
 
+  // Fetch all neighborhoods with ratings
+  const { data: allNeighborhoods } = useQuery<string[]>({
+    queryKey: ['/api/neighborhoods'],
+    staleTime: 300000, // 5 minutes cache
+  });
+
+  // Fetch ratings for the selected neighborhood  
+  const { data: ratings, isLoading } = useQuery<NeighborhoodAverages>({
+    queryKey: [`/api/neighborhoods/ratings/average?neighborhood=${selectedNeighborhood}`],
+    enabled: !!selectedNeighborhood,
+    staleTime: 300000, // 5 minutes cache
+  });
+
   const ratingCategories = [
-    { key: 'security', label: 'Seguridad', icon: '🔒' },
-    { key: 'publicTransport', label: 'Conectividad', icon: '🚌' },
-    { key: 'services', label: 'Servicios', icon: '🛍️' },
-    { key: 'greenSpaces', label: 'Zonas verdes', icon: '🌳' },
+    { key: 'security' as keyof NeighborhoodAverages, label: 'Seguridad', icon: '🔒' },
+    { key: 'publicTransport' as keyof NeighborhoodAverages, label: 'Conectividad', icon: '🚌' },
+    { key: 'services' as keyof NeighborhoodAverages, label: 'Servicios', icon: '🛍️' },
+    { key: 'greenSpaces' as keyof NeighborhoodAverages, label: 'Zonas verdes', icon: '🌳' },
   ];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -61,8 +53,6 @@ export function NeighborhoodRating() {
       setSearchValue("");
     }
   };
-
-  const currentData = NEIGHBORHOOD_DATA[selectedNeighborhood];
 
   return (
     <div className="w-full text-left">
@@ -104,14 +94,49 @@ export function NeighborhoodRating() {
         ))}
       </div>
 
+      {/* Available neighborhoods from database */}
+      {allNeighborhoods && allNeighborhoods.length > 0 && (
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 mb-3">Otros barrios disponibles:</p>
+          <div className="flex flex-wrap gap-2">
+            {allNeighborhoods
+              .filter(n => !POPULAR_NEIGHBORHOODS.includes(n))
+              .map((neighborhood) => (
+                <Button
+                  key={neighborhood}
+                  data-testid={`other-neighborhood-button-${neighborhood.toLowerCase().replace(' ', '-')}`}
+                  variant={selectedNeighborhood === neighborhood ? "default" : "outline"}
+                  onClick={() => setSelectedNeighborhood(neighborhood)}
+                  className={`px-3 py-1 rounded-full text-xs ${
+                    selectedNeighborhood === neighborhood 
+                      ? "bg-blue-600 text-white hover:bg-blue-700" 
+                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {neighborhood}
+                </Button>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Ratings display */}
-      {currentData ? (
+      {isLoading ? (
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+              <div className="h-2 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+      ) : ratings && ratings.count > 0 ? (
         <div data-testid="neighborhood-ratings" className="space-y-6">
           <p className="text-sm text-gray-600 mb-4">
-            Basado en {currentData.count} valoraciones de residentes
+            Basado en {ratings.count} valoraciones de residentes
           </p>
           {ratingCategories.map(({ key, label, icon }) => {
-            const value = currentData[key] as number;
+            const value = ratings[key] as number;
             const percentage = (value / 10) * 100;
             
             return (

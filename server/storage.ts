@@ -1520,6 +1520,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Get all neighborhoods that have ratings
+  async getAllNeighborhoodsWithRatings(): Promise<string[]> {
+    try {
+      const neighborhoods = await db
+        .selectDistinct({ neighborhood: neighborhoodRatings.neighborhood })
+        .from(neighborhoodRatings);
+      
+      return neighborhoods.map(n => n.neighborhood);
+    } catch (error) {
+      console.error('Error fetching neighborhoods with ratings:', error);
+      return [];
+    }
+  }
+
   async createNeighborhoodRating(
     rating: InsertNeighborhoodRating,
   ): Promise<NeighborhoodRating> {
