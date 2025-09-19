@@ -120,9 +120,11 @@ export interface IStorage {
   updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined>;
 
   // Neighborhood Ratings
-  getNeighborhoodRatings(neighborhood: string): Promise<NeighborhoodRating[]>;
+  getNeighborhoodRatings(neighborhood: string, city?: string, district?: string): Promise<NeighborhoodRating[]>;
   getNeighborhoodRatingsAverage(
     neighborhood: string,
+    city?: string, 
+    district?: string
   ): Promise<Record<string, number>>;
   createNeighborhoodRating(
     rating: InsertNeighborhoodRating,
@@ -1459,19 +1461,32 @@ export class DatabaseStorage implements IStorage {
   // Neighborhood Ratings
   async getNeighborhoodRatings(
     neighborhood: string,
+    city: string = 'Barcelona',
+    district?: string
   ): Promise<NeighborhoodRating[]> {
+    const conditions = [
+      eq(neighborhoodRatings.neighborhood, neighborhood),
+      eq(neighborhoodRatings.city, city)
+    ];
+    
+    if (district) {
+      conditions.push(eq(neighborhoodRatings.district, district));
+    }
+    
     return await db
       .select()
       .from(neighborhoodRatings)
-      .where(eq(neighborhoodRatings.neighborhood, neighborhood));
+      .where(and(...conditions));
   }
 
   async getNeighborhoodRatingsAverage(
     neighborhood: string,
+    city: string = 'Barcelona',
+    district?: string
   ): Promise<Record<string, number>> {
     try {
       // Check cache first to dramatically improve tab switching performance
-      const cacheKey = `neighborhood_ratings_${neighborhood}`;
+      const cacheKey = `neighborhood_ratings_${city}_${district || 'all'}_${neighborhood}`;
       const cached = cache.get<Record<string, number>>(cacheKey);
       if (cached) {
         console.log(`Cache hit for neighborhood ratings: ${neighborhood}`);
@@ -1480,11 +1495,21 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Calculating averages for neighborhood: ${neighborhood}`);
 
+      // Build conditions for hierarchical filtering
+      const conditions = [
+        eq(neighborhoodRatings.neighborhood, neighborhood),
+        eq(neighborhoodRatings.city, city)
+      ];
+      
+      if (district) {
+        conditions.push(eq(neighborhoodRatings.district, district));
+      }
+
       // Query the database for actual ratings
       const ratings = await db
         .select()
         .from(neighborhoodRatings)
-        .where(eq(neighborhoodRatings.neighborhood, neighborhood));
+        .where(and(...conditions));
 
       if (!ratings || ratings.length === 0) {
         console.log(`No ratings found for neighborhood: ${neighborhood}`);
@@ -1533,6 +1558,8 @@ export class DatabaseStorage implements IStorage {
     // Convertir números a strings para los campos decimal
     const convertedRating = {
       neighborhood: rating.neighborhood,
+      city: rating.city || 'Barcelona',
+      district: rating.district,
       security: String(rating.security),
       parking: String(rating.parking),
       familyFriendly: String(rating.familyFriendly),

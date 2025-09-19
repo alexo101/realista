@@ -74,6 +74,8 @@ export const properties = pgTable("properties", {
   // Campos existentes
   description: text("description").notNull(),
   price: integer("price").notNull(),
+  city: text("city").notNull().default('Barcelona'),
+  district: text("district"),
   neighborhood: text("neighborhood").notNull(),
   bedrooms: integer("bedrooms"), // Number of bedrooms
   bathrooms: integer("bathrooms"), // Number of bathrooms
@@ -123,6 +125,8 @@ export const clients = pgTable("clients", {
 
 export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   id: serial("id").primaryKey(),
+  city: text("city").notNull().default('Barcelona'),
+  district: text("district"),
   neighborhood: text("neighborhood").notNull(),
   security: decimal("security").notNull(),
   parking: decimal("parking").notNull(),
@@ -205,6 +209,8 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 });
 // Para valoraciones, usamos un esquema personalizado para asegurar que los valores sean numéricos
 export const insertNeighborhoodRatingSchema = z.object({
+  city: z.string().optional().default('Barcelona'),
+  district: z.string().optional(),
   neighborhood: z.string(),
   security: z.number().min(1).max(10),
   parking: z.number().min(1).max(10),

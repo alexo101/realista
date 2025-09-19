@@ -33,7 +33,7 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInDate: true,
 }).partial();
 import { sendWelcomeEmail, sendReviewRequest } from "./emailService";
-import { expandNeighborhoodSearch, isCityWideSearch } from "./utils/neighborhoods";
+import { expandNeighborhoodSearch, isCityWideSearch, getCities, getDistrictsByCity, getNeighborhoodsByDistrict } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 import multer from 'multer';
@@ -1136,7 +1136,9 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   app.get("/api/neighborhoods/ratings", async (req, res) => {
     try {
       const neighborhood = req.query.neighborhood as string;
-      const ratings = await storage.getNeighborhoodRatings(neighborhood);
+      const city = (req.query.city as string) || 'Barcelona';
+      const district = req.query.district as string;
+      const ratings = await storage.getNeighborhoodRatings(neighborhood, city, district);
       res.json(ratings);
     } catch (error) {
       console.error('Error fetching neighborhood ratings:', error);
@@ -1146,9 +1148,12 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
 
   app.get("/api/neighborhoods/ratings/average", async (req, res) => {
     try {
-      console.log(`Recibida solicitud para promedios de barrio: ${req.query.neighborhood}`);
-
       const neighborhood = req.query.neighborhood as string;
+      const city = (req.query.city as string) || 'Barcelona';
+      const district = req.query.district as string;
+      
+      console.log(`Recibida solicitud para promedios de barrio: ${neighborhood}, ciudad: ${city}, distrito: ${district || 'N/A'}`);
+
       if (!neighborhood) {
         return res.status(400).json({ 
           success: false,
@@ -1161,9 +1166,9 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
 
-      console.log(`Obteniendo promedios para barrio: ${neighborhood} a las ${new Date().toISOString()}`);
-      const averages = await storage.getNeighborhoodRatingsAverage(neighborhood);
-      console.log(`Promedios para ${neighborhood} obtenidos:`, averages);
+      console.log(`Obteniendo promedios para barrio: ${neighborhood} en ${city} a las ${new Date().toISOString()}`);
+      const averages = await storage.getNeighborhoodRatingsAverage(neighborhood, city, district);
+      console.log(`Promedios para ${neighborhood} en ${city} obtenidos:`, averages);
 
       return res.json(averages);
     } catch (error) {
@@ -1180,6 +1185,39 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   app.get("/api/neighborhoods", async (req, res) => {
     try {
       const neighborhoods = await storage.getAllNeighborhoodsWithRatings();
+      res.json(neighborhoods);
+    } catch (error) {
+      console.error('Error fetching neighborhoods:', error);
+      res.status(500).json({ message: "Failed to fetch neighborhoods" });
+    }
+  });
+
+  // Hierarchical city/district/neighborhood endpoints
+  app.get("/api/cities", async (req, res) => {
+    try {
+      const cities = getCities();
+      res.json(cities);
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+      res.status(500).json({ message: "Failed to fetch cities" });
+    }
+  });
+
+  app.get("/api/cities/:city/districts", async (req, res) => {
+    try {
+      const city = req.params.city;
+      const districts = getDistrictsByCity(city);
+      res.json(districts);
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+      res.status(500).json({ message: "Failed to fetch districts" });
+    }
+  });
+
+  app.get("/api/cities/:city/districts/:district/neighborhoods", async (req, res) => {
+    try {
+      const { city, district } = req.params;
+      const neighborhoods = getNeighborhoodsByDistrict(district, city);
       res.json(neighborhoods);
     } catch (error) {
       console.error('Error fetching neighborhoods:', error);

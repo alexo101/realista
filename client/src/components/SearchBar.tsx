@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/language-context";
 
 import { AutocompleteSearch } from "./AutocompleteSearch";
-import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS, isDistrict } from "@/utils/neighborhoods";
+import { searchNeighborhoods, getNeighborhoodDisplayName, parseNeighborhoodDisplayName } from "@/utils/neighborhoods";
 
 // Definimos rangos de precios para el selector
 const PRICE_RANGES = [
@@ -122,15 +122,9 @@ export function SearchBar() {
   }, []);
 
   const filteredNeighborhoods = neighborhoodSearch.length >= 3 
-    ? [
-        ...("Barcelona".toLowerCase().includes(neighborhoodSearch.toLowerCase()) ? ["Barcelona"] : []),
-        ...BARCELONA_DISTRICTS.filter(d =>
-          d.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-        ),
-        ...BARCELONA_NEIGHBORHOODS.filter(n =>
-          n.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-        )
-      ].slice(0, 10) // Limit to 10 results
+    ? searchNeighborhoods(neighborhoodSearch).map(result => 
+        getNeighborhoodDisplayName(result.neighborhood, result.district, result.city)
+      ).slice(0, 10) // Limit to 10 results
     : [];
 
   const handleSearch = () => {

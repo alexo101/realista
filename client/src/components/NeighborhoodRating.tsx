@@ -7,12 +7,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Star, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { searchNeighborhoods, getNeighborhoodDisplayName, parseNeighborhoodDisplayName } from "@/utils/neighborhoods";
 
 const POPULAR_NEIGHBORHOODS = [
-  "Gracia",
-  "Eixample", 
-  "El Born",
-  "Barceloneta"
+  { neighborhood: "Gracia", district: null, city: "Barcelona", display: "Gracia, Barcelona" },
+  { neighborhood: "Eixample", district: null, city: "Barcelona", display: "Eixample, Barcelona" }, 
+  { neighborhood: "El Born", district: "Ciutat Vella", city: "Barcelona", display: "El Born, Ciutat Vella, Barcelona" },
+  { neighborhood: "Rosas", district: "San Blas-Canillejas", city: "Madrid", display: "Rosas, San Blas-Canillejas, Madrid" }
 ];
 
 interface NeighborhoodAverages {
@@ -63,7 +64,7 @@ const StarRatingInput = ({ value, onChange, disabled = false }: StarRatingProps)
 };
 
 export function NeighborhoodRating() {
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("Gracia");
+  const [selectedLocation, setSelectedLocation] = useState<{neighborhood: string, district: string | null, city: string}>({neighborhood: "Gracia", district: null, city: "Barcelona"});
   const [searchValue, setSearchValue] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -82,23 +83,36 @@ export function NeighborhoodRating() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch all neighborhoods with ratings
-  const { data: allNeighborhoods } = useQuery<string[]>({
-    queryKey: ['/api/neighborhoods'],
-    staleTime: 300000, // 5 minutes cache
-  });
+  // We'll use the hierarchical search function instead of fetching all neighborhoods
+  // since the dataset is now much larger with Madrid included
 
-  // Fetch ratings for the selected neighborhood  
+  // Fetch ratings for the selected neighborhood with hierarchical parameters
   const { data: ratings, isLoading } = useQuery<NeighborhoodAverages>({
-    queryKey: [`/api/neighborhoods/ratings/average?neighborhood=${selectedNeighborhood}`],
-    enabled: !!selectedNeighborhood,
+    queryKey: [`/api/neighborhoods/ratings/average`, { 
+      neighborhood: selectedLocation.neighborhood, 
+      city: selectedLocation.city, 
+      district: selectedLocation.district 
+    }],
+    enabled: !!selectedLocation.neighborhood && !!selectedLocation.city,
     staleTime: 300000, // 5 minutes cache
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        neighborhood: selectedLocation.neighborhood,
+        city: selectedLocation.city,
+        ...(selectedLocation.district && { district: selectedLocation.district })
+      });
+      const response = await fetch(`/api/neighborhoods/ratings/average?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch ratings');
+      return response.json();
+    },
   });
 
-  // Filter neighborhoods based on search input
-  const filteredNeighborhoods = allNeighborhoods?.filter(neighborhood =>
-    neighborhood.toLowerCase().includes(searchValue.toLowerCase())
-  ) || [];
+  // Filter neighborhoods using hierarchical search
+  const filteredNeighborhoods = searchValue.length >= 3 
+    ? searchNeighborhoods(searchValue).map(result => 
+        getNeighborhoodDisplayName(result.neighborhood, result.district, result.city)
+      ).slice(0, 10)
+    : [];
 
   // Rating submission mutation
   const ratingMutation = useMutation({
@@ -108,7 +122,7 @@ export function NeighborhoodRating() {
     onSuccess: () => {
       toast({
         title: "¡Valoración enviada!",
-        description: `Tu valoración para ${selectedNeighborhood} ha sido guardada con éxito.`,
+        description: `Tu valoración para ${getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city)} ha sido guardada con éxito.`,
       });
       setShowRatingForm(false);
       setUserRatings({
@@ -121,7 +135,11 @@ export function NeighborhoodRating() {
       });
       // Invalidate and refetch ratings to show updated data
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/neighborhoods/ratings/average?neighborhood=${selectedNeighborhood}`] 
+        queryKey: [`/api/neighborhoods/ratings/average`, { 
+          neighborhood: selectedLocation.neighborhood, 
+          city: selectedLocation.city, 
+          district: selectedLocation.district 
+        }] 
       });
     },
     onError: (error: any) => {
@@ -172,8 +190,11 @@ export function NeighborhoodRating() {
     }
   };
 
-  const selectNeighborhood = (neighborhood: string) => {
-    setSelectedNeighborhood(neighborhood);
+  const selectNeighborhood = (displayName: string) => {
+    const parsed = parseNeighborhoodDisplayName(displayName);
+    if (parsed) {
+      setSelectedLocation(parsed);
+    }
     setSearchValue("");
     setShowSuggestions(false);
     setHighlightedIndex(-1);
@@ -200,7 +221,13 @@ export function NeighborhoodRating() {
         if (highlightedIndex >= 0) {
           selectNeighborhood(filteredNeighborhoods[highlightedIndex]);
         } else if (searchValue.trim()) {
-          selectNeighborhood(searchValue.trim());
+          // Try to parse the search value
+          const parsed = parseNeighborhoodDisplayName(searchValue.trim());
+          if (parsed) {
+            setSelectedLocation(parsed);
+            setSearchValue("");
+            setShowSuggestions(false);
+          }
         }
         break;
       case 'Escape':
@@ -232,7 +259,9 @@ export function NeighborhoodRating() {
     }
 
     const ratingData = {
-      neighborhood: selectedNeighborhood,
+      neighborhood: selectedLocation.neighborhood,
+      city: selectedLocation.city,
+      district: selectedLocation.district,
       ...userRatings,
       userId: -1, // Anonymous user
     };
@@ -253,7 +282,7 @@ export function NeighborhoodRating() {
           <Input
             ref={searchInputRef}
             type="text"
-            placeholder="Buscar todos los barrios de Barcelona..."
+            placeholder="Buscar barrios de Barcelona y Madrid..."
             value={searchValue}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
@@ -292,25 +321,25 @@ export function NeighborhoodRating() {
       
       {/* Neighborhood buttons */}
       <div className="flex flex-wrap gap-3 mb-8">
-        {POPULAR_NEIGHBORHOODS.map((neighborhood) => (
+        {POPULAR_NEIGHBORHOODS.map((location) => (
           <Button
-            key={neighborhood}
-            data-testid={`neighborhood-button-${neighborhood.toLowerCase().replace(' ', '-')}`}
-            variant={selectedNeighborhood === neighborhood ? "default" : "outline"}
-            onClick={() => setSelectedNeighborhood(neighborhood)}
+            key={location.display}
+            data-testid={`neighborhood-button-${location.neighborhood.toLowerCase().replace(' ', '-')}`}
+            variant={selectedLocation.neighborhood === location.neighborhood && selectedLocation.city === location.city ? "default" : "outline"}
+            onClick={() => setSelectedLocation(location)}
             className={`px-4 py-2 rounded-full text-sm ${
-              selectedNeighborhood === neighborhood 
+              selectedLocation.neighborhood === location.neighborhood && selectedLocation.city === location.city
                 ? "bg-blue-600 text-white hover:bg-blue-700" 
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            {neighborhood}
+            {location.display}
           </Button>
         ))}
       </div>
 
       {/* Rate this neighborhood button */}
-      {selectedNeighborhood && !showRatingForm && (
+      {selectedLocation.neighborhood && !showRatingForm && (
         <div className="mb-8">
           <Button 
             onClick={() => setShowRatingForm(true)}
@@ -328,7 +357,7 @@ export function NeighborhoodRating() {
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">
-                Califica: {selectedNeighborhood}
+                Califica: {getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city)}
               </h3>
               <Button 
                 variant="ghost" 
@@ -426,9 +455,9 @@ export function NeighborhoodRating() {
             );
           })}
         </div>
-      ) : selectedNeighborhood && (!ratings || ratings.count === 0) ? (
+      ) : selectedLocation.neighborhood && (!ratings || ratings.count === 0) ? (
         <div data-testid="no-ratings-message" className="text-gray-500 py-8">
-          <p>No hay valoraciones disponibles para {selectedNeighborhood} en este momento.</p>
+          <p>No hay valoraciones disponibles para {getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city)} en este momento.</p>
           <p className="text-sm text-gray-400 mt-2">Prueba con uno de los barrios populares arriba.</p>
         </div>
       ) : null}
