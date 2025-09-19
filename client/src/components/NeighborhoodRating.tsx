@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +25,10 @@ interface NeighborhoodAverages {
 export function NeighborhoodRating() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("Gracia");
   const [searchValue, setSearchValue] = useState<string>("");
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Fetch all neighborhoods with ratings
   const { data: allNeighborhoods } = useQuery<string[]>({
@@ -39,6 +43,25 @@ export function NeighborhoodRating() {
     staleTime: 300000, // 5 minutes cache
   });
 
+  // Filter neighborhoods based on search input
+  const filteredNeighborhoods = allNeighborhoods?.filter(neighborhood =>
+    neighborhood.toLowerCase().includes(searchValue.toLowerCase())
+  ) || [];
+
+  // Click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
+          searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const ratingCategories = [
     { key: 'security' as keyof NeighborhoodAverages, label: 'Seguridad', icon: '🔒' },
     { key: 'parking' as keyof NeighborhoodAverages, label: 'Aparcamiento', icon: '🚗' },
@@ -48,11 +71,58 @@ export function NeighborhoodRating() {
     { key: 'services' as keyof NeighborhoodAverages, label: 'Servicios', icon: '🛍️' },
   ];
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value);
+    setShowSuggestions(value.length > 0);
+    setHighlightedIndex(-1);
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchValue.trim()) {
       setSelectedNeighborhood(searchValue.trim());
       setSearchValue("");
+      setShowSuggestions(false);
+    }
+  };
+
+  const selectNeighborhood = (neighborhood: string) => {
+    setSelectedNeighborhood(neighborhood);
+    setSearchValue("");
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || filteredNeighborhoods.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredNeighborhoods.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredNeighborhoods.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0) {
+          selectNeighborhood(filteredNeighborhoods[highlightedIndex]);
+        } else if (searchValue.trim()) {
+          selectNeighborhood(searchValue.trim());
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+        searchInputRef.current?.blur();
+        break;
     }
   };
 
@@ -63,13 +133,42 @@ export function NeighborhoodRating() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
+            ref={searchInputRef}
             type="text"
             placeholder="Buscar todos los barrios de Barcelona..."
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setShowSuggestions(searchValue.length > 0)}
             className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             data-testid="neighborhood-search-input"
           />
+          
+          {/* Suggestions dropdown */}
+          {showSuggestions && filteredNeighborhoods.length > 0 && (
+            <div 
+              ref={suggestionsRef}
+              className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 mt-1"
+              data-testid="neighborhood-suggestions"
+            >
+              {filteredNeighborhoods.map((neighborhood, index) => (
+                <button
+                  key={neighborhood}
+                  type="button"
+                  onClick={() => selectNeighborhood(neighborhood)}
+                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                    index === highlightedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  } first:rounded-t-lg last:rounded-b-lg`}
+                  data-testid={`suggestion-${neighborhood.toLowerCase().replace(/ /g, '-')}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <span>{neighborhood}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </form>
       
