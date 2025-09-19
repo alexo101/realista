@@ -127,7 +127,11 @@ export function NeighborhoodRating() {
   };
 
   return (
-    <div className="w-full text-left">
+    <div className="w-full">
+      <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6 text-left">
+        Busca y conoce los barrios de tu interés
+      </h2>
+      
       {/* Search bar */}
       <form onSubmit={handleSearchSubmit} className="mb-6 max-w-md">
         <div className="relative">
@@ -171,10 +175,6 @@ export function NeighborhoodRating() {
           )}
         </div>
       </form>
-      
-      <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">
-        Calificaciones de barrios
-      </h2>
       
       {/* Neighborhood buttons */}
       <div className="flex flex-wrap gap-3 mb-8">
@@ -242,12 +242,12 @@ export function NeighborhoodRating() {
             );
           })}
         </div>
-      ) : (
+      ) : selectedNeighborhood && (!ratings || ratings.count === 0) ? (
         <div data-testid="no-ratings-message" className="text-gray-500 py-8">
           <p>No hay valoraciones disponibles para {selectedNeighborhood} en este momento.</p>
           <p className="text-sm text-gray-400 mt-2">Prueba con uno de los barrios populares arriba.</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
