@@ -1489,23 +1489,30 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
                                filters.neighborhoods.trim() !== '';
 
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
-        const neighborhood = filters.neighborhoods;
+        const searchTerm = filters.neighborhoods;
+        console.log(`Processing hierarchical search for: ${searchTerm}`);
 
-        // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
-        if (isCityWideSearch(neighborhood)) {
-          console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de venta');
-          delete filters.neighborhoods;
-        } 
-        // Si es un distrito o barrio específico, expandimos la búsqueda
-        else {
-          // Expandimos el barrio o distrito a una lista de barrios
-          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
-
-          if (expandedNeighborhoods.length > 0) {
-            // Reemplazamos el filtro original con la lista expandida
-            filters.neighborhoods = expandedNeighborhoods;
+        // Parse the hierarchical format ("Neighborhood, District, City")
+        const parsed = parseNeighborhoodDisplayName(searchTerm);
+        
+        if (parsed) {
+          console.log(`Parsed location: ${JSON.stringify(parsed)}`);
+          
+          // Add hierarchical filters
+          filters.city = parsed.city;
+          if (parsed.district) {
+            filters.district = parsed.district;
           }
+          filters.neighborhood = parsed.neighborhood;
+          
+          // Remove the original neighborhoods filter
+          delete filters.neighborhoods;
+        } else {
+          // Fallback: treat as a simple neighborhood name (for backward compatibility)
+          console.log(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
+          filters.neighborhood = searchTerm;
+          filters.city = 'Barcelona'; // Default fallback
+          delete filters.neighborhoods;
         }
       }
 
@@ -1541,23 +1548,30 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
                                filters.neighborhoods.trim() !== '';
 
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
-        const neighborhood = filters.neighborhoods;
+        const searchTerm = filters.neighborhoods;
+        console.log(`Processing hierarchical search for: ${searchTerm}`);
 
-        // Si es búsqueda a nivel de ciudad, mostramos todas las propiedades
-        if (isCityWideSearch(neighborhood)) {
-          console.log('Búsqueda para toda Barcelona - mostrando todas las propiedades de alquiler');
-          delete filters.neighborhoods;
-        } 
-        // Si es un distrito o barrio específico, expandimos la búsqueda
-        else {
-          // Expandimos el barrio o distrito a una lista de barrios
-          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
-
-          if (expandedNeighborhoods.length > 0) {
-            // Reemplazamos el filtro original con la lista expandida
-            filters.neighborhoods = expandedNeighborhoods;
+        // Parse the hierarchical format ("Neighborhood, District, City")
+        const parsed = parseNeighborhoodDisplayName(searchTerm);
+        
+        if (parsed) {
+          console.log(`Parsed location: ${JSON.stringify(parsed)}`);
+          
+          // Add hierarchical filters
+          filters.city = parsed.city;
+          if (parsed.district) {
+            filters.district = parsed.district;
           }
+          filters.neighborhood = parsed.neighborhood;
+          
+          // Remove the original neighborhoods filter
+          delete filters.neighborhoods;
+        } else {
+          // Fallback: treat as a simple neighborhood name (for backward compatibility)
+          console.log(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
+          filters.neighborhood = searchTerm;
+          filters.city = 'Barcelona'; // Default fallback
+          delete filters.neighborhoods;
         }
 
         const properties = await storage.searchProperties(filters);

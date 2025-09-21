@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { findDistrictByNeighborhood, isDistrict, BARCELONA_DISTRICTS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { findDistrictByNeighborhood, isDistrict, BARCELONA_DISTRICTS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, parseNeighborhoodDisplayName, getNeighborhoodDisplayName } from "@/utils/neighborhoods";
 
 export default function NeighborhoodResultsPage() {
   const { neighborhood } = useParams<{ neighborhood: string }>();
@@ -35,6 +35,12 @@ export default function NeighborhoodResultsPage() {
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
   const queryClient = useQueryClient();
+  
+  // Parse hierarchical neighborhood format
+  const locationParts = parseNeighborhoodDisplayName(decodedNeighborhood);
+  const currentCity = locationParts?.city || 'Barcelona';
+  const currentDistrict = locationParts?.district;
+  const currentNeighborhood = locationParts?.neighborhood || decodedNeighborhood;
   
   // Extract URL parameters
   const urlParams = new URLSearchParams(window.location.search);
@@ -66,20 +72,20 @@ export default function NeighborhoodResultsPage() {
     features: []
   });
   
-  // Verificar si estamos en Barcelona general
-  const isBarcelonaPage = decodedNeighborhood === 'Barcelona';
+  // Verificar si estamos en una página de ciudad general
+  const isCityPage = currentCity && !currentDistrict && !currentNeighborhood;
   
-  // Verificar si el valor seleccionado es un distrito
-  // Caso especial: "Les Corts" puede ser tanto distrito como barrio - priorizar barrio
-  const isDistrictPage = isDistrict(decodedNeighborhood) && decodedNeighborhood !== "Les Corts";
+  // Verificar si es una página de distrito
+  const isDistrictPage = currentCity && currentDistrict && !currentNeighborhood;
   
-  // Manejo especial para Sant Andreu del Palomar (que es en realidad Sant Andreu barrio)
-  const isSantAndreuBarrio = decodedNeighborhood === "Sant Andreu del Palomar";
-  // Mantenemos el nombre original para consultas de valoraciones
+  // Verificar si es una página de barrio específico
+  const isNeighborhoodPage = currentCity && currentNeighborhood && currentNeighborhood !== currentCity;
+  
+  // Para compatibilidad con búsquedas existentes
   const effectiveNeighborhood = decodedNeighborhood;
   
-  // Determinar el distrito correspondiente al barrio (solo si no es un distrito o Barcelona)
-  const district = !isDistrictPage && !isBarcelonaPage ? findDistrictByNeighborhood(effectiveNeighborhood) : null;
+  // Determinar el distrito para barrios de Barcelona (para compatibilidad)
+  const legacyDistrict = currentCity === 'Barcelona' && !currentDistrict ? findDistrictByNeighborhood(currentNeighborhood) : currentDistrict;
   
   // Determinar la pestaña activa según la ruta
   const getActiveTab = () => {
