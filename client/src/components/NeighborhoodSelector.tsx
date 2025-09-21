@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
-import { BARCELONA_DISTRICTS_AND_NEIGHBORHOODS, BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS } from "@/utils/neighborhoods";
+import { getDistrictsByCity, getAllNeighborhoodsByCity, getCities } from "@/utils/neighborhoods";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
   onChange: (neighborhoods: string[]) => void;
+  city: string;
   title?: string;
   buttonText?: string;
   singleSelection?: boolean;
@@ -15,7 +16,8 @@ interface NeighborhoodSelectorProps {
 export function NeighborhoodSelector({
   selectedNeighborhoods,
   onChange,
-  title = "BARRIOS DE BARCELONA",
+  city,
+  title,
   buttonText = "Buscar barrios...",
   singleSelection = false
 }: NeighborhoodSelectorProps) {
@@ -25,14 +27,19 @@ export function NeighborhoodSelector({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Filter neighborhoods, districts, and Barcelona option based on search
+  // Get neighborhoods and districts for the selected city
+  const cityNeighborhoods = getAllNeighborhoodsByCity(city);
+  const cityDistricts = getDistrictsByCity(city);
+  const dynamicTitle = title || `BARRIOS DE ${city.toUpperCase()}`;
+  
+  // Filter neighborhoods, districts, and city option based on search
   const filteredResults = search.length >= 3 
     ? [
-        ...("Barcelona (Todos los barrios)".toLowerCase().includes(search.toLowerCase()) ? ["Barcelona (Todos los barrios)"] : []),
-        ...BARCELONA_DISTRICTS.filter(d =>
+        ...(`${city} (Todos los barrios)`.toLowerCase().includes(search.toLowerCase()) ? [`${city} (Todos los barrios)`] : []),
+        ...cityDistricts.filter((d: string) =>
           d.toLowerCase().includes(search.toLowerCase())
         ),
-        ...BARCELONA_NEIGHBORHOODS.filter(n =>
+        ...cityNeighborhoods.filter((n: string) =>
           n.toLowerCase().includes(search.toLowerCase())
         )
       ].slice(0, 10) // Limit to 10 results
@@ -46,6 +53,17 @@ export function NeighborhoodSelector({
   };
 
   const toggleNeighborhood = (neighborhood: string) => {
+    // Special handling for "Todos los barrios" option
+    if (neighborhood.includes('(Todos los barrios)')) {
+      selectAll();
+      setSearch("");
+      setShowResults(false);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+      return;
+    }
+
     if (singleSelection) {
       // Single selection mode
       const newNeighborhoods = selectedNeighborhoods.includes(neighborhood) ? [] : [neighborhood];
@@ -105,7 +123,7 @@ export function NeighborhoodSelector({
   };
 
   const selectAll = () => {
-    onChange([...BARCELONA_NEIGHBORHOODS]);
+    onChange([...cityNeighborhoods]);
   };
 
   const clearAll = () => {
@@ -131,7 +149,7 @@ export function NeighborhoodSelector({
       {/* Selected neighborhoods display */}
       {selectedNeighborhoods.length > 0 && (
         <div>
-          <p className="text-sm text-gray-500 mb-2">{singleSelection ? "BARRIO SELECCIONADO" : "SELECCIONADOS"}</p>
+          <p className="text-sm text-gray-500 mb-2">{singleSelection ? `BARRIO SELECCIONADO (${city})` : `SELECCIONADOS (${city})`}</p>
           <div className="flex flex-wrap gap-2">
             {selectedNeighborhoods.map(neighborhood => (
               <span

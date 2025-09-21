@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building, X, Check } from "lucide-react";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
+import { getCities } from "@/utils/neighborhoods";
 
 export interface Agency {
   id: number;
@@ -16,6 +17,7 @@ export interface Agency {
   agencyDescription?: string;
   agencyPhone?: string;
   agencyWebsite?: string;
+  city?: string;
   agencyInfluenceNeighborhoods?: string[];
   agencyEmailToDisplay?: string;
   yearEstablished?: number;
@@ -42,6 +44,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
   const [agencyLanguagesSpoken, setAgencyLanguagesSpoken] = useState<string[]>([]);
   const [agencyLogo, setAgencyLogo] = useState<string | undefined>();
+  const [city, setCity] = useState("Barcelona");
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
@@ -61,6 +64,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       setYearEstablished(agency.yearEstablished);
       setAgencyLanguagesSpoken(agency.agencyLanguagesSpoken || []);
       setAgencyLogo(agency.agencyLogo);
+      setCity((agency as any).city || "Barcelona");
       setInfluenceNeighborhoods(agency.agencyInfluenceNeighborhoods || []);
       setLogoPreview(agency.agencyLogo || null);
       
@@ -98,6 +102,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       yearEstablished,
       agencyLanguagesSpoken,
       agencyLogo,
+      city,
       agencyInfluenceNeighborhoods: influenceNeighborhoods,
       agencySocialMedia: Object.keys(socialMedia).length > 0 ? socialMedia : undefined,
     };
@@ -281,9 +286,32 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
+              <Label htmlFor="city">Ciudad donde opera la agencia</Label>
+              <Select
+                value={city}
+                onValueChange={(value) => {
+                  setCity(value);
+                  setInfluenceNeighborhoods([]); // Clear neighborhoods when city changes
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona la ciudad" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getCities().map((cityOption) => (
+                    <SelectItem key={cityOption} value={cityOption}>
+                      {cityOption}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label htmlFor="influenceNeighborhoods">Barrios de influencia</Label>
               <NeighborhoodSelector
                 selectedNeighborhoods={influenceNeighborhoods}
+                city={city}
                 onChange={setInfluenceNeighborhoods}
                 buttonText="Selecciona los barrios donde opera la agencia"
                 title="ZONAS DE OPERACIÓN DE LA AGENCIA"

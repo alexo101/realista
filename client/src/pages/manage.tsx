@@ -21,6 +21,7 @@ import { ClientForm } from "@/components/ClientForm";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
+import { getCities } from "@/utils/neighborhoods";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { AgenciesList } from "@/components/AgenciesList";
 
@@ -80,6 +81,7 @@ export default function ManagePage() {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [description, setDescription] = useState("");
+  const [city, setCity] = useState("Barcelona");
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   const [yearsOfExperience, setYearsOfExperience] = useState<number | undefined>(undefined);
   const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
@@ -90,6 +92,7 @@ export default function ManagePage() {
   const [agencyDescription, setAgencyDescription] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
   const [agencyWebsite, setAgencyWebsite] = useState("");
+  const [agencyCity, setAgencyCity] = useState("Barcelona");
   const [agencyInfluenceNeighborhoods, setAgencyInfluenceNeighborhoods] = useState<string[]>([]);
   const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
   const [agencyLanguagesSpoken, setAgencyLanguagesSpoken] = useState<string[]>([]);
@@ -111,6 +114,7 @@ export default function ManagePage() {
       setName(user.name || "");
       setSurname(user.surname || "");
       setDescription(user.description || "");
+      setCity(user.city || "Barcelona");
       setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
       setYearsOfExperience(user.yearsOfExperience);
       setLanguagesSpoken(user.languagesSpoken || []);
@@ -120,6 +124,7 @@ export default function ManagePage() {
       setAgencyDescription(user.agencyDescription || "");
       setAgencyPhone(user.agencyPhone || "");
       setAgencyWebsite(user.agencyWebsite || "");
+      setAgencyCity((user as any).agencyCity || "Barcelona");
       setAgencyInfluenceNeighborhoods(user.agencyInfluenceNeighborhoods || []);
       setYearEstablished(user.yearEstablished);
       setAgencyLanguagesSpoken(user.agencyLanguagesSpoken || []);
@@ -699,11 +704,34 @@ export default function ManagePage() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <Label htmlFor="city">Ciudad donde trabajas</Label>
+                  <Select
+                    value={city}
+                    onValueChange={(value) => {
+                      setCity(value);
+                      setInfluenceNeighborhoods([]); // Clear neighborhoods when city changes
+                      setHasAgentChanges(true);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona tu ciudad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getCities().map((cityOption) => (
+                        <SelectItem key={cityOption} value={cityOption}>
+                          {cityOption}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="w-full">
                   <Label htmlFor="influence-neighborhoods">Barrios de influencia</Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={influenceNeighborhoods}
+                      city={city}
                       onChange={(e) => {setInfluenceNeighborhoods(e); setHasAgentChanges(true);}} // Added change detection
                       buttonText="Selecciona los barrios donde trabajas habitualmente"
                     />
@@ -722,6 +750,7 @@ export default function ManagePage() {
                     name,
                     surname,
                     description,
+                    city,
                     influenceNeighborhoods,
                     yearsOfExperience,
                     languagesSpoken
@@ -1001,6 +1030,7 @@ export default function ManagePage() {
                     agencyDescription,
                     agencyPhone,
                     agencyWebsite,
+                    agencyCity,
                     agencyInfluenceNeighborhoods,
                     yearEstablished,
                     agencyLanguagesSpoken,

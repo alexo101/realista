@@ -21,6 +21,8 @@ export const agencies = pgTable("agencies", {
   agencyLogo: text("agency_logo"),
   agencyEmailToDisplay: text("agency_email_to_display"),
   agencyActiveSince: text("agency_active_since"),
+  // Ciudad donde opera la agencia
+  city: text("city").notNull().default('Barcelona'),
   agencyInfluenceNeighborhoods: text("agencyInfluenceNeighborhoods").array(), // Barrios de influencia como array
   agencySupportedLanguages: text("agency_supported_languages").array(), // Idiomas como array
   adminAgentId: integer("admin_agent_id").notNull(), // ID del agente administrador que gestiona esta agencia
@@ -39,6 +41,8 @@ export const agents = pgTable("agents", {
   description: text("description"),
   avatar: text("avatar"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Ciudad donde opera el agente
+  city: text("city").notNull().default('Barcelona'),
   // Barrios de influencia para agentes
   influenceNeighborhoods: text("influence_neighborhoods").array(),
   // Detalles específicos del agente
