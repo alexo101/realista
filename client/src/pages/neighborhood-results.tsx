@@ -282,7 +282,7 @@ export default function NeighborhoodResultsPage() {
       console.log('Ratings response data:', data);
       return data;
     },
-    enabled: !isBarcelonaPage && !isDistrictPage, // Siempre habilitado para barrios individuales
+    enabled: isNeighborhoodPage, // Only enabled for specific neighborhoods
     staleTime: 600000, // 10 minutes cache - neighborhood ratings change rarely
     gcTime: 1200000, // 20 minutes in cache
     refetchOnWindowFocus: false,
@@ -294,9 +294,9 @@ export default function NeighborhoodResultsPage() {
     <div className="min-h-screen flex flex-col pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
         <div className="mb-6">
-          {/* Breadcrumb */}
+          {/* Hierarchical Breadcrumb Navigation */}
           <div className="flex items-center text-sm text-gray-500 mb-4">
-            {/* Inicio siempre está en el nivel superior */}
+            {/* Inicio - Always at top level */}
             <span 
               className="cursor-pointer hover:text-primary"
               onClick={() => window.location.href = '/'}
@@ -304,123 +304,60 @@ export default function NeighborhoodResultsPage() {
               Inicio
             </span>
             <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
-            {/* Barcelona en el segundo nivel - siempre con dropdown de distritos */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
-                  Barcelona
-                </span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
-                {BARCELONA_DISTRICTS.map(districtOption => (
-                  <DropdownMenuItem
-                    key={districtOption}
-                    onClick={() => {
-                      window.location.href = `/neighborhood/${encodeURIComponent(districtOption)}/properties`;
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {districtOption}
-                  </DropdownMenuItem>
-                ))}
-                {/* Add option to view Barcelona overview */}
-                <DropdownMenuItem
-                  onClick={() => window.location.href = '/neighborhood/Barcelona/properties'}
-                  className="cursor-pointer border-t mt-1 pt-2 font-medium"
-                >
-                  Ver toda Barcelona
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             
-            {/* Si es un distrito o tiene distrito, mostrar el siguiente nivel */}
-            {(isDistrictPage || district) && (
+            {/* City Level */}
+            <span 
+              className="cursor-pointer hover:text-primary underline-offset-4 hover:underline"
+              onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(currentCity)}/properties`}
+            >
+              {currentCity}
+            </span>
+            
+            {/* District Level (for Madrid) */}
+            {currentDistrict && (
               <>
                 <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
-                {isDistrictPage ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
-                        {decodedNeighborhood}
-                      </span>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
-                      {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS
-                        .find(d => d.district === decodedNeighborhood)
-                        ?.neighborhoods.map(neighborhoodOption => (
-                          <DropdownMenuItem
-                            key={neighborhoodOption}
-                            onClick={() => {
-                              // Special case for "Sant Andreu" neighborhood within "Sant Andreu" district
-                              if (decodedNeighborhood === "Sant Andreu" && neighborhoodOption === "Sant Andreu") {
-                                window.location.href = `/neighborhood/Sant Andreu del Palomar/properties`;
-                              } else {
-                                window.location.href = `/neighborhood/${encodeURIComponent(neighborhoodOption)}/properties`;
-                              }
-                            }}
-                            className="cursor-pointer"
-                          >
-                            {neighborhoodOption === "Sant Andreu" && decodedNeighborhood === "Sant Andreu" 
-                              ? "Sant Andreu del Palomar" 
-                              : neighborhoodOption}
-                          </DropdownMenuItem>
-                        ))
-                      }
-                      {/* Add option to view district overview */}
-                      <DropdownMenuItem
-                        onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(decodedNeighborhood || '')}/properties`}
-                        className="cursor-pointer border-t mt-1 pt-2 font-medium"
-                      >
-                        Ver todo {decodedNeighborhood}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
-                          {district}
-                        </span>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
-                        {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS
-                          .find(d => d.district === district)
-                          ?.neighborhoods.map(neighborhoodOption => (
-                            <DropdownMenuItem
-                              key={neighborhoodOption}
-                              onClick={() => {
-                                // Special case for "Sant Andreu" neighborhood within "Sant Andreu" district
-                                if (district === "Sant Andreu" && neighborhoodOption === "Sant Andreu") {
-                                  window.location.href = `/neighborhood/Sant Andreu del Palomar/properties`;
-                                } else {
-                                  window.location.href = `/neighborhood/${encodeURIComponent(neighborhoodOption)}/properties`;
-                                }
-                              }}
-                              className="cursor-pointer"
-                            >
-                              {neighborhoodOption === "Sant Andreu" && district === "Sant Andreu" 
-                                ? "Sant Andreu del Palomar" 
-                                : neighborhoodOption}
-                            </DropdownMenuItem>
-                          ))
-                        }
-                        {/* Add option to view district overview */}
-                        <DropdownMenuItem
-                          onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(district || '')}/properties`}
-                          className="cursor-pointer border-t mt-1 pt-2 font-medium"
-                        >
-                          Ver todo {district}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
-                    <span className="font-medium">
-                      {/* Caso especial para Sant Andreu del Palomar */}
-                      {decodedNeighborhood === "Sant Andreu del Palomar" ? "Sant Andreu del Palomar" : decodedNeighborhood}
+                <span 
+                  className="cursor-pointer hover:text-primary underline-offset-4 hover:underline"
+                  onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(getNeighborhoodDisplayName('', currentDistrict, currentCity))}/properties`}
+                >
+                  {currentDistrict}
+                </span>
+              </>
+            )}
+            
+            {/* Neighborhood Level */}
+            {currentNeighborhood && currentNeighborhood !== currentCity && (
+              <>
+                <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+                <span className="text-gray-900 font-medium">
+                  {currentNeighborhood}
+                </span>
+              </>
+            )}
+            
+            {/* Legacy Barcelona Districts Navigation (for backward compatibility) */}
+            {currentCity === 'Barcelona' && !currentDistrict && !isNeighborhoodPage && (
+              <>
+                <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
+                      Distritos
                     </span>
-                  </>
-                )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
+                    {BARCELONA_DISTRICTS.map(districtOption => (
+                      <DropdownMenuItem
+                        key={districtOption}
+                        onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(districtOption)}/properties`}
+                        className="cursor-pointer"
+                      >
+                        {districtOption}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>
@@ -624,22 +561,28 @@ export default function NeighborhoodResultsPage() {
             {/* Contenido de pestaña: Overview */}
             <TabsContent value="overview" className="mt-0">
               <div className="bg-white rounded-lg shadow p-6">
-                {/* Título personalizado según el tipo de página */}
-                {isBarcelonaPage && (
-                  <h2 className="text-2xl font-bold mb-4">Barcelona</h2>
+                {/* Dynamic title based on hierarchical structure */}
+                {isCityPage && (
+                  <h2 className="text-2xl font-bold mb-4">{currentCity}</h2>
                 )}
                 {isDistrictPage && (
-                  <h2 className="text-2xl font-bold mb-4">Distrito de {decodedNeighborhood}</h2>
+                  <h2 className="text-2xl font-bold mb-4">Distrito de {currentDistrict}</h2>
                 )}
-                {!isBarcelonaPage && !isDistrictPage && (
-                  <h2 className="text-2xl font-bold mb-4">Barrio de {decodedNeighborhood}</h2>
+                {isNeighborhoodPage && (
+                  <h2 className="text-2xl font-bold mb-4">Barrio de {currentNeighborhood}</h2>
                 )}
                 
-                {/* Información de distrito para barrios */}
-                {district && !isDistrictPage && !isBarcelonaPage && (
+                {/* District information for neighborhoods */}
+                {isNeighborhoodPage && currentDistrict && (
                   <div className="flex items-center mb-4">
                     <MapPin className="h-5 w-5 mr-2 text-primary" />
-                    <span>Distrito: <strong>{district}</strong></span>
+                    <span>Distrito: <strong>{currentDistrict}</strong></span>
+                  </div>
+                )}
+                {isNeighborhoodPage && currentCity === 'Barcelona' && legacyDistrict && !currentDistrict && (
+                  <div className="flex items-center mb-4">
+                    <MapPin className="h-5 w-5 mr-2 text-primary" />
+                    <span>Distrito: <strong>{legacyDistrict}</strong></span>
                   </div>
                 )}
                 
@@ -677,19 +620,19 @@ export default function NeighborhoodResultsPage() {
                 )}
                 
                 {/* Información de Barcelona cuando estamos en la página general */}
-                {isBarcelonaPage && (
+                {isCityPage && currentCity === 'Barcelona' && (
                   <div className="mb-6">
                     <p className="text-gray-600 mb-4">
                       Barcelona está dividida en los siguientes distritos:
                     </p>
                     <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {BARCELONA_DISTRICTS.map(district => (
+                      {BARCELONA_DISTRICTS.map(districtOption => (
                         <span 
-                          key={district}
+                          key={districtOption}
                           className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
-                          onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(district)}/properties`}
+                          onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(districtOption)}/properties`}
                         >
-                          {district}
+                          {districtOption}
                         </span>
                       ))}
                     </div>
@@ -697,7 +640,7 @@ export default function NeighborhoodResultsPage() {
                 )}
                 
                 {/* Información genérica del barrio */}
-                {!isBarcelonaPage && !isDistrictPage && (
+                {isNeighborhoodPage && (
                   <>
                     <p className="text-gray-600 mb-6">
                       Información general sobre el barrio de {decodedNeighborhood}.
