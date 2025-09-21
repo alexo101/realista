@@ -339,13 +339,31 @@ export default function NeighborhoodResultsPage() {
             </span>
             <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
             
-            {/* City Level */}
-            <span 
-              className="cursor-pointer hover:text-primary underline-offset-4 hover:underline"
-              onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(currentCity)}/properties`}
-            >
-              {currentCity}
-            </span>
+            {/* City Level with district dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
+                  {currentCity}
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
+                {getDistrictsByCity(currentCity).map(districtOption => (
+                  <DropdownMenuItem
+                    key={districtOption}
+                    onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(getNeighborhoodDisplayName('', districtOption, currentCity))}/properties`}
+                    className="cursor-pointer"
+                  >
+                    {districtOption}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem
+                  onClick={() => window.location.href = `/neighborhood/${encodeURIComponent(currentCity)}/properties`}
+                  className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                >
+                  Ver todo {currentCity}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {/* District Level with neighborhood dropdown */}
             {currentDistrict && (
