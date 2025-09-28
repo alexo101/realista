@@ -15,10 +15,6 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 37177
-externalPort = 3003
-
-[[ports]]
 localPort = 38649
 externalPort = 3000
 
@@ -29,6 +25,10 @@ externalPort = 3001
 [[ports]]
 localPort = 43907
 externalPort = 3002
+
+[[ports]]
+localPort = 44669
+externalPort = 3003
 
 [workflows]
 runButton = "Project"
@@ -56,3 +56,4 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_object_storage:1.0.0"]
+expertMode = true
