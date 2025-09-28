@@ -43,6 +43,19 @@ export default function RegisterPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Plan configurations for display
+  // Configuración del formulario
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      profileType: "agent",
+      email: "",
+      password: "",
+      subscriptionPlan: "",
+      subscriptionType: "",
+      isYearlyBilling: false,
+    },
+  });
+
   const getPlanDetails = (planId: string, subscriptionType: string) => {
     if (subscriptionType === 'agency') {
       const agencyPlans: Record<string, { name: string, monthlyPrice: number, yearlyPrice: number, color: string }> = {
@@ -81,26 +94,12 @@ export default function RegisterPage() {
     }
   }, [location, form]);
 
-  // Configuración del formulario
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      profileType: "agent",
-      email: "",
-      password: "",
-      subscriptionPlan: "",
-      subscriptionType: "",
-      isYearlyBilling: false,
-    },
-  });
-
   // Manejar envío del formulario
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
       // Determinar si el usuario será un agente admin basado en la selección
       const isAdmin = data.profileType === "agency";
-      const isAgencyNetwork = data.profileType === "agencyNetwork";
 
       // Preparamos el payload según el tipo de perfil seleccionado
       const payload = {
@@ -126,8 +125,6 @@ export default function RegisterPage() {
         // Mensaje personalizado según el tipo de perfil
         if (data.profileType === "agency") {
           successMessage = "Tu agencia ha sido registrada correctamente. Ahora puedes completar tu perfil.";
-        } else if (data.profileType === "agencyNetwork") {
-          successMessage = "Tu red de agencias ha sido registrada correctamente. Ahora puedes configurar tu red.";
         }
 
         toast({
