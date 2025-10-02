@@ -876,28 +876,31 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Updating agency ${id} with data:`, agencyData);
 
-      // Creamos un objeto con solo los campos que queremos actualizar
-      const updateData: Record<string, any> = {};
+      // Preparar los datos de actualización con mapeo de campos
+      const updates: any = {};
 
-      // Mapeo de nombres de campos del frontend a nombres de columnas de la base de datos
-      const fieldMapping: Record<string, string> = {
-        'yearEstablished': 'agencyActiveSince',
-        'agencyLanguagesSpoken': 'agencySupportedLanguages',
-      };
+      // Mapear campos individuales
+      if (agencyData.agencyName !== undefined) updates.agencyName = agencyData.agencyName;
+      if (agencyData.agencyAddress !== undefined) updates.agencyAddress = agencyData.agencyAddress;
+      if (agencyData.agencyDescription !== undefined) updates.agencyDescription = agencyData.agencyDescription;
+      if (agencyData.agencyLogo !== undefined) updates.agencyLogo = agencyData.agencyLogo;
+      if (agencyData.agencyEmailToDisplay !== undefined) updates.agencyEmailToDisplay = agencyData.agencyEmailToDisplay;
+      if (agencyData.agencyPhone !== undefined) updates.agencyPhone = agencyData.agencyPhone;
+      if (agencyData.city !== undefined) updates.city = agencyData.city;
+      if (agencyData.agencyWebsite !== undefined) updates.agencyWebsite = agencyData.agencyWebsite;
+      if (agencyData.agencySocialMedia !== undefined) updates.agencySocialMedia = agencyData.agencySocialMedia;
+      
+      // Campos con mapeo especial
+      if (agencyData.yearEstablished !== undefined) updates.agencyActiveSince = agencyData.yearEstablished.toString();
+      if (agencyData.agencyLanguagesSpoken !== undefined) updates.agencySupportedLanguages = agencyData.agencyLanguagesSpoken;
+      if (agencyData.agencyInfluenceNeighborhoods !== undefined) updates.agencyInfluenceNeighborhoods = agencyData.agencyInfluenceNeighborhoods;
 
-      // Solo copiamos los campos que están definidos en el input
-      for (const [key, value] of Object.entries(agencyData)) {
-        if (value !== undefined) {
-          // Usar el nombre mapeado si existe, sino usar el nombre original
-          const dbFieldName = fieldMapping[key] || key;
-          updateData[dbFieldName] = value;
-        }
-      }
+      console.log('Final update object:', updates);
 
       // Actualizamos la agencia
       const [updatedAgency] = await db
         .update(agencies)
-        .set(updateData)
+        .set(updates)
         .where(eq(agencies.id, id))
         .returning();
 
