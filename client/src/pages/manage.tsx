@@ -124,6 +124,15 @@ export default function ManagePage() {
     }
   }, [user, location]);
 
+  // Fetch agencies for admin user
+  const { data: agencies } = useQuery<any[]>({
+    queryKey: [`/api/agencies?adminAgentId=${user?.id}`],
+    enabled: Boolean(user?.isAdmin && user?.id),
+  });
+
+  // Get the first agency for this admin (most admins manage one agency)
+  const currentAgency = agencies && agencies.length > 0 ? agencies[0] : null;
+
   // Cargar datos de agencia cuando se obtenga la agencia
   useEffect(() => {
     if (currentAgency) {
@@ -157,15 +166,6 @@ export default function ManagePage() {
     queryKey: [`/api/clients?agentId=${user?.id}`],
     enabled: (section === 'clients' || section === 'reviews') && Boolean(user?.id),
   });
-
-  // Fetch agencies for admin user
-  const { data: agencies } = useQuery<any[]>({
-    queryKey: [`/api/agencies?adminAgentId=${user?.id}`],
-    enabled: Boolean(user?.isAdmin && user?.id),
-  });
-
-  // Get the first agency for this admin (most admins manage one agency)
-  const currentAgency = agencies && agencies.length > 0 ? agencies[0] : null;
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
