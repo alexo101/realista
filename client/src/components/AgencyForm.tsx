@@ -52,6 +52,31 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
+  // Estados para errores de validación
+  const [phoneError, setPhoneError] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+  const [websiteError, setWebsiteError] = useState<string>("");
+
+  // Funciones de validación
+  const validateSpanishPhone = (phone: string): boolean => {
+    if (!phone) return true; // Campo opcional
+    // Formatos válidos: +34 XXX XXX XXX, 34XXXXXXXXX, 9XX XXX XXX, etc.
+    const phoneRegex = /^(\+34|0034|34)?[\s\-]?[6789]\d{2}[\s\-]?\d{3}[\s\-]?\d{3}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  const validateEmail = (email: string): boolean => {
+    if (!email) return true; // Campo opcional
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateWebsite = (website: string): boolean => {
+    if (!website) return true; // Campo opcional
+    const websiteRegex = /^https?:\/\/.+\..+/i;
+    return websiteRegex.test(website);
+  };
+
   // Si estamos editando, cargar los datos de la agencia
   useEffect(() => {
     if (agency) {
@@ -77,8 +102,8 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     }
   }, [agency]);
 
-  // Validación simple
-  const isValid = agencyName.trim().length > 0;
+  // Validación completa del formulario
+  const isValid = agencyName.trim().length > 0 && !phoneError && !emailError && !websiteError;
 
   // Manejar el envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
@@ -203,9 +228,19 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               <Input
                 id="agencyPhone"
                 value={agencyPhone}
-                onChange={(e) => setAgencyPhone(e.target.value)}
-                placeholder="Teléfono de contacto"
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAgencyPhone(value);
+                  if (value && !validateSpanishPhone(value)) {
+                    setPhoneError("Formato inválido. Ejemplos: +34 600 123 456 o 600123456");
+                  } else {
+                    setPhoneError("");
+                  }
+                }}
+                placeholder="Teléfono de contacto (ej: +34 600 123 456)"
+                className={phoneError ? "border-red-500" : ""}
               />
+              {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
             </div>
 
             <div>
@@ -213,10 +248,20 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               <Input
                 id="agencyEmailToDisplay"
                 value={agencyEmailToDisplay}
-                onChange={(e) => setAgencyEmailToDisplay(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAgencyEmailToDisplay(value);
+                  if (value && !validateEmail(value)) {
+                    setEmailError("Formato de email inválido");
+                  } else {
+                    setEmailError("");
+                  }
+                }}
                 placeholder="Email para mostrar en el perfil público"
                 type="email"
+                className={emailError ? "border-red-500" : ""}
               />
+              {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
             </div>
 
             <div>
@@ -224,9 +269,19 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               <Input
                 id="agencyWebsite"
                 value={agencyWebsite}
-                onChange={(e) => setAgencyWebsite(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setAgencyWebsite(value);
+                  if (value && !validateWebsite(value)) {
+                    setWebsiteError("URL inválida. Debe incluir http:// o https://");
+                  } else {
+                    setWebsiteError("");
+                  }
+                }}
                 placeholder="URL de tu sitio web (con https://)"
+                className={websiteError ? "border-red-500" : ""}
               />
+              {websiteError && <p className="text-sm text-red-500 mt-1">{websiteError}</p>}
             </div>
 
             <div>
