@@ -20,6 +20,7 @@ export const agencies = pgTable("agencies", {
   agencyDescription: text("agency_description"),
   agencyLogo: text("agency_logo"),
   agencyEmailToDisplay: text("agency_email_to_display"),
+  agencyPhone: text("agency_phone"),
   agencyActiveSince: text("agency_active_since"),
   // Ciudad donde opera la agencia
   city: text("city").notNull().default('Barcelona'),
