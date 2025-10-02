@@ -110,7 +110,7 @@ export default function ManagePage() {
   // Cargar valores iniciales cuando el usuario cambia y actualizar sección inicial
   useEffect(() => {
     if (user) {
-      // Cargar datos de perfil
+      // Cargar datos de perfil de agente
       setName(user.name || "");
       setSurname(user.surname || "");
       setDescription(user.description || "");
@@ -119,29 +119,34 @@ export default function ManagePage() {
       setYearsOfExperience(user.yearsOfExperience);
       setLanguagesSpoken(user.languagesSpoken || []);
 
-      setAgencyName(user.agencyName || "");
-      setAgencyAddress(user.agencyAddress || "");
-      setAgencyDescription(user.agencyDescription || "");
-      setAgencyPhone(user.agencyPhone || "");
-      setAgencyWebsite(user.agencyWebsite || "");
-      setAgencyCity((user as any).agencyCity || "Barcelona");
-      setAgencyInfluenceNeighborhoods(user.agencyInfluenceNeighborhoods || []);
-      setYearEstablished(user.yearEstablished);
-      setAgencyLanguagesSpoken(user.agencyLanguagesSpoken || []);
+      // Actualizar la sección según la URL y tipo de usuario
+      setSection(getInitialSection());
+    }
+  }, [user, location]);
+
+  // Cargar datos de agencia cuando se obtenga la agencia
+  useEffect(() => {
+    if (currentAgency) {
+      setAgencyName(currentAgency.agencyName || "");
+      setAgencyAddress(currentAgency.agencyAddress || "");
+      setAgencyDescription(currentAgency.agencyDescription || "");
+      setAgencyPhone(currentAgency.agencyPhone || "");
+      setAgencyWebsite(currentAgency.agencyWebsite || "");
+      setAgencyCity(currentAgency.city || "Barcelona");
+      setAgencyInfluenceNeighborhoods(currentAgency.agencyInfluenceNeighborhoods || []);
+      setYearEstablished(currentAgency.agencyActiveSince ? parseInt(currentAgency.agencyActiveSince) : undefined);
+      setAgencyLanguagesSpoken(currentAgency.agencySupportedLanguages || []);
 
       // Cargar redes sociales si existen
-      const socialMedia = user.agencySocialMedia as Record<string, string> | undefined;
+      const socialMedia = currentAgency.agencySocialMedia as Record<string, string> | undefined;
       if (socialMedia) {
         setFacebookUrl(socialMedia.facebook || "");
         setInstagramUrl(socialMedia.instagram || "");
         setTwitterUrl(socialMedia.twitter || "");
         setLinkedinUrl(socialMedia.linkedin || "");
       }
-
-      // Actualizar la sección según la URL y tipo de usuario
-      setSection(getInitialSection());
     }
-  }, [user, location]);
+  }, [currentAgency]);
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
     queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`],
@@ -152,6 +157,15 @@ export default function ManagePage() {
     queryKey: [`/api/clients?agentId=${user?.id}`],
     enabled: (section === 'clients' || section === 'reviews') && Boolean(user?.id),
   });
+
+  // Fetch agencies for admin user
+  const { data: agencies } = useQuery<any[]>({
+    queryKey: [`/api/agencies?adminAgentId=${user?.id}`],
+    enabled: Boolean(user?.isAdmin && user?.id),
+  });
+
+  // Get the first agency for this admin (most admins manage one agency)
+  const currentAgency = agencies && agencies.length > 0 ? agencies[0] : null;
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -242,7 +256,6 @@ export default function ManagePage() {
       if (updatedUser) {
         setUser(updatedUser);
         setShowSavedIndicator(true);
-        setHasAgencyChanges(false); // Added
         setHasAgentChanges(false); // Added
         toast({
           title: "Perfil actualizado",
@@ -258,6 +271,39 @@ export default function ManagePage() {
       toast({
         title: "Error",
         description: (error as Error).message || "No se pudo actualizar el perfil",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateAgencyMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (!currentAgency) return null;
+
+      const response = await apiRequest('PATCH', `/api/agencies/${currentAgency.id}`, data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al actualizar la agencia');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/agencies?adminAgentId=${user?.id}`] });
+      setShowSavedIndicator(true);
+      setHasAgencyChanges(false);
+      toast({
+        title: "Agencia actualizada",
+        description: "Los cambios se han guardado correctamente",
+      });
+
+      setTimeout(() => {
+        setShowSavedIndicator(false);
+      }, 3000);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "No se pudo actualizar la agencia",
         variant: "destructive",
       });
     }
@@ -1024,13 +1070,13 @@ export default function ManagePage() {
                 <Button
                   type="button"
                   className="relative"
-                  onClick={() => updateProfileMutation.mutate({
+                  onClick={() => updateAgencyMutation.mutate({
                     agencyName,
                     agencyAddress,
                     agencyDescription,
                     agencyPhone,
                     agencyWebsite,
-                    agencyCity,
+                    city: agencyCity,
                     agencyInfluenceNeighborhoods,
                     yearEstablished,
                     agencyLanguagesSpoken,
@@ -1041,7 +1087,7 @@ export default function ManagePage() {
                       linkedin: linkedinUrl
                     }
                   })}
-                  disabled={updateProfileMutation.isPending || !hasAgencyChanges} // Added disable logic
+                  disabled={updateAgencyMutation.isPending || !hasAgencyChanges || !currentAgency} // Added disable logic
                 >
                   {showSavedIndicator && (
                     <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
