@@ -879,10 +879,18 @@ export class DatabaseStorage implements IStorage {
       // Creamos un objeto con solo los campos que queremos actualizar
       const updateData: Record<string, any> = {};
 
+      // Mapeo de nombres de campos del frontend a nombres de columnas de la base de datos
+      const fieldMapping: Record<string, string> = {
+        'yearEstablished': 'agencyActiveSince',
+        'agencyLanguagesSpoken': 'agencySupportedLanguages',
+      };
+
       // Solo copiamos los campos que están definidos en el input
       for (const [key, value] of Object.entries(agencyData)) {
         if (value !== undefined) {
-          updateData[key] = value;
+          // Usar el nombre mapeado si existe, sino usar el nombre original
+          const dbFieldName = fieldMapping[key] || key;
+          updateData[dbFieldName] = value;
         }
       }
 
