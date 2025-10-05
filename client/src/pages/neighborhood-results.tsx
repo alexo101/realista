@@ -606,17 +606,16 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Overview */}
             <TabsContent value="overview" className="mt-0">
-              <div className="bg-white rounded-lg shadow p-6">
-                {/* Dynamic title based on hierarchical structure */}
-                {isCityPage && (
-                  <h2 className="text-2xl font-bold mb-4">{currentCity}</h2>
-                )}
-                {isDistrictPage && (
-                  <h2 className="text-2xl font-bold mb-4">Distrito de {currentDistrict}</h2>
-                )}
-                {isNeighborhoodPage && (
-                  <h2 className="text-2xl font-bold mb-4">Barrio de {currentNeighborhood}</h2>
-                )}
+              {/* Dynamic title based on hierarchical structure */}
+              {isCityPage && (
+                <h2 className="text-2xl font-bold mb-4">{currentCity}</h2>
+              )}
+              {isDistrictPage && (
+                <h2 className="text-2xl font-bold mb-4">Distrito de {currentDistrict}</h2>
+              )}
+              {isNeighborhoodPage && (
+                <h2 className="text-2xl font-bold mb-4">Barrio de {currentNeighborhood}</h2>
+              )}
                 
                 {/* District information for neighborhoods */}
                 {isNeighborhoodPage && currentDistrict && (
@@ -821,7 +820,6 @@ export default function NeighborhoodResultsPage() {
                     </p>
                   </div>
                 </div>
-              </div>
             </TabsContent>
           </Tabs>
         </div>
