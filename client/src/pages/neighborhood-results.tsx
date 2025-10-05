@@ -326,7 +326,7 @@ export default function NeighborhoodResultsPage() {
 
   return (
     <div className="min-h-screen flex flex-col pt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-12">
         <div className="mb-6">
           {/* Hierarchical Breadcrumb Navigation */}
           <div className="flex items-center text-sm text-gray-500 mb-4">
