@@ -157,7 +157,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array(6).fill(0).map((_, i) => (
           <div key={i} className="bg-gray-100 animate-pulse h-[300px] rounded-lg" />
         ))}
@@ -181,7 +181,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((property) => {
         const hasMultipleImages = property.images && property.images.length > 1;
         // Use mainImageIndex as default starting point, or 0
