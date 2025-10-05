@@ -359,8 +359,9 @@ export class DatabaseStorage implements IStorage {
 
         // Use PostgreSQL array overlap operator to check if any searched neighborhoods
         // match any of the agency's influence neighborhoods
+        // Cast both sides to text[] to ensure type compatibility
         dbQuery = dbQuery.where(
-          sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${sql.join(neighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+          sql`${agencies.agencyInfluenceNeighborhoods}::text[] && ARRAY[${sql.join(neighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
         );
       }
 
