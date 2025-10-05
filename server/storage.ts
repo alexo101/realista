@@ -354,13 +354,14 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-        const neighborhoods = neighborhoodsStr.split(",");
-        console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
+        const neighborhoods = neighborhoodsStr.split(",").map(n => n.trim());
+        console.log(`Filtrando agencias por barrios: ${neighborhoods.join(', ')}`);
 
-        // For now, skip neighborhood filtering since the column might not be properly set up
-        // This allows the agencies tab to work while we fix the database structure
-        console.log(`Note: Skipping neighborhood filtering for agencies until database is properly configured`);
-        // TODO: Fix the agencyInfluenceNeighborhoods column to be a proper text array
+        // Use PostgreSQL array overlap operator to check if any searched neighborhoods
+        // match any of the agency's influence neighborhoods
+        dbQuery = dbQuery.where(
+          sql`${agencies.agencyInfluenceNeighborhoods} && ARRAY[${sql.join(neighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+        );
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
