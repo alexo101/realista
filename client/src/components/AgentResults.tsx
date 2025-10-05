@@ -104,9 +104,9 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
   // Display empty state if no results or if results array is empty
   if (!results || results.length === 0) {
     return (
-      <div className="text-center py-16 bg-gray-50 rounded-lg">
-        <Users className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-lg font-medium text-gray-900">
+      <div className="w-full py-16">
+        <Users className="h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900">
           No hay agentes disponibles
         </h3>
         <p className="mt-1 text-gray-500">

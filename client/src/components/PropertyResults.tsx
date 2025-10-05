@@ -168,9 +168,9 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   // Display empty state if no results or if results array is empty
   if (!results || results.length === 0) {
     return (
-      <div className="text-center py-16 bg-gray-50 rounded-lg">
-        <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-lg font-medium text-gray-900">
+      <div className="w-full py-16">
+        <Building2 className="h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900">
           No hay propiedades disponibles
         </h3>
         <p className="mt-1 text-gray-500">
