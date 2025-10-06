@@ -332,6 +332,21 @@ export const insertClientFavoriteAgentSchema = createInsertSchema(clientFavorite
 export type ClientFavoriteAgent = typeof clientFavoriteAgents.$inferSelect;
 export type InsertClientFavoriteAgent = z.infer<typeof insertClientFavoriteAgentSchema>;
 
+// Client favorite agencies table
+export const clientFavoriteAgencies = pgTable("client_favorite_agencies", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  agencyId: integer("agency_id").notNull().references(() => agencies.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertClientFavoriteAgencySchema = createInsertSchema(clientFavoriteAgencies).omit({
+  id: true,
+  createdAt: true,
+});
+export type ClientFavoriteAgency = typeof clientFavoriteAgencies.$inferSelect;
+export type InsertClientFavoriteAgency = z.infer<typeof insertClientFavoriteAgencySchema>;
+
 // Client favorite properties table
 export const clientFavoriteProperties = pgTable("client_favorite_properties", {
   id: serial("id").primaryKey(),

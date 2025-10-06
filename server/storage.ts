@@ -51,10 +51,13 @@ import {
   type InsertConversationMessage,
   type InsertPinnedConversation,
   clientFavoriteAgents,
+  clientFavoriteAgencies,
   clientFavoriteProperties,
   propertyVisitRequests,
   type ClientFavoriteAgent,
   type InsertClientFavoriteAgent,
+  type ClientFavoriteAgency,
+  type InsertClientFavoriteAgency,
   type ClientFavoriteProperty,
   type InsertClientFavoriteProperty,
   type PropertyVisitRequest,
@@ -162,6 +165,12 @@ export interface IStorage {
   toggleFavoriteAgent(clientId: number, agentId: number): Promise<boolean>;
   isFavoriteAgent(clientId: number, agentId: number): Promise<boolean>;
   getBatchFavoriteAgentStatus(clientId: number, agentIds: number[]): Promise<{ [key: number]: boolean }>;
+
+  // Client favorite agencies
+  getFavoriteAgenciesByClient(clientId: number): Promise<User[]>;
+  toggleFavoriteAgency(clientId: number, agencyId: number): Promise<boolean>;
+  isFavoriteAgency(clientId: number, agencyId: number): Promise<boolean>;
+  getBatchFavoriteAgencyStatus(clientId: number, agencyIds: number[]): Promise<{ [key: number]: boolean }>;
 
   // Client favorite properties
   getFavoritePropertiesByClient(clientId: number): Promise<Property[]>;
@@ -1931,6 +1940,97 @@ export class DatabaseStorage implements IStorage {
     const result: { [key: number]: boolean } = {};
     agentIds.forEach(id => {
       result[id] = favorites.some(fav => fav.agentId === id);
+    });
+    
+    return result;
+  }
+
+  async getFavoriteAgenciesByClient(clientId: number): Promise<User[]> {
+    const favorites = await db
+      .select({
+        id: agencies.id,
+        email: agencies.email,
+        agencyName: agencies.agencyName,
+        agencyWebsite: agencies.agencyWebsite,
+        agencySocialMedia: agencies.agencySocialMedia,
+        agencyActiveSince: agencies.agencyActiveSince,
+        agencyAddress: agencies.agencyAddress,
+        agencyInfluenceNeighborhoods: agencies.agencyInfluenceNeighborhoods,
+        agencyLogo: agencies.agencyLogo,
+        createdAt: agencies.createdAt,
+        isAdmin: sql<boolean>`false`.as('isAdmin'),
+        isAgent: sql<boolean>`false`.as('isAgent'),
+        isAgency: sql<boolean>`true`.as('isAgency'),
+      })
+      .from(clientFavoriteAgencies)
+      .innerJoin(agencies, eq(agencies.id, clientFavoriteAgencies.agencyId))
+      .where(eq(clientFavoriteAgencies.clientId, clientId));
+
+    return favorites;
+  }
+
+  async toggleFavoriteAgency(clientId: number, agencyId: number): Promise<boolean> {
+    // Check if already favorited
+    const existing = await db
+      .select()
+      .from(clientFavoriteAgencies)
+      .where(
+        and(
+          eq(clientFavoriteAgencies.clientId, clientId),
+          eq(clientFavoriteAgencies.agencyId, agencyId)
+        )
+      );
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await db
+        .delete(clientFavoriteAgencies)
+        .where(
+          and(
+            eq(clientFavoriteAgencies.clientId, clientId),
+            eq(clientFavoriteAgencies.agencyId, agencyId)
+          )
+        );
+      return false;
+    } else {
+      // Add to favorites
+      await db
+        .insert(clientFavoriteAgencies)
+        .values({ clientId, agencyId });
+      return true;
+    }
+  }
+
+  async isFavoriteAgency(clientId: number, agencyId: number): Promise<boolean> {
+    const favorite = await db
+      .select()
+      .from(clientFavoriteAgencies)
+      .where(
+        and(
+          eq(clientFavoriteAgencies.clientId, clientId),
+          eq(clientFavoriteAgencies.agencyId, agencyId)
+        )
+      );
+
+    return favorite.length > 0;
+  }
+
+  async getBatchFavoriteAgencyStatus(clientId: number, agencyIds: number[]): Promise<{ [key: number]: boolean }> {
+    if (agencyIds.length === 0) return {};
+    
+    const favorites = await db
+      .select({ agencyId: clientFavoriteAgencies.agencyId })
+      .from(clientFavoriteAgencies)
+      .where(
+        and(
+          eq(clientFavoriteAgencies.clientId, clientId),
+          inArray(clientFavoriteAgencies.agencyId, agencyIds)
+        )
+      );
+
+    const result: { [key: number]: boolean } = {};
+    agencyIds.forEach(id => {
+      result[id] = favorites.some(fav => fav.agencyId === id);
     });
     
     return result;
