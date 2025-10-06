@@ -1949,7 +1949,7 @@ export class DatabaseStorage implements IStorage {
     const favorites = await db
       .select({
         id: agencies.id,
-        email: agencies.email,
+        email: agencies.agencyEmailToDisplay,
         agencyName: agencies.agencyName,
         agencyWebsite: agencies.agencyWebsite,
         agencySocialMedia: agencies.agencySocialMedia,
