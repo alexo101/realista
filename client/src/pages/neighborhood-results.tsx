@@ -346,7 +346,7 @@ export default function NeighborhoodResultsPage() {
                   {currentCity}
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
+              <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
                 {getDistrictsByCity(currentCity).map(districtOption => (
                   <DropdownMenuItem
                     key={districtOption}
@@ -375,7 +375,7 @@ export default function NeighborhoodResultsPage() {
                       {currentDistrict}
                     </span>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-64 max-h-64 overflow-y-auto">
+                  <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
                     {getNeighborhoodsByDistrict(currentDistrict, currentCity).map(neighborhoodOption => (
                       <DropdownMenuItem
                         key={neighborhoodOption}
