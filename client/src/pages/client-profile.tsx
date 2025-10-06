@@ -36,7 +36,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLocation, Redirect } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +66,15 @@ interface FavoriteProperty {
   superficie?: number;
   images?: string[];
   operationType: string;
+}
+
+interface FavoriteAgency {
+  id: number;
+  agencyName: string;
+  email: string;
+  agencyLogo?: string;
+  agencyAddress?: string;
+  agencyInfluenceNeighborhoods?: string[];
 }
 
 // Client profile form schema
@@ -250,6 +259,23 @@ export default function ClientProfile() {
       if (!user || !user.isClient) return [];
 
       const response = await fetch(`/api/clients/${user.id}/favorites/properties`);
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: !!user?.isClient,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
+  });
+
+  // Query para obtener agencias favoritas
+  const { data: favoriteAgencies = [] } = useQuery<FavoriteAgency[]>({
+    queryKey: [`/api/clients/${user?.id}/favorites/agencies`],
+    queryFn: async () => {
+      if (!user || !user.isClient) return [];
+
+      const response = await fetch(`/api/clients/${user.id}/favorites/agencies`);
       if (!response.ok) {
         return [];
       }
@@ -849,6 +875,97 @@ export default function ClientProfile() {
           </div>
         );
 
+      case "agencies":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agencias Favoritas</h1>
+              <p className="text-gray-600">Agencias inmobiliarias que has marcado como favoritas</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-blue-500" />
+                  Agencias favoritas ({favoriteAgencies.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {favoriteAgencies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No tienes agencias favoritas
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Explora nuestras agencias y marca como favoritas las que más te interesen
+                    </p>
+                    <Button onClick={() => navigate("/search/agencies")}>
+                      Buscar agencias
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {favoriteAgencies.map((agency) => (
+                      <Card key={agency.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="h-12 w-12 flex-shrink-0">
+                              {agency.agencyLogo ? (
+                                <img
+                                  src={agency.agencyLogo}
+                                  alt={agency.agencyName}
+                                  className="h-full w-full object-contain rounded"
+                                />
+                              ) : (
+                                <div className="h-full w-full bg-gray-100 rounded flex items-center justify-center">
+                                  <Building2 className="h-6 w-6 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 mb-1">
+                                {agency.agencyName}
+                              </h3>
+                              <p className="text-sm text-gray-500 mb-2">{agency.email}</p>
+                              {agency.agencyAddress && (
+                                <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {agency.agencyAddress}
+                                </p>
+                              )}
+                              {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {agency.agencyInfluenceNeighborhoods.slice(0, 2).map((neighborhood) => (
+                                    <Badge key={neighborhood} variant="secondary" className="text-xs">
+                                      {neighborhood}
+                                    </Badge>
+                                  ))}
+                                  {agency.agencyInfluenceNeighborhoods.length > 2 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{agency.agencyInfluenceNeighborhoods.length - 2}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              <Button 
+                                size="sm" 
+                                onClick={() => navigate(`/agency/${agency.id}`)}
+                              >
+                                Ver perfil
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       case "properties":
         return (
           <div className="space-y-6">
@@ -986,6 +1103,19 @@ export default function ClientProfile() {
                 >
                   <Heart className="h-4 w-4" />
                   {!sidebarCollapsed && <span>Agentes favoritos</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Agencies Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setSection("agencies")}
+                  isActive={section === "agencies"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-agencies"
+                >
+                  <Building2 className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Agencias favoritas</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
