@@ -694,6 +694,73 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  // Client favorite agencies endpoints
+  app.post("/api/clients/favorites/agencies/:agencyId", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.params.agencyId);
+      const { clientId } = req.body;
+
+      if (!clientId) {
+        return res.status(400).json({ message: "Client ID is required" });
+      }
+
+      if (isNaN(agencyId)) {
+        return res.status(400).json({ message: "Invalid agency ID" });
+      }
+
+      const isFavorite = await storage.toggleFavoriteAgency(clientId, agencyId);
+      res.status(200).json({ 
+        isFavorite, 
+        message: isFavorite ? "Agency added to favorites" : "Agency removed from favorites" 
+      });
+    } catch (error) {
+      console.error('Error toggling agency favorite:', error);
+      res.status(500).json({ message: "Failed to update agency favorites" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/favorites/agencies", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const favoriteAgencies = await storage.getFavoriteAgenciesByClient(clientId);
+      res.status(200).json(favoriteAgencies);
+    } catch (error) {
+      console.error('Error fetching favorite agencies:', error);
+      res.status(500).json({ message: "Failed to fetch favorite agencies" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/favorites/agencies/:agencyId/status", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const agencyId = parseInt(req.params.agencyId);
+      const isFavorite = await storage.isFavoriteAgency(clientId, agencyId);
+      res.status(200).json({ isFavorite });
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+      res.status(500).json({ message: "Failed to check favorite status" });
+    }
+  });
+
+  // Batch agency favorites status endpoint for performance optimization
+  app.get("/api/clients/:clientId/favorites/agencies/status", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const agencyIdsParam = req.query.agencyIds as string;
+      
+      if (!agencyIdsParam) {
+        return res.status(400).json({ message: "Agency IDs are required" });
+      }
+
+      const agencyIds = agencyIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      const favoriteStatuses = await storage.getBatchFavoriteAgencyStatus(clientId, agencyIds);
+      res.status(200).json(favoriteStatuses);
+    } catch (error) {
+      console.error('Error checking batch agency favorite status:', error);
+      res.status(500).json({ message: "Failed to check batch agency favorite status" });
+    }
+  });
+
   // Property favorites routes
   app.post("/api/clients/favorites/properties/:propertyId", async (req, res) => {
     try {
