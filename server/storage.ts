@@ -354,15 +354,34 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-        const neighborhoods = neighborhoodsStr.split(",").map(n => n.trim());
-        console.log(`Filtrando agencias por barrios: ${neighborhoods.join(', ')}`);
+        console.log(`Filtrando agencias por barrios: ${neighborhoodsStr}`);
 
-        // Use PostgreSQL array overlap operator to check if any searched neighborhoods
-        // match any of the agency's influence neighborhoods
-        // Cast both sides to text[] to ensure type compatibility
-        dbQuery = dbQuery.where(
-          sql`${agencies.agencyInfluenceNeighborhoods}::text[] && ARRAY[${sql.join(neighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
-        );
+        // Parse the neighborhood display name to extract city, district, and neighborhood
+        const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
+        const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
+        
+        if (parsed) {
+          const { neighborhood, district, city } = parsed;
+          console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
+          
+          // Expand the search hierarchically:
+          // - If it's a city, get all neighborhoods in that city
+          // - If it's a district, get all neighborhoods in that district
+          // - If it's a neighborhood, get just that neighborhood
+          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
+          console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+
+          if (expandedNeighborhoods.length > 0) {
+            // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
+            // match any of the agency's influence neighborhoods
+            // Cast both sides to text[] to ensure type compatibility
+            dbQuery = dbQuery.where(
+              sql`${agencies.agencyInfluenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+            );
+          }
+        } else {
+          console.log(`Could not parse neighborhood display name: ${neighborhoodsStr}`);
+        }
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
