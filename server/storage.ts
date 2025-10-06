@@ -361,7 +361,15 @@ export class DatabaseStorage implements IStorage {
         const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
         
         if (parsed) {
-          const { neighborhood, district, city } = parsed;
+          let { neighborhood, district, city } = parsed;
+          
+          // Handle district-level search: when neighborhood is empty, use district as the search term
+          // Format: ", Sant Andreu, Barcelona" means we're searching at district level
+          if (!neighborhood || neighborhood.trim() === "") {
+            neighborhood = district;
+            console.log(`District-level search detected, using district: ${neighborhood}`);
+          }
+          
           console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
           
           // Expand the search hierarchically:
