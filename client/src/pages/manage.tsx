@@ -1164,27 +1164,35 @@ export default function ManagePage() {
                       </p>
                     </div>
                   ) : (
-                    properties.map((property) => (
-                      <div 
-                        key={property.id} 
-                        className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
-                        onClick={() => {
-                          setEditingProperty(property);
-                          setIsAddingProperty(false);
-                        }}
-                      >
-                        <div className="h-48 overflow-hidden relative">
-                          {property.images && property.images.length > 0 ? (
-                            <img 
-                              src={property.images[0]} 
-                              alt={property.title || property.address}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <Building2 className="h-12 w-12 text-gray-400" />
-                            </div>
-                          )}
+                    properties.map((property) => {
+                      // Use imageUrls first, fallback to legacy images
+                      const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
+                        ? property.imageUrls
+                        : (property.images && property.images.length > 0) 
+                        ? property.images
+                        : [];
+                      
+                      return (
+                        <div 
+                          key={property.id} 
+                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
+                          onClick={() => {
+                            setEditingProperty(property);
+                            setIsAddingProperty(false);
+                          }}
+                        >
+                          <div className="h-48 overflow-hidden relative">
+                            {propertyImages.length > 0 ? (
+                              <img 
+                                src={propertyImages[0]} 
+                                alt={property.title || property.address}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <Building2 className="h-12 w-12 text-gray-400" />
+                              </div>
+                            )}
 
                           {property.operationType && (
                             <div className="absolute top-0 left-0 bg-primary text-white px-2 py-1 text-xs m-2 rounded-sm">
@@ -1258,7 +1266,8 @@ export default function ManagePage() {
                           )}
                         </div>
                       </div>
-                    ))
+                    );
+                  })
                   )}
                 </div>
               )}

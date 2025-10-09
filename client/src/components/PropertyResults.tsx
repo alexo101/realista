@@ -183,11 +183,18 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((property) => {
-        const hasMultipleImages = property.images && property.images.length > 1;
+        // Use imageUrls first, fallback to legacy images, then placeholder
+        const images = (property.imageUrls && property.imageUrls.length > 0)
+          ? property.imageUrls
+          : (property.images && property.images.length > 0) 
+          ? property.images
+          : ["https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=400&auto=format&fit=crop"];
+        
+        const hasMultipleImages = images.length > 1;
         // Use mainImageIndex as default starting point, or 0
         const defaultIndex = property.mainImageIndex ?? 0;
         const currentIndex = currentImageIndex[property.id] ?? defaultIndex;
-        const currentImage = property.images?.[currentIndex] || property.images?.[0] || "";
+        const currentImage = images[currentIndex] || images[0] || "";
 
         return (
           <div 
@@ -196,7 +203,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
             onClick={() => window.location.href = `/property/${property.id}`}
           >
             <div className="aspect-video bg-gray-200 relative overflow-hidden">
-              {property.images && property.images.length > 0 ? (
+              {images.length > 0 ? (
                 <>
                   <img
                     src={currentImage || "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=400&auto=format&fit=crop"}
@@ -218,7 +225,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                         variant="ghost"
                         size="sm"
                         className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handlePrevImage(property.id, property.images!, e)}
+                        onClick={(e) => handlePrevImage(property.id, images, e)}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
@@ -226,14 +233,14 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
                         variant="ghost"
                         size="sm"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handleNextImage(property.id, property.images!, e)}
+                        onClick={(e) => handleNextImage(property.id, images, e)}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
 
                       {/* Image indicators */}
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                        {property.images.map((_, index) => (
+                        {images.map((_, index) => (
                           <div
                             key={index}
                             className={`w-2 h-2 rounded-full ${

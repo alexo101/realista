@@ -996,16 +996,24 @@ export default function ClientProfile() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {favoriteProperties.map((property) => (
-                      <Card key={property.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-0">
-                          {property.images && property.images.length > 0 && (
-                            <img
-                              src={property.images[0]}
-                              alt={property.title}
-                              className="w-full h-48 object-cover rounded-t-lg"
-                            />
-                          )}
+                    {favoriteProperties.map((property) => {
+                      // Use imageUrls first, fallback to legacy images
+                      const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
+                        ? property.imageUrls
+                        : (property.images && property.images.length > 0) 
+                        ? property.images
+                        : [];
+                      
+                      return (
+                        <Card key={property.id} className="hover:shadow-md transition-shadow">
+                          <CardContent className="p-0">
+                            {propertyImages.length > 0 && (
+                              <img
+                                src={propertyImages[0]}
+                                alt={property.title}
+                                className="w-full h-48 object-cover rounded-t-lg"
+                              />
+                            )}
                           <div className="p-4">
                             <div className="flex justify-between items-start mb-2">
                               <h3 className="font-semibold text-gray-900 line-clamp-2">
@@ -1043,7 +1051,8 @@ export default function ClientProfile() {
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                    );
+                  })}
                   </div>
                 )}
               </CardContent>

@@ -262,11 +262,18 @@ export default function PropertyPage() {
     );
   }
 
+  // Use imageUrls first, fallback to legacy images
+  const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
+    ? property.imageUrls
+    : (property.images && property.images.length > 0) 
+    ? property.images
+    : [];
+
   return (
     <div className="min-h-screen pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <ImageGallery 
-          images={property.images || []} 
+          images={propertyImages} 
           mainImageIndex={property.mainImageIndex !== null ? property.mainImageIndex : 0} 
         />
 
