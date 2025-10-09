@@ -112,6 +112,12 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 9, 2025. Completed image storage migration to cloud URLs
+  - Migrated all image display components from base64 to cloud storage URLs
+  - Implemented backward compatibility: imageUrls (cloud) with fallback to images (base64)
+  - Updated components: PropertyResults.tsx, property.tsx, client-profile.tsx, manage.tsx
+  - Allows gradual migration from legacy base64 storage to modern cloud storage
+  - All images display correctly with seamless fallback mechanism
 - October 9, 2025. Completed database import from previous Replit project
   - Successfully imported all data from JSON files (17 tables)
   - Added agent_favorite_properties table to schema
