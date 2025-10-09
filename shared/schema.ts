@@ -424,3 +424,18 @@ export const insertFraudReportSchema = createInsertSchema(fraudReports).omit({
 
 export type FraudReport = typeof fraudReports.$inferSelect;
 export type InsertFraudReport = z.infer<typeof insertFraudReportSchema>;
+
+// Agent favorite properties table
+export const agentFavoriteProperties = pgTable("agent_favorite_properties", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAgentFavoritePropertySchema = createInsertSchema(agentFavoriteProperties).omit({
+  id: true,
+  createdAt: true,
+});
+export type AgentFavoriteProperty = typeof agentFavoriteProperties.$inferSelect;
+export type InsertAgentFavoriteProperty = z.infer<typeof insertAgentFavoritePropertySchema>;
