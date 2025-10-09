@@ -112,6 +112,12 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 9, 2025. Completed database import from previous Replit project
+  - Successfully imported all data from JSON files (17 tables)
+  - Added agent_favorite_properties table to schema
+  - Imported: 1 agency, 3 agents, 6 properties, 4 clients, 8 reviews, 5 inquiries
+  - All relationships and data integrity preserved
+  - Database fully functional with imported data
 - August 9, 2025. Fixed critical session management bug
   - Implemented express-session middleware with proper cookie-based authentication
   - Added session persistence endpoints (/api/auth/me and /api/auth/logout)
