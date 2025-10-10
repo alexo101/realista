@@ -997,11 +997,9 @@ export default function ClientProfile() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {favoriteProperties.map((property) => {
-                      // Use imageUrls first, fallback to legacy images
+                      // Use imageUrls or empty array if none available
                       const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
                         ? property.imageUrls
-                        : (property.images && property.images.length > 0) 
-                        ? property.images
                         : [];
                       
                       return (
