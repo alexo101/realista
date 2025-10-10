@@ -112,6 +112,12 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 10, 2025. Configured Replit App Storage for property images
+  - Created cloud storage bucket: replit-objstore-60a5ea22-e602-42f2-948c-b43002a405a1
+  - Set PUBLIC_OBJECT_SEARCH_PATHS for public image serving
+  - Set PRIVATE_OBJECT_DIR for private file storage
+  - Image upload functionality now fully operational with cloud storage
+  - Properties can now have images uploaded and stored in scalable cloud infrastructure
 - October 10, 2025. Improved login error messaging
   - Updated login error message to be more specific and user-friendly
   - Backend now returns: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo"
