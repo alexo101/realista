@@ -1165,11 +1165,9 @@ export default function ManagePage() {
                     </div>
                   ) : (
                     properties.map((property) => {
-                      // Use imageUrls first, fallback to legacy images
+                      // Use imageUrls or empty array if none available
                       const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
                         ? property.imageUrls
-                        : (property.images && property.images.length > 0) 
-                        ? property.images
                         : [];
                       
                       return (
