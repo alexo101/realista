@@ -309,7 +309,7 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
 
       if (!user || (!isClient && user.password !== password)) {
         console.log('Login - Credenciales inválidas');
-        return res.status(401).json({ message: "Credenciales inválidas" });
+        return res.status(401).json({ message: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo" });
       }
 
       console.log('Login - Éxito, devolviendo usuario:', {

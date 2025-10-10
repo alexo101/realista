@@ -1081,7 +1081,7 @@ export class DatabaseStorage implements IStorage {
           superficie: properties.superficie,
           bedrooms: properties.bedrooms,
           bathrooms: properties.bathrooms,
-          images: properties.images,
+          imageUrls: properties.imageUrls,
           mainImageIndex: properties.mainImageIndex,
           features: properties.features,
           viewCount: properties.viewCount,
@@ -1118,7 +1118,7 @@ export class DatabaseStorage implements IStorage {
       // Procesar los arrays JSON
       const processedResults = results.map((property) => ({
         ...property,
-        images: this.parseArrayField(property.images),
+        imageUrls: this.parseArrayField(property.imageUrls),
         features: this.parseArrayField(property.features),
       }));
 
@@ -2048,7 +2048,7 @@ export class DatabaseStorage implements IStorage {
         superficie: properties.superficie,
         bedrooms: properties.bedrooms,
         bathrooms: properties.bathrooms,
-        images: properties.images,
+        imageUrls: properties.imageUrls,
         type: properties.type,
         housingType: properties.housingType,
         housingStatus: properties.housingStatus,
