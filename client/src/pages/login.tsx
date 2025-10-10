@@ -59,14 +59,14 @@ export default function LoginPage() {
         const error = await response.json();
         toast({
           title: "Error",
-          description: error.message || "Credenciales inválidas",
+          description: error.message || "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo",
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+        description: error.message || "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo",
         variant: "destructive",
       });
     } finally {

@@ -112,6 +112,11 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 10, 2025. Improved login error messaging
+  - Updated login error message to be more specific and user-friendly
+  - Backend now returns: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo"
+  - Frontend properly displays server error messages in all error scenarios
+  - Better user experience with clear guidance on what went wrong
 - October 10, 2025. Completed full migration to cloud storage only
   - Removed legacy base64 image system entirely from database and codebase
   - Deleted 'images' field from properties schema, kept only 'imageUrls' for cloud storage
