@@ -83,12 +83,15 @@ export default function AgencyPlanRegister() {
     confirmPassword: ""
   });
 
-  // Extract plan details from URL
-  const params = new URLSearchParams(location.split('?')[1] || '');
+  // Extract plan details from URL using window.location.search
+  const params = new URLSearchParams(window.location.search);
   const planId = params.get('plan') || 'basica';
   const billing = params.get('billing') || 'monthly';
   
+  console.log('Agency Registration - Plan ID:', planId, 'Billing:', billing);
+  
   const selectedPlan = agencyPlans[planId as keyof typeof agencyPlans] || agencyPlans.basica;
+  console.log('Selected Plan:', selectedPlan.name);
   const IconComponent = selectedPlan.icon;
   
   const displayPrice = selectedPlan.monthlyPrice === 0 
