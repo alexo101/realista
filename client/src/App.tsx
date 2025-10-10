@@ -19,6 +19,8 @@ import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
 import ClientProfile from "@/pages/client-profile";
 import RealistaPro from "@/pages/RealistaPro";
+import AgencyPlanRegister from "@/pages/agency-plan-register";
+import AgentPlanRegister from "@/pages/agent-plan-register";
 
 function Router() {
   return (
@@ -27,6 +29,8 @@ function Router() {
       <Route path="/realista-pro" component={RealistaPro} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
+      <Route path="/agency-plan-register" component={AgencyPlanRegister} />
+      <Route path="/agent-plan-register" component={AgentPlanRegister} />
       <Route path="/client-register" component={ClientRegisterPage} />
       <Route path="/client-profile" component={ClientProfile} />
       <Route path="/search/buy" component={Search} />

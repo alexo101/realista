@@ -131,13 +131,17 @@ export default function RealistaPro() {
   };
 
   const handlePlanSelection = (plan: any) => {
-    // Redirect to registration with plan parameters
+    // Redirect to the appropriate registration page with plan parameters
     const params = new URLSearchParams({
       plan: plan.id,
-      type: profileType === "agencies" ? "agency" : "agent",
       billing: isYearly ? "yearly" : "monthly"
     });
-    navigate(`/register?${params.toString()}`);
+    
+    const registrationPath = profileType === "agencies" 
+      ? `/agency-plan-register?${params.toString()}`
+      : `/agent-plan-register?${params.toString()}`;
+    
+    navigate(registrationPath);
   };
 
   return (
