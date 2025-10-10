@@ -15,7 +15,7 @@ interface PropertyResult {
   previousPrice?: number | null;
   neighborhood: string;
   title?: string;
-  images?: string[] | null;
+  imageUrls?: string[] | null;
   mainImageIndex?: number | null;
   superficie?: number | null;
   createdAt?: string;
@@ -183,11 +183,9 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((property) => {
-        // Use imageUrls first, fallback to legacy images, then placeholder
+        // Use imageUrls or placeholder if none available
         const images = (property.imageUrls && property.imageUrls.length > 0)
           ? property.imageUrls
-          : (property.images && property.images.length > 0) 
-          ? property.images
           : ["https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=400&auto=format&fit=crop"];
         
         const hasMultipleImages = images.length > 1;
