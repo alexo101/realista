@@ -85,8 +85,7 @@ export const properties = pgTable("properties", {
   bedrooms: integer("bedrooms"), // Number of bedrooms
   bathrooms: integer("bathrooms"), // Number of bathrooms
   superficie: integer("superficie"), // Area in square meters
-  images: text("images").array(), // Legacy base64 images (for backward compatibility)
-  imageUrls: text("image_urls").array(), // New URL-based images for better performance
+  imageUrls: text("image_urls").array(), // Cloud storage URLs for images
   mainImageIndex: integer("main_image_index").default(0),
   title: text("title"),
   viewCount: integer("view_count").default(0).notNull(), // Contador de visualizaciones
