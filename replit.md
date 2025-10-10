@@ -19,7 +19,7 @@ Realista is a modern real estate platform built with React and Express.js that a
 - **Database**: PostgreSQL with Drizzle ORM
 - **Database Provider**: Neon serverless PostgreSQL
 - **Authentication**: Session-based authentication with connect-pg-simple
-- **File Handling**: Base64 image storage and processing
+- **File Handling**: Cloud storage URLs (imageUrls) for scalable image management
 - **Email Service**: Nodemailer with Ethereal fallback for development
 
 ## Key Components
@@ -112,12 +112,12 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
-- October 9, 2025. Completed image storage migration to cloud URLs
-  - Migrated all image display components from base64 to cloud storage URLs
-  - Implemented backward compatibility: imageUrls (cloud) with fallback to images (base64)
-  - Updated components: PropertyResults.tsx, property.tsx, client-profile.tsx, manage.tsx
-  - Allows gradual migration from legacy base64 storage to modern cloud storage
-  - All images display correctly with seamless fallback mechanism
+- October 10, 2025. Completed full migration to cloud storage only
+  - Removed legacy base64 image system entirely from database and codebase
+  - Deleted 'images' field from properties schema, kept only 'imageUrls' for cloud storage
+  - Updated all components to use cloud URLs exclusively: PropertyResults.tsx, property.tsx, client-profile.tsx, manage.tsx
+  - Properties without images now display placeholder until images are uploaded
+  - System fully optimized for scalability with cloud-based image storage
 - October 9, 2025. Completed database import from previous Replit project
   - Successfully imported all data from JSON files (17 tables)
   - Added agent_favorite_properties table to schema

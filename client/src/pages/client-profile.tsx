@@ -64,7 +64,7 @@ interface FavoriteProperty {
   bedrooms?: number;
   bathrooms?: number;
   superficie?: number;
-  images?: string[];
+  imageUrls?: string[];
   operationType: string;
 }
 
