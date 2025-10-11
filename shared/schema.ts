@@ -475,3 +475,27 @@ export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEven
 });
 export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
 export type InsertSubscriptionEvent = z.infer<typeof insertSubscriptionEventSchema>;
+
+// Saved searches table for clients
+export const savedSearches = pgTable("saved_searches", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // "Mi búsqueda 1", "Mi búsqueda 2", etc.
+  city: text("city"),
+  district: text("district"),
+  neighborhood: text("neighborhood"),
+  operationType: text("operation_type"), // "Venta" or "Alquiler"
+  minPrice: integer("min_price"),
+  maxPrice: integer("max_price"),
+  bedrooms: integer("bedrooms"),
+  bathrooms: integer("bathrooms"),
+  characteristics: text("characteristics").array(), // Array of characteristics
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertSavedSearchSchema = createInsertSchema(savedSearches).omit({
+  id: true,
+  createdAt: true,
+});
+export type SavedSearch = typeof savedSearches.$inferSelect;
+export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;

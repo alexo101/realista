@@ -71,6 +71,9 @@ import {
   fraudReports,
   type FraudReport,
   type InsertFraudReport,
+  savedSearches,
+  type SavedSearch,
+  type InsertSavedSearch,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -209,6 +212,12 @@ export interface IStorage {
   getAgentRole(agentId: number): Promise<{ agencyId: number | null; role: string | null; agentType: string }>;
   getAgencySubscription(agencyId: number): Promise<{ subscriptionPlan: string | null; isYearlyBilling: boolean | null; seatsLimit: number | null }>;
   addAgentToAgencyAtomic(agencyId: number, agentId: number, role: 'admin' | 'member', triggeredBy: number): Promise<AgencyAgent>;
+
+  // Saved Searches
+  createSavedSearch(searchData: InsertSavedSearch): Promise<SavedSearch>;
+  getSavedSearchesByClient(clientId: number): Promise<SavedSearch[]>;
+  updateSavedSearchName(id: number, name: string): Promise<SavedSearch>;
+  deleteSavedSearch(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2582,6 +2591,39 @@ export class DatabaseStorage implements IStorage {
     });
 
     return result;
+  }
+
+  // Saved Searches methods
+  async createSavedSearch(searchData: InsertSavedSearch): Promise<SavedSearch> {
+    const [savedSearch] = await db.insert(savedSearches).values(searchData).returning();
+    return savedSearch;
+  }
+
+  async getSavedSearchesByClient(clientId: number): Promise<SavedSearch[]> {
+    const searches = await db
+      .select()
+      .from(savedSearches)
+      .where(eq(savedSearches.clientId, clientId))
+      .orderBy(desc(savedSearches.createdAt));
+    return searches;
+  }
+
+  async updateSavedSearchName(id: number, name: string): Promise<SavedSearch> {
+    const [updatedSearch] = await db
+      .update(savedSearches)
+      .set({ name })
+      .where(eq(savedSearches.id, id))
+      .returning();
+    
+    if (!updatedSearch) {
+      throw new Error('Saved search not found');
+    }
+    
+    return updatedSearch;
+  }
+
+  async deleteSavedSearch(id: number): Promise<void> {
+    await db.delete(savedSearches).where(eq(savedSearches.id, id));
   }
 }
 
