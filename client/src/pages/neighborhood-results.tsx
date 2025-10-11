@@ -80,7 +80,7 @@ export default function NeighborhoodResultsPage() {
       } else {
         // Fallback: treat as neighborhood and find its context
         currentNeighborhood = decodedNeighborhood;
-        currentDistrict = findDistrictByNeighborhood(decodedNeighborhood, currentCity);
+        currentDistrict = findDistrictByNeighborhood(decodedNeighborhood, currentCity) || undefined;
       }
     }
   }
@@ -517,38 +517,36 @@ export default function NeighborhoodResultsPage() {
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 showViewToggle={true}
+                saveSearchButton={
+                  user?.isClient ? (
+                    <Button
+                      onClick={handleSaveSearch}
+                      disabled={saveSearchMutation.isPending || isSaved}
+                      variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
+                      size="sm"
+                      data-testid="button-save-search"
+                      className="gap-2"
+                    >
+                      {isSaved ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Guardada
+                        </>
+                      ) : isSaveConfirming ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Confirmar guardar
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="h-4 w-4" />
+                          Guardar búsqueda
+                        </>
+                      )}
+                    </Button>
+                  ) : null
+                }
               />
-
-              {/* Guardar búsqueda button - Only show for logged-in clients */}
-              {user?.isClient && (
-                <div className="mb-4 flex justify-end">
-                  <Button
-                    onClick={handleSaveSearch}
-                    disabled={saveSearchMutation.isPending || isSaved}
-                    variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
-                    size="sm"
-                    data-testid="button-save-search"
-                    className="gap-2"
-                  >
-                    {isSaved ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Guardada
-                      </>
-                    ) : isSaveConfirming ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Confirmar guardar
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="h-4 w-4" />
-                        Guardar búsqueda
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
 
               {/* Contenido condicional basado en el modo de vista */}
               {viewMode === 'list' ? (

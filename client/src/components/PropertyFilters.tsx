@@ -24,6 +24,7 @@ interface PropertyFiltersProps {
   viewMode?: 'list' | 'map';
   onViewModeChange?: (mode: 'list' | 'map') => void;
   showViewToggle?: boolean;
+  saveSearchButton?: React.ReactNode;
 }
 
 export interface PropertyFilters {
@@ -43,7 +44,8 @@ export function PropertyFilters({
   defaultBedroomsList = [],
   viewMode = 'list',
   onViewModeChange,
-  showViewToggle = false
+  showViewToggle = false,
+  saveSearchButton
 }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
@@ -119,59 +121,64 @@ export function PropertyFilters({
       <div className="space-y-6">
         {/* Sección superior - Toggle de operación y vista */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "rounded-md px-4 py-2 text-sm font-medium transition-all",
-                operationType === "Venta" 
-                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
-                  : "text-gray-600 hover:text-gray-900 hover:bg-white"
-              )}
-              onClick={() => {
-                setOperationType("Venta");
-                setPriceMin(null);
-                setPriceMax(null);
-                onFilterChange({
-                  operationType: "Venta",
-                  priceMin: null,
-                  priceMax: null,
-                  bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
-                  bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
-                  features: selectedFeatures,
-                  sortBy: sortBy !== "newest" ? sortBy : undefined
-                });
-              }}
-            >
-              Comprar
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "rounded-md px-4 py-2 text-sm font-medium transition-all",
-                operationType === "Alquiler" 
-                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
-                  : "text-gray-600 hover:text-gray-900 hover:bg-white"
-              )}
-              onClick={() => {
-                setOperationType("Alquiler");
-                setPriceMin(null);
-                setPriceMax(null);
-                onFilterChange({
-                  operationType: "Alquiler",
-                  priceMin: null,
-                  priceMax: null,
-                  bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
-                  bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
-                  features: selectedFeatures,
-                  sortBy: sortBy !== "newest" ? sortBy : undefined
-                });
-              }}
-            >
-              Alquilar
-            </Button>
+          <div className="flex items-center gap-4">
+            <div className="inline-flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "rounded-md px-4 py-2 text-sm font-medium transition-all",
+                  operationType === "Venta" 
+                    ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                )}
+                onClick={() => {
+                  setOperationType("Venta");
+                  setPriceMin(null);
+                  setPriceMax(null);
+                  onFilterChange({
+                    operationType: "Venta",
+                    priceMin: null,
+                    priceMax: null,
+                    bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+                    bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
+                    features: selectedFeatures,
+                    sortBy: sortBy !== "newest" ? sortBy : undefined
+                  });
+                }}
+              >
+                Comprar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "rounded-md px-4 py-2 text-sm font-medium transition-all",
+                  operationType === "Alquiler" 
+                    ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white"
+                )}
+                onClick={() => {
+                  setOperationType("Alquiler");
+                  setPriceMin(null);
+                  setPriceMax(null);
+                  onFilterChange({
+                    operationType: "Alquiler",
+                    priceMin: null,
+                    priceMax: null,
+                    bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+                    bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
+                    features: selectedFeatures,
+                    sortBy: sortBy !== "newest" ? sortBy : undefined
+                  });
+                }}
+              >
+                Alquilar
+              </Button>
+            </div>
+            
+            {/* Save search button if provided */}
+            {saveSearchButton && saveSearchButton}
           </div>
 
           {/* Toggle de vista (Lista/Mapa) */}
