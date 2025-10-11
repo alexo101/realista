@@ -208,6 +208,7 @@ export interface IStorage {
   recordSubscriptionEvent(eventData: InsertSubscriptionEvent): Promise<SubscriptionEvent>;
   getAgentRole(agentId: number): Promise<{ agencyId: number | null; role: string | null; agentType: string }>;
   getAgencySubscription(agencyId: number): Promise<{ subscriptionPlan: string | null; isYearlyBilling: boolean | null; seatsLimit: number | null }>;
+  addAgentToAgencyAtomic(agencyId: number, agentId: number, role: 'admin' | 'member', triggeredBy: number): Promise<AgencyAgent>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2503,6 +2504,84 @@ export class DatabaseStorage implements IStorage {
 
     if (!agency) throw new Error('Agency not found');
     return agency;
+  }
+
+  async addAgentToAgencyAtomic(agencyId: number, agentId: number, role: 'admin' | 'member', triggeredBy: number): Promise<AgencyAgent> {
+    // Use transaction with row locking to prevent race conditions
+    const result = await db.transaction(async (tx) => {
+      // Lock the agency row for update to prevent concurrent seat checks
+      const [agency] = await tx
+        .select({
+          id: agencies.id,
+          seatsLimit: agencies.seatsLimit,
+          subscriptionPlan: agencies.subscriptionPlan
+        })
+        .from(agencies)
+        .where(eq(agencies.id, agencyId))
+        .for('update');
+
+      if (!agency) {
+        throw new Error('Agency not found');
+      }
+
+      if (!agency.seatsLimit) {
+        throw new Error('Agency has no subscription plan');
+      }
+
+      // Count current active members with lock
+      const [seatCount] = await tx
+        .select({ count: count() })
+        .from(agencyAgents)
+        .where(
+          and(
+            eq(agencyAgents.agencyId, agencyId),
+            isNull(agencyAgents.leftAt)
+          )
+        )
+        .for('update');
+
+      if (seatCount.count >= agency.seatsLimit) {
+        throw new Error(`Agency seat limit reached (${agency.seatsLimit} seats)`);
+      }
+
+      // Add agent to agency
+      const [agencyAgent] = await tx
+        .insert(agencyAgents)
+        .values({
+          agencyId,
+          agentId,
+          role,
+        })
+        .returning();
+
+      // If agent was independent, pause their subscription
+      const [agent] = await tx.select().from(agents).where(eq(agents.id, agentId));
+      if (agent && agent.subscriptionPlan) {
+        await tx.update(agents).set({
+          pausedSubscriptionPlan: agent.subscriptionPlan,
+          pausedIsYearlyBilling: agent.isYearlyBilling,
+          pausedAt: new Date(),
+          subscriptionPlan: null,
+          isYearlyBilling: null
+        }).where(eq(agents.id, agentId));
+      }
+
+      // Record subscription event
+      await tx.insert(subscriptionEvents).values({
+        entityType: 'agent',
+        entityId: agentId,
+        eventType: 'joined_agency',
+        previousState: { agencyId: null, role: null },
+        newState: { agencyId, role },
+        triggeredBy,
+        reason: `Agent joined agency as ${role}`,
+        metadata: { agencyId, agencyName: agency.subscriptionPlan }
+      });
+
+      return agencyAgent;
+    });
+
+    return result;
   }
 }
 

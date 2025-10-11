@@ -235,12 +235,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminAgent = await storage.createUser(adminAgentData);
       console.log('Admin agent created:', adminAgent.id);
 
-      // Link admin agent to agency via agency_agents table
-      await storage.createAgencyAgent({
-        agencyId: agency.id,
-        agentId: adminAgent.id,
-        role: 'admin'
-      });
+      // Link admin agent to agency via agency_agents table (atomic with seat check)
+      await storage.addAgentToAgencyAtomic(
+        agency.id,
+        adminAgent.id,
+        'admin',
+        adminAgent.id // Admin triggered their own addition
+      );
 
       // Create session
       (req as any).session.userId = adminAgent.id;
