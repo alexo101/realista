@@ -12,7 +12,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Nueva tabla de agencias
+// Agency table with agency-level subscription
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
   agencyName: text("agency_name").notNull(),
@@ -22,17 +22,21 @@ export const agencies = pgTable("agencies", {
   agencyEmailToDisplay: text("agency_email_to_display"),
   agencyPhone: text("agency_phone"),
   agencyActiveSince: text("agency_active_since"),
-  // Ciudad donde opera la agencia
   city: text("city").notNull().default('Barcelona'),
-  agencyInfluenceNeighborhoods: text("agencyInfluenceNeighborhoods").array(), // Barrios de influencia como array
-  agencySupportedLanguages: text("agency_supported_languages").array(), // Idiomas como array
-  adminAgentId: integer("admin_agent_id").notNull(), // ID del agente administrador que gestiona esta agencia
+  agencyInfluenceNeighborhoods: text("agencyInfluenceNeighborhoods").array(),
+  agencySupportedLanguages: text("agency_supported_languages").array(),
   agencyWebsite: text("agency_website"),
-  agencySocialMedia: jsonb("agency_social_media"), // Redes sociales como JSON
+  agencySocialMedia: jsonb("agency_social_media"),
+  // Agency-level subscription (NOT tied to individual agent)
+  subscriptionPlan: text("subscription_plan"), // "basica", "pequeña", "mediana", "lider"
+  isYearlyBilling: boolean("is_yearly_billing").default(false),
+  seatsLimit: integer("seats_limit"), // Max agents based on plan
+  // Soft delete support
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Tabla de agentes (anteriormente users)
+// Agents table - supports both independent and agency-member agents
 export const agents = pgTable("agents", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -41,21 +45,22 @@ export const agents = pgTable("agents", {
   surname: text("surname"),
   description: text("description"),
   avatar: text("avatar"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  // Ciudad donde opera el agente
   city: text("city").notNull().default('Barcelona'),
-  // Barrios de influencia para agentes
   influenceNeighborhoods: text("influence_neighborhoods").array(),
-  // Detalles específicos del agente
-  yearsOfExperience: integer("years_of_experience"), // Años de experiencia del agente
-  languagesSpoken: text("languages_spoken").array(), // Idiomas que habla el agente
-  // Relación con la agencia
-  agencyId: text("agency_id"), // ID de la agencia a la que pertenece
-  isAdmin: boolean("is_admin").notNull().default(false), // Indica si es un agente administrador
-  // Subscription information
-  subscriptionPlan: text("subscription_plan"), // Plan: "basica", "pequeña", "mediana", "lider"
-  subscriptionType: text("subscription_type"), // "agency" o "agent"
-  isYearlyBilling: boolean("is_yearly_billing").default(false), // Facturación anual
+  yearsOfExperience: integer("years_of_experience"),
+  languagesSpoken: text("languages_spoken").array(),
+  // Agent type: "independent" or "agency_member"
+  agentType: text("agent_type").notNull().default("independent"),
+  // Personal subscription (ONLY active for independent agents)
+  subscriptionPlan: text("subscription_plan"), // "basica", "pequeña", "mediana", "lider"
+  isYearlyBilling: boolean("is_yearly_billing").default(false),
+  // Paused subscription tracking (when joining agency)
+  pausedSubscriptionPlan: text("paused_subscription_plan"),
+  pausedIsYearlyBilling: boolean("paused_is_yearly_billing"),
+  pausedAt: timestamp("paused_at"),
+  // Soft delete support
+  deletedAt: timestamp("deleted_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const properties = pgTable("properties", {
@@ -142,15 +147,22 @@ export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Tabla para gestionar la relación entre agentes y agencias
+// Junction table for agent-agency relationships with role enforcement
 export const agencyAgents = pgTable("agency_agents", {
   id: serial("id").primaryKey(),
-  agencyId: integer("agency_id").notNull(), // ID del usuario que representa la agencia
-  agentName: text("agent_name").notNull(),
-  agentSurname: text("agent_surname").notNull(),
-  agentEmail: text("agent_email").notNull(),
+  agencyId: integer("agency_id").notNull().references(() => agencies.id),
+  agentId: integer("agent_id").notNull().references(() => agents.id),
+  role: text("role").notNull(), // "admin" or "member"
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  leftAt: timestamp("left_at"), // For soft delete when agent leaves
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  // Constraint: Agent can only be active member of ONE agency at a time
+  uniqueActiveAgent: {
+    name: "unique_active_agent_per_agency",
+    columns: [table.agentId, table.leftAt],
+  },
+}));
 
 export const appointments = pgTable("appointments", {
   id: serial("id").primaryKey(),
@@ -438,3 +450,24 @@ export const insertAgentFavoritePropertySchema = createInsertSchema(agentFavorit
 });
 export type AgentFavoriteProperty = typeof agentFavoriteProperties.$inferSelect;
 export type InsertAgentFavoriteProperty = z.infer<typeof insertAgentFavoritePropertySchema>;
+
+// Subscription events audit table - tracks all subscription state changes
+export const subscriptionEvents = pgTable("subscription_events", {
+  id: serial("id").primaryKey(),
+  entityType: text("entity_type").notNull(), // "agency" or "agent"
+  entityId: integer("entity_id").notNull(), // Agency ID or Agent ID
+  eventType: text("event_type").notNull(), // "created", "paused", "resumed", "cancelled", "plan_changed", "admin_transferred"
+  previousState: jsonb("previous_state"), // State before change
+  newState: jsonb("new_state"), // State after change
+  triggeredBy: integer("triggered_by"), // Agent ID who triggered the change
+  reason: text("reason"), // Human-readable reason
+  metadata: jsonb("metadata"), // Additional context (seat count, transfer details, etc.)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEvents).omit({
+  id: true,
+  createdAt: true,
+});
+export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
+export type InsertSubscriptionEvent = z.infer<typeof insertSubscriptionEventSchema>;
