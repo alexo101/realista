@@ -494,7 +494,7 @@ export function PropertyFilters({
 
           {/* Ordenar por */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-600">
+            <Label className="text-sm font-medium text-gray-600 flex items-center">
               Ordenar por
             </Label>
             <Select
