@@ -8,7 +8,10 @@ import {
   timestamp,
   decimal,
   primaryKey,
+  check,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -157,11 +160,12 @@ export const agencyAgents = pgTable("agency_agents", {
   leftAt: timestamp("left_at"), // For soft delete when agent leaves
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
-  // Constraint: Agent can only be active member of ONE agency at a time
-  uniqueActiveAgent: {
-    name: "unique_active_agent_per_agency",
-    columns: [table.agentId, table.leftAt],
-  },
+  // CHECK constraint: role must be 'admin' or 'member'
+  roleCheck: check("role_check", sql`${table.role} IN ('admin', 'member')`),
+  // Partial unique index: Agent can only be active member of ONE agency at a time
+  uniqueActiveAgent: uniqueIndex("unique_active_agent").on(table.agentId).where(sql`${table.leftAt} IS NULL`),
+  // Partial unique index: Only ONE admin per agency
+  uniqueActiveAdmin: uniqueIndex("unique_active_admin").on(table.agencyId).where(sql`${table.role} = 'admin' AND ${table.leftAt} IS NULL`),
 }));
 
 export const appointments = pgTable("appointments", {
