@@ -477,6 +477,19 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         phone: user.phone
       };
 
+      // Save session to database
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) {
+            console.error('Error saving session:', err);
+            reject(err);
+          } else {
+            console.log('Session saved successfully for user:', user.email);
+            resolve(true);
+          }
+        });
+      });
+
       // Remover la contraseña antes de enviar la respuesta
       const { password: _, ...userResponse } = user;
       res.json({ ...userResponse, isClient });
