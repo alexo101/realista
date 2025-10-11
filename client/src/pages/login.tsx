@@ -43,26 +43,15 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {      
-      const response = await apiRequest("POST", "/api/auth/login", data);
+      const userData = await apiRequest("POST", "/api/auth/login", data);
+      setUser(userData);
 
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+      toast({
+        title: "¡Bienvenido de nuevo!",
+        duration: 3000,
+      });
 
-        toast({
-          title: "¡Bienvenido de nuevo!",
-          duration: 3000,
-        });
-
-        navigate("/");
-      } else {
-        const error = await response.json();
-        toast({
-          title: "Error",
-          description: error.message || "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo",
-          variant: "destructive",
-        });
-      }
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Error",
