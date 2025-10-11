@@ -1293,6 +1293,85 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
+  // Saved Searches
+  app.post("/api/saved-searches", async (req, res) => {
+    try {
+      const sessionUser = (req as any).session?.user;
+      if (!sessionUser || !sessionUser.isClient) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Get count of existing searches for this client to generate default name
+      const existingSearches = await storage.getSavedSearchesByClient(sessionUser.id);
+      const searchCount = existingSearches.length + 1;
+      
+      const searchData = {
+        ...req.body,
+        clientId: sessionUser.id,
+        name: req.body.name || `Mi búsqueda ${searchCount}`,
+      };
+
+      const savedSearch = await storage.createSavedSearch(searchData);
+      res.status(201).json(savedSearch);
+    } catch (error) {
+      console.error('Error creating saved search:', error);
+      res.status(500).json({ message: "Error al guardar la búsqueda" });
+    }
+  });
+
+  app.get("/api/saved-searches", async (req, res) => {
+    try {
+      const sessionUser = (req as any).session?.user;
+      if (!sessionUser || !sessionUser.isClient) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const searches = await storage.getSavedSearchesByClient(sessionUser.id);
+      res.json(searches);
+    } catch (error) {
+      console.error('Error fetching saved searches:', error);
+      res.status(500).json({ message: "Error al obtener las búsquedas guardadas" });
+    }
+  });
+
+  app.put("/api/saved-searches/:id", async (req, res) => {
+    try {
+      const sessionUser = (req as any).session?.user;
+      if (!sessionUser || !sessionUser.isClient) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const { name } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ message: "El nombre es requerido" });
+      }
+
+      const updatedSearch = await storage.updateSavedSearchName(id, name);
+      res.json(updatedSearch);
+    } catch (error) {
+      console.error('Error updating saved search:', error);
+      res.status(500).json({ message: "Error al actualizar la búsqueda" });
+    }
+  });
+
+  app.delete("/api/saved-searches/:id", async (req, res) => {
+    try {
+      const sessionUser = (req as any).session?.user;
+      if (!sessionUser || !sessionUser.isClient) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteSavedSearch(id);
+      res.json({ message: "Búsqueda eliminada exitosamente" });
+    } catch (error) {
+      console.error('Error deleting saved search:', error);
+      res.status(500).json({ message: "Error al eliminar la búsqueda" });
+    }
+  });
+
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
