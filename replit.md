@@ -52,6 +52,19 @@ Realista is a modern real estate platform built with React and Express.js that a
 - **Property verification**: Review workflow with property association
 - **Review management**: Administrative interface for review oversight
 
+### RealistaPro Subscription System
+- **Three-tier subscription model**: Agency subscriptions, independent agent subscriptions, and inherited agency access
+- **Agency-level subscriptions**: Stored on agencies table with seat limits (Básica: 1, Pequeña: 5, Mediana: 15, Líder: 50)
+- **Independent agents**: Personal subscriptions stored on agents table (paused when joining agency)
+- **Database-enforced business rules**: 
+  - Partial unique index ensures one active agency per agent (agentId WHERE leftAt IS NULL)
+  - Partial unique index ensures one admin per agency (agencyId WHERE role='admin' AND leftAt IS NULL)
+  - CHECK constraint ensures role is 'admin' or 'member'
+- **Atomic seat allocation**: Transaction-based with row locking (FOR UPDATE) to prevent race conditions
+- **Subscription state tracking**: Complete audit trail via subscription_events table with who/what/when/reason
+- **Admin transfer workflow**: Atomic operation with proper role management and event logging
+- **Soft delete support**: Agents leaving agencies resume paused subscriptions; deleted agencies free all members
+
 ## Data Flow
 
 ### Authentication Flow
@@ -112,6 +125,17 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 11, 2025. Implemented comprehensive RealistaPro subscription architecture
+  - Created three-tier subscription model: agency-level, independent agent, and inherited access
+  - Implemented agency_agents junction table with role enforcement (admin/member)
+  - Added database-enforced business rules: one active agency per agent, one admin per agency
+  - Implemented partial unique indexes with WHERE clauses for proper constraint enforcement
+  - Created subscription_events audit table for complete state transition logging
+  - Built atomic seat allocation with transaction support and row locking (FOR UPDATE)
+  - Implemented subscription helper functions: pause/resume, admin transfer, seat checks
+  - Added soft delete support with automatic subscription resumption for leaving agents
+  - Updated registration endpoints to use new architecture with proper admin linking
+  - All subscription operations are transactional and race-condition safe
 - October 10, 2025. Configured Replit App Storage for property images
   - Created cloud storage bucket: replit-objstore-60a5ea22-e602-42f2-948c-b43002a405a1
   - Set PUBLIC_OBJECT_SEARCH_PATHS for public image serving
