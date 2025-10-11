@@ -204,37 +204,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create admin agent
+      // Determine seat limit based on plan
+      const seatLimits: Record<string, number> = {
+        'basica': 1,
+        'pequeña': 5,
+        'mediana': 15,
+        'lider': 50
+      };
+
+      // Create agency with subscription
+      const agencyData = {
+        agencyName: `Agencia ${email.split('@')[0]}`, // Default name, can be updated later
+        city: 'Barcelona',
+        subscriptionPlan,
+        isYearlyBilling: isYearlyBilling || false,
+        seatsLimit: seatLimits[subscriptionPlan] || 1,
+      };
+
+      const agency = await storage.createAgency(agencyData);
+      console.log('Agency created:', agency.id);
+
+      // Create admin agent (agency_member type)
       const adminAgentData = {
         email,
         password,
-        isAdmin: true,
-        subscriptionPlan,
-        subscriptionType: 'agency',
-        isYearlyBilling: isYearlyBilling || false,
+        agentType: 'agency_member',
         city: 'Barcelona'
       };
 
       const adminAgent = await storage.createUser(adminAgentData);
       console.log('Admin agent created:', adminAgent.id);
 
-      // Create agency
-      const agencyData = {
-        agencyName: `Agencia ${email.split('@')[0]}`, // Default name, can be updated later
-        adminAgentId: adminAgent.id,
-        city: 'Barcelona'
-      };
-
-      const agency = await storage.createAgency(agencyData);
-      console.log('Agency created:', agency.id);
-
-      // Update agent with agencyId
-      await storage.updateUser(adminAgent.id, { agencyId: String(agency.id) });
+      // Link admin agent to agency via agency_agents table
+      await storage.createAgencyAgent({
+        agencyId: agency.id,
+        agentId: adminAgent.id,
+        role: 'admin'
+      });
 
       // Create session
       (req as any).session.userId = adminAgent.id;
       (req as any).session.email = adminAgent.email;
-      (req as any).session.isAdmin = adminAgent.isAdmin;
+      (req as any).session.agencyId = agency.id;
+      (req as any).session.role = 'admin';
       
       await new Promise((resolve, reject) => {
         (req as any).session.save((err: any) => {
@@ -256,7 +268,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({ 
         ...userResponse, 
         agencyId: agency.id,
-        agencyName: agency.agencyName
+        agencyName: agency.agencyName,
+        role: 'admin',
+        subscriptionPlan: agency.subscriptionPlan,
+        isYearlyBilling: agency.isYearlyBilling
       });
     } catch (error) {
       console.error('Error registering agency:', error);
@@ -278,13 +293,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create individual agent
+      // Create independent agent with personal subscription
       const agentData = {
         email,
         password,
-        isAdmin: false,
+        agentType: 'independent',
         subscriptionPlan,
-        subscriptionType: 'agent',
         isYearlyBilling: isYearlyBilling || false,
         city: 'Barcelona'
       };
@@ -295,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create session
       (req as any).session.userId = agent.id;
       (req as any).session.email = agent.email;
-      (req as any).session.isAdmin = agent.isAdmin;
+      (req as any).session.agentType = 'independent';
       
       await new Promise((resolve, reject) => {
         (req as any).session.save((err: any) => {

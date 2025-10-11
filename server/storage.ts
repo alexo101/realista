@@ -26,6 +26,7 @@ import {
   reviews,
   conversationMessages,
   pinnedConversations,
+  subscriptionEvents,
   type User,
   type UserWithReviews,
   type Agent,
@@ -39,6 +40,7 @@ import {
   type Review,
   type ConversationMessage,
   type PinnedConversation,
+  type SubscriptionEvent,
   type InsertAgent,
   type InsertAgency,
   type InsertProperty,
@@ -50,6 +52,7 @@ import {
   type InsertReview,
   type InsertConversationMessage,
   type InsertPinnedConversation,
+  type InsertSubscriptionEvent,
   clientFavoriteAgents,
   clientFavoriteAgencies,
   clientFavoriteProperties,
@@ -196,6 +199,15 @@ export interface IStorage {
   checkRecentFraudReport(propertyId: number, reporterIp: string): Promise<boolean>;
   incrementPropertyFraudCount(propertyId: number): Promise<Property | undefined>;
   getPropertyById(propertyId: number): Promise<Property | undefined>;
+
+  // Subscription Operations
+  checkAgencySeatsAvailable(agencyId: number): Promise<{ available: boolean; current: number; limit: number }>;
+  pauseAgentSubscription(agentId: number, reason: string, triggeredBy: number): Promise<void>;
+  resumeAgentSubscription(agentId: number, reason: string, triggeredBy: number): Promise<void>;
+  transferAgencyAdmin(agencyId: number, currentAdminId: number, newAdminId: number, triggeredBy: number): Promise<void>;
+  recordSubscriptionEvent(eventData: InsertSubscriptionEvent): Promise<SubscriptionEvent>;
+  getAgentRole(agentId: number): Promise<{ agencyId: number | null; role: string | null; agentType: string }>;
+  getAgencySubscription(agencyId: number): Promise<{ subscriptionPlan: string | null; isYearlyBilling: boolean | null; seatsLimit: number | null }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -851,9 +863,36 @@ export class DatabaseStorage implements IStorage {
       console.log(`Fetching agencies for admin with ID: ${adminAgentId}`);
 
       const result = await db
-        .select()
+        .select({
+          id: agencies.id,
+          agencyName: agencies.agencyName,
+          agencyAddress: agencies.agencyAddress,
+          agencyDescription: agencies.agencyDescription,
+          agencyLogo: agencies.agencyLogo,
+          agencyEmailToDisplay: agencies.agencyEmailToDisplay,
+          agencyPhone: agencies.agencyPhone,
+          agencyActiveSince: agencies.agencyActiveSince,
+          city: agencies.city,
+          agencyInfluenceNeighborhoods: agencies.agencyInfluenceNeighborhoods,
+          agencySupportedLanguages: agencies.agencySupportedLanguages,
+          agencyWebsite: agencies.agencyWebsite,
+          agencySocialMedia: agencies.agencySocialMedia,
+          subscriptionPlan: agencies.subscriptionPlan,
+          isYearlyBilling: agencies.isYearlyBilling,
+          seatsLimit: agencies.seatsLimit,
+          deletedAt: agencies.deletedAt,
+          createdAt: agencies.createdAt,
+        })
         .from(agencies)
-        .where(eq(agencies.adminAgentId, adminAgentId))
+        .innerJoin(
+          agencyAgents,
+          and(
+            eq(agencyAgents.agencyId, agencies.id),
+            eq(agencyAgents.agentId, adminAgentId),
+            eq(agencyAgents.role, 'admin'),
+            isNull(agencyAgents.leftAt)
+          )
+        )
         .orderBy(agencies.agencyName);
 
       console.log(`Found ${result.length} agencies for admin ${adminAgentId}`);
@@ -868,17 +907,12 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log("Creating agency with data:", agencyData);
 
-      // Validamos que tengamos un adminAgentId
-      if (!agencyData.adminAgentId) {
-        throw new Error("Missing required adminAgentId field");
-      }
-
       // Aseguramos que el nombre de agencia existe
       if (!agencyData.agencyName) {
         throw new Error("Missing required agencyName field");
       }
 
-      // Insertamos la agencia
+      // Insertamos la agencia (admin relationship handled via agency_agents table)
       const [newAgency] = await db
         .insert(agencies)
         .values({
@@ -889,11 +923,15 @@ export class DatabaseStorage implements IStorage {
           agencyInfluenceNeighborhoods:
             agencyData.agencyInfluenceNeighborhoods || [],
           agencySupportedLanguages: agencyData.agencySupportedLanguages || [],
-          adminAgentId: agencyData.adminAgentId,
           agencyWebsite: agencyData.agencyWebsite || null,
           agencySocialMedia: agencyData.agencySocialMedia || null,
           agencyEmailToDisplay: agencyData.agencyEmailToDisplay || null,
           agencyActiveSince: agencyData.agencyActiveSince || null,
+          agencyPhone: agencyData.agencyPhone || null,
+          city: agencyData.city || 'Barcelona',
+          subscriptionPlan: agencyData.subscriptionPlan || null,
+          isYearlyBilling: agencyData.isYearlyBilling || false,
+          seatsLimit: agencyData.seatsLimit || null,
         })
         .returning();
 
@@ -987,14 +1025,38 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Buscando agentes con agencyId = ${agencyId}`);
 
-      // Convertimos el ID de la agencia a string para la comparación con el campo agencyId
-      const agencyIdStr = agencyId.toString();
-
-      // Seleccionamos los agentes que pertenecen a esta agencia
+      // Select agents through the agency_agents junction table
       const result = await db
-        .select()
+        .select({
+          id: agents.id,
+          email: agents.email,
+          password: agents.password,
+          name: agents.name,
+          surname: agents.surname,
+          description: agents.description,
+          avatar: agents.avatar,
+          city: agents.city,
+          influenceNeighborhoods: agents.influenceNeighborhoods,
+          yearsOfExperience: agents.yearsOfExperience,
+          languagesSpoken: agents.languagesSpoken,
+          agentType: agents.agentType,
+          subscriptionPlan: agents.subscriptionPlan,
+          isYearlyBilling: agents.isYearlyBilling,
+          pausedSubscriptionPlan: agents.pausedSubscriptionPlan,
+          pausedIsYearlyBilling: agents.pausedIsYearlyBilling,
+          pausedAt: agents.pausedAt,
+          deletedAt: agents.deletedAt,
+          createdAt: agents.createdAt,
+        })
         .from(agents)
-        .where(eq(agents.agencyId, agencyIdStr))
+        .innerJoin(
+          agencyAgents,
+          and(
+            eq(agencyAgents.agentId, agents.id),
+            eq(agencyAgents.agencyId, agencyId),
+            isNull(agencyAgents.leftAt)
+          )
+        )
         .orderBy(agents.name);
 
       console.log(`Encontrados ${result.length} agentes vinculados a la agencia ${agencyId}`);
@@ -2293,6 +2355,154 @@ export class DatabaseStorage implements IStorage {
       .where(eq(properties.id, propertyId));
     
     return property;
+  }
+
+  // Subscription Operations
+  async checkAgencySeatsAvailable(agencyId: number): Promise<{ available: boolean; current: number; limit: number }> {
+    const [agency] = await db
+      .select({ seatsLimit: agencies.seatsLimit })
+      .from(agencies)
+      .where(eq(agencies.id, agencyId));
+    
+    if (!agency || !agency.seatsLimit) {
+      return { available: false, current: 0, limit: 0 };
+    }
+
+    const [result] = await db
+      .select({ count: count() })
+      .from(agencyAgents)
+      .where(
+        and(
+          eq(agencyAgents.agencyId, agencyId),
+          isNull(agencyAgents.leftAt)
+        )
+      );
+
+    const currentSeats = result.count;
+    return {
+      available: currentSeats < agency.seatsLimit,
+      current: currentSeats,
+      limit: agency.seatsLimit
+    };
+  }
+
+  async pauseAgentSubscription(agentId: number, reason: string, triggeredBy: number): Promise<void> {
+    const [agent] = await db.select().from(agents).where(eq(agents.id, agentId));
+    if (!agent) throw new Error('Agent not found');
+
+    await db.update(agents).set({
+      pausedSubscriptionPlan: agent.subscriptionPlan,
+      pausedIsYearlyBilling: agent.isYearlyBilling,
+      pausedAt: new Date(),
+      subscriptionPlan: null,
+      isYearlyBilling: null
+    }).where(eq(agents.id, agentId));
+
+    await this.recordSubscriptionEvent({
+      entityType: 'agent',
+      entityId: agentId,
+      eventType: 'paused',
+      previousState: { subscriptionPlan: agent.subscriptionPlan, isYearlyBilling: agent.isYearlyBilling },
+      newState: { subscriptionPlan: null, isYearlyBilling: null },
+      triggeredBy,
+      reason
+    });
+  }
+
+  async resumeAgentSubscription(agentId: number, reason: string, triggeredBy: number): Promise<void> {
+    const [agent] = await db.select().from(agents).where(eq(agents.id, agentId));
+    if (!agent) throw new Error('Agent not found');
+
+    await db.update(agents).set({
+      subscriptionPlan: agent.pausedSubscriptionPlan,
+      isYearlyBilling: agent.pausedIsYearlyBilling,
+      pausedSubscriptionPlan: null,
+      pausedIsYearlyBilling: null,
+      pausedAt: null
+    }).where(eq(agents.id, agentId));
+
+    await this.recordSubscriptionEvent({
+      entityType: 'agent',
+      entityId: agentId,
+      eventType: 'resumed',
+      previousState: { subscriptionPlan: null, isYearlyBilling: null },
+      newState: { subscriptionPlan: agent.pausedSubscriptionPlan, isYearlyBilling: agent.pausedIsYearlyBilling },
+      triggeredBy,
+      reason
+    });
+  }
+
+  async transferAgencyAdmin(agencyId: number, currentAdminId: number, newAdminId: number, triggeredBy: number): Promise<void> {
+    // Update current admin to member
+    await db.update(agencyAgents).set({ role: 'member' })
+      .where(
+        and(
+          eq(agencyAgents.agencyId, agencyId),
+          eq(agencyAgents.agentId, currentAdminId),
+          isNull(agencyAgents.leftAt)
+        )
+      );
+
+    // Update new agent to admin
+    await db.update(agencyAgents).set({ role: 'admin' })
+      .where(
+        and(
+          eq(agencyAgents.agencyId, agencyId),
+          eq(agencyAgents.agentId, newAdminId),
+          isNull(agencyAgents.leftAt)
+        )
+      );
+
+    await this.recordSubscriptionEvent({
+      entityType: 'agency',
+      entityId: agencyId,
+      eventType: 'admin_transferred',
+      previousState: { adminId: currentAdminId },
+      newState: { adminId: newAdminId },
+      triggeredBy,
+      reason: 'Admin role transferred',
+      metadata: { from: currentAdminId, to: newAdminId }
+    });
+  }
+
+  async recordSubscriptionEvent(eventData: InsertSubscriptionEvent): Promise<SubscriptionEvent> {
+    const [event] = await db.insert(subscriptionEvents).values(eventData).returning();
+    return event;
+  }
+
+  async getAgentRole(agentId: number): Promise<{ agencyId: number | null; role: string | null; agentType: string }> {
+    const [agent] = await db.select({ agentType: agents.agentType }).from(agents).where(eq(agents.id, agentId));
+    if (!agent) throw new Error('Agent not found');
+
+    const [agencyAgent] = await db
+      .select({ agencyId: agencyAgents.agencyId, role: agencyAgents.role })
+      .from(agencyAgents)
+      .where(
+        and(
+          eq(agencyAgents.agentId, agentId),
+          isNull(agencyAgents.leftAt)
+        )
+      );
+
+    return {
+      agencyId: agencyAgent?.agencyId || null,
+      role: agencyAgent?.role || null,
+      agentType: agent.agentType
+    };
+  }
+
+  async getAgencySubscription(agencyId: number): Promise<{ subscriptionPlan: string | null; isYearlyBilling: boolean | null; seatsLimit: number | null }> {
+    const [agency] = await db
+      .select({
+        subscriptionPlan: agencies.subscriptionPlan,
+        isYearlyBilling: agencies.isYearlyBilling,
+        seatsLimit: agencies.seatsLimit
+      })
+      .from(agencies)
+      .where(eq(agencies.id, agencyId));
+
+    if (!agency) throw new Error('Agency not found');
+    return agency;
   }
 }
 
