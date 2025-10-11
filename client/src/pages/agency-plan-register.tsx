@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, Building, Users, Star, Sparkles, Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useUser } from "@/contexts/user-context";
 
 const agencyPlans = {
   basica: {
@@ -76,7 +78,9 @@ export default function AgencyPlanRegister() {
   const [location] = useLocation();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { setUser } = useUser();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -114,11 +118,51 @@ export default function AgencyPlanRegister() {
       return;
     }
 
-    // TODO: Implement agency registration
-    toast({
-      title: "Registro en proceso",
-      description: "Funcionalidad de registro pendiente de implementar"
-    });
+    if (formData.password.length < 8) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 8 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const userData = await apiRequest('POST', '/api/auth/register-agency', {
+        email: formData.email,
+        password: formData.password,
+        subscriptionPlan: planId,
+        isYearlyBilling: billing === 'yearly'
+      });
+      
+      // Update user context with the logged-in user
+      setUser(userData);
+
+      toast({
+        title: "¡Cuenta creada exitosamente!",
+        description: "Tu agencia ha sido registrada y ya puedes empezar a gestionar tus propiedades"
+      });
+
+      // Redirect to manage page
+      navigate('/manage');
+    } catch (error: any) {
+      console.error('Error al registrar agencia:', error);
+      
+      // Extract error message from the error object
+      const errorMessage = error.message?.includes(':') 
+        ? error.message.split(':').slice(1).join(':').trim()
+        : error.message || "Por favor, verifica tus datos e intenta de nuevo";
+      
+      toast({
+        title: "Error al crear la cuenta",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -208,9 +252,10 @@ export default function AgencyPlanRegister() {
                 <Button 
                   type="submit" 
                   className="w-full text-lg py-6"
+                  disabled={isLoading}
                   data-testid="button-submit-registration"
                 >
-                  Crear cuenta y continuar
+                  {isLoading ? "Creando cuenta..." : "Crear cuenta y continuar"}
                 </Button>
 
                 <p className="text-sm text-center text-muted-foreground">

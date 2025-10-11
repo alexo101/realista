@@ -190,6 +190,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Agency registration with subscription plan
+  app.post("/api/auth/register-agency", async (req, res) => {
+    try {
+      console.log('Agency Registration - Datos recibidos:', req.body);
+      const { email, password, subscriptionPlan, isYearlyBilling } = req.body;
+
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "Ya existe una cuenta con este correo electrónico" 
+        });
+      }
+
+      // Create admin agent
+      const adminAgentData = {
+        email,
+        password,
+        isAdmin: true,
+        subscriptionPlan,
+        subscriptionType: 'agency',
+        isYearlyBilling: isYearlyBilling || false,
+        city: 'Barcelona'
+      };
+
+      const adminAgent = await storage.createUser(adminAgentData);
+      console.log('Admin agent created:', adminAgent.id);
+
+      // Create agency
+      const agencyData = {
+        agencyName: `Agencia ${email.split('@')[0]}`, // Default name, can be updated later
+        adminAgentId: adminAgent.id,
+        city: 'Barcelona'
+      };
+
+      const agency = await storage.createAgency(agencyData);
+      console.log('Agency created:', agency.id);
+
+      // Update agent with agencyId
+      await storage.updateUser(adminAgent.id, { agencyId: String(agency.id) });
+
+      // Create session
+      (req as any).session.userId = adminAgent.id;
+      (req as any).session.email = adminAgent.email;
+      (req as any).session.isAdmin = adminAgent.isAdmin;
+      
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(adminAgent.email, agencyData.agencyName, true);
+        console.log('Email de bienvenida enviado a:', adminAgent.email);
+      } catch (emailError) {
+        console.error('Error al enviar email de bienvenida:', emailError);
+      }
+
+      // Return user data without password
+      const { password: _, ...userResponse } = adminAgent;
+      res.status(201).json({ 
+        ...userResponse, 
+        agencyId: agency.id,
+        agencyName: agency.agencyName
+      });
+    } catch (error) {
+      console.error('Error registering agency:', error);
+      res.status(500).json({ message: "Error al registrar la agencia" });
+    }
+  });
+
+  // Agent registration with subscription plan
+  app.post("/api/auth/register-agent", async (req, res) => {
+    try {
+      console.log('Agent Registration - Datos recibidos:', req.body);
+      const { email, password, subscriptionPlan, isYearlyBilling } = req.body;
+
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "Ya existe una cuenta con este correo electrónico" 
+        });
+      }
+
+      // Create individual agent
+      const agentData = {
+        email,
+        password,
+        isAdmin: false,
+        subscriptionPlan,
+        subscriptionType: 'agent',
+        isYearlyBilling: isYearlyBilling || false,
+        city: 'Barcelona'
+      };
+
+      const agent = await storage.createUser(agentData);
+      console.log('Agent created:', agent.id);
+
+      // Create session
+      (req as any).session.userId = agent.id;
+      (req as any).session.email = agent.email;
+      (req as any).session.isAdmin = agent.isAdmin;
+      
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(agent.email, email.split('@')[0], true);
+        console.log('Email de bienvenida enviado a:', agent.email);
+      } catch (emailError) {
+        console.error('Error al enviar email de bienvenida:', emailError);
+      }
+
+      // Return user data without password
+      const { password: _, ...userResponse } = agent;
+      res.status(201).json(userResponse);
+    } catch (error) {
+      console.error('Error registering agent:', error);
+      res.status(500).json({ message: "Error al registrar el agente" });
+    }
+  });
+
   // Get agencies managed by admin agent
   app.get("/api/agents/:adminId/agencies", async (req, res) => {
     try {
