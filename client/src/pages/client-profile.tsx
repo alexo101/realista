@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,7 +37,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2 } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLocation, Redirect } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -286,6 +287,70 @@ export default function ClientProfile() {
     gcTime: 300000, // Keep in cache for 5 minutes
   });
 
+  // Query para obtener búsquedas guardadas
+  const { data: savedSearches = [] } = useQuery<any[]>({
+    queryKey: ["/api/saved-searches"],
+    queryFn: async () => {
+      if (!user || !user.isClient) return [];
+
+      const response = await fetch("/api/saved-searches");
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: !!user?.isClient,
+    staleTime: 30000,
+    gcTime: 300000,
+  });
+
+  // Mutation for deleting saved search
+  const deleteSavedSearchMutation = useMutation({
+    mutationFn: async (searchId: number) => {
+      await apiRequest("DELETE", `/api/saved-searches/${searchId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/saved-searches"] });
+      toast({
+        title: "Búsqueda eliminada",
+        description: "La búsqueda ha sido eliminada exitosamente",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la búsqueda",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for updating saved search name
+  const updateSavedSearchMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      const response = await apiRequest("PUT", `/api/saved-searches/${id}`, { name });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/saved-searches"] });
+      toast({
+        title: "Búsqueda actualizada",
+        description: "El nombre de la búsqueda ha sido actualizado",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el nombre de la búsqueda",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // State for edit mode
+  const [editingSearchId, setEditingSearchId] = useState<number | null>(null);
+  const [editingSearchName, setEditingSearchName] = useState("");
+  const [deletingSearchId, setDeletingSearchId] = useState<number | null>(null);
 
   if (!user || !user.isClient) {
     return null;
@@ -1070,6 +1135,194 @@ export default function ClientProfile() {
           </div>
         );
 
+      case "saved-searches":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis búsquedas</h1>
+              <p className="text-gray-600">Búsquedas que has guardado para acceder rápidamente</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bookmark className="h-5 w-5 text-blue-500" />
+                  Búsquedas guardadas ({savedSearches.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {savedSearches.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Bookmark className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No tienes búsquedas guardadas
+                    </h3>
+                    <p className="text-gray-500">
+                      Cuando encuentres una búsqueda que te interese, guárdala para acceder a ella rápidamente
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {savedSearches.map((search) => (
+                      <Card key={search.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                              {editingSearchId === search.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editingSearchName}
+                                    onChange={(e) => setEditingSearchName(e.target.value)}
+                                    className="flex-1"
+                                    data-testid={`input-edit-search-${search.id}`}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      updateSavedSearchMutation.mutate({
+                                        id: search.id,
+                                        name: editingSearchName,
+                                      });
+                                      setEditingSearchId(null);
+                                    }}
+                                    data-testid={`button-save-edit-${search.id}`}
+                                  >
+                                    Guardar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingSearchId(null);
+                                      setEditingSearchName("");
+                                    }}
+                                    data-testid={`button-cancel-edit-${search.id}`}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </div>
+                              ) : (
+                                <>
+                                  <h3 className="font-semibold text-gray-900 mb-2">
+                                    {search.name}
+                                  </h3>
+                                  <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                                    {search.city && (
+                                      <Badge variant="secondary">{search.city}</Badge>
+                                    )}
+                                    {search.district && (
+                                      <Badge variant="secondary">{search.district}</Badge>
+                                    )}
+                                    {search.neighborhood && (
+                                      <Badge variant="secondary">{search.neighborhood}</Badge>
+                                    )}
+                                    {search.operationType && (
+                                      <Badge variant="outline">{search.operationType}</Badge>
+                                    )}
+                                    {search.priceMin && search.priceMax && (
+                                      <Badge variant="outline">
+                                        {search.priceMin.toLocaleString()} - {search.priceMax.toLocaleString()} €
+                                      </Badge>
+                                    )}
+                                    {search.bedrooms && (
+                                      <Badge variant="outline">{search.bedrooms} hab.</Badge>
+                                    )}
+                                    {search.bathrooms && (
+                                      <Badge variant="outline">{search.bathrooms} baños</Badge>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            {editingSearchId !== search.id && (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    // Build search URL with filters
+                                    const params = new URLSearchParams();
+                                    if (search.operationType) params.append("operationType", search.operationType);
+                                    if (search.priceMin) params.append("minPrice", search.priceMin.toString());
+                                    if (search.priceMax) params.append("maxPrice", search.priceMax.toString());
+                                    if (search.bedrooms) params.append("bedrooms", search.bedrooms.toString());
+                                    if (search.bathrooms) params.append("bathrooms", search.bathrooms.toString());
+                                    
+                                    let url = "/";
+                                    if (search.neighborhood) {
+                                      const neighborhood = search.district 
+                                        ? `${search.neighborhood}, ${search.district}, ${search.city}` 
+                                        : search.neighborhood;
+                                      url = `/neighborhood/${encodeURIComponent(neighborhood)}/properties?${params.toString()}`;
+                                    } else if (search.district) {
+                                      url = `/neighborhood/${encodeURIComponent(`${search.district}, ${search.city}`)}/properties?${params.toString()}`;
+                                    } else if (search.city) {
+                                      url = `/neighborhood/${encodeURIComponent(search.city)}/properties?${params.toString()}`;
+                                    }
+                                    
+                                    navigate(url);
+                                  }}
+                                  data-testid={`button-apply-search-${search.id}`}
+                                >
+                                  Ver resultados
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingSearchId(search.id);
+                                    setEditingSearchName(search.name);
+                                  }}
+                                  data-testid={`button-edit-search-${search.id}`}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                {deletingSearchId === search.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => {
+                                        deleteSavedSearchMutation.mutate(search.id);
+                                        setDeletingSearchId(null);
+                                      }}
+                                      data-testid={`button-confirm-delete-${search.id}`}
+                                    >
+                                      Confirmar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setDeletingSearchId(null)}
+                                      data-testid={`button-cancel-delete-${search.id}`}
+                                    >
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setDeletingSearchId(search.id)}
+                                    data-testid={`button-delete-search-${search.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -1143,6 +1396,19 @@ export default function ClientProfile() {
                 >
                   <MessageCircle className="h-4 w-4" />
                   {!sidebarCollapsed && <span>Mensajes</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Saved Searches Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setSection("saved-searches")}
+                  isActive={section === "saved-searches"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-saved-searches"
+                >
+                  <Bookmark className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Mis búsquedas</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

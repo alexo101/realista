@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
 import { PropertyResults } from "@/components/PropertyResults";
 import { GoogleMapsPropertyMap } from "@/components/GoogleMapsPropertyMap";
@@ -8,7 +8,7 @@ import { AgentResults } from "@/components/AgentResults";
 import GoogleMapsNeighborhoodMap from "@/components/GoogleMapsNeighborhoodMap";
 import { Footer } from "@/components/Footer";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
-import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map } from "lucide-react";
+import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map, Bookmark, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -28,6 +28,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities } from "@/utils/neighborhoods";
+import { useUser } from "@/contexts/user-context";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function NeighborhoodResultsPage() {
   const { neighborhood } = useParams<{ neighborhood: string }>();
@@ -35,6 +38,12 @@ export default function NeighborhoodResultsPage() {
   const [currentLocation] = useLocation();
   const decodedNeighborhood = decodeURIComponent(neighborhood);
   const queryClient = useQueryClient();
+  const { user } = useUser();
+  const { toast } = useToast();
+  
+  // State for save search button
+  const [isSaveConfirming, setIsSaveConfirming] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
   // Parse hierarchical neighborhood format with fallbacks
   let currentCity = 'Barcelona';
@@ -105,6 +114,72 @@ export default function NeighborhoodResultsPage() {
     bathrooms: null,
     features: []
   });
+  
+  // Mutation to save search
+  const saveSearchMutation = useMutation({
+    mutationFn: async () => {
+      const searchData = {
+        city: currentCity,
+        district: currentDistrict || null,
+        neighborhood: currentNeighborhood || null,
+        operationType: propertyFilters.operationType,
+        priceMin: propertyFilters.priceMin,
+        priceMax: propertyFilters.priceMax,
+        bedrooms: propertyFilters.bedrooms,
+        bathrooms: propertyFilters.bathrooms,
+        features: propertyFilters.features || [],
+      };
+      
+      const response = await apiRequest("POST", "/api/saved-searches", searchData);
+      return response;
+    },
+    onSuccess: () => {
+      setIsSaved(true);
+      setIsSaveConfirming(false);
+      toast({
+        title: "Búsqueda guardada",
+        description: "Puedes acceder a ella desde 'Mis búsquedas' en tu perfil",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/saved-searches"] });
+      
+      // Reset the saved state after 2 seconds
+      setTimeout(() => {
+        setIsSaved(false);
+      }, 2000);
+    },
+    onError: (error: Error) => {
+      setIsSaveConfirming(false);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo guardar la búsqueda",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveSearch = () => {
+    if (!user?.isClient) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión como cliente para guardar búsquedas",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // First click: show confirmation
+    if (!isSaveConfirming) {
+      setIsSaveConfirming(true);
+      // Reset confirmation after 3 seconds if not confirmed
+      setTimeout(() => {
+        setIsSaveConfirming(false);
+      }, 3000);
+      return;
+    }
+    
+    // Second click: execute save
+    saveSearchMutation.mutate();
+  };
   
   // Verificar si estamos en una página de ciudad general
   const isCityPage = currentCity && !currentDistrict && !currentNeighborhood;
@@ -443,6 +518,37 @@ export default function NeighborhoodResultsPage() {
                 onViewModeChange={setViewMode}
                 showViewToggle={true}
               />
+
+              {/* Guardar búsqueda button - Only show for logged-in clients */}
+              {user?.isClient && (
+                <div className="mb-4 flex justify-end">
+                  <Button
+                    onClick={handleSaveSearch}
+                    disabled={saveSearchMutation.isPending || isSaved}
+                    variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
+                    size="sm"
+                    data-testid="button-save-search"
+                    className="gap-2"
+                  >
+                    {isSaved ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Guardada
+                      </>
+                    ) : isSaveConfirming ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Confirmar guardar
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="h-4 w-4" />
+                        Guardar búsqueda
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
 
               {/* Contenido condicional basado en el modo de vista */}
               {viewMode === 'list' ? (
