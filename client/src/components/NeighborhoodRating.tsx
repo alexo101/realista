@@ -270,8 +270,8 @@ export function NeighborhoodRating() {
   };
 
   return (
-    <div className="w-full">
-      <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6 text-left">
+    <div className="w-full pl-4">
+      <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">
         Busca y conoce los barrios de tu interés
       </h2>
       
