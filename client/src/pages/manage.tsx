@@ -103,6 +103,8 @@ export default function ManagePage() {
 
   // Estado para mostrar indicador de guardado exitoso
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingAgencyLogo, setIsUploadingAgencyLogo] = useState(false);
   const [hasAgentChanges, setHasAgentChanges] = useState(false); // Added
   const [hasAgencyChanges, setHasAgencyChanges] = useState(false); // Added
 
@@ -651,8 +653,8 @@ export default function ManagePage() {
                     <UserCircle className="w-16 h-16 text-gray-400" />
                   )}
                 </div>
-                <Label htmlFor="picture" className="cursor-pointer text-sm text-primary">
-                  Gestionar foto
+                <Label htmlFor="picture" className={`cursor-pointer text-sm ${isUploadingAvatar ? 'text-gray-400' : 'text-primary'}`}>
+                  {isUploadingAvatar ? 'Subiendo foto...' : 'Gestionar foto'}
                 </Label>
                 <Input
                   id="picture"
@@ -662,6 +664,7 @@ export default function ManagePage() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      setIsUploadingAvatar(true);
                       try {
                         // Upload image to cloud storage
                         const formData = new FormData();
@@ -676,11 +679,26 @@ export default function ManagePage() {
                           throw new Error('Failed to upload image');
                         }
 
-                        const { imageUrl } = await response.json();
+                        // Validate response is JSON
+                        const contentType = response.headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                          throw new Error('Server returned non-JSON response');
+                        }
+
+                        const data = await response.json();
+                        
+                        if (!data.imageUrl) {
+                          throw new Error('No image URL in response');
+                        }
 
                         // Update profile with cloud storage URL
                         updateProfileMutation.mutate({
-                          avatar: imageUrl
+                          avatar: data.imageUrl
+                        });
+                        
+                        toast({
+                          title: "Éxito",
+                          description: "Foto actualizada correctamente",
                         });
                       } catch (error) {
                         console.error('Error uploading avatar:', error);
@@ -689,6 +707,8 @@ export default function ManagePage() {
                           description: "No se pudo cargar la imagen. Por favor intenta de nuevo.",
                           variant: "destructive"
                         });
+                      } finally {
+                        setIsUploadingAvatar(false);
                       }
                     }
                   }}
@@ -850,27 +870,63 @@ export default function ManagePage() {
                     <Building className="w-24 h-24 text-gray-400" />
                   )}
                 </div>
-                <Label htmlFor="agency-logo" className="cursor-pointer text-sm text-primary">
-                  Gestionar logo
+                <Label htmlFor="agency-logo" className={`cursor-pointer text-sm ${isUploadingAgencyLogo ? 'text-gray-400' : 'text-primary'}`}>
+                  {isUploadingAgencyLogo ? 'Subiendo logo...' : 'Gestionar logo'}
                 </Label>
                 <Input
                   id="agency-logo"
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        if (event.target?.result) {
-                          const base64String = event.target.result.toString();
-                          updateProfileMutation.mutate({
-                            agencyLogo: base64String
-                          });
+                      setIsUploadingAgencyLogo(true);
+                      try {
+                        // Upload image to cloud storage
+                        const formData = new FormData();
+                        formData.append('image', file);
+
+                        const response = await fetch('/api/property-images/upload-direct', {
+                          method: 'POST',
+                          body: formData,
+                        });
+
+                        if (!response.ok) {
+                          throw new Error('Failed to upload image');
                         }
-                      };
-                      reader.readAsDataURL(file);
+
+                        // Validate response is JSON
+                        const contentType = response.headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                          throw new Error('Server returned non-JSON response');
+                        }
+
+                        const data = await response.json();
+                        
+                        if (!data.imageUrl) {
+                          throw new Error('No image URL in response');
+                        }
+
+                        // Update profile with cloud storage URL
+                        updateProfileMutation.mutate({
+                          agencyLogo: data.imageUrl
+                        });
+                        
+                        toast({
+                          title: "Éxito",
+                          description: "Logo actualizado correctamente",
+                        });
+                      } catch (error) {
+                        console.error('Error uploading agency logo:', error);
+                        toast({
+                          title: "Error",
+                          description: "No se pudo cargar el logo. Por favor intenta de nuevo.",
+                          variant: "destructive"
+                        });
+                      } finally {
+                        setIsUploadingAgencyLogo(false);
+                      }
                     }
                   }}
                 />
