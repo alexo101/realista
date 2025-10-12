@@ -270,13 +270,14 @@ export function NeighborhoodRating() {
   };
 
   return (
-    <div className="w-full pl-4">
-      <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">
-        Busca y conoce los barrios de tu interés
-      </h2>
-      
-      {/* Search bar */}
-      <form onSubmit={handleSearchSubmit} className="mb-6 max-w-md">
+    <div className="w-full">
+      <div className="bg-white rounded-lg shadow-lg p-4">
+        <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">
+          Busca y conoce los barrios de tu interés
+        </h2>
+        
+        {/* Search bar */}
+        <form onSubmit={handleSearchSubmit} className="mb-6 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
@@ -461,6 +462,7 @@ export function NeighborhoodRating() {
           <p className="text-sm text-gray-400 mt-2">Prueba con uno de los barrios populares arriba.</p>
         </div>
       ) : null}
+      </div>
     </div>
   );
 }
