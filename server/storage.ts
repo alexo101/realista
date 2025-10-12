@@ -682,13 +682,13 @@ export class DatabaseStorage implements IStorage {
     const agencyReviewCount = agencyReviewResults.rows[0]?.count || 0;
     const agencyScore = agencyReviewResults.rows[0]?.average || 0;
 
-    // Get reviews from linked agents
+    // Get reviews from linked agents (through agency_agents junction table)
     const linkedAgentReviews = await db.execute(
       sql`SELECT COUNT(r.*)::integer as agent_review_count, 
                  COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average
           FROM reviews r 
-          JOIN agents a ON r.target_id = a.id 
-          WHERE a.agency_id = ${id.toString()} AND r.target_type = 'agent'`
+          JOIN agency_agents aa ON r.target_id = aa.agent_id 
+          WHERE aa.agency_id = ${id} AND r.target_type = 'agent' AND aa.left_at IS NULL`
     );
 
     const agentReviewCount = linkedAgentReviews.rows[0]?.agent_review_count || 0;

@@ -465,12 +465,32 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         return res.status(401).json({ message: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo" });
       }
 
+      // For agents, check if they're an admin of an agency
+      let isAdmin = false;
+      let agencyId = null;
+      let agencyName = null;
+      
+      if (!isClient) {
+        const agentRole = await storage.getAgentRole(user.id);
+        isAdmin = agentRole.role === 'admin';
+        agencyId = agentRole.agencyId;
+        
+        // Get agency name if agent belongs to one
+        if (agencyId) {
+          const agency = await storage.getAgencyById(agencyId);
+          if (agency) {
+            agencyName = agency.agencyName;
+          }
+        }
+      }
+
       console.log('Login - Éxito, devolviendo usuario:', {
         id: user.id,
         email: user.email,
         name: user.name,
-        isAdmin: user.isAdmin,
-        isClient: isClient
+        isAdmin: isAdmin,
+        isClient: isClient,
+        agencyId: agencyId
       });
 
       // Store user data in session
@@ -479,9 +499,11 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         email: user.email,
         name: user.name,
         surname: user.surname,
-        isAdmin: user.isAdmin,
+        isAdmin: isAdmin,
         isClient: isClient,
-        phone: user.phone
+        phone: user.phone,
+        agencyId: agencyId,
+        agencyName: agencyName
       };
 
       // Save session to database
