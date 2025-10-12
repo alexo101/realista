@@ -153,18 +153,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
 
   return (
     <Card className="mb-6">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{agency ? "Editar agencia" : "Nueva agencia"}</CardTitle>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onCancel}
-          title="Cancelar"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center mb-6">
             <div className="w-32 h-32 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
