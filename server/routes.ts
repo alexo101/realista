@@ -243,11 +243,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminAgent.id // Admin triggered their own addition
       );
 
-      // Create session
-      (req as any).session.userId = adminAgent.id;
-      (req as any).session.email = adminAgent.email;
-      (req as any).session.agencyId = agency.id;
-      (req as any).session.role = 'admin';
+      // Create session with proper user object
+      (req as any).session.user = {
+        id: adminAgent.id,
+        email: adminAgent.email,
+        name: adminAgent.name,
+        surname: adminAgent.surname,
+        isAdmin: true, // Admin of the agency
+        isClient: false,
+        phone: null,
+        agencyId: agency.id,
+        agencyName: agency.agencyName
+      };
       
       await new Promise((resolve, reject) => {
         (req as any).session.save((err: any) => {
