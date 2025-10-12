@@ -659,19 +659,37 @@ export default function ManagePage() {
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (event) => {
-                        if (event.target?.result) {
-                          const base64String = event.target.result.toString();
-                          updateProfileMutation.mutate({
-                            avatar: base64String
-                          });
+                      try {
+                        // Upload image to cloud storage
+                        const formData = new FormData();
+                        formData.append('image', file);
+
+                        const response = await fetch('/api/property-images/upload-direct', {
+                          method: 'POST',
+                          body: formData,
+                        });
+
+                        if (!response.ok) {
+                          throw new Error('Failed to upload image');
                         }
-                      };
-                      reader.readAsDataURL(file);
+
+                        const { imageUrl } = await response.json();
+
+                        // Update profile with cloud storage URL
+                        updateProfileMutation.mutate({
+                          avatar: imageUrl
+                        });
+                      } catch (error) {
+                        console.error('Error uploading avatar:', error);
+                        toast({
+                          title: "Error",
+                          description: "No se pudo cargar la imagen. Por favor intenta de nuevo.",
+                          variant: "destructive"
+                        });
+                      }
                     }
                   }}
                 />
