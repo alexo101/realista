@@ -125,6 +125,10 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 12, 2025. Fixed alignment issue between SearchBar and NeighborhoodRating sections
+  - Wrapped NeighborhoodRating content in white card container (bg-white rounded-lg shadow-lg p-4)
+  - Matched SearchBar structure for consistent visual alignment
+  - Both sections now use identical container padding for proper UI consistency
 - October 11, 2025. Implemented comprehensive RealistaPro subscription architecture
   - Created three-tier subscription model: agency-level, independent agent, and inherited access
   - Implemented agency_agents junction table with role enforcement (admin/member)
