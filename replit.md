@@ -125,6 +125,14 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 12, 2025. Fixed image upload issues for agent photos and agency logos
+  - Updated agency logo upload to use cloud storage instead of deprecated base64 system
+  - Added content-type validation to prevent "response.json not a function" errors
+  - Implemented loading states (isUploadingAvatar, isUploadingAgencyLogo) with visual feedback
+  - Added success toast notifications for successful uploads
+  - Improved error handling with specific error messages and try-catch blocks
+  - Both uploads now use /api/property-images/upload-direct endpoint for cloud storage
+  - Tested and verified uploads work correctly with various image formats
 - October 12, 2025. Fixed agency registration PostgreSQL error
   - Removed FOR UPDATE from seat count aggregate query in addAgentToAgencyAtomic function
   - PostgreSQL doesn't allow row locking (FOR UPDATE) with aggregate functions like COUNT()
