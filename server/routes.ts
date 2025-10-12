@@ -521,7 +521,13 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
 
       // Remover la contraseña antes de enviar la respuesta
       const { password: _, ...userResponse } = user;
-      res.json({ ...userResponse, isClient });
+      res.json({ 
+        ...userResponse, 
+        isClient,
+        isAdmin,
+        agencyId,
+        agencyName
+      });
     } catch (error) {
       console.error('Error during login:', error);
       res.status(500).json({ message: "Error en el inicio de sesión" });
