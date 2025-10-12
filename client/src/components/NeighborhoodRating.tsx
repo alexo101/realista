@@ -462,7 +462,7 @@ export function NeighborhoodRating() {
           <p className="text-sm text-gray-400 mt-2">Prueba con uno de los barrios populares arriba.</p>
         </div>
       ) : null}
-      </div>
+    </div>
     </div>
   );
 }
