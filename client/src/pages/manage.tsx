@@ -53,13 +53,6 @@ export default function ManagePage() {
     const params = new URLSearchParams(location.split('?')[1]);
     const tabParam = params.get('tab');
 
-    // Si es un administrador de agencia y hay un parámetro tab=agency-profile, 
-    // o si es un administrador y no hay perfil de agente
-    if ((user?.isAdmin && tabParam === 'agency-profile') || 
-        (user?.isAdmin && !user?.name)) {
-      return 'agency-profile';
-    }
-
     // Validar que el tab sea uno de los valores permitidos
     const validTabs = ['calendar', 'agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'team'];
     return validTabs.includes(tabParam || '') ? tabParam : 'calendar';
