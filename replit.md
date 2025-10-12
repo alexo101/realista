@@ -125,6 +125,12 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 12, 2025. Simplified agency management interface
+  - Removed "Añadir agencia" button since agents can only belong to one agency
+  - Removed "Agencias" header and "Editar" button for cleaner UX
+  - Agency edit form now displays directly when clicking "Gestionar agencia"
+  - Streamlined AgenciesList component by removing unused states and mutations
+  - Fixed async form submission to use mutateAsync for proper error handling
 - October 12, 2025. Fixed agency admin recognition in login response
   - Login endpoint now returns isAdmin, agencyId, and agencyName fields in response
   - Previously these fields were only stored in session but not sent to client
