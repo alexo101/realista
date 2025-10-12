@@ -125,6 +125,11 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 12, 2025. Fixed agency registration PostgreSQL error
+  - Removed FOR UPDATE from seat count aggregate query in addAgentToAgencyAtomic function
+  - PostgreSQL doesn't allow row locking (FOR UPDATE) with aggregate functions like COUNT()
+  - Agency row is already locked to prevent race conditions during seat allocation
+  - Agency registration now works correctly for all subscription plans
 - October 12, 2025. Fixed alignment issue between SearchBar and NeighborhoodRating sections
   - Wrapped NeighborhoodRating content in white card container (bg-white rounded-lg shadow-lg p-4)
   - Matched SearchBar structure for consistent visual alignment
