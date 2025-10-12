@@ -2537,7 +2537,7 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Agency has no subscription plan');
       }
 
-      // Count current active members with lock
+      // Count current active members (no lock needed - agency row is already locked)
       const [seatCount] = await tx
         .select({ count: count() })
         .from(agencyAgents)
@@ -2546,8 +2546,7 @@ export class DatabaseStorage implements IStorage {
             eq(agencyAgents.agencyId, agencyId),
             isNull(agencyAgents.leftAt)
           )
-        )
-        .for('update');
+        );
 
       if (seatCount.count >= agency.seatsLimit) {
         throw new Error(`Agency seat limit reached (${agency.seatsLimit} seats)`);
