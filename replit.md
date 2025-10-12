@@ -125,6 +125,11 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 12, 2025. Fixed agency admin recognition in login response
+  - Login endpoint now returns isAdmin, agencyId, and agencyName fields in response
+  - Previously these fields were only stored in session but not sent to client
+  - Agency admins can now see "Gestionar agencia" and "Gestionar mi equipo" options
+  - Fixed by updating login response to include computed admin fields from agency_agents table
 - October 12, 2025. Fixed image upload issues for agent photos and agency logos
   - Updated agency logo upload to use cloud storage instead of deprecated base64 system
   - Added content-type validation to prevent "response.json not a function" errors
