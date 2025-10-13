@@ -215,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create agency with subscription
       const agencyData = {
         agencyName: `Agencia ${email.split('@')[0]}`, // Default name, can be updated later
-        city: 'Barcelona',
+        city: null,
         subscriptionPlan,
         isYearlyBilling: isYearlyBilling || false,
         seatsLimit: seatLimits[subscriptionPlan] || 1,
