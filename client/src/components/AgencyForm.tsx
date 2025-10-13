@@ -44,7 +44,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
   const [agencyLanguagesSpoken, setAgencyLanguagesSpoken] = useState<string[]>([]);
   const [agencyLogo, setAgencyLogo] = useState<string | undefined>();
-  const [city, setCity] = useState("Barcelona");
+  const [city, setCity] = useState("");
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
@@ -89,7 +89,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       setYearEstablished(agency.yearEstablished);
       setAgencyLanguagesSpoken(agency.agencyLanguagesSpoken || []);
       setAgencyLogo(agency.agencyLogo);
-      setCity((agency as any).city || "Barcelona");
+      setCity((agency as any).city || "");
       setInfluenceNeighborhoods(agency.agencyInfluenceNeighborhoods || []);
       setLogoPreview(agency.agencyLogo || null);
       
