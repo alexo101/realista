@@ -229,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         password,
         agentType: 'agency_member',
-        city: 'Barcelona'
+        city: null
       };
 
       const adminAgent = await storage.createUser(adminAgentData);
