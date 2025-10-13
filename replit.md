@@ -125,6 +125,11 @@ Realista is a modern real estate platform built with React and Express.js that a
 
 ## Changelog
 
+- October 13, 2025. Added support for Spanish "ñ" character in email addresses
+  - Updated email validation in all registration and login forms
+  - Replaced standard email validation with Unicode-aware regex pattern
+  - Now accepts emails with Spanish characters like "peña@niño.com"
+  - Uses `\p{L}` Unicode property escape for comprehensive letter support
 - October 12, 2025. Simplified agency management interface
   - Removed "Añadir agencia" button since agents can only belong to one agency
   - Removed "Agencias" header and "Editar" button for cleaner UX
