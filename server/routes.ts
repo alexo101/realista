@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentType: 'independent',
         subscriptionPlan,
         isYearlyBilling: isYearlyBilling || false,
-        city: 'Barcelona'
+        city: null
       };
 
       const agent = await storage.createUser(agentData);
