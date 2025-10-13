@@ -194,7 +194,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register-agency", async (req, res) => {
     try {
       console.log('Agency Registration - Datos recibidos:', req.body);
-      const { email, password, name, surname, subscriptionPlan, isYearlyBilling } = req.body;
+      const { agencyName, city, email, password, name, surname, subscriptionPlan, isYearlyBilling } = req.body;
+
+      // Validate agency name
+      if (!agencyName || agencyName.trim().length < 2) {
+        return res.status(400).json({
+          message: "El nombre de la agencia es requerido (mínimo 2 caracteres)"
+        });
+      }
+
+      // Validate city
+      if (!city || !['Barcelona', 'Madrid'].includes(city)) {
+        return res.status(400).json({
+          message: "Por favor selecciona una ciudad válida (Barcelona o Madrid)"
+        });
+      }
 
       // Validate admin name and surname
       if (!name || name.trim().length < 2) {
@@ -224,10 +238,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'lider': 50
       };
 
-      // Create agency with subscription
+      // Create agency with subscription using provided agency name and city
       const agencyData = {
-        agencyName: `Agencia ${email.split('@')[0]}`, // Default name, can be updated later
-        city: null,
+        agencyName: agencyName.trim(),
+        city: city,
         subscriptionPlan,
         isYearlyBilling: isYearlyBilling || false,
         seatsLimit: seatLimits[subscriptionPlan] || 1,
@@ -240,10 +254,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminAgentData = {
         email,
         password,
-        name: name || null,
-        surname: surname || null,
+        name: name.trim(),
+        surname: surname.trim(),
         agentType: 'agency_member',
-        city: null
+        city: city  // Use the same city as the agency
       };
 
       const adminAgent = await storage.createUser(adminAgentData);
