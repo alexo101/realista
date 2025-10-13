@@ -20,7 +20,12 @@ import { Home, User, Mail, Lock, Phone, Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  email: z.string().email("Por favor introduce un correo electrónico válido"),
+  email: z.string()
+    .min(1, "El correo electrónico es requerido")
+    .regex(
+      /^[\p{L}0-9._%+-]+@[\p{L}0-9.-]+\.[\p{L}]{2,}$/u,
+      "Por favor introduce un correo electrónico válido"
+    ),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
 });
 

@@ -19,7 +19,12 @@ import { useUser } from "@/contexts/user-context";
 import { Building, Home, Lock, Mail, Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
-  email: z.string().email("Por favor introduce un correo electrónico válido"),
+  email: z.string()
+    .min(1, "El correo electrónico es requerido")
+    .regex(
+      /^[\p{L}0-9._%+-]+@[\p{L}0-9.-]+\.[\p{L}]{2,}$/u,
+      "Por favor introduce un correo electrónico válido"
+    ),
   password: z.string().min(1, "La contraseña es obligatoria"),
 });
 

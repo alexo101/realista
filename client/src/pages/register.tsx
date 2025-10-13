@@ -25,7 +25,12 @@ const formSchema = z.object({
   profileType: z.enum(["agent", "agency"], {
     required_error: "Por favor selecciona un tipo de perfil",
   }),
-  email: z.string().email("Por favor introduce un correo electrónico válido"),
+  email: z.string()
+    .min(1, "El correo electrónico es requerido")
+    .regex(
+      /^[\p{L}0-9._%+-]+@[\p{L}0-9.-]+\.[\p{L}]{2,}$/u,
+      "Por favor introduce un correo electrónico válido"
+    ),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   subscriptionPlan: z.string().optional(),
   subscriptionType: z.string().optional(),
