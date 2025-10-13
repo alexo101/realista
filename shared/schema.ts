@@ -25,7 +25,7 @@ export const agencies = pgTable("agencies", {
   agencyEmailToDisplay: text("agency_email_to_display"),
   agencyPhone: text("agency_phone"),
   agencyActiveSince: text("agency_active_since"),
-  city: text("city").notNull().default('Barcelona'),
+  city: text("city"),
   agencyInfluenceNeighborhoods: text("agencyInfluenceNeighborhoods").array(),
   agencySupportedLanguages: text("agency_supported_languages").array(),
   agencyWebsite: text("agency_website"),
@@ -48,7 +48,7 @@ export const agents = pgTable("agents", {
   surname: text("surname"),
   description: text("description"),
   avatar: text("avatar"),
-  city: text("city").notNull().default('Barcelona'),
+  city: text("city"),
   influenceNeighborhoods: text("influence_neighborhoods").array(),
   yearsOfExperience: integer("years_of_experience"),
   languagesSpoken: text("languages_spoken").array(),
@@ -87,7 +87,7 @@ export const properties = pgTable("properties", {
   // Campos existentes
   description: text("description").notNull(),
   price: integer("price").notNull(),
-  city: text("city").notNull().default('Barcelona'),
+  city: text("city"),
   district: text("district"),
   neighborhood: text("neighborhood").notNull(),
   bedrooms: integer("bedrooms"), // Number of bedrooms
@@ -137,7 +137,7 @@ export const clients = pgTable("clients", {
 
 export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   id: serial("id").primaryKey(),
-  city: text("city").notNull().default('Barcelona'),
+  city: text("city"),
   district: text("district"),
   neighborhood: text("neighborhood").notNull(),
   security: decimal("security").notNull(),
