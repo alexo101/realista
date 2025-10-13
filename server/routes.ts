@@ -196,6 +196,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Agency Registration - Datos recibidos:', req.body);
       const { email, password, name, surname, subscriptionPlan, isYearlyBilling } = req.body;
 
+      // Validate admin name and surname
+      if (!name || name.trim().length < 2) {
+        return res.status(400).json({
+          message: "El nombre del administrador es requerido (mínimo 2 caracteres)"
+        });
+      }
+      if (!surname || surname.trim().length < 2) {
+        return res.status(400).json({
+          message: "El apellido del administrador es requerido (mínimo 2 caracteres)"
+        });
+      }
+
       // Check if email already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {

@@ -39,15 +39,15 @@ const formSchema = z.object({
   isYearlyBilling: z.boolean().default(false),
 }).refine(
   (data) => {
-    // If profileType is "agency", name and surname are required
+    // If profileType is "agency", name and surname are required with minimum length
     if (data.profileType === "agency") {
-      return data.name && data.name.trim().length > 0 && 
-             data.surname && data.surname.trim().length > 0;
+      return data.name && data.name.trim().length >= 2 && 
+             data.surname && data.surname.trim().length >= 2;
     }
     return true;
   },
   {
-    message: "El nombre y apellido del administrador son requeridos para agencias",
+    message: "El nombre y apellido del administrador son requeridos (mínimo 2 caracteres cada uno)",
     path: ["name"], // Error will be shown on name field
   }
 );
