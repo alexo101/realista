@@ -31,11 +31,26 @@ const formSchema = z.object({
       /^[a-zA-Z0-9._%+-ñÑáéíóúÁÉÍÓÚüÜ]+@[a-zA-Z0-9.-ñÑáéíóúÁÉÍÓÚüÜ]+\.[a-zA-Z]{2,}$/,
       "Por favor introduce un correo electrónico válido"
     ),
+  name: z.string().optional(),
+  surname: z.string().optional(),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   subscriptionPlan: z.string().optional(),
   subscriptionType: z.string().optional(),
   isYearlyBilling: z.boolean().default(false),
-});
+}).refine(
+  (data) => {
+    // If profileType is "agency", name and surname are required
+    if (data.profileType === "agency") {
+      return data.name && data.name.trim().length > 0 && 
+             data.surname && data.surname.trim().length > 0;
+    }
+    return true;
+  },
+  {
+    message: "El nombre y apellido del administrador son requeridos para agencias",
+    path: ["name"], // Error will be shown on name field
+  }
+);
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -54,6 +69,8 @@ export default function RegisterPage() {
     defaultValues: {
       profileType: "agent",
       email: "",
+      name: "",
+      surname: "",
       password: "",
       subscriptionPlan: "",
       subscriptionType: "",
@@ -110,6 +127,8 @@ export default function RegisterPage() {
       const payload = {
         email: data.email,
         password: data.password,
+        name: data.name || null,
+        surname: data.surname || null,
         isAgent: true, // Todos los usuarios son agentes en la base de datos
         isAdmin: isAdmin, // Para agencias y redes de agencias
         subscriptionPlan: data.subscriptionPlan || null,
@@ -263,6 +282,49 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Name and Surname fields - only for agency registration */}
+              {form.watch("profileType") === "agency" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre del administrador</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Juan"
+                            type="text"
+                            data-testid="input-admin-name"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="surname"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Apellido del administrador</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="García"
+                            type="text"
+                            data-testid="input-admin-surname"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
               <FormField
                 control={form.control}
