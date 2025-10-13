@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Building, Users, Star, Sparkles, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -82,9 +83,12 @@ export default function AgencyPlanRegister() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
+    agencyName: "",
+    city: "",
+    adminName: "",
+    adminSurname: "",
     email: "",
-    password: "",
-    confirmPassword: ""
+    password: ""
   });
 
   // Extract plan details from URL using window.location.search
@@ -109,10 +113,41 @@ export default function AgencyPlanRegister() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
+    // Validate agency name
+    if (!formData.agencyName || formData.agencyName.trim().length < 2) {
       toast({
         title: "Error",
-        description: "Las contraseñas no coinciden",
+        description: "El nombre de la agencia debe tener al menos 2 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate city
+    if (!formData.city) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona una ciudad",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate admin name
+    if (!formData.adminName || formData.adminName.trim().length < 2) {
+      toast({
+        title: "Error",
+        description: "El nombre del agente principal debe tener al menos 2 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate admin surname
+    if (!formData.adminSurname || formData.adminSurname.trim().length < 2) {
+      toast({
+        title: "Error",
+        description: "El apellido del agente principal debe tener al menos 2 caracteres",
         variant: "destructive"
       });
       return;
@@ -131,6 +166,10 @@ export default function AgencyPlanRegister() {
 
     try {
       const userData = await apiRequest('POST', '/api/auth/register-agency', {
+        agencyName: formData.agencyName.trim(),
+        city: formData.city,
+        name: formData.adminName.trim(),
+        surname: formData.adminSurname.trim(),
         email: formData.email,
         password: formData.password,
         subscriptionPlan: planId,
@@ -199,6 +238,61 @@ export default function AgencyPlanRegister() {
               {/* Registration Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
+                  <Label htmlFor="agencyName">Nombre de Agencia</Label>
+                  <Input
+                    id="agencyName"
+                    type="text"
+                    placeholder="Ej: Inmobiliaria Barcelona Centro"
+                    value={formData.agencyName}
+                    onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
+                    required
+                    data-testid="input-agency-name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="city">Ciudad</Label>
+                  <Select
+                    value={formData.city}
+                    onValueChange={(value) => setFormData({ ...formData, city: value })}
+                  >
+                    <SelectTrigger id="city" data-testid="select-city">
+                      <SelectValue placeholder="Selecciona una ciudad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Barcelona">Barcelona</SelectItem>
+                      <SelectItem value="Madrid">Madrid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminName">Nombre del agente principal</Label>
+                  <Input
+                    id="adminName"
+                    type="text"
+                    placeholder="Ej: Juan"
+                    value={formData.adminName}
+                    onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
+                    required
+                    data-testid="input-admin-name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminSurname">Apellido del agente principal</Label>
+                  <Input
+                    id="adminSurname"
+                    type="text"
+                    placeholder="Ej: García"
+                    value={formData.adminSurname}
+                    onChange={(e) => setFormData({ ...formData, adminSurname: e.target.value })}
+                    required
+                    data-testid="input-admin-surname"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="email">Email corporativo</Label>
                   <Input
                     id="email"
@@ -233,20 +327,6 @@ export default function AgencyPlanRegister() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                  <Input
-                    id="confirmPassword"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Repite tu contraseña"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    required
-                    minLength={8}
-                    data-testid="input-confirm-password"
-                  />
                 </div>
 
                 <Button 
