@@ -28,7 +28,7 @@ const formSchema = z.object({
   email: z.string()
     .min(1, "El correo electrónico es requerido")
     .regex(
-      /^[\p{L}0-9._%+-]+@[\p{L}0-9.-]+\.[\p{L}]{2,}$/u,
+      /^[a-zA-Z0-9._%+-ñÑáéíóúÁÉÍÓÚüÜ]+@[a-zA-Z0-9.-ñÑáéíóúÁÉÍÓÚüÜ]+\.[a-zA-Z]{2,}$/,
       "Por favor introduce un correo electrónico válido"
     ),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
