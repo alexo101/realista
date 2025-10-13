@@ -27,12 +27,7 @@ export function AgenciesList() {
   const updateAgencyMutation = useMutation({
     mutationFn: async (data: Partial<Agency> & { id: number }) => {
       const { id, ...agencyData } = data;
-      const response = await apiRequest('PATCH', `/api/agencies/${id}`, agencyData);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Error al actualizar la agencia');
-      }
-      return response.json();
+      return await apiRequest('PATCH', `/api/agencies/${id}`, agencyData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/agencies', user?.id] });
