@@ -194,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register-agency", async (req, res) => {
     try {
       console.log('Agency Registration - Datos recibidos:', req.body);
-      const { email, password, subscriptionPlan, isYearlyBilling } = req.body;
+      const { email, password, name, surname, subscriptionPlan, isYearlyBilling } = req.body;
 
       // Check if email already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -224,10 +224,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agency = await storage.createAgency(agencyData);
       console.log('Agency created:', agency.id);
 
-      // Create admin agent (agency_member type)
+      // Create admin agent (agency_member type) with admin's personal information
       const adminAgentData = {
         email,
         password,
+        name: name || null,
+        surname: surname || null,
         agentType: 'agency_member',
         city: null
       };
