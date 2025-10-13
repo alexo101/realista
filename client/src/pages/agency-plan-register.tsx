@@ -84,7 +84,7 @@ export default function AgencyPlanRegister() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     agencyName: "",
-    city: "",
+    city: undefined as string | undefined,
     adminName: "",
     adminSurname: "",
     email: "",
@@ -253,7 +253,7 @@ export default function AgencyPlanRegister() {
                 <div className="space-y-2">
                   <Label htmlFor="city">Ciudad</Label>
                   <Select
-                    value={formData.city}
+                    value={formData.city || ""}
                     onValueChange={(value) => setFormData({ ...formData, city: value })}
                   >
                     <SelectTrigger id="city" data-testid="select-city">
