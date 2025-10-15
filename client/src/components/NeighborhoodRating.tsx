@@ -326,12 +326,12 @@ export function NeighborhoodRating() {
           <Button
             key={location.display}
             data-testid={`neighborhood-button-${location.neighborhood.toLowerCase().replace(' ', '-')}`}
-            variant={selectedLocation.neighborhood === location.neighborhood && selectedLocation.city === location.city ? "default" : "outline"}
+            variant="outline"
             onClick={() => setSelectedLocation(location)}
-            className={`px-4 py-2 rounded-full text-sm ${
+            className={`px-4 py-2 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 ${
               selectedLocation.neighborhood === location.neighborhood && selectedLocation.city === location.city
-                ? "bg-blue-600 text-white hover:bg-blue-700" 
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                ? "border-2 border-[#0284c5e6]" 
+                : "border border-gray-300"
             }`}
           >
             {location.display}
