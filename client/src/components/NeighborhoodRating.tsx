@@ -391,7 +391,7 @@ export function NeighborhoodRating() {
                 <Button
                   onClick={handleSubmitRating}
                   disabled={ratingMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                  className="bg-[#0284c5e6] hover:bg-blue-700 text-white px-6 py-2"
                   data-testid="submit-rating-button"
                 >
                   {ratingMutation.isPending ? "Enviando..." : "Enviar valoración"}
