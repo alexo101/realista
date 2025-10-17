@@ -45,6 +45,7 @@ Preferred communication style: Simple, everyday language.
 - **Scalability**: Cloud storage for images, Neon serverless PostgreSQL with connection pooling.
 - **Data Integrity**: Drizzle ORM for schema management and migrations, database-enforced business rules.
 - **User Experience**: Focused on intuitive interfaces, clear error messaging, and responsive layouts.
+- **Session Consistency**: All registration endpoints (`/api/auth/register`, `/api/auth/register-agency`, `/api/auth/register-agent`) return consistent user data structure including `isAdmin` and `isClient` flags, ensuring frontend receives complete user context for proper UI rendering (October 2025).
 
 ## External Dependencies
 
