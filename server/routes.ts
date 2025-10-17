@@ -171,9 +171,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser(userData);
       console.log('Usuario creado:', user);
 
+      // Determine if user is client or agent
+      const isClient = !userData.isAgent;
+      const isAgent = userData.isAgent === true;
+      
+      // For regular registration, agents are not admins initially
+      const isAdmin = false;
+
+      // Create session with proper user object
+      (req as any).session.user = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
+        isAdmin: isAdmin,
+        isClient: isClient,
+        phone: user.phone,
+        agencyId: null,
+        agencyName: null
+      };
+
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
       // Enviar email de bienvenida
       const userName = user.name || 'Usuario';
-      const isAgentOrAgency = true; // En este punto todos son agentes
+      const isAgentOrAgency = isAgent;
 
       try {
         await sendWelcomeEmail(user.email, userName, isAgentOrAgency);
@@ -183,7 +210,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // No interrumpimos el flujo si falla el envío de email
       }
 
-      res.status(201).json(user);
+      // Return user data without password
+      const { password: _, ...userResponse } = user;
+      res.status(201).json({
+        ...userResponse,
+        isAdmin: isAdmin,
+        isClient: isClient
+      });
     } catch (error) {
       console.error('Error registering user:', error);
       res.status(400).json({ message: "Invalid registration data" });
@@ -303,6 +336,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...userResponse } = adminAgent;
       res.status(201).json({ 
         ...userResponse, 
+        isAdmin: true,
+        isClient: false,
         agencyId: agency.id,
         agencyName: agency.agencyName,
         role: 'admin',
@@ -342,10 +377,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agent = await storage.createUser(agentData);
       console.log('Agent created:', agent.id);
 
-      // Create session
-      (req as any).session.userId = agent.id;
-      (req as any).session.email = agent.email;
-      (req as any).session.agentType = 'independent';
+      // Create session with proper user object
+      (req as any).session.user = {
+        id: agent.id,
+        email: agent.email,
+        name: agent.name,
+        surname: agent.surname,
+        isAdmin: false, // Independent agents are not admins
+        isClient: false,
+        phone: agent.phone,
+        agencyId: null,
+        agencyName: null
+      };
       
       await new Promise((resolve, reject) => {
         (req as any).session.save((err: any) => {
@@ -364,7 +407,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return user data without password
       const { password: _, ...userResponse } = agent;
-      res.status(201).json(userResponse);
+      res.status(201).json({
+        ...userResponse,
+        isAdmin: false,
+        isClient: false
+      });
     } catch (error) {
       console.error('Error registering agent:', error);
       res.status(500).json({ message: "Error al registrar el agente" });
