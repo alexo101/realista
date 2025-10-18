@@ -45,6 +45,30 @@ export default function NeighborhoodResultsPage() {
   const [isSaveConfirming, setIsSaveConfirming] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   
+  // Check for pending saved search after login
+  useEffect(() => {
+    const pendingSavedSearch = sessionStorage.getItem('pendingSavedSearch');
+    if (pendingSavedSearch && user?.isClient) {
+      // User just logged in and had a pending search to save
+      const searchData = JSON.parse(pendingSavedSearch);
+      
+      // Clear the pending search immediately
+      sessionStorage.removeItem('pendingSavedSearch');
+      
+      // Show a toast to remind them
+      toast({
+        title: "Búsqueda lista para guardar",
+        description: "Haz clic en 'Guardar búsqueda' para guardar esta búsqueda en tu perfil",
+      });
+      
+      // Auto-trigger the save confirmation
+      setIsSaveConfirming(true);
+      setTimeout(() => {
+        setIsSaveConfirming(false);
+      }, 5000);
+    }
+  }, [user, toast]);
+  
   // Parse hierarchical neighborhood format with fallbacks
   let currentCity = 'Barcelona';
   let currentDistrict: string | undefined;
@@ -158,12 +182,30 @@ export default function NeighborhoodResultsPage() {
   });
 
   const handleSaveSearch = () => {
+    // Check if user is logged in and is a client
     if (!user?.isClient) {
+      // Store current search in sessionStorage to restore after login
+      const currentSearch = {
+        city: currentCity,
+        district: currentDistrict || null,
+        neighborhood: currentNeighborhood || null,
+        operationType: propertyFilters.operationType,
+        priceMin: propertyFilters.priceMin,
+        priceMax: propertyFilters.priceMax,
+        bedrooms: propertyFilters.bedrooms,
+        bathrooms: propertyFilters.bathrooms,
+        features: propertyFilters.features || [],
+        returnUrl: window.location.pathname + window.location.search // Full URL with query params
+      };
+      sessionStorage.setItem('pendingSavedSearch', JSON.stringify(currentSearch));
+      
       toast({
         title: "Inicia sesión",
         description: "Debes iniciar sesión como cliente para guardar búsquedas",
-        variant: "destructive",
       });
+      
+      // Redirect to login page
+      setLocation('/login');
       return;
     }
     
@@ -518,33 +560,31 @@ export default function NeighborhoodResultsPage() {
                 onViewModeChange={setViewMode}
                 showViewToggle={true}
                 saveSearchButton={
-                  user?.isClient ? (
-                    <Button
-                      onClick={handleSaveSearch}
-                      disabled={saveSearchMutation.isPending || isSaved}
-                      variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
-                      size="sm"
-                      data-testid="button-save-search"
-                      className="gap-2"
-                    >
-                      {isSaved ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          Guardada
-                        </>
-                      ) : isSaveConfirming ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          Confirmar guardar
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark className="h-4 w-4" />
-                          Guardar búsqueda
-                        </>
-                      )}
-                    </Button>
-                  ) : null
+                  <Button
+                    onClick={handleSaveSearch}
+                    disabled={saveSearchMutation.isPending || isSaved}
+                    variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
+                    size="sm"
+                    data-testid="button-save-search"
+                    className="gap-2"
+                  >
+                    {isSaved ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Guardada
+                      </>
+                    ) : isSaveConfirming ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Confirmar guardar
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="h-4 w-4" />
+                        Guardar búsqueda
+                      </>
+                    )}
+                  </Button>
                 }
               />
 

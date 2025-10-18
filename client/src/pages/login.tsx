@@ -56,7 +56,16 @@ export default function LoginPage() {
         duration: 3000,
       });
 
-      navigate("/");
+      // Check if there's a pending saved search
+      const pendingSavedSearch = sessionStorage.getItem('pendingSavedSearch');
+      if (pendingSavedSearch) {
+        const searchData = JSON.parse(pendingSavedSearch);
+        // Don't clear the pending search here - let the search page handle it
+        // Redirect back to the search page
+        navigate(searchData.returnUrl || "/");
+      } else {
+        navigate("/");
+      }
     } catch (error: any) {
       toast({
         title: "Error",
