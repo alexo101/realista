@@ -572,7 +572,8 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         name: user.name,
         isAdmin: isAdmin,
         isClient: isClient,
-        agencyId: agencyId
+        agencyId: agencyId,
+        subscriptionPlan: subscriptionPlan
       });
 
       // Store user data in session
