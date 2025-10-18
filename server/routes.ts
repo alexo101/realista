@@ -1698,10 +1698,14 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       if (hasNeighborhoods && typeof updatedQuery.neighborhoods === 'string') {
         const neighborhood = updatedQuery.neighborhoods;
 
-        // Si es búsqueda a nivel de ciudad, mostramos todas las agencias
+        // Si es búsqueda a nivel de ciudad, mostramos todas las agencias de esa ciudad
         if (isCityWideSearch(neighborhood)) {
-          console.log('Búsqueda para toda Barcelona - mostrando todas las agencias');
+          // Extract city name from the search query (e.g., "Barcelona" or "Barcelona (Todos los barrios)")
+          const cityMatch = neighborhood.match(/(Barcelona|Madrid)/i);
+          const cityName = cityMatch ? cityMatch[1] : 'Barcelona';
+          console.log(`Búsqueda para toda ${cityName} - mostrando todas las agencias de ${cityName}`);
           updatedQuery.showAll = 'true';
+          updatedQuery.city = cityName; // Add city filter
           delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
         } 
         // Si es un distrito o barrio específico, expandimos la búsqueda
