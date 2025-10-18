@@ -472,8 +472,10 @@ export class DatabaseStorage implements IStorage {
             sql`SELECT COUNT(r.*)::integer as agent_review_count, 
                        COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average
                 FROM reviews r 
-                JOIN agents a ON r.target_id = a.id 
-                WHERE a.agency_id = ${agency.id.toString()} AND r.target_type = 'agent'`
+                JOIN agency_agents aa ON r.target_id = aa.agent_id 
+                WHERE aa.agency_id = ${agency.id} 
+                  AND aa.left_at IS NULL 
+                  AND r.target_type = 'agent'`
           );
 
           const agentReviewCount = linkedAgentReviews.rows[0]?.agent_review_count || 0;
