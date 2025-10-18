@@ -609,7 +609,8 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         isClient,
         isAdmin,
         agencyId,
-        agencyName
+        agencyName,
+        subscriptionPlan
       });
     } catch (error) {
       console.error('Error during login:', error);
