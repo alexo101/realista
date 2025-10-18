@@ -767,6 +767,10 @@ export class DatabaseStorage implements IStorage {
       // Review statistics
       reviewCount: Number(reviewCount),
       reviewAverage: Number(reviewAverage),
+      // Subscription plan fields
+      subscriptionPlan: agency.subscriptionPlan,
+      isYearlyBilling: agency.isYearlyBilling,
+      seatsLimit: agency.seatsLimit,
       // Flag para diferenciar agentes de agencias
       isAgent: false,
       isAgency: true,
