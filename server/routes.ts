@@ -314,7 +314,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isClient: false,
         phone: null,
         agencyId: agency.id,
-        agencyName: agency.agencyName
+        agencyName: agency.agencyName,
+        subscriptionPlan: agency.subscriptionPlan
       };
       
       await new Promise((resolve, reject) => {
@@ -387,7 +388,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isClient: false,
         phone: agent.phone,
         agencyId: null,
-        agencyName: null
+        agencyName: null,
+        subscriptionPlan: agent.subscriptionPlan
       };
       
       await new Promise((resolve, reject) => {
@@ -544,18 +546,23 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       let isAdmin = false;
       let agencyId = null;
       let agencyName = null;
+      let subscriptionPlan = null;
       
       if (!isClient) {
         const agentRole = await storage.getAgentRole(user.id);
         isAdmin = agentRole.role === 'admin';
         agencyId = agentRole.agencyId;
         
-        // Get agency name if agent belongs to one
+        // Get agency name and subscription plan if agent belongs to one
         if (agencyId) {
           const agency = await storage.getAgencyById(agencyId);
           if (agency) {
             agencyName = agency.agencyName;
+            subscriptionPlan = agency.subscriptionPlan;
           }
+        } else {
+          // For independent agents, get their personal subscription plan
+          subscriptionPlan = user.subscriptionPlan || null;
         }
       }
 
@@ -578,7 +585,8 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
         isClient: isClient,
         phone: user.phone,
         agencyId: agencyId,
-        agencyName: agencyName
+        agencyName: agencyName,
+        subscriptionPlan: subscriptionPlan
       };
 
       // Save session to database

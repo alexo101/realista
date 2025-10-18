@@ -37,6 +37,9 @@ interface User {
   // Campos adicionales para clientes
   phone?: string;
   
+  // Subscription plan (for agents and agencies)
+  subscriptionPlan?: 'basica' | 'estandar' | 'premium' | null;
+  
   // Review statistics
   reviewCount?: number; // Número total de reseñas recibidas
   reviewAverage?: number; // Puntuación promedio de las reseñas
