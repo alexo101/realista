@@ -112,6 +112,7 @@ export interface IStorage {
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
   getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]>;
   getPropertiesByAgency(agencyId: number): Promise<Property[]>;
+  getActivePropertiesCount(agencyId: number): Promise<number>;
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(id: number, property: InsertProperty): Promise<Property>;
@@ -1353,6 +1354,44 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error al obtener propiedades para la agencia ${agencyId}:`, error);
       return [];
+    }
+  }
+
+  async getActivePropertiesCount(agencyId: number): Promise<number> {
+    try {
+      // Get agency agents
+      const agencyAgents = await this.getAgencyAgents(agencyId);
+      const agentIds = agencyAgents.map(agent => agent.id);
+
+      // Count distinct active properties that are either:
+      // 1. Directly linked to the agency (agencyId matches), OR
+      // 2. Belong to agency agents
+      // This avoids double-counting properties that have both agencyId and agentId set
+      let whereCondition;
+      if (agentIds.length > 0) {
+        whereCondition = and(
+          sql`(${properties.agencyId} = ${agencyId} OR ${properties.agentId} IN (${sql.join(agentIds.map(id => sql`${id}`), sql`, `)}))`,
+          eq(properties.isActive, true)
+        );
+      } else {
+        whereCondition = and(
+          eq(properties.agencyId, agencyId),
+          eq(properties.isActive, true)
+        );
+      }
+
+      const result = await db
+        .select({ count: sql<number>`count(DISTINCT ${properties.id})::int` })
+        .from(properties)
+        .where(whereCondition);
+
+      const totalCount = result[0]?.count ?? 0;
+      console.log(`Active properties count for agency ${agencyId}: ${totalCount} (distinct count, no duplicates)`);
+      
+      return totalCount;
+    } catch (error) {
+      console.error(`Error counting active properties for agency ${agencyId}:`, error);
+      return 0;
     }
   }
 

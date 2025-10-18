@@ -737,6 +737,29 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     try {
       console.log('Attempting to create property with data:', req.body);
       const property = insertPropertySchema.parse(req.body);
+      
+      // Check active properties limit for agencies
+      if (property.agencyId) {
+        const agency = await storage.getAgencyById(property.agencyId);
+        if (agency) {
+          const activePropertiesLimit = agency.activePropertiesLimit ?? 2; // Default to basica plan limit
+          
+          // -1 means unlimited
+          if (activePropertiesLimit !== -1) {
+            const currentActiveCount = await storage.getActivePropertiesCount(property.agencyId);
+            
+            if (currentActiveCount >= activePropertiesLimit) {
+              return res.status(403).json({ 
+                message: `Has alcanzado el límite de ${activePropertiesLimit} propiedades activas de tu plan. Desactiva alguna propiedad existente o mejora tu plan en Realista Pro.`,
+                limitReached: true,
+                currentCount: currentActiveCount,
+                limit: activePropertiesLimit
+              });
+            }
+          }
+        }
+      }
+      
       const result = await storage.createProperty(property);
       console.log('Property created successfully:', result);
       res.status(201).json(result);

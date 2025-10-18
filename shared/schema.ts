@@ -34,6 +34,7 @@ export const agencies = pgTable("agencies", {
   subscriptionPlan: text("subscription_plan"), // "basica", "pequeña", "mediana", "lider"
   isYearlyBilling: boolean("is_yearly_billing").default(false),
   seatsLimit: integer("seats_limit"), // Max agents based on plan
+  activePropertiesLimit: integer("active_properties_limit"), // Max active properties based on plan
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -499,3 +500,29 @@ export const insertSavedSearchSchema = createInsertSchema(savedSearches).omit({
 });
 export type SavedSearch = typeof savedSearches.$inferSelect;
 export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;
+
+// Subscription plan limits configuration
+export const SUBSCRIPTION_LIMITS = {
+  basica: {
+    seats: 1,
+    activeProperties: 2,
+    reviewRequests: 0, // No review requests allowed
+  },
+  pequeña: {
+    seats: 2,
+    activeProperties: 10,
+    reviewRequests: -1, // -1 = unlimited
+  },
+  mediana: {
+    seats: 6,
+    activeProperties: 30,
+    reviewRequests: -1, // -1 = unlimited
+  },
+  lider: {
+    seats: -1, // -1 = unlimited
+    activeProperties: -1, // -1 = unlimited
+    reviewRequests: -1, // -1 = unlimited
+  },
+} as const;
+
+export type SubscriptionPlan = keyof typeof SUBSCRIPTION_LIMITS;
