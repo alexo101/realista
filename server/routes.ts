@@ -2129,7 +2129,43 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       const id = parseInt(req.params.id);
       const userData = req.body;
       const updatedUser = await storage.updateUser(id, userData);
-      res.json(updatedUser);
+      
+      // Determine user role and admin status (consistent with login/register endpoints)
+      const isClient = false; // Users in agents table are not clients
+      let isAdmin = false;
+      let agencyId = null;
+      let agencyName = null;
+      let subscriptionPlan = null;
+      
+      // Check if user is an admin of an agency
+      const agentRole = await storage.getAgentRole(updatedUser.id);
+      isAdmin = agentRole.role === 'admin';
+      agencyId = agentRole.agencyId;
+      
+      // Get agency details if agent belongs to one
+      if (agencyId) {
+        const agency = await storage.getAgencyById(agencyId);
+        if (agency) {
+          agencyName = agency.agencyName;
+          subscriptionPlan = agency.subscriptionPlan;
+        }
+      }
+      
+      // If user is not part of an agency but is an independent agent, use their own subscription
+      if (!agencyId && updatedUser.agentType === 'independent') {
+        subscriptionPlan = updatedUser.subscriptionPlan;
+      }
+      
+      // Return user data with consistent structure (matching login/register endpoints)
+      const { password: _, ...userResponse } = updatedUser;
+      res.json({
+        ...userResponse,
+        isAdmin,
+        isClient,
+        agencyId,
+        agencyName,
+        subscriptionPlan
+      });
     } catch (error) {
       console.error('Error updating user:', error);
       res.status(500).json({ message: "Failed to update user profile" });
