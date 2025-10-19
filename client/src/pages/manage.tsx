@@ -164,15 +164,11 @@ export default function ManagePage() {
 
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('POST', '/api/properties', {
+      // apiRequest already returns parsed JSON data, not a Response object
+      return await apiRequest('POST', '/api/properties', {
         ...data,
         agentId: user!.id,
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create property');
-      }
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
@@ -183,15 +179,11 @@ export default function ManagePage() {
 
   const updatePropertyMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('PATCH', `/api/properties/${editingProperty?.id}`, {
+      // apiRequest already returns parsed JSON data, not a Response object
+      return await apiRequest('PATCH', `/api/properties/${editingProperty?.id}`, {
         ...data,
         agentId: user!.id,
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update property');
-      }
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
@@ -201,15 +193,11 @@ export default function ManagePage() {
 
   const createClientMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('POST', '/api/clients', {
+      // apiRequest already returns parsed JSON data, not a Response object
+      return await apiRequest('POST', '/api/clients', {
         ...data,
         agentId: user!.id,
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create client');
-      }
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
@@ -220,15 +208,11 @@ export default function ManagePage() {
 
   const updateClientMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('PATCH', `/api/clients/${editingClient?.id}`, {
+      // apiRequest already returns parsed JSON data, not a Response object
+      return await apiRequest('PATCH', `/api/clients/${editingClient?.id}`, {
         ...data,
         agentId: user!.id,
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update client');
-      }
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
@@ -239,13 +223,9 @@ export default function ManagePage() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!user) return null;
-
-      const response = await apiRequest('PATCH', `/api/users/${user.id}`, data);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Error al actualizar el perfil');
-      }
-      return response.json();
+      
+      // apiRequest already returns parsed JSON data, not a Response object
+      return await apiRequest('PATCH', `/api/users/${user.id}`, data);
     },
     onSuccess: (updatedUser) => {
       if (updatedUser) {
@@ -275,12 +255,8 @@ export default function ManagePage() {
     mutationFn: async (data: any) => {
       if (!currentAgency) return null;
 
-      const response = await apiRequest('PATCH', `/api/agencies/${currentAgency.id}`, data);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Error al actualizar la agencia');
-      }
-      return response.json();
+      // apiRequest already returns parsed JSON data, not a Response object
+      return await apiRequest('PATCH', `/api/agencies/${currentAgency.id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/agencies?adminAgentId=${user?.id}`] });
@@ -307,15 +283,11 @@ export default function ManagePage() {
   // Mutation for sending review requests
   const sendReviewRequestMutation = useMutation({
     mutationFn: async ({ clientId, agentId }: { clientId: number; agentId: number }) => {
-      const response = await apiRequest('POST', '/api/review-requests', {
+      // apiRequest already returns parsed JSON data, not a Response object
+      return await apiRequest('POST', '/api/review-requests', {
         clientId,
         agentId,
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Error al enviar la solicitud');
-      }
-      return response.json();
     },
     onSuccess: () => {
       toast({
