@@ -18,6 +18,7 @@ import { z } from "zod";
 // Agency table with agency-level subscription
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
+  slug: text("slug").unique(), // SEO-friendly URL slug (nullable initially, will be populated)
   agencyName: text("agency_name").notNull(),
   agencyAddress: text("agency_address"),
   agencyDescription: text("agency_description"),
@@ -43,6 +44,7 @@ export const agencies = pgTable("agencies", {
 // Agents table - supports both independent and agency-member agents
 export const agents = pgTable("agents", {
   id: serial("id").primaryKey(),
+  slug: text("slug").unique(), // SEO-friendly URL slug (nullable initially, will be populated)
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   name: text("name"),
@@ -69,6 +71,7 @@ export const agents = pgTable("agents", {
 
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
+  slug: text("slug").unique(), // SEO-friendly URL slug (nullable initially, will be populated)
   reference: text("reference"), // Nuevo campo de referencia para identificación interna
   address: text("address").notNull(),
   // Campos adicionales de dirección (privados, no se muestran públicamente)
