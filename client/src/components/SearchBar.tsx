@@ -353,9 +353,11 @@ export function SearchBar() {
                   placeholder={'Buscar ' + (searchType === 'agencies' ? 'agencias' : 'agentes') + ' por nombre...'}
                   onSelect={(result) => {
                     // En vez de solo actualizar el estado, navegamos directamente al perfil
+                    // Use slug if available, fall back to ID
+                    const identifier = (result as any).slug || result.id;
                     const targetPath = searchType === 'agencies'
-                      ? '/agencias/' + result.id
-                      : '/agentes/' + result.id;
+                      ? '/agencias/' + identifier
+                      : '/agentes/' + identifier;
 
                     console.log('SearchBar - navigating to profile:', targetPath);
                     // Use pushState to navigate without full page refresh

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 // Definición de tipos
 interface SearchResult {
   id: number;
+  slug?: string;
   name: string | null;
   surname: string | null;
   email: string;

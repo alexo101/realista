@@ -19,6 +19,7 @@ import { useLocation } from "wouter";
 
 interface AgencyAgent {
   id: number;
+  slug?: string;
   agencyId: number;
   agentName: string;
   agentSurname: string;
@@ -669,7 +670,7 @@ export default function AgencyProfile() {
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-4">Administrador de la Agencia</h3>
               <div className="grid grid-cols-1 gap-6">
-                <Link href={`/agentes/${agency.adminAgentId}`}>
+                <Link href={`/agentes/${(agency as any).adminAgentSlug || agency.adminAgentId}`}>
                   <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center text-center">
@@ -714,7 +715,7 @@ export default function AgencyProfile() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {linkedAgents.map(agent => (
-                <Link key={agent.id} href={`/agentes/${agent.id}`}>
+                <Link key={agent.id} href={`/agentes/${agent.slug || agent.id}`}>
                   <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex flex-col items-center text-center">

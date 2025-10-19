@@ -47,6 +47,7 @@ import { format } from "date-fns";
 
 interface FavoriteAgent {
   id: number;
+  slug?: string;
   name: string;
   surname: string;
   email: string;
@@ -921,7 +922,7 @@ export default function ClientProfile() {
                               )}
                               <Button 
                                 size="sm" 
-                                onClick={() => navigate(`/agentes/${agent.id}`)}
+                                onClick={() => navigate(`/agentes/${agent.slug || agent.id}`)}
                               >
                                 Ver perfil
                               </Button>

@@ -57,6 +57,7 @@ interface Agent {
   avatar?: string;
   agencyName?: string | null;
   agencyId?: number;
+  agencySlug?: string;
   influence_neighborhoods?: string[];
   isAgent: boolean;
   properties?: Property[];
@@ -353,7 +354,7 @@ export default function AgentProfile() {
           <div className="flex items-center text-sm text-gray-500 mb-2">
             <Badge variant="outline" className="mr-2">Agente inmobiliario</Badge>
             {agent.agencyName && agent.agencyId && (
-              <Link href={`/agencias/${agent.agencyId}`}>
+              <Link href={`/agencias/${agent.agencySlug || agent.agencyId}`}>
                 <Badge variant="outline" className="hover:bg-primary hover:text-white transition-colors cursor-pointer">
                   <Building2 className="h-3 w-3 mr-1" />
                   {agent.agencyName}
