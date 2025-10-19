@@ -46,6 +46,13 @@ Preferred communication style: Simple, everyday language.
 - **Data Integrity**: Drizzle ORM for schema management and migrations, database-enforced business rules.
 - **User Experience**: Focused on intuitive interfaces, clear error messaging, and responsive layouts.
 - **Session Consistency**: All registration endpoints (`/api/auth/register`, `/api/auth/register-agency`, `/api/auth/register-agent`) return consistent user data structure including `isAdmin` and `isClient` flags, ensuring frontend receives complete user context for proper UI rendering (October 2025).
+- **Spanish SEO-Optimized URLs** (October 2025):
+    - **Slug-Based Routing**: All entities (agents, agencies, properties) have auto-generated slugs stored in database.
+    - **Slug Generation**: `shared/slug-utils.ts` handles Spanish characters (á, é, í, ó, ú, ñ) and creates SEO-friendly URLs.
+    - **Spanish Route Translation**: All routes use Spanish terminology (`/agencias`, `/agentes`, `/inmueble`, `/buscar`, `/barrio`, `/gestionar`, `/iniciar-sesion`, `/registrarse`).
+    - **Dual Identifier Support**: Backend routes accept both slug and numeric ID for backward compatibility.
+    - **Auto-Slug Creation**: New entities automatically receive slugs on creation via storage layer.
+    - **URL Examples**: `/agencias/lider-agencia`, `/agentes/rodolfo-lider-8`, `/inmueble/atico-gracia-AT-01-3`.
 
 ## External Dependencies
 
