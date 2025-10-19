@@ -39,8 +39,10 @@ interface Agent {
 }
 
 export default function PropertyPage() {
-  const { id } = useParams<{ id: string }>();
-  const propertyId = parseInt(id);
+  const params = useParams<{ slug?: string; id?: string }>();
+  const identifier = params.slug || params.id;
+  // Try to parse as ID if it's numeric, otherwise use identifier as slug
+  const propertyId = !isNaN(parseInt(identifier!)) ? parseInt(identifier!) : undefined;
   const [isFavorite, setIsFavorite] = useState(false);
   const [showFraudDialog, setShowFraudDialog] = useState(false);
   const [fraudCount, setFraudCount] = useState(0);
@@ -53,7 +55,8 @@ export default function PropertyPage() {
   const queryClient = useQueryClient();
 
   const { data: property, isLoading: propertyLoading } = useQuery<ExtendedProperty>({
-    queryKey: [`/api/properties/${propertyId}`],
+    queryKey: [`/api/properties/${identifier}`],
+    enabled: !!identifier,
   });
 
   const { data: agent, isLoading: agentLoading } = useQuery<Agent>({
@@ -63,14 +66,14 @@ export default function PropertyPage() {
 
   // Check if property is favorited
   const { data: favoriteStatus } = useQuery<{ isFavorite: boolean }>({
-    queryKey: [`/api/clients/${user?.id}/favorites/properties/${propertyId}/status`],
-    enabled: !!user?.isClient && !!propertyId,
+    queryKey: [`/api/clients/${user?.id}/favorites/properties/${identifier}/status`],
+    enabled: !!user?.isClient && !!identifier,
   });
 
   // Get fraud count for property
   const { data: fraudCountData } = useQuery<{ fraudCount: number }>({
-    queryKey: [`/api/properties/${propertyId}/fraud-count`],
-    enabled: !!propertyId,
+    queryKey: [`/api/properties/${identifier}/fraud-count`],
+    enabled: !!identifier,
   });
 
   useEffect(() => {
@@ -121,7 +124,7 @@ export default function PropertyPage() {
 
       // Also invalidate the status query for this specific property
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/clients/${user?.id}/favorites/properties/${propertyId}/status`] 
+        queryKey: [`/api/clients/${user?.id}/favorites/properties/${identifier}/status`] 
       });
 
       toast({
@@ -161,14 +164,14 @@ export default function PropertyPage() {
       return;
     }
 
-    if (!id) return;
-    toggleFavoriteMutation.mutate(id);
+    if (!identifier) return;
+    toggleFavoriteMutation.mutate(identifier);
   };
 
   // Fraud reporting mutation
   const reportFraudMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/properties/${propertyId}/report-fraud`, {
+      const response = await fetch(`/api/properties/${identifier}/report-fraud`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -188,7 +191,7 @@ export default function PropertyPage() {
       
       // Invalidate fraud count query
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/properties/${propertyId}/fraud-count`] 
+        queryKey: [`/api/properties/${identifier}/fraud-count`] 
       });
 
       toast({

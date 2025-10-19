@@ -928,9 +928,23 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   });
 
   // Get clients by agent ID (for event form)
-  app.get("/api/agents/:agentId/clients", async (req, res) => {
+  app.get("/api/agents/:identifier/clients", async (req, res) => {
     try {
-      const agentId = parseInt(req.params.agentId);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agentId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agent first to get the ID
+        const agent = await storage.getAgentBySlug(identifier);
+        if (!agent) {
+          return res.status(404).json({ message: "Agent not found" });
+        }
+        agentId = agent.id;
+      } else {
+        agentId = id;
+      }
+
       const clients = await storage.getClientsByAgent(agentId);
       res.json(clients);
     } catch (error) {
@@ -1172,9 +1186,23 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
-  app.get("/api/agents/:agentId/visit-requests", async (req, res) => {
+  app.get("/api/agents/:identifier/visit-requests", async (req, res) => {
     try {
-      const agentId = parseInt(req.params.agentId);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agentId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agent first to get the ID
+        const agent = await storage.getAgentBySlug(identifier);
+        if (!agent) {
+          return res.status(404).json({ message: "Agent not found" });
+        }
+        agentId = agent.id;
+      } else {
+        agentId = id;
+      }
+
       const visitRequests = await storage.getPropertyVisitRequestsByAgent(agentId);
       res.status(200).json(visitRequests);
     } catch (error) {
@@ -1276,9 +1304,23 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
-  app.get("/api/agents/:agentId/events", async (req, res) => {
+  app.get("/api/agents/:identifier/events", async (req, res) => {
     try {
-      const agentId = parseInt(req.params.agentId);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agentId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agent first to get the ID
+        const agent = await storage.getAgentBySlug(identifier);
+        if (!agent) {
+          return res.status(404).json({ message: "Agent not found" });
+        }
+        agentId = agent.id;
+      } else {
+        agentId = id;
+      }
+
       const { startDate, endDate, clientId } = req.query;
 
       const events = await storage.getAgentEvents(
@@ -1694,9 +1736,23 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   });
 
   // Ruta para obtener los agentes vinculados a una agencia
-  app.get("/api/agencies/:id/agents", async (req, res) => {
+  app.get("/api/agencies/:identifier/agents", async (req, res) => {
     try {
-      const agencyId = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agencyId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agency first to get the ID
+        const agency = await storage.getAgencyBySlug(identifier);
+        if (!agency) {
+          return res.status(404).json({ message: "Agency not found" });
+        }
+        agencyId = agency.id;
+      } else {
+        agencyId = id;
+      }
+
       console.log(`Fetching agents for agency ID: ${agencyId}`);
 
       const agents = await storage.getAgencyAgents(agencyId);
@@ -2082,16 +2138,26 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   });
 
   // Obtener propiedades por agente
-  app.get("/api/agents/:id/properties", async (req, res) => {
+  app.get("/api/agents/:identifier/properties", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agentId;
       if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid agent ID" });
+        // It's a slug, lookup the agent first to get the ID
+        const agent = await storage.getAgentBySlug(identifier);
+        if (!agent) {
+          return res.status(404).json({ message: "Agent not found" });
+        }
+        agentId = agent.id;
+      } else {
+        agentId = id;
       }
 
-      console.log(`Fetching properties for agent ID: ${id} from route handler`);
-      const properties = await storage.getPropertiesByAgent(id);
-      console.log(`Returning ${properties.length} properties for agent ID: ${id}`);
+      console.log(`Fetching properties for agent ID: ${agentId} from route handler`);
+      const properties = await storage.getPropertiesByAgent(agentId);
+      console.log(`Returning ${properties.length} properties for agent ID: ${agentId}`);
       res.json(properties);
     } catch (error) {
       console.error('Error getting agent properties:', error);
@@ -2123,14 +2189,24 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   });
 
   // Obtener propiedades por agencia
-  app.get("/api/agencies/:id/properties", async (req, res) => {
+  app.get("/api/agencies/:identifier/properties", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agencyId;
       if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid agency ID" });
+        // It's a slug, lookup the agency first to get the ID
+        const agency = await storage.getAgencyBySlug(identifier);
+        if (!agency) {
+          return res.status(404).json({ message: "Agency not found" });
+        }
+        agencyId = agency.id;
+      } else {
+        agencyId = id;
       }
 
-      const properties = await storage.getPropertiesByAgency(id);
+      const properties = await storage.getPropertiesByAgency(agencyId);
       res.json(properties);
     } catch (error) {
       console.error('Error getting agency properties:', error);
@@ -2379,9 +2455,23 @@ Gracias!
     }
   });
 
-  app.get("/api/agents/:id/reviews", async (req, res) => {
+  app.get("/api/agents/:identifier/reviews", async (req, res) => {
     try {
-      const agentId = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agentId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agent first to get the ID
+        const agent = await storage.getAgentBySlug(identifier);
+        if (!agent) {
+          return res.status(404).json({ message: "Agent not found" });
+        }
+        agentId = agent.id;
+      } else {
+        agentId = id;
+      }
+
       const reviews = await storage.getAgentReviews(agentId);
       res.status(200).json(reviews);
     } catch (error) {
@@ -2390,9 +2480,23 @@ Gracias!
     }
   });
 
-  app.get("/api/agencies/:id/reviews", async (req, res) => {
+  app.get("/api/agencies/:identifier/reviews", async (req, res) => {
     try {
-      const agencyId = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agencyId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agency first to get the ID
+        const agency = await storage.getAgencyBySlug(identifier);
+        if (!agency) {
+          return res.status(404).json({ message: "Agency not found" });
+        }
+        agencyId = agency.id;
+      } else {
+        agencyId = id;
+      }
+
       const reviews = await storage.getAgencyReviews(agencyId);
       res.status(200).json(reviews);
     } catch (error) {
@@ -2401,9 +2505,23 @@ Gracias!
     }
   });
 
-  app.post("/api/agents/:id/reviews", async (req, res) => {
+  app.post("/api/agents/:identifier/reviews", async (req, res) => {
     try {
-      const agentId = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agentId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agent first to get the ID
+        const agent = await storage.getAgentBySlug(identifier);
+        if (!agent) {
+          return res.status(404).json({ message: "Agent not found" });
+        }
+        agentId = agent.id;
+      } else {
+        agentId = id;
+      }
+
       const review = await storage.createAgentReview({
         ...req.body,
         targetId: agentId,
@@ -2417,9 +2535,23 @@ Gracias!
     }
   });
 
-  app.post("/api/agencies/:id/reviews", async (req, res) => {
+  app.post("/api/agencies/:identifier/reviews", async (req, res) => {
     try {
-      const agencyId = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agencyId;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agency first to get the ID
+        const agency = await storage.getAgencyBySlug(identifier);
+        if (!agency) {
+          return res.status(404).json({ message: "Agency not found" });
+        }
+        agencyId = agency.id;
+      } else {
+        agencyId = id;
+      }
+
       const review = await storage.createAgentReview({
         ...req.body,
         targetId: agencyId,

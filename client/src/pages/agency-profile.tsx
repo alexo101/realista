@@ -91,8 +91,9 @@ function AgentCard({ agent }: { agent: AgencyAgent }) {
 }
 
 export default function AgencyProfile() {
-  // Obtenemos el ID de la agencia de los parámetros de la URL
-  const { id } = useParams<{ id: string }>();
+  // Obtenemos el ID o slug de la agencia de los parámetros de la URL
+  const params = useParams<{ slug?: string; id?: string }>();
+  const identifier = params.slug || params.id;
   
   // Estado para la pestaña activa y favoritos
   const [activeTab, setActiveTab] = useState("overview");
@@ -140,7 +141,7 @@ export default function AgencyProfile() {
       
       // Also invalidate the status query for this specific agency
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/clients/${user?.id}/favorites/agencies/${id}/status`] 
+        queryKey: [`/api/clients/${user?.id}/favorites/agencies/${identifier}/status`] 
       });
       
       toast({
@@ -180,8 +181,8 @@ export default function AgencyProfile() {
       return;
     }
     
-    if (id) {
-      toggleFavoriteMutation.mutate(id);
+    if (identifier) {
+      toggleFavoriteMutation.mutate(identifier);
     }
   };
 
@@ -209,35 +210,36 @@ export default function AgencyProfile() {
 
   // Consulta para obtener los datos de la agencia
   const { data: agency, isLoading, error } = useQuery<Agency>({
-    queryKey: [`/api/agencies/${id}`],
+    queryKey: [`/api/agencies/${identifier}`],
     queryFn: async () => {
-      const response = await fetch(`/api/agencies/${id}`);
+      const response = await fetch(`/api/agencies/${identifier}`);
       if (!response.ok) {
         throw new Error("Failed to fetch agency");
       }
       return response.json();
     },
+    enabled: !!identifier,
   });
   
   // Consulta para obtener las reseñas directas de la agencia
   const { data: agencyReviews = [] } = useQuery({
-    queryKey: [`/api/agencies/${id}/reviews`],
+    queryKey: [`/api/agencies/${identifier}/reviews`],
     queryFn: async () => {
-      const response = await fetch(`/api/agencies/${id}/reviews`);
+      const response = await fetch(`/api/agencies/${identifier}/reviews`);
       if (!response.ok) {
         throw new Error("Failed to fetch agency reviews");
       }
       return response.json();
     },
-    // Solo ejecutar cuando tenemos un id de agencia
-    enabled: !!id,
+    // Solo ejecutar cuando tenemos un identifier de agencia
+    enabled: !!identifier,
   });
   
   // Consulta para obtener los agentes vinculados a esta agencia
   const { data: linkedAgents = [] } = useQuery({
-    queryKey: [`/api/agencies/${id}/agents`],
+    queryKey: [`/api/agencies/${identifier}/agents`],
     queryFn: async () => {
-      const response = await fetch(`/api/agencies/${id}/agents`);
+      const response = await fetch(`/api/agencies/${identifier}/agents`);
       if (!response.ok) {
         throw new Error("Failed to fetch linked agents");
       }
@@ -255,21 +257,21 @@ export default function AgencyProfile() {
         createdAt: agent.createdAt
       }));
     },
-    // Solo ejecutar cuando tenemos un id de agencia
-    enabled: !!id,
+    // Solo ejecutar cuando tenemos un identifier de agencia
+    enabled: !!identifier,
   });
   
   // Consulta para obtener las propiedades de la agencia con optimización de carga
   const { data: agencyProperties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
-    queryKey: [`/api/agencies/${id}/properties`],
+    queryKey: [`/api/agencies/${identifier}/properties`],
     queryFn: async () => {
-      if (!id) {
+      if (!identifier) {
         return [];
       }
       
       try {
         // Usamos la ruta dedicada para obtener todas las propiedades vinculadas a la agencia
-        const response = await fetch(`/api/agencies/${id}/properties`);
+        const response = await fetch(`/api/agencies/${identifier}/properties`);
         if (!response.ok) {
           console.error('Error fetching agency properties:', response.statusText);
           return [];
@@ -280,7 +282,7 @@ export default function AgencyProfile() {
         return [];
       }
     },
-    enabled: !!id && activeTab === 'properties', // Solo cargar cuando se necesite
+    enabled: !!identifier && activeTab === 'properties', // Solo cargar cuando se necesite
     staleTime: 300000, // 5 minutos de cache
     gcTime: 600000, // 10 minutos en memoria
     refetchOnWindowFocus: false,
@@ -290,17 +292,17 @@ export default function AgencyProfile() {
 
   // Query para verificar si la agencia ya está en favoritos
   const { data: favoriteStatus } = useQuery({
-    queryKey: [`/api/clients/${user?.id}/favorites/agencies/${id}/status`],
+    queryKey: [`/api/clients/${user?.id}/favorites/agencies/${identifier}/status`],
     queryFn: async () => {
-      if (!user || !user.isClient || !id) return { isFavorite: false };
+      if (!user || !user.isClient || !identifier) return { isFavorite: false };
       
-      const response = await fetch(`/api/clients/${user.id}/favorites/agencies/${id}/status`);
+      const response = await fetch(`/api/clients/${user.id}/favorites/agencies/${identifier}/status`);
       if (!response.ok) {
         return { isFavorite: false };
       }
       return response.json();
     },
-    enabled: !!user?.isClient && !!id
+    enabled: !!user?.isClient && !!identifier
   });
 
   // Efecto para actualizar el estado de favorito cuando se carga la página
@@ -310,10 +312,10 @@ export default function AgencyProfile() {
     }
   }, [favoriteStatus]);
 
-  // Efecto para desplazar al inicio de la página cuando cambia el ID
+  // Efecto para desplazar al inicio de la página cuando cambia el identifier
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [identifier]);
 
   // Si los datos están cargando, mostramos un esqueleto de carga
   if (isLoading) {

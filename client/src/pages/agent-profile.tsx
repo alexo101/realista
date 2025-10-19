@@ -96,8 +96,9 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 export default function AgentProfile() {
-  // Obtenemos el ID del agente de los parámetros de la URL
-  const { id } = useParams<{ id: string }>();
+  // Obtenemos el slug/ID del agente de los parámetros de la URL
+  const params = useParams<{ slug?: string; id?: string }>();
+  const identifier = params.slug || params.id;
 
   // Estados para la pestaña activa y el modal de reseñas
   const [activeTab, setActiveTab] = useState("overview");
@@ -142,7 +143,7 @@ export default function AgentProfile() {
       
       // Also invalidate the status query for this specific agent
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/clients/${user?.id}/favorites/agents/${id}/status`] 
+        queryKey: [`/api/clients/${user?.id}/favorites/agents/${identifier}/status`] 
       });
       
       toast({
@@ -210,9 +211,9 @@ export default function AgentProfile() {
 
   // Consulta para obtener los datos del agente
   const { data: agent, isLoading, error } = useQuery<Agent>({
-    queryKey: [`/api/agents/${id}`],
+    queryKey: [`/api/agents/${identifier}`],
     queryFn: async () => {
-      const response = await fetch(`/api/agents/${id}`);
+      const response = await fetch(`/api/agents/${identifier}`);
       if (!response.ok) {
         throw new Error("Failed to fetch agent");
       }
@@ -222,30 +223,30 @@ export default function AgentProfile() {
 
   // Explicitly fetch properties for this agent
   const { data: agentProperties = [] } = useQuery<Property[]>({
-    queryKey: [`/api/agents/${id}/properties`],
+    queryKey: [`/api/agents/${identifier}/properties`],
     queryFn: async () => {
-      const response = await fetch(`/api/agents/${id}/properties`);
+      const response = await fetch(`/api/agents/${identifier}/properties`);
       if (!response.ok) {
         return [];
       }
       return response.json();
     },
-    enabled: !!id
+    enabled: !!identifier
   });
 
   // Query para verificar si el agente ya está en favoritos
   const { data: favoriteStatus } = useQuery({
-    queryKey: [`/api/clients/${user?.id}/favorites/agents/${id}/status`],
+    queryKey: [`/api/clients/${user?.id}/favorites/agents/${identifier}/status`],
     queryFn: async () => {
-      if (!user || !user.isClient || !id) return { isFavorite: false };
+      if (!user || !user.isClient || !identifier) return { isFavorite: false };
       
-      const response = await fetch(`/api/clients/${user.id}/favorites/agents/${id}/status`);
+      const response = await fetch(`/api/clients/${user.id}/favorites/agents/${identifier}/status`);
       if (!response.ok) {
         return { isFavorite: false };
       }
       return response.json();
     },
-    enabled: !!user?.isClient && !!id
+    enabled: !!user?.isClient && !!identifier
   });
 
   // Efecto para actualizar el estado de favorito cuando se carga la página
@@ -258,13 +259,13 @@ export default function AgentProfile() {
   // Efecto para desplazar al inicio de la página cuando cambia el ID
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [identifier]);
 
   // Consulta para obtener las reseñas del agente
   const { data: reviews = [] } = useQuery<Review[]>({
-    queryKey: [`/api/agents/${id}/reviews`],
+    queryKey: [`/api/agents/${identifier}/reviews`],
     queryFn: async () => {
-      const response = await fetch(`/api/agents/${id}/reviews`);
+      const response = await fetch(`/api/agents/${identifier}/reviews`);
       if (!response.ok) {
         return [];
       }
@@ -805,7 +806,7 @@ export default function AgentProfile() {
 
       {/* Modal de reseñas */}
       <AgentReviewFlow 
-        agentId={parseInt(id)}
+        agentId={agent?.id || 0}
         isOpen={reviewModalOpen}
         onClose={() => setReviewModalOpen(false)}
       />
