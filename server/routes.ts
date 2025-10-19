@@ -861,20 +861,27 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
-  app.get("/api/properties/:id", async (req, res) => {
+  app.get("/api/properties/:identifier", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const property = await storage.getProperty(id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+      
+      let property;
+      if (isNaN(id)) {
+        property = await storage.getPropertyBySlug(identifier);
+      } else {
+        property = await storage.getProperty(id);
+      }
 
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
 
       // Incrementar el contador de vistas
-      await storage.incrementPropertyViewCount(id);
+      await storage.incrementPropertyViewCount(property.id);
 
       // Retornar la propiedad con la vista ya incrementada
-      const updatedProperty = await storage.getProperty(id);
+      const updatedProperty = await storage.getProperty(property.id);
       res.json(updatedProperty);
     } catch (error) {
       console.error('Error fetching property:', error);
@@ -2051,14 +2058,18 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
   });
 
   // Nuevas rutas para obtener detalles de agentes y agencias
-  app.get("/api/agents/:id", async (req, res) => {
+  app.get("/api/agents/:identifier", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+      
+      let agent;
       if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid agent ID" });
+        agent = await storage.getAgentBySlug(identifier);
+      } else {
+        agent = await storage.getAgentById(id);
       }
-
-      const agent = await storage.getAgentById(id);
+      
       if (!agent) {
         return res.status(404).json({ message: "Agent not found" });
       }
@@ -2088,14 +2099,18 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
     }
   });
 
-  app.get("/api/agencies/:id", async (req, res) => {
+  app.get("/api/agencies/:identifier", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+      
+      let agency;
       if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid agency ID" });
+        agency = await storage.getAgencyBySlug(identifier);
+      } else {
+        agency = await storage.getAgencyById(id);
       }
-
-      const agency = await storage.getAgencyById(id);
+      
       if (!agency) {
         return res.status(404).json({ message: "Agency not found" });
       }

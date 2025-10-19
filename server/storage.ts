@@ -14,6 +14,7 @@ import {
   inArray,
   count,
 } from "drizzle-orm";
+import { generateAgentSlug, generateAgencySlug, generatePropertySlug } from "@shared/slug-utils";
 import {
   agents,
   agencies,
@@ -87,7 +88,9 @@ export interface IStorage {
   searchAgents(query: string): Promise<UserWithReviews[]>;
   searchAgencies(query: string): Promise<User[]>;
   getAgentById(id: number): Promise<User | undefined>;
+  getAgentBySlug(slug: string): Promise<User | undefined>;
   getAgencyById(id: number): Promise<User | undefined>;
+  getAgencyBySlug(slug: string): Promise<User | undefined>;
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
@@ -108,6 +111,7 @@ export interface IStorage {
   // Properties
   getProperties(): Promise<Property[]>;
   getProperty(id: number): Promise<Property | undefined>;
+  getPropertyBySlug(slug: string): Promise<Property | undefined>;
   getMostViewedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
   getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]>;
@@ -237,7 +241,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertAgent): Promise<User> {
-    const [newUser] = await db.insert(agents).values(user).returning();
+    const userWithSlug = {
+      ...user,
+      slug: user.name && user.surname ? generateAgentSlug(user.name, user.surname) : undefined
+    };
+    
+    const [newUser] = await db.insert(agents).values(userWithSlug).returning();
+    
+    if (newUser.name && newUser.surname && !newUser.slug) {
+      const finalSlug = generateAgentSlug(newUser.name, newUser.surname, newUser.id);
+      const [updatedUser] = await db
+        .update(agents)
+        .set({ slug: finalSlug })
+        .where(eq(agents.id, newUser.id))
+        .returning();
+      return updatedUser;
+    }
+    
     return newUser;
   }
 
@@ -780,6 +800,20 @@ export class DatabaseStorage implements IStorage {
     return agentFormat;
   }
 
+  async getAgentBySlug(slug: string): Promise<User | undefined> {
+    const [agent] = await db.select().from(agents).where(eq(agents.slug, slug));
+    if (!agent) return undefined;
+
+    return this.getAgentById(agent.id);
+  }
+
+  async getAgencyBySlug(slug: string): Promise<User | undefined> {
+    const [agency] = await db.select().from(agencies).where(eq(agencies.slug, slug));
+    if (!agency) return undefined;
+
+    return this.getAgencyById(agency.id);
+  }
+
   async createAgentReview(review: InsertReview): Promise<Review> {
     const [newReview] = await db.insert(reviews).values(review).returning();
     return newReview;
@@ -949,6 +983,7 @@ export class DatabaseStorage implements IStorage {
         .insert(agencies)
         .values({
           agencyName: agencyData.agencyName,
+          slug: generateAgencySlug(agencyData.agencyName),
           agencyAddress: agencyData.agencyAddress || null,
           agencyDescription: agencyData.agencyDescription || null,
           agencyLogo: agencyData.agencyLogo || null,
@@ -1142,6 +1177,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(properties)
       .where(eq(properties.id, id));
+    return property;
+  }
+
+  async getPropertyBySlug(slug: string): Promise<Property | undefined> {
+    const [property] = await db
+      .select()
+      .from(properties)
+      .where(eq(properties.slug, slug));
     return property;
   }
 
@@ -1546,10 +1589,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProperty(property: InsertProperty): Promise<Property> {
+    const propertyWithSlug = {
+      ...property,
+      slug: property.title && property.neighborhood 
+        ? generatePropertySlug(property.title, property.neighborhood, property.reference)
+        : undefined
+    };
+    
     const [newProperty] = await db
       .insert(properties)
-      .values(property)
+      .values(propertyWithSlug)
       .returning();
+    
+    if (newProperty.title && newProperty.neighborhood && !newProperty.slug) {
+      const finalSlug = generatePropertySlug(
+        newProperty.title, 
+        newProperty.neighborhood, 
+        newProperty.reference, 
+        newProperty.id
+      );
+      const [updatedProperty] = await db
+        .update(properties)
+        .set({ slug: finalSlug })
+        .where(eq(properties.id, newProperty.id))
+        .returning();
+      return updatedProperty;
+    }
+    
     return newProperty;
   }
 

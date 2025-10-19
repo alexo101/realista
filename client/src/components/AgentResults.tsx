@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 // Actualizamos la interfaz para que coincida con la respuesta real del servidor
 interface Agent {
   id: number;
+  slug?: string; // Slug for SEO-friendly URLs
   name: string | null;
   surname: string | null;
   email: string;
@@ -208,7 +209,7 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={() => window.location.href = `/agentes/${agent.id}`}
+                onClick={() => window.location.href = `/agentes/${agent.slug || agent.id}`}
               >
                 Ver perfil <ExternalLink className="w-4 h-4 ml-2" />
               </Button>

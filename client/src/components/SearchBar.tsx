@@ -143,10 +143,10 @@ export function SearchBar() {
       const selectedValue = selectedNeighborhoods[0];
       const encodedValue = encodeURIComponent(selectedValue);
 
-      // Determinar la pestaña según el tipo de búsqueda
-      let tab = 'properties';
-      if (searchType === 'agencies') tab = 'agencies';
-      else if (searchType === 'agents') tab = 'agents';
+      // Determinar la pestaña según el tipo de búsqueda (Spanish routes)
+      let tab = 'inmuebles';
+      if (searchType === 'agencies') tab = 'agencias';
+      else if (searchType === 'agents') tab = 'agentes';
 
       // Build query parameters for filters
       const params = new URLSearchParams();
@@ -165,7 +165,7 @@ export function SearchBar() {
       }
 
       const queryString = params.toString();
-      const url = '/neighborhood/' + encodedValue + '/' + tab + (queryString ? '?' + queryString : '');
+      const url = '/barrio/' + encodedValue + '/' + tab + (queryString ? '?' + queryString : '');
 
       // Redirigir a la página de resultados
       setLocation(url);
@@ -219,7 +219,7 @@ export function SearchBar() {
     }
 
     const queryString = params.toString();
-    setLocation('/search' + (queryString ? '?' + queryString : ''));
+    setLocation('/buscar' + (queryString ? '?' + queryString : ''));
   };
 
   // Reset state when search type changes without changing URL

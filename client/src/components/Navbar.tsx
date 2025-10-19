@@ -58,13 +58,13 @@ export function Navbar() {
               {user ? (
                 <>
                   {user.isClient ? (
-                    <Link href="/client-profile">
+                    <Link href="/perfil-cliente">
                       <Button variant="outline">
                         {t('nav.profile')}
                       </Button>
                     </Link>
                   ) : (
-                    <Link href="/manage">
+                    <Link href="/gestionar">
                       <Button variant="outline">
                         {t('nav.manage')}
                       </Button>
@@ -74,7 +74,7 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/login">
+                  <Link href="/iniciar-sesion">
                     <Button variant="outline">
                       {t('nav.login')}
                     </Button>
@@ -123,13 +123,13 @@ export function Navbar() {
               {user ? (
                 <>
                   {user.isClient ? (
-                    <Link href="/client-profile" className="block">
+                    <Link href="/perfil-cliente" className="block">
                       <Button variant="outline" className="w-full justify-start">
                         {t('nav.profile')}
                       </Button>
                     </Link>
                   ) : (
-                    <Link href="/manage" className="block">
+                    <Link href="/gestionar" className="block">
                       <Button variant="outline" className="w-full justify-start">
                         {t('nav.manage')}
                       </Button>
@@ -141,7 +141,7 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="block">
+                  <Link href="/iniciar-sesion" className="block">
                     <Button variant="outline" className="w-full justify-start">
                       {t('nav.login')}
                     </Button>

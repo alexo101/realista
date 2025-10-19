@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 // Adaptamos el tipo para que coincida con los datos que recibimos de la API
 interface Agency {
   id: number;
+  slug?: string; // Slug for SEO-friendly URLs
   agencyName: string;
   agencyAddress?: string;
   agencyLogo?: string;
@@ -181,7 +182,7 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
 
           <div className="mt-auto pt-4">
             <Button variant="outline" className="w-full" asChild>
-              <Link href={`/agencias/${agency.id}`}>
+              <Link href={`/agencias/${agency.slug || agency.id}`}>
                 Ver agencia <ExternalLink className="w-4 h-4 ml-2" />
               </Link>
             </Button>

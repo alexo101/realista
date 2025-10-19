@@ -71,8 +71,8 @@ export default function ClientRegisterPage() {
           duration: 5000,
         });
 
-        // Redirigir a la página de login después del registro exitoso
-        navigate("/login");
+        // Redirigir a la página de login después del registro exitoso (Spanish route)
+        navigate("/iniciar-sesion");
       } else {
         const error = await response.json();
         toast({
@@ -207,7 +207,7 @@ export default function ClientRegisterPage() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          navigate("/login");
+                          navigate("/iniciar-sesion");
                         }}
                         className="text-primary hover:underline"
                       >

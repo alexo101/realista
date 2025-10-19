@@ -26,7 +26,29 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      {/* Spanish routes with slug */}
       <Route path="/realista-pro" component={RealistaPro} />
+      <Route path="/iniciar-sesion" component={LoginPage} />
+      <Route path="/registrarse" component={RegisterPage} />
+      <Route path="/registro-plan-agencia" component={AgencyPlanRegister} />
+      <Route path="/registro-plan-agente" component={AgentPlanRegister} />
+      <Route path="/registro-cliente" component={ClientRegisterPage} />
+      <Route path="/perfil-cliente" component={ClientProfile} />
+      <Route path="/buscar/comprar" component={Search} />
+      <Route path="/buscar/alquilar" component={Search} />
+      <Route path="/buscar/agencias" component={Search} />
+      <Route path="/buscar/agentes" component={Search} />
+      <Route path="/barrio/:barrio" component={NeighborhoodResults} />
+      <Route path="/barrio/:barrio/inmuebles" component={NeighborhoodResults} />
+      <Route path="/barrio/:barrio/agencias" component={NeighborhoodResults} />
+      <Route path="/barrio/:barrio/agentes" component={NeighborhoodResults} />
+      <Route path="/barrio/:barrio/resumen" component={NeighborhoodResults} />
+      <Route path="/inmueble/:slug" component={Property} />
+      <Route path="/agentes/:slug" component={AgentProfile} />
+      <Route path="/agencias/:slug" component={AgencyProfile} />
+      <Route path="/gestionar" component={Manage} />
+      
+      {/* Backwards compatibility routes - redirect to Spanish */}
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       <Route path="/agency-plan-register" component={AgencyPlanRegister} />
@@ -45,13 +67,12 @@ function Router() {
       <Route path="/property/:id" component={Property} />
       <Route path="/agentes/:id" component={AgentProfile} />
       <Route path="/agencias/:id" component={AgencyProfile} />
-      {/* Mantener las rutas antiguas para compatibilidad */}
       <Route path="/agent/:id" component={AgentProfile} />
       <Route path="/agency/:id" component={AgencyProfile} />
-      {/* Nuevas rutas para compatibilidad con autocompletado */}
       <Route path="/agent-profile/:id" component={AgentProfile} />
       <Route path="/agency-profile/:id" component={AgencyProfile} />
       <Route path="/manage" component={Manage} />
+      
       <Route component={NotFound} />
     </Switch>
   );

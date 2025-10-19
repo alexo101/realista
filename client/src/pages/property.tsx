@@ -148,7 +148,7 @@ export default function PropertyPage() {
         description: "Debes iniciar sesión para guardar propiedades como favoritas",
         variant: "destructive",
       });
-      navigate("/login");
+      navigate("/iniciar-sesion");
       return;
     }
 

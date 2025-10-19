@@ -55,7 +55,7 @@ export function Footer() {
               {BARCELONA_DISTRICTS.slice(0, 6).map((district) => (
                 <li key={district}>
                   <Link 
-                    href={`/neighborhood/${encodeURIComponent(district)}`}
+                    href={`/barrio/${encodeURIComponent(district)}`}
                     className="text-gray-300 hover:text-primary transition-colors"
                     data-testid={`link-district-${district.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                   >
@@ -65,7 +65,7 @@ export function Footer() {
               ))}
               <li>
                 <Link 
-                  href="/neighborhood/Barcelona"
+                  href="/barrio/Barcelona"
                   className="text-primary hover:text-primary/80 transition-colors"
                   data-testid="link-all-districts"
                 >
@@ -82,7 +82,7 @@ export function Footer() {
               {featuredNeighborhoods.map((neighborhood) => (
                 <li key={neighborhood}>
                   <Link 
-                    href={`/neighborhood/${encodeURIComponent(neighborhood)}`}
+                    href={`/barrio/${encodeURIComponent(neighborhood)}`}
                     className="text-gray-300 hover:text-primary transition-colors"
                     data-testid={`link-neighborhood-${neighborhood.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                   >

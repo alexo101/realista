@@ -14,8 +14,8 @@ export function GlobalLoadingOverlay() {
 
     // Determine the type of skeleton to show based on the route
     const getSkeletonContent = () => {
-      // Property detail page
-      if (location.includes('/property/')) {
+      // Property detail page (Spanish route)
+      if (location.includes('/inmueble/') || location.includes('/property/')) {
         return (
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-6xl mx-auto">
@@ -53,8 +53,8 @@ export function GlobalLoadingOverlay() {
         );
       }
 
-      // Agent or agency profile pages
-      if (location.includes('/agent/') || location.includes('/agency/')) {
+      // Agent or agency profile pages (Spanish routes)
+      if (location.includes('/agentes/') || location.includes('/agencias/') || location.includes('/agent/') || location.includes('/agency/')) {
         return (
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-6xl mx-auto">
@@ -76,8 +76,8 @@ export function GlobalLoadingOverlay() {
         );
       }
 
-      // Search or listing pages
-      if (location.includes('/search') || location.includes('/properties') || location.includes('/neighborhood')) {
+      // Search or listing pages (Spanish routes)
+      if (location.includes('/buscar') || location.includes('/search') || location.includes('/properties') || location.includes('/barrio') || location.includes('/neighborhood')) {
         return (
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-6xl mx-auto">
@@ -99,8 +99,8 @@ export function GlobalLoadingOverlay() {
         );
       }
 
-      // Manage pages
-      if (location.includes('/manage')) {
+      // Manage pages (Spanish route)
+      if (location.includes('/gestionar') || location.includes('/manage')) {
         return (
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-6xl mx-auto">

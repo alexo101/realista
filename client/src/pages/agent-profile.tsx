@@ -169,7 +169,7 @@ export default function AgentProfile() {
         description: "Debes iniciar sesión para agregar agentes a favoritos",
         variant: "destructive",
       });
-      navigate("/login");
+      navigate("/iniciar-sesion");
       return;
     }
     
@@ -323,7 +323,7 @@ export default function AgentProfile() {
             Lo sentimos, ha ocurrido un error al cargar los datos del agente.
           </p>
           <Button asChild>
-            <Link href="/search/agents">Volver al listado de agentes</Link>
+            <Link href="/buscar/agentes">Volver al listado de agentes</Link>
           </Button>
         </div>
       </div>

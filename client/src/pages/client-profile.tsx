@@ -155,7 +155,7 @@ export default function ClientProfile() {
   // Redirect if not logged in or not a client
   useEffect(() => {
     if (!user || !user.isClient) {
-      navigate("/login");
+      navigate("/iniciar-sesion");
     }
   }, [user, navigate]);
 
@@ -1051,10 +1051,10 @@ export default function ClientProfile() {
                       Busca propiedades y guarda las que más te interesen para revisarlas después
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button onClick={() => navigate("/search/buy")}>
+                      <Button onClick={() => navigate("/buscar/comprar")}>
                         Buscar en venta
                       </Button>
-                      <Button variant="outline" onClick={() => navigate("/search/rent")}>
+                      <Button variant="outline" onClick={() => navigate("/buscar/alquilar")}>
                         Buscar en alquiler
                       </Button>
                     </div>

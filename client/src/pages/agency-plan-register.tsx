@@ -184,8 +184,8 @@ export default function AgencyPlanRegister() {
         description: "Tu agencia ha sido registrada y ya puedes empezar a gestionar tus propiedades"
       });
 
-      // Redirect to manage page
-      navigate('/manage');
+      // Redirect to manage page (Spanish route)
+      navigate('/gestionar');
     } catch (error: any) {
       console.error('Error al registrar agencia:', error);
       

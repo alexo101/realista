@@ -94,9 +94,15 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     console.log('AutocompleteSearch - navigating to profile result:', result);
 
     try {
+      // Use slug if available, fall back to id with warning
+      const identifier = (result as any).slug || result.id;
+      if (!(result as any).slug) {
+        console.warn(`No slug found for ${type} ${result.id}, using ID instead`);
+      }
+      
       const targetPath = type === 'agencies' 
-        ? `/agencias/${result.id}` 
-        : `/agentes/${result.id}`;
+        ? `/agencias/${identifier}` 
+        : `/agentes/${identifier}`;
 
       console.log('AutocompleteSearch - navigating to:', targetPath);
 
@@ -113,9 +119,10 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     } catch (error) {
       console.error('Navigation error:', error);
       // Fallback to window.location as last resort
+      const identifier = (result as any).slug || result.id;
       const targetPath = type === 'agencies' 
-        ? `/agencias/${result.id}` 
-        : `/agentes/${result.id}`;
+        ? `/agencias/${identifier}` 
+        : `/agentes/${identifier}`;
       window.location.href = targetPath;
     }
   };
@@ -131,7 +138,9 @@ export function AutocompleteSearch({ type, placeholder, onSelect }: Autocomplete
     }
     params.append('showAll', 'true');
 
-    window.location.href = `/search/${type}?${params}`;
+    // Use Spanish routes
+    const searchPath = type === 'agencies' ? 'agencias' : 'agentes';
+    window.location.href = `/buscar/${searchPath}?${params}`;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

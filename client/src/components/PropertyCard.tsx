@@ -6,6 +6,7 @@ import { Bed, Bath, Square, MapPin, Euro, ChevronLeft, ChevronRight } from "luci
 
 interface Property {
   id: number;
+  slug?: string; // Slug for SEO-friendly URLs
   title: string | null; // Match the actual schema
   address: string;
   price: number;
@@ -64,8 +65,14 @@ export function PropertyCard({ property }: PropertyCardProps) {
     setCurrentImageIndex(index);
   }, []);
 
+  // Use slug if available, fall back to id
+  const propertyIdentifier = property.slug || property.id;
+  if (!property.slug) {
+    console.warn(`Property ${property.id} has no slug, using ID instead`);
+  }
+
   return (
-    <Link href={`/property/${property.id}`}>
+    <Link href={`/inmueble/${propertyIdentifier}`}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
         <div className="relative group">
           {/* Main image */}

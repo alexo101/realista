@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface PropertyResult {
   id: number;
+  slug?: string; // SEO-friendly URL slug
   address: string;
   type: string;
   operationType: string;
@@ -128,9 +129,9 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
         title: "Inicia sesión requerida",
         description: "Debes iniciar sesión para guardar propiedades favoritas."
       });
-      // Redirect to login after showing toast
+      // Redirect to login after showing toast (Spanish route)
       setTimeout(() => {
-        window.location.href = "/login";
+        window.location.href = "/iniciar-sesion";
       }, 1000);
       return;
     }
@@ -140,14 +141,19 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
 
   const handleShare = (property: PropertyResult, e: React.MouseEvent) => {
     e.stopPropagation();
+    // Use slug if available, fallback to id (Spanish route)
+    const propertyUrl = property.slug 
+      ? `${window.location.origin}/inmueble/${property.slug}`
+      : `${window.location.origin}/inmueble/${property.id}`;
+    
     if (navigator.share) {
       navigator.share({
         title: property.title || property.address,
         text: `${property.title || property.address} - €${property.price.toLocaleString()}`,
-        url: `${window.location.origin}/property/${property.id}`
+        url: propertyUrl
       });
     } else {
-      navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`);
+      navigator.clipboard.writeText(propertyUrl);
       toast({
         title: "Enlace copiado",
         description: "El enlace de la propiedad se ha copiado al portapapeles."
@@ -198,7 +204,7 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
           <div 
             key={property.id} 
             className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
-            onClick={() => window.location.href = `/property/${property.id}`}
+            onClick={() => window.location.href = property.slug ? `/inmueble/${property.slug}` : `/inmueble/${property.id}`}
           >
             <div className="aspect-video bg-gray-200 relative overflow-hidden">
               {images.length > 0 ? (

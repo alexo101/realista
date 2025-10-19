@@ -9,11 +9,12 @@ import { Building2, UserCircle } from "lucide-react";
 
 export default function SearchPage() {
   const [location] = useLocation();
-  const searchType = location.startsWith('/search/agencies')
+  // Support both Spanish and English routes for backward compatibility
+  const searchType = location.startsWith('/buscar/agencias') || location.startsWith('/search/agencies')
     ? 'agencies'
-    : location.startsWith('/search/agents')
+    : location.startsWith('/buscar/agentes') || location.startsWith('/search/agents')
     ? 'agents'
-    : location.startsWith('/search/rent')
+    : location.startsWith('/buscar/alquilar') || location.startsWith('/search/rent')
     ? 'rent'
     : 'buy';
 

@@ -167,7 +167,7 @@ export default function AgencyProfile() {
         description: "Debes iniciar sesión para agregar agencias a favoritos",
         variant: "destructive",
       });
-      navigate("/login");
+      navigate("/iniciar-sesion");
       return;
     }
     
@@ -344,7 +344,7 @@ export default function AgencyProfile() {
             Lo sentimos, ha ocurrido un error al cargar los datos de la agencia.
           </p>
           <Button asChild>
-            <Link href="/search/agencies">Volver al listado de agencias</Link>
+            <Link href="/buscar/agencias">Volver al listado de agencias</Link>
           </Button>
         </div>
       </div>

@@ -156,13 +156,13 @@ export default function RegisterPage() {
           description: successMessage,
         });
 
-        // Redirigir a la página de gestión con la pestaña adecuada según el tipo de perfil
+        // Redirigir a la página de gestión con la pestaña adecuada según el tipo de perfil (Spanish route)
         if (isAdmin) {
           // Si es una agencia o red de agencias, dirigir a la sección de perfil de agencia
-          navigate("/manage?tab=agency-profile");
+          navigate("/gestionar?tab=agency-profile");
         } else {
           // Si es un agente, dirigir a la sección de perfil de agente
-          navigate("/manage");
+          navigate("/gestionar");
         }
       } else {
         const error = await response.json();
@@ -375,7 +375,7 @@ export default function RegisterPage() {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    navigate("/login");
+                    navigate("/iniciar-sesion");
                   }}
                   className="text-primary hover:underline"
                 >
