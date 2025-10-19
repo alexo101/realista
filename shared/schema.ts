@@ -502,6 +502,7 @@ export type SavedSearch = typeof savedSearches.$inferSelect;
 export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;
 
 // Subscription plan limits configuration
+// Note: null = unlimited
 export const SUBSCRIPTION_LIMITS = {
   basica: {
     seats: 1,
@@ -511,17 +512,17 @@ export const SUBSCRIPTION_LIMITS = {
   pequeña: {
     seats: 2,
     activeProperties: 10,
-    reviewRequests: -1, // -1 = unlimited
+    reviewRequests: null, // null = unlimited
   },
   mediana: {
     seats: 6,
     activeProperties: 30,
-    reviewRequests: -1, // -1 = unlimited
+    reviewRequests: null, // null = unlimited
   },
   lider: {
-    seats: -1, // -1 = unlimited
-    activeProperties: -1, // -1 = unlimited
-    reviewRequests: -1, // -1 = unlimited
+    seats: null, // null = unlimited
+    activeProperties: null, // null = unlimited
+    reviewRequests: null, // null = unlimited
   },
 } as const;
 

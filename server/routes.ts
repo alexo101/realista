@@ -742,10 +742,11 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       if (property.agencyId) {
         const agency = await storage.getAgencyById(property.agencyId);
         if (agency) {
-          const activePropertiesLimit = agency.activePropertiesLimit ?? 2; // Default to basica plan limit
+          // null or undefined means unlimited, otherwise use the limit (default to 2 for basica if undefined)
+          const activePropertiesLimit = agency.activePropertiesLimit === undefined ? 2 : agency.activePropertiesLimit;
           
-          // -1 means unlimited
-          if (activePropertiesLimit !== -1) {
+          // null means unlimited, skip the check
+          if (activePropertiesLimit !== null) {
             const currentActiveCount = await storage.getActivePropertiesCount(property.agencyId);
             
             if (currentActiveCount >= activePropertiesLimit) {
