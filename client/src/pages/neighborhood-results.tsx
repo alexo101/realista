@@ -474,7 +474,7 @@ export default function NeighborhoodResultsPage() {
                 {getDistrictsByCity(currentCity).map(districtOption => (
                   <DropdownMenuItem
                     key={districtOption}
-                    onClick={() => window.location.href = `/barrio/${encodeURIComponent(getNeighborhoodDisplayName('', districtOption, currentCity))}/inmuebles`}
+                    onClick={() => window.location.href = `/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/inmuebles`}
                     className="cursor-pointer"
                   >
                     {districtOption}
@@ -503,14 +503,14 @@ export default function NeighborhoodResultsPage() {
                     {getNeighborhoodsByDistrict(currentDistrict, currentCity).map(neighborhoodOption => (
                       <DropdownMenuItem
                         key={neighborhoodOption}
-                        onClick={() => window.location.href = `/barrio/${encodeURIComponent(getNeighborhoodDisplayName(neighborhoodOption, currentDistrict, currentCity))}/inmuebles`}
+                        onClick={() => window.location.href = `/barrio/${encodeURIComponent(neighborhoodOption)}, ${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/inmuebles`}
                         className="cursor-pointer"
                       >
                         {neighborhoodOption}
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuItem
-                      onClick={() => window.location.href = `/barrio/${encodeURIComponent(getNeighborhoodDisplayName('', currentDistrict, currentCity))}/inmuebles`}
+                      onClick={() => window.location.href = `/barrio/${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/inmuebles`}
                       className="cursor-pointer border-t mt-1 pt-2 font-medium"
                     >
                       Ver todo {currentDistrict}
@@ -794,7 +794,7 @@ export default function NeighborhoodResultsPage() {
                           key={neighborhood}
                           className="bg-gray-100 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-primary/10"
                           onClick={() => {
-                            window.location.href = `/barrio/${encodeURIComponent(getNeighborhoodDisplayName(neighborhood, currentDistrict, currentCity))}/properties`;
+                            window.location.href = `/barrio/${encodeURIComponent(neighborhood)}, ${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/properties`;
                           }}
                         >
                           {neighborhood}
@@ -817,7 +817,7 @@ export default function NeighborhoodResultsPage() {
                         <span 
                           key={districtOption}
                           className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
-                          onClick={() => window.location.href = `/barrio/${encodeURIComponent(getNeighborhoodDisplayName('', districtOption, currentCity))}/inmuebles`}
+                          onClick={() => window.location.href = `/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/inmuebles`}
                         >
                           {districtOption}
                         </span>
