@@ -33,10 +33,11 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function NeighborhoodResultsPage() {
-  const { neighborhood } = useParams<{ neighborhood: string }>();
+  const params = useParams<{ neighborhood?: string; barrio?: string }>();
+  const neighborhood = params.barrio || params.neighborhood || '';
   const [, setLocation] = useLocation();
   const [currentLocation] = useLocation();
-  const decodedNeighborhood = decodeURIComponent(neighborhood);
+  const decodedNeighborhood = neighborhood ? decodeURIComponent(neighborhood) : '';
   const queryClient = useQueryClient();
   const { user } = useUser();
   const { toast } = useToast();
