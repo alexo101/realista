@@ -88,8 +88,10 @@ export interface IStorage {
   searchAgents(query: string): Promise<UserWithReviews[]>;
   searchAgencies(query: string): Promise<User[]>;
   getAgentById(id: number): Promise<User | undefined>;
+  getAgentByUuid(uuid: string): Promise<User | undefined>;
   getAgentBySlug(slug: string): Promise<User | undefined>;
   getAgencyById(id: number): Promise<User | undefined>;
+  getAgencyByUuid(uuid: string): Promise<User | undefined>;
   getAgencyBySlug(slug: string): Promise<User | undefined>;
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
@@ -111,6 +113,7 @@ export interface IStorage {
   // Properties
   getProperties(): Promise<Property[]>;
   getProperty(id: number): Promise<Property | undefined>;
+  getPropertyByUuid(uuid: string): Promise<Property | undefined>;
   getPropertyBySlug(slug: string): Promise<Property | undefined>;
   getMostViewedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
@@ -800,11 +803,25 @@ export class DatabaseStorage implements IStorage {
     return agentFormat;
   }
 
+  async getAgentByUuid(uuid: string): Promise<User | undefined> {
+    const [agent] = await db.select().from(agents).where(eq(agents.uuid, uuid));
+    if (!agent) return undefined;
+
+    return this.getAgentById(agent.id);
+  }
+
   async getAgentBySlug(slug: string): Promise<User | undefined> {
     const [agent] = await db.select().from(agents).where(eq(agents.slug, slug));
     if (!agent) return undefined;
 
     return this.getAgentById(agent.id);
+  }
+
+  async getAgencyByUuid(uuid: string): Promise<User | undefined> {
+    const [agency] = await db.select().from(agencies).where(eq(agencies.uuid, uuid));
+    if (!agency) return undefined;
+
+    return this.getAgencyById(agency.id);
   }
 
   async getAgencyBySlug(slug: string): Promise<User | undefined> {
@@ -1177,6 +1194,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(properties)
       .where(eq(properties.id, id));
+    return property;
+  }
+
+  async getPropertyByUuid(uuid: string): Promise<Property | undefined> {
+    const [property] = await db
+      .select()
+      .from(properties)
+      .where(eq(properties.uuid, uuid));
     return property;
   }
 

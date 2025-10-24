@@ -867,7 +867,11 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
       const id = parseInt(identifier);
       
       let property;
-      if (isNaN(id)) {
+      // Check if identifier is a UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(identifier)) {
+        property = await storage.getPropertyByUuid(identifier);
+      } else if (isNaN(id)) {
         property = await storage.getPropertyBySlug(identifier);
       } else {
         property = await storage.getProperty(id);
