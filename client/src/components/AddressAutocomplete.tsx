@@ -3,20 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { MapPin, Check, X } from "lucide-react";
-
-interface AddressResult {
-  place_id: string;
-  display_name: string;
-  lat: string;
-  lon: string;
-  address: {
-    house_number?: string;
-    road?: string;
-    suburb?: string;
-    city?: string;
-    postcode?: string;
-  };
-}
+import { loadGoogleMaps } from "@/utils/googleMaps";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -26,122 +13,94 @@ interface AddressAutocompleteProps {
 }
 
 export function AddressAutocomplete({ value, onChange, placeholder, className }: AddressAutocompleteProps) {
-  const [suggestions, setSuggestions] = useState<AddressResult[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showMapConfirm, setShowMapConfirm] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<AddressResult | null>(null);
   const [inputValue, setInputValue] = useState(value);
+  const [showMapConfirm, setShowMapConfirm] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
-  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
 
   // Update input value when prop value changes
   useEffect(() => {
     setInputValue(value);
   }, [value]);
 
-  // Search for addresses with debouncing
+  // Initialize Google Places Autocomplete
   useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+    let mounted = true;
 
-    // Allow shorter queries for numbers or when searching within Barcelona
-    const minLength = /^\d/.test(inputValue.trim()) ? 2 : 3; // Allow 2 chars if starts with number
-    
-    if (inputValue.length < minLength) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
+    const initAutocomplete = async () => {
+      try {
+        await loadGoogleMaps();
+        
+        if (!mounted || !inputRef.current || autocompleteRef.current) {
+          return;
+        }
 
-    searchTimeoutRef.current = setTimeout(async () => {
-      await searchAddresses(inputValue);
-    }, 300);
+        // Barcelona city bounds for location bias
+        const barcelonaBounds = new window.google.maps.LatLngBounds(
+          new window.google.maps.LatLng(41.3200, 2.0523), // Southwest
+          new window.google.maps.LatLng(41.4695, 2.2280)  // Northeast
+        );
 
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [inputValue]);
-
-  const searchAddresses = async (query: string) => {
-    const minLength = /^\d/.test(query.trim()) ? 2 : 3;
-    if (query.length < minLength) return;
-
-    setLoading(true);
-    try {
-      // Try multiple search strategies to improve address recognition
-      const searchQueries = [
-        // Primary search with Barcelona context
-        encodeURIComponent(`${query}, Barcelona, Spain`),
-        // Secondary search if query already contains Barcelona context
-        encodeURIComponent(query.includes('Barcelona') ? query : `${query} Barcelona`),
-        // Fallback search for specific street numbers
-        encodeURIComponent(`${query} Spain`)
-      ];
-
-      let allResults: AddressResult[] = [];
-      
-      // Try the primary search first
-      for (let i = 0; i < searchQueries.length && allResults.length < 5; i++) {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${searchQueries[i]}&limit=${5 - allResults.length}&addressdetails=1&bounded=1&viewbox=2.0523,41.4695,2.2280,41.3200&countrycodes=es`,
+        // Create autocomplete instance
+        const autocomplete = new window.google.maps.places.Autocomplete(
+          inputRef.current,
           {
-            headers: {
-              'User-Agent': 'PropertySearchApp/1.0'
-            }
+            bounds: barcelonaBounds,
+            componentRestrictions: { country: 'es' }, // Restrict to Spain
+            fields: ['address_components', 'formatted_address', 'geometry', 'name'],
+            strictBounds: false, // Allow results outside bounds if they're better matches
+            types: ['address'] // Only show full addresses, not businesses or POIs
           }
         );
 
-        if (response.ok) {
-          const data: AddressResult[] = await response.json();
-          allResults = [...allResults, ...data];
-        }
-        
-        // Break early if we have good results
-        if (allResults.length >= 3) break;
+        // Bias results to Barcelona
+        autocomplete.setFields(['address_components', 'formatted_address', 'geometry', 'name']);
+
+        // Handle place selection
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          
+          if (!place.geometry) {
+            console.log('No geometry found for place');
+            return;
+          }
+
+          // Check if the address is in Barcelona
+          const addressComponents = place.address_components || [];
+          const cityComponent = addressComponents.find(
+            component => component.types.includes('locality')
+          );
+          
+          if (cityComponent && cityComponent.long_name === 'Barcelona') {
+            setSelectedPlace(place);
+            setShowMapConfirm(true);
+          } else {
+            // Not in Barcelona, show warning but still allow
+            setSelectedPlace(place);
+            setShowMapConfirm(true);
+          }
+        });
+
+        autocompleteRef.current = autocomplete;
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing Google Places Autocomplete:', error);
       }
+    };
 
-      // Filter and sort Barcelona addresses with enhanced logic
-      const barcelonaAddresses = allResults
-        .filter((addr, index, self) => 
-          // Remove duplicates by place_id
-          self.findIndex(a => a.place_id === addr.place_id) === index &&
-          addr.display_name.includes('Barcelona') &&
-          (addr.address?.road || addr.address?.house_number) // Must have either street name or house number
-        )
-        .sort((a, b) => {
-          // Priority scoring system
-          let scoreA = 0, scoreB = 0;
-          
-          // Boost addresses with house numbers
-          if (a.address.house_number) scoreA += 10;
-          if (b.address.house_number) scoreB += 10;
-          
-          // Boost exact or partial query matches
-          const queryLower = query.toLowerCase();
-          if (a.display_name.toLowerCase().includes(queryLower)) scoreA += 5;
-          if (b.display_name.toLowerCase().includes(queryLower)) scoreB += 5;
-          
-          // Boost addresses with road names
-          if (a.address.road) scoreA += 3;
-          if (b.address.road) scoreB += 3;
-          
-          return scoreB - scoreA;
-        })
-        .slice(0, 5); // Limit to 5 results
+    initAutocomplete();
 
-      setSuggestions(barcelonaAddresses);
-      setShowSuggestions(barcelonaAddresses.length > 0);
-    } catch (error) {
-      console.error('Error searching addresses:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      mounted = false;
+      // Cleanup autocomplete listeners
+      if (autocompleteRef.current) {
+        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -149,116 +108,77 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
     onChange(newValue);
   };
 
-  const handleSuggestionClick = (address: AddressResult) => {
-    setSelectedAddress(address);
-    setShowSuggestions(false);
-    setShowMapConfirm(true);
-  };
-
   const confirmAddress = () => {
-    if (selectedAddress) {
-      const formattedAddress = formatAddress(selectedAddress);
-      setInputValue(formattedAddress);
-      onChange(formattedAddress);
+    if (selectedPlace) {
+      // Extract street address from formatted_address
+      const formattedAddress = selectedPlace.formatted_address;
+      
+      // Try to extract just the street name and number
+      const addressParts = formattedAddress.split(',');
+      const streetAddress = addressParts[0]?.trim() || formattedAddress;
+      
+      setInputValue(streetAddress);
+      onChange(streetAddress);
     }
     setShowMapConfirm(false);
-    setSelectedAddress(null);
+    setSelectedPlace(null);
   };
 
   const cancelAddress = () => {
     setShowMapConfirm(false);
-    setSelectedAddress(null);
+    setSelectedPlace(null);
   };
 
-  const formatAddress = (address: AddressResult): string => {
-    const parts = [];
+  const formatDisplayAddress = (place: any): string => {
+    if (!place) return '';
     
-    // Handle different address formats properly
-    if (address.address.road && address.address.house_number) {
-      // Complete address with street name and number
-      parts.push(`${address.address.road} ${address.address.house_number}`);
-    } else if (address.address.road) {
-      // Street name only
-      parts.push(address.address.road);
-    } else if (address.address.house_number) {
-      // Edge case: house number without street name
-      parts.push(address.address.house_number);
+    const addressComponents = place.address_components || [];
+    const street = addressComponents.find(c => c.types.includes('route'))?.long_name || '';
+    const number = addressComponents.find(c => c.types.includes('street_number'))?.long_name || '';
+    const neighborhood = addressComponents.find(c => c.types.includes('neighborhood'))?.long_name || '';
+    
+    if (street && number) {
+      return `${street} ${number}`;
+    } else if (street) {
+      return street;
     }
     
-    return parts.join(', ') || address.display_name.split(',')[0]; // Fallback to first part of display_name
+    return place.formatted_address?.split(',')[0] || '';
   };
 
-  const formatDisplayName = (address: AddressResult): string => {
-    const parts = [];
+  const getNeighborhood = (place: any): string => {
+    if (!place) return '';
     
-    // Primary address line
-    if (address.address.house_number && address.address.road) {
-      parts.push(`${address.address.road} ${address.address.house_number}`);
-    } else if (address.address.road) {
-      parts.push(address.address.road);
-    } else if (address.address.house_number) {
-      // Show house number even without street name
-      parts.push(`Número ${address.address.house_number}`);
+    const addressComponents = place.address_components || [];
+    const neighborhood = addressComponents.find(c => c.types.includes('neighborhood'))?.long_name;
+    const city = addressComponents.find(c => c.types.includes('locality'))?.long_name;
+    
+    if (neighborhood && city) {
+      return `${neighborhood}, ${city}`;
+    } else if (city) {
+      return city;
     }
     
-    // Add suburb for context
-    if (address.address.suburb) {
-      parts.push(address.address.suburb);
-    }
-    
-    return parts.join(', ') || address.display_name.split(',').slice(0, 2).join(', '); // Fallback
+    return '';
   };
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   return (
-    <div className="relative" ref={suggestionsRef}>
+    <div className="relative">
       <div className="relative">
         <Input
+          ref={inputRef}
           value={inputValue}
           onChange={handleInputChange}
           placeholder={placeholder || "Escribe la dirección..."}
           className={className}
+          data-testid="input-address-autocomplete"
         />
-        {loading && (
+        {!isInitialized && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
           </div>
         )}
       </div>
-
-      {/* Suggestions dropdown */}
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {suggestions.map((suggestion) => (
-            <button
-              key={suggestion.place_id}
-              className="w-full px-4 py-3 text-left hover:bg-accent/50 border-b border-border/50 last:border-b-0 flex items-start gap-2"
-              onClick={() => handleSuggestionClick(suggestion)}
-            >
-              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">
-                  {formatDisplayName(suggestion)}
-                </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {suggestion.address.suburb}, Barcelona
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Map confirmation dialog */}
       <Dialog open={showMapConfirm} onOpenChange={setShowMapConfirm}>
@@ -267,26 +187,30 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
             <DialogTitle>Confirmar dirección</DialogTitle>
           </DialogHeader>
           
-          {selectedAddress && (
+          {selectedPlace && (
             <div className="space-y-4">
               <div className="p-3 bg-accent/20 rounded-lg">
-                <p className="font-medium">{formatDisplayName(selectedAddress)}</p>
+                <p className="font-medium">{formatDisplayAddress(selectedPlace)}</p>
                 <p className="text-sm text-muted-foreground">
-                  {selectedAddress.address.suburb}, Barcelona
+                  {getNeighborhood(selectedPlace)}
                 </p>
               </div>
               
               <div className="h-64 w-full border rounded-lg overflow-hidden">
-                <iframe
-                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(selectedAddress.lon) - 0.002},${parseFloat(selectedAddress.lat) - 0.002},${parseFloat(selectedAddress.lon) + 0.002},${parseFloat(selectedAddress.lat) + 0.002}&layer=mapnik&marker=${selectedAddress.lat},${selectedAddress.lon}`}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Mapa de la dirección"
-                />
+                <div id="map-preview" className="w-full h-full">
+                  {selectedPlace.geometry && (
+                    <iframe
+                      src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&q=${encodeURIComponent(selectedPlace.formatted_address)}&zoom=17`}
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="Mapa de la dirección"
+                    />
+                  )}
+                </div>
               </div>
               
               <p className="text-sm text-muted-foreground">
@@ -296,11 +220,11 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
           )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={cancelAddress}>
+            <Button variant="outline" onClick={cancelAddress} data-testid="button-cancel-address">
               <X className="h-4 w-4 mr-2" />
               Cancelar
             </Button>
-            <Button onClick={confirmAddress}>
+            <Button onClick={confirmAddress} data-testid="button-confirm-address">
               <Check className="h-4 w-4 mr-2" />
               Confirmar
             </Button>
