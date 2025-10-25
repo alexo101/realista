@@ -2902,7 +2902,7 @@ Gracias!
           activeAgentsLimit,
           activePropertiesLimit,
         },
-        triggeredBy: req.user.id,
+        triggeredBy: sessionUserId,
         reason: `Plan mejorado a ${plan}`,
         metadata: {
           upgradedAt: new Date().toISOString(),

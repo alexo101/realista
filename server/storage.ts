@@ -986,6 +986,53 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getAgency(agencyId: number): Promise<(Agency & { adminAgentId: number }) | null> {
+    try {
+      const [result] = await db
+        .select({
+          id: agencies.id,
+          uuid: agencies.uuid,
+          slug: agencies.slug,
+          agencyName: agencies.agencyName,
+          agencyAddress: agencies.agencyAddress,
+          agencyDescription: agencies.agencyDescription,
+          agencyLogo: agencies.agencyLogo,
+          agencyEmailToDisplay: agencies.agencyEmailToDisplay,
+          agencyPhone: agencies.agencyPhone,
+          agencyActiveSince: agencies.agencyActiveSince,
+          city: agencies.city,
+          agencyInfluenceNeighborhoods: agencies.agencyInfluenceNeighborhoods,
+          agencySupportedLanguages: agencies.agencySupportedLanguages,
+          agencyWebsite: agencies.agencyWebsite,
+          agencySocialMedia: agencies.agencySocialMedia,
+          subscriptionPlan: agencies.subscriptionPlan,
+          isYearlyBilling: agencies.isYearlyBilling,
+          seatsLimit: agencies.seatsLimit,
+          activeAgentsLimit: agencies.activeAgentsLimit,
+          activePropertiesLimit: agencies.activePropertiesLimit,
+          deletedAt: agencies.deletedAt,
+          createdAt: agencies.createdAt,
+          adminAgentId: agencyAgents.agentId,
+        })
+        .from(agencies)
+        .innerJoin(
+          agencyAgents,
+          and(
+            eq(agencyAgents.agencyId, agencies.id),
+            eq(agencyAgents.role, 'admin'),
+            isNull(agencyAgents.leftAt)
+          )
+        )
+        .where(eq(agencies.id, agencyId))
+        .limit(1);
+
+      return result || null;
+    } catch (error) {
+      console.error(`Error fetching agency ${agencyId}:`, error);
+      return null;
+    }
+  }
+
   async createAgency(agencyData: Partial<InsertAgency>): Promise<Agency> {
     try {
       console.log("Creating agency with data:", agencyData);
