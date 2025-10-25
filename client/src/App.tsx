@@ -21,6 +21,7 @@ import ClientProfile from "@/pages/client-profile";
 import RealistaPro from "@/pages/RealistaPro";
 import AgencyPlanRegister from "@/pages/agency-plan-register";
 import AgentPlanRegister from "@/pages/agent-plan-register";
+import UpgradePlan from "@/pages/upgrade-plan";
 
 function Router() {
   return (
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/agentes/:slug" component={AgentProfile} />
       <Route path="/agencias/:slug" component={AgencyProfile} />
       <Route path="/gestionar" component={Manage} />
+      <Route path="/app/mejora-tu-plan" component={UpgradePlan} />
       
       {/* Backwards compatibility routes - redirect to Spanish */}
       <Route path="/login" component={LoginPage} />

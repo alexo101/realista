@@ -2825,6 +2825,94 @@ Gracias!
     }
   });
 
+  // Upgrade agency subscription plan
+  app.patch("/api/agencies/:id/upgrade-plan", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.params.id);
+      const { plan } = req.body;
+
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      // Get the agency to verify the user is the admin
+      const agency = await storage.getAgency(agencyId);
+      if (!agency) {
+        return res.status(404).json({ message: "Agencia no encontrada" });
+      }
+
+      // Verify the user is the agency admin
+      if (agency.adminAgentId !== req.user.id) {
+        return res.status(403).json({ message: "Solo el administrador puede mejorar el plan" });
+      }
+
+      // Validate the plan
+      const validPlans = ['pequeña', 'mediana', 'lider'];
+      if (!validPlans.includes(plan)) {
+        return res.status(400).json({ message: "Plan inválido" });
+      }
+
+      // Determine the new limits based on the plan
+      let activeAgentsLimit: number | null;
+      let activePropertiesLimit: number | null;
+
+      switch (plan) {
+        case 'pequeña':
+          activeAgentsLimit = 2;
+          activePropertiesLimit = 10;
+          break;
+        case 'mediana':
+          activeAgentsLimit = 6;
+          activePropertiesLimit = 30;
+          break;
+        case 'lider':
+          activeAgentsLimit = null; // unlimited
+          activePropertiesLimit = null; // unlimited
+          break;
+        default:
+          return res.status(400).json({ message: "Plan inválido" });
+      }
+
+      // Store previous state for audit
+      const previousState = {
+        subscriptionPlan: agency.subscriptionPlan,
+        activeAgentsLimit: agency.activeAgentsLimit,
+        activePropertiesLimit: agency.activePropertiesLimit,
+      };
+
+      // Update the agency plan and limits
+      const updatedAgency = await storage.updateAgency(agencyId, {
+        subscriptionPlan: plan,
+        activeAgentsLimit,
+        activePropertiesLimit,
+      });
+
+      // Log the subscription event
+      await storage.recordSubscriptionEvent({
+        entityType: 'agency',
+        entityId: agencyId,
+        eventType: 'plan_changed',
+        previousState,
+        newState: {
+          subscriptionPlan: plan,
+          activeAgentsLimit,
+          activePropertiesLimit,
+        },
+        triggeredBy: req.user.id,
+        reason: `Plan mejorado a ${plan}`,
+        metadata: {
+          upgradedAt: new Date().toISOString(),
+        },
+      });
+
+      console.log(`Agency ${agencyId} upgraded to ${plan} plan`);
+      res.json(updatedAgency);
+    } catch (error) {
+      console.error('Error upgrading agency plan:', error);
+      res.status(500).json({ message: "Error al mejorar el plan" });
+    }
+  });
+
   // API para gestionar agentes en agencias
   app.get("/api/agency-agents/:agencyId", async (req, res) => {
     try {

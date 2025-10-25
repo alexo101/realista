@@ -21,6 +21,7 @@ export function Navbar() {
   // Check if user is an admin with "basica" plan
   const isBasicPlanAdmin = user?.isAdmin && user?.subscriptionPlan === 'basica';
   const buttonText = isBasicPlanAdmin ? 'Mejora tu plan' : t('nav.realista_pro');
+  const buttonLink = isBasicPlanAdmin ? '/app/mejora-tu-plan' : '/realista-pro';
   const tooltipText = 'Amplía las capacidades de tu agencia';
 
   return (
@@ -40,7 +41,7 @@ export function Navbar() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link href="/realista-pro">
+                    <Link href={buttonLink}>
                       <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
                         <Sparkles className="h-4 w-4 mr-2" />
                         {buttonText}
@@ -105,7 +106,7 @@ export function Navbar() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link href="/realista-pro" className="block">
+                    <Link href={buttonLink} className="block">
                       <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold shadow-lg">
                         <Sparkles className="h-4 w-4 mr-2" />
                         {buttonText}

@@ -43,6 +43,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/user-context";
 import { ImageUploader } from "./ImageUploader";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
@@ -1063,34 +1064,53 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
             <FormField
               control={form.control}
               name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descripción</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Textarea {...field} placeholder="Describe la propiedad" className="pr-20" />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={generateDescription}
-                        disabled={isGeneratingDescription}
-                        className="absolute top-2 right-2 h-8 px-3 text-primary hover:text-primary/80"
-                      >
-                        {isGeneratingDescription ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4 mr-1" />
-                            <span className="text-xs">Generar</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const { user } = useUser();
+                const isBasicPlan = user?.subscriptionPlan === 'basica';
+                
+                return (
+                  <FormItem>
+                    <FormLabel>Descripción</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Textarea {...field} placeholder="Describe la propiedad" className="pr-20" />
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={generateDescription}
+                                  disabled={isGeneratingDescription || isBasicPlan}
+                                  className="absolute top-2 right-2 h-8 px-3 text-primary hover:text-primary/80 disabled:opacity-50"
+                                  data-testid="button-generate-description"
+                                >
+                                  {isGeneratingDescription ? (
+                                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                                  ) : (
+                                    <>
+                                      <Sparkles className="h-4 w-4 mr-1" />
+                                      <span className="text-xs">Generar</span>
+                                    </>
+                                  )}
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            {isBasicPlan && (
+                              <TooltipContent>
+                                <p>Esta función está disponible solo en planes de pago</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <div className="flex justify-between items-center">
