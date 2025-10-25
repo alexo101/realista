@@ -103,8 +103,8 @@ export default function UpgradePlan() {
         duration: 8000,
       });
       setShowConfirmModal(false);
-      // Redirect to agency management page
-      setTimeout(() => navigate('/app/gestionar'), 2000);
+      // Redirect to calendar page
+      setTimeout(() => navigate('/gestionar'), 2000);
     },
     onError: (error: any) => {
       toast({
