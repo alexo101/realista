@@ -100,10 +100,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Verificar si el email ya existe
-      const existingClient = await storage.getClients();
-      const emailExists = existingClient.some(client => client.email === validatedData.email);
+      const existingClient = await storage.getClientByEmail(validatedData.email);
 
-      if (emailExists) {
+      if (existingClient) {
         return res.status(400).json({ 
           message: "Ya existe una cuenta con este correo electrónico" 
         });
@@ -510,8 +509,7 @@ ${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeUR
 
       // Si no se encuentra en agentes, buscar en clientes
       if (!user) {
-        const clients = await storage.getClients();
-        const client = clients.find(c => c.email === email);
+        const client = await storage.getClientByEmail(email);
 
         if (client && client.password === password) {
           // Convertir cliente a formato de usuario para compatibilidad
