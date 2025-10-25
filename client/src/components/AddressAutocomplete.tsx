@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { MapPin, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { loadGoogleMaps } from "@/utils/googleMaps";
 
 interface AddressAutocompleteProps {
@@ -13,20 +12,31 @@ interface AddressAutocompleteProps {
 }
 
 export function AddressAutocomplete({ value, onChange, placeholder, className }: AddressAutocompleteProps) {
-  const [inputValue, setInputValue] = useState(value);
   const [showMapConfirm, setShowMapConfirm] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const autocompleteRef = useRef<any>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Update input value when prop value changes
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+  // Helper function to find the internal input element in PlaceAutocompleteElement
+  const getInternalInput = (placeAutocomplete: any): HTMLInputElement | null => {
+    // Try shadow DOM access
+    if (placeAutocomplete.shadowRoot) {
+      const input = placeAutocomplete.shadowRoot.querySelector('input');
+      if (input) return input;
+    }
+    
+    // Fallback: Check for inputElement property (future-proofing)
+    if (placeAutocomplete.inputElement instanceof HTMLInputElement) {
+      return placeAutocomplete.inputElement;
+    }
+    
+    return null;
+  };
 
-  // Initialize Google Places Autocomplete
+  // Initialize Google Places Autocomplete (New API)
   useEffect(() => {
     let mounted = true;
 
@@ -34,58 +44,65 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
       try {
         await loadGoogleMaps();
         
-        if (!mounted || !inputRef.current || autocompleteRef.current) {
+        if (!mounted || !containerRef.current || autocompleteRef.current) {
           return;
         }
 
-        // Barcelona city bounds for location bias
-        const barcelonaBounds = new window.google.maps.LatLngBounds(
-          new window.google.maps.LatLng(41.3200, 2.0523), // Southwest
-          new window.google.maps.LatLng(41.4695, 2.2280)  // Northeast
-        );
+        // Import the Places library
+        await window.google.maps.importLibrary("places");
 
-        // Create autocomplete instance
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          inputRef.current,
-          {
-            bounds: barcelonaBounds,
-            componentRestrictions: { country: 'es' }, // Restrict to Spain
-            fields: ['address_components', 'formatted_address', 'geometry', 'name'],
-            strictBounds: false, // Allow results outside bounds if they're better matches
-            types: ['address'] // Only show full addresses, not businesses or POIs
-          }
-        );
-
-        // Bias results to Barcelona
-        autocomplete.setFields(['address_components', 'formatted_address', 'geometry', 'name']);
+        // Create the new PlaceAutocompleteElement
+        const placeAutocomplete = new window.google.maps.places.PlaceAutocompleteElement({
+          componentRestrictions: { country: ['es'] }, // Restrict to Spain (all cities)
+          types: ['address'] // Only show full addresses, not businesses or POIs
+        });
 
         // Handle place selection
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
+        placeAutocomplete.addEventListener('gmp-placeselect', async (event: any) => {
+          const place = event.place;
           
-          if (!place.geometry) {
-            console.log('No geometry found for place');
+          if (!place) {
+            console.log('No place found');
             return;
           }
 
-          // Check if the address is in Barcelona
-          const addressComponents = place.address_components || [];
-          const cityComponent = addressComponents.find(
-            component => component.types.includes('locality')
-          );
-          
-          if (cityComponent && cityComponent.long_name === 'Barcelona') {
-            setSelectedPlace(place);
-            setShowMapConfirm(true);
-          } else {
-            // Not in Barcelona, show warning but still allow
-            setSelectedPlace(place);
-            setShowMapConfirm(true);
-          }
+          // Fetch required fields
+          await place.fetchFields({
+            fields: ['displayName', 'formattedAddress', 'addressComponents', 'location']
+          });
+
+          setSelectedPlace(place);
+          setShowMapConfirm(true);
         });
 
-        autocompleteRef.current = autocomplete;
-        setIsInitialized(true);
+        // Append to container FIRST
+        if (containerRef.current) {
+          containerRef.current.appendChild(placeAutocomplete);
+          autocompleteRef.current = placeAutocomplete;
+          
+          // Wait for element to be fully initialized, then access internal input
+          requestAnimationFrame(() => {
+            const internalInput = getInternalInput(placeAutocomplete);
+            if (internalInput) {
+              inputRef.current = internalInput;
+              
+              // Set initial value
+              if (value) {
+                internalInput.value = value;
+              }
+              
+              // Set placeholder
+              internalInput.placeholder = placeholder || 'Escribe la dirección...';
+              
+              // Apply className to the internal input
+              if (className) {
+                internalInput.className = className;
+              }
+            }
+            
+            setIsInitialized(true);
+          });
+        }
       } catch (error) {
         console.error('Error initializing Google Places Autocomplete:', error);
       }
@@ -95,29 +112,44 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
 
     return () => {
       mounted = false;
-      // Cleanup autocomplete listeners
-      if (autocompleteRef.current) {
-        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
+      // Cleanup autocomplete element
+      if (autocompleteRef.current && containerRef.current) {
+        try {
+          containerRef.current.removeChild(autocompleteRef.current);
+        } catch (e) {
+          // Element may already be removed
+        }
       }
     };
-  }, []);
+  }, [placeholder, className]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    onChange(newValue);
-  };
+  // Update internal input value when value prop changes
+  useEffect(() => {
+    if (inputRef.current && inputRef.current.value !== value) {
+      inputRef.current.value = value;
+    }
+  }, [value]);
 
   const confirmAddress = () => {
     if (selectedPlace) {
-      // Extract street address from formatted_address
-      const formattedAddress = selectedPlace.formatted_address;
+      // Extract street address from the place
+      const addressComponents = selectedPlace.addressComponents || [];
       
-      // Try to extract just the street name and number
-      const addressParts = formattedAddress.split(',');
-      const streetAddress = addressParts[0]?.trim() || formattedAddress;
+      // Try to build a clean street address
+      const street = addressComponents.find((c: any) => c.types.includes('route'))?.longText || '';
+      const number = addressComponents.find((c: any) => c.types.includes('street_number'))?.longText || '';
       
-      setInputValue(streetAddress);
+      let streetAddress = '';
+      if (street && number) {
+        streetAddress = `${street}, ${number}`;
+      } else if (street) {
+        streetAddress = street;
+      } else {
+        // Fallback to formatted address first line
+        const formattedAddress = selectedPlace.formattedAddress || '';
+        streetAddress = formattedAddress.split(',')[0]?.trim() || formattedAddress;
+      }
+      
       onChange(streetAddress);
     }
     setShowMapConfirm(false);
@@ -132,49 +164,40 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
   const formatDisplayAddress = (place: any): string => {
     if (!place) return '';
     
-    const addressComponents = place.address_components || [];
-    const street = addressComponents.find(c => c.types.includes('route'))?.long_name || '';
-    const number = addressComponents.find(c => c.types.includes('street_number'))?.long_name || '';
-    const neighborhood = addressComponents.find(c => c.types.includes('neighborhood'))?.long_name || '';
+    const addressComponents = place.addressComponents || [];
+    const street = addressComponents.find((c: any) => c.types.includes('route'))?.longText || '';
+    const number = addressComponents.find((c: any) => c.types.includes('street_number'))?.longText || '';
     
     if (street && number) {
-      return `${street} ${number}`;
+      return `${street}, ${number}`;
     } else if (street) {
       return street;
     }
     
-    return place.formatted_address?.split(',')[0] || '';
+    return place.formattedAddress?.split(',')[0] || '';
   };
 
-  const getNeighborhood = (place: any): string => {
+  const getLocation = (place: any): string => {
     if (!place) return '';
     
-    const addressComponents = place.address_components || [];
-    const neighborhood = addressComponents.find(c => c.types.includes('neighborhood'))?.long_name;
-    const city = addressComponents.find(c => c.types.includes('locality'))?.long_name;
+    const addressComponents = place.addressComponents || [];
+    const neighborhood = addressComponents.find((c: any) => c.types.includes('neighborhood'))?.longText;
+    const city = addressComponents.find((c: any) => c.types.includes('locality'))?.longText;
+    const province = addressComponents.find((c: any) => c.types.includes('administrative_area_level_2'))?.longText;
     
-    if (neighborhood && city) {
-      return `${neighborhood}, ${city}`;
-    } else if (city) {
-      return city;
-    }
+    const parts = [];
+    if (neighborhood) parts.push(neighborhood);
+    if (city) parts.push(city);
+    if (province && province !== city) parts.push(province);
     
-    return '';
+    return parts.join(', ') || '';
   };
 
   return (
     <div className="relative">
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          value={inputValue}
-          onChange={handleInputChange}
-          placeholder={placeholder || "Escribe la dirección..."}
-          className={className}
-          data-testid="input-address-autocomplete"
-        />
+      <div ref={containerRef} className="relative w-full" data-testid="container-address-autocomplete">
         {!isInitialized && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 z-10">
             <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
           </div>
         )}
@@ -192,15 +215,15 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
               <div className="p-3 bg-accent/20 rounded-lg">
                 <p className="font-medium">{formatDisplayAddress(selectedPlace)}</p>
                 <p className="text-sm text-muted-foreground">
-                  {getNeighborhood(selectedPlace)}
+                  {getLocation(selectedPlace)}
                 </p>
               </div>
               
               <div className="h-64 w-full border rounded-lg overflow-hidden">
                 <div id="map-preview" className="w-full h-full">
-                  {selectedPlace.geometry && (
+                  {selectedPlace.formattedAddress && (
                     <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&q=${encodeURIComponent(selectedPlace.formatted_address)}&zoom=17`}
+                      src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&q=${encodeURIComponent(selectedPlace.formattedAddress)}&zoom=17`}
                       width="100%"
                       height="100%"
                       style={{ border: 0 }}
