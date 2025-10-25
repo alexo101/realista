@@ -62,9 +62,10 @@ export default function LoginPage() {
         const searchData = JSON.parse(pendingSavedSearch);
         // Don't clear the pending search here - let the search page handle it
         // Redirect back to the search page
-        navigate(searchData.returnUrl || "/");
+        navigate(searchData.returnUrl || "/gestionar");
       } else {
-        navigate("/");
+        // Redirect to calendar page after login
+        navigate("/gestionar");
       }
     } catch (error: any) {
       toast({
