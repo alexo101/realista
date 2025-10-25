@@ -1100,6 +1100,12 @@ export class DatabaseStorage implements IStorage {
       if (agencyData.yearEstablished !== undefined) updates.agencyActiveSince = agencyData.yearEstablished.toString();
       if (agencyData.agencyLanguagesSpoken !== undefined) updates.agencySupportedLanguages = agencyData.agencyLanguagesSpoken;
       if (agencyData.agencyInfluenceNeighborhoods !== undefined) updates.agencyInfluenceNeighborhoods = agencyData.agencyInfluenceNeighborhoods;
+      
+      // Subscription fields
+      if (agencyData.subscriptionPlan !== undefined) updates.subscriptionPlan = agencyData.subscriptionPlan;
+      if (agencyData.seatsLimit !== undefined) updates.seatsLimit = agencyData.seatsLimit;
+      if (agencyData.activePropertiesLimit !== undefined) updates.activePropertiesLimit = agencyData.activePropertiesLimit;
+      if (agencyData.isYearlyBilling !== undefined) updates.isYearlyBilling = agencyData.isYearlyBilling;
 
       console.log('Final update object:', updates);
 
