@@ -2763,13 +2763,14 @@ Gracias!
   app.get("/api/agencies", async (req, res) => {
     try {
       const adminAgentId = req.query.adminAgentId ? parseInt(req.query.adminAgentId as string) : undefined;
+      const sessionUserId = (req as any).session?.user?.id;
 
       // Si se proporciona adminAgentId, obtener solo las agencias de ese administrador
       const agencies = adminAgentId 
         ? await storage.getAgenciesByAdmin(adminAgentId)
-        : await storage.getAgenciesByAdmin(req.user?.id || 0);
+        : await storage.getAgenciesByAdmin(sessionUserId || 0);
 
-      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || req.user?.id}`);
+      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || sessionUserId}`);
       res.json(agencies);
     } catch (error) {
       console.error('Error fetching agencies:', error);
@@ -2780,13 +2781,15 @@ Gracias!
   app.post("/api/agencies", async (req, res) => {
     try {
       console.log('Creating agency with data:', req.body);
-      if (!req.body.adminAgentId && !req.user?.id) {
+      const sessionUserId = (req as any).session?.user?.id;
+      
+      if (!req.body.adminAgentId && !sessionUserId) {
         return res.status(400).json({ message: "Missing adminAgentId" });
       }
 
       const agencyData = {
         ...req.body,
-        adminAgentId: req.body.adminAgentId || req.user?.id
+        adminAgentId: req.body.adminAgentId || sessionUserId
       };
 
       const result = await storage.createAgency(agencyData);
@@ -2830,8 +2833,9 @@ Gracias!
     try {
       const agencyId = parseInt(req.params.id);
       const { plan } = req.body;
+      const sessionUserId = (req as any).session?.user?.id;
 
-      if (!req.user?.id) {
+      if (!sessionUserId) {
         return res.status(401).json({ message: "No autenticado" });
       }
 
@@ -2842,7 +2846,7 @@ Gracias!
       }
 
       // Verify the user is the agency admin
-      if (agency.adminAgentId !== req.user.id) {
+      if (agency.adminAgentId !== sessionUserId) {
         return res.status(403).json({ message: "Solo el administrador puede mejorar el plan" });
       }
 

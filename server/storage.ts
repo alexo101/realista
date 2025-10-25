@@ -1080,7 +1080,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgency(id: number): Promise<void> {
     try {
-      console.log(`Deleting agency ${id}`);
+      console.log(`Deleting agency ${id} with cascade to admin agents`);
 
       // Verificamos que la agencia existe
       const [agency] = await db
@@ -1092,10 +1092,48 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Agency with ID ${id} not found`);
       }
 
-      // Eliminamos la agencia
-      await db.delete(agencies).where(eq(agencies.id, id));
+      // Get all admin agents linked to this agency
+      const adminAgents = await db
+        .select({ agentId: agencyAgents.agentId })
+        .from(agencyAgents)
+        .where(and(
+          eq(agencyAgents.agencyId, id),
+          eq(agencyAgents.role, 'admin'),
+          isNull(agencyAgents.leftAt)
+        ));
 
-      console.log(`Agency ${id} deleted successfully`);
+      console.log(`Found ${adminAgents.length} admin agents to soft-delete for agency ${id}`);
+
+      // Use a transaction to ensure all operations succeed or fail together
+      await db.transaction(async (tx) => {
+        // 1. Soft-delete the agency
+        await tx
+          .update(agencies)
+          .set({ deletedAt: sql`NOW()` })
+          .where(eq(agencies.id, id));
+
+        // 2. Mark all agency_agents entries as left
+        await tx
+          .update(agencyAgents)
+          .set({ leftAt: sql`NOW()` })
+          .where(eq(agencyAgents.agencyId, id));
+
+        // 3. Soft-delete all admin agents
+        if (adminAgents.length > 0) {
+          const agentIds = adminAgents.map(a => a.agentId);
+          await tx
+            .update(agents)
+            .set({ deletedAt: sql`NOW()` })
+            .where(and(
+              inArray(agents.id, agentIds),
+              eq(agents.agentType, 'agency_member')
+            ));
+          
+          console.log(`Soft-deleted ${agentIds.length} admin agents: ${agentIds.join(', ')}`);
+        }
+      });
+
+      console.log(`Agency ${id} and its admin agents deleted successfully`);
     } catch (error) {
       console.error("Error deleting agency:", error);
       throw new Error(
