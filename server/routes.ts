@@ -2857,20 +2857,20 @@ Gracias!
       }
 
       // Determine the new limits based on the plan
-      let activeAgentsLimit: number | null;
+      let seatsLimit: number | null;
       let activePropertiesLimit: number | null;
 
       switch (plan) {
         case 'pequeña':
-          activeAgentsLimit = 2;
+          seatsLimit = 2;
           activePropertiesLimit = 10;
           break;
         case 'mediana':
-          activeAgentsLimit = 6;
+          seatsLimit = 6;
           activePropertiesLimit = 30;
           break;
         case 'lider':
-          activeAgentsLimit = null; // unlimited
+          seatsLimit = null; // unlimited
           activePropertiesLimit = null; // unlimited
           break;
         default:
@@ -2880,14 +2880,14 @@ Gracias!
       // Store previous state for audit
       const previousState = {
         subscriptionPlan: agency.subscriptionPlan,
-        activeAgentsLimit: agency.activeAgentsLimit,
+        seatsLimit: agency.seatsLimit,
         activePropertiesLimit: agency.activePropertiesLimit,
       };
 
       // Update the agency plan and limits
       const updatedAgency = await storage.updateAgency(agencyId, {
         subscriptionPlan: plan,
-        activeAgentsLimit,
+        seatsLimit,
         activePropertiesLimit,
       });
 
@@ -2899,7 +2899,7 @@ Gracias!
         previousState,
         newState: {
           subscriptionPlan: plan,
-          activeAgentsLimit,
+          seatsLimit,
           activePropertiesLimit,
         },
         triggeredBy: sessionUserId,

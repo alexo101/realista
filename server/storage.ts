@@ -1008,7 +1008,6 @@ export class DatabaseStorage implements IStorage {
           subscriptionPlan: agencies.subscriptionPlan,
           isYearlyBilling: agencies.isYearlyBilling,
           seatsLimit: agencies.seatsLimit,
-          activeAgentsLimit: agencies.activeAgentsLimit,
           activePropertiesLimit: agencies.activePropertiesLimit,
           deletedAt: agencies.deletedAt,
           createdAt: agencies.createdAt,
