@@ -1,5 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import { pool } from "./db";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initEmailService } from "./emailService";
@@ -8,8 +10,14 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
-// Session configuration
+// Session configuration with PostgreSQL store
+const PgSession = connectPgSimple(session);
 app.use(session({
+  store: new PgSession({
+    pool: pool as any,
+    tableName: 'session',
+    createTableIfMissing: true,
+  }),
   secret: process.env.SESSION_SECRET || 'realista-session-secret-key',
   resave: false,
   saveUninitialized: false,

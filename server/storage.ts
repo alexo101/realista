@@ -1080,7 +1080,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgency(id: number): Promise<void> {
     try {
-      console.log(`Deleting agency ${id} with cascade to admin agents`);
+      console.log(`Hard deleting agency ${id} with cascade to admin agents and properties`);
 
       // Verificamos que la agencia existe
       const [agency] = await db
@@ -1092,7 +1092,7 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Agency with ID ${id} not found`);
       }
 
-      // Get all admin agents linked to this agency
+      // Get all ACTIVE admin agents linked to this agency
       const adminAgents = await db
         .select({ agentId: agencyAgents.agentId })
         .from(agencyAgents)
@@ -1102,38 +1102,141 @@ export class DatabaseStorage implements IStorage {
           isNull(agencyAgents.leftAt)
         ));
 
-      console.log(`Found ${adminAgents.length} admin agents to soft-delete for agency ${id}`);
+      const adminAgentIds = adminAgents.map(a => a.agentId);
+      console.log(`Found ${adminAgentIds.length} admin agents to hard delete for agency ${id}`);
+
+      // Get all properties owned by this agency
+      const agencyProperties = await db
+        .select({ id: properties.id })
+        .from(properties)
+        .where(eq(properties.agencyId, id));
+
+      const propertyIds = agencyProperties.map(p => p.id);
+      console.log(`Found ${propertyIds.length} properties to delete for agency ${id}`);
 
       // Use a transaction to ensure all operations succeed or fail together
       await db.transaction(async (tx) => {
-        // 1. Soft-delete the agency
-        await tx
-          .update(agencies)
-          .set({ deletedAt: sql`NOW()` })
-          .where(eq(agencies.id, id));
+        // 1. Delete all admin agents' related data
+        if (adminAgentIds.length > 0) {
+          // Delete admin agents' appointments
+          await tx
+            .delete(appointments)
+            .where(inArray(appointments.agentId, adminAgentIds));
 
-        // 2. Mark all agency_agents entries as left
+          // Delete admin agents' inquiries
+          await tx
+            .delete(inquiries)
+            .where(inArray(inquiries.agentId, adminAgentIds));
+
+          // Delete admin agents' conversation messages
+          await tx
+            .delete(conversationMessages)
+            .where(and(
+              eq(conversationMessages.senderType, 'agent'),
+              inArray(conversationMessages.senderId, adminAgentIds)
+            ));
+
+          // Delete admin agents' pinned conversations
+          await tx
+            .delete(pinnedConversations)
+            .where(and(
+              eq(pinnedConversations.userType, 'agent'),
+              inArray(pinnedConversations.userId, adminAgentIds)
+            ));
+
+          // Delete admin agents' reviews
+          await tx
+            .delete(reviews)
+            .where(and(
+              eq(reviews.targetType, 'agent'),
+              inArray(reviews.targetId, adminAgentIds)
+            ));
+
+          // Delete admin agents' events
+          await tx
+            .delete(agentEvents)
+            .where(inArray(agentEvents.agentId, adminAgentIds));
+
+          // Delete admin agents' favorite relationships
+          await tx
+            .delete(clientFavoriteAgents)
+            .where(inArray(clientFavoriteAgents.agentId, adminAgentIds));
+
+          console.log(`Deleted related data for ${adminAgentIds.length} admin agents`);
+        }
+
+        // 2. Delete agency properties and their related data
+        if (propertyIds.length > 0) {
+          // Delete property visit requests
+          await tx
+            .delete(propertyVisitRequests)
+            .where(inArray(propertyVisitRequests.propertyId, propertyIds));
+
+          // Delete property favorites
+          await tx
+            .delete(clientFavoriteProperties)
+            .where(inArray(clientFavoriteProperties.propertyId, propertyIds));
+
+          // Delete property fraud reports
+          await tx
+            .delete(fraudReports)
+            .where(inArray(fraudReports.propertyId, propertyIds));
+
+          // Delete property inquiries
+          await tx
+            .delete(inquiries)
+            .where(inArray(inquiries.propertyId, propertyIds));
+
+          // Delete properties
+          await tx
+            .delete(properties)
+            .where(inArray(properties.id, propertyIds));
+
+          console.log(`Deleted ${propertyIds.length} properties and their related data`);
+        }
+
+        // 3. Delete agency reviews
         await tx
-          .update(agencyAgents)
-          .set({ leftAt: sql`NOW()` })
+          .delete(reviews)
+          .where(and(
+            eq(reviews.targetType, 'agency'),
+            eq(reviews.targetId, id)
+          ));
+
+        // 4. Delete agency favorites
+        await tx
+          .delete(clientFavoriteAgencies)
+          .where(eq(clientFavoriteAgencies.agencyId, id));
+
+        // 5. Delete subscription events
+        await tx
+          .delete(subscriptionEvents)
+          .where(eq(subscriptionEvents.agencyId, id));
+
+        // 6. Delete all agency_agents relationships
+        await tx
+          .delete(agencyAgents)
           .where(eq(agencyAgents.agencyId, id));
 
-        // 3. Soft-delete all admin agents
-        if (adminAgents.length > 0) {
-          const agentIds = adminAgents.map(a => a.agentId);
+        // 7. Delete admin agents
+        if (adminAgentIds.length > 0) {
           await tx
-            .update(agents)
-            .set({ deletedAt: sql`NOW()` })
+            .delete(agents)
             .where(and(
-              inArray(agents.id, agentIds),
+              inArray(agents.id, adminAgentIds),
               eq(agents.agentType, 'agency_member')
             ));
           
-          console.log(`Soft-deleted ${agentIds.length} admin agents: ${agentIds.join(', ')}`);
+          console.log(`Hard deleted ${adminAgentIds.length} admin agents: ${adminAgentIds.join(', ')}`);
         }
+
+        // 8. Finally, delete the agency itself
+        await tx
+          .delete(agencies)
+          .where(eq(agencies.id, id));
       });
 
-      console.log(`Agency ${id} and its admin agents deleted successfully`);
+      console.log(`Agency ${id}, its admin agents, and all related data deleted successfully`);
     } catch (error) {
       console.error("Error deleting agency:", error);
       throw new Error(
