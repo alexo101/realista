@@ -32,7 +32,7 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInTiming: true,
   moveInDate: true,
 }).partial();
-import { sendWelcomeEmail, sendReviewRequest } from "./emailService";
+import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch, getCities, getDistrictsByCity, getNeighborhoodsByDistrict } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
@@ -456,35 +456,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Send invitation email
+      // Send invitation email using Resend
       try {
-        await sendWelcomeEmail(email, `${name} ${surname}`, true);
-        console.log('Invitation email sent to:', email);
+        const emailSent = await sendAgentInvitation(email, name, surname, agencyName);
         
-        // Log the invitation for tracking (in a real app, you'd store this in a database)
-        console.log(`
------------------------------------
-ENVIANDO EMAIL DE INVITACIÓN:
-Para: ${email}
-Asunto: Invitación para unirse a ${agencyName} en Realista
-
-Contenido:
-Hola ${name} ${surname},
-
-Has sido invitado/a a unirte a ${agencyName} en la plataforma Realista.
-
-Para completar tu registro y acceder a tu cuenta, visita:
-${process.env.FRONTEND_URL || 'http://localhost:5000'}/register?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&surname=${encodeURIComponent(surname)}
-
-¡Bienvenido/a al equipo!
------------------------------------
-`);
-
-        res.status(200).json({ 
-          message: "Invitación enviada exitosamente",
-          email: email,
-          name: `${name} ${surname}`
-        });
+        if (emailSent) {
+          console.log('Invitation email sent successfully to:', email);
+          res.status(200).json({ 
+            message: "Invitación enviada exitosamente",
+            email: email,
+            name: `${name} ${surname}`
+          });
+        } else {
+          throw new Error('Failed to send invitation email');
+        }
       } catch (emailError) {
         console.error('Error sending invitation email:', emailError);
         res.status(500).json({ 
