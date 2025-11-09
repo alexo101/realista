@@ -49,8 +49,10 @@ export async function initEmailService() {
   try {
     // Test the Resend connection by getting credentials
     await getCredentials();
+    const frontendUrl = getFrontendUrl();
     console.log('Servicio de email Resend inicializado correctamente');
     console.log('Emails se enviarán desde el dominio: realista.homes');
+    console.log('URLs de registro usarán:', frontendUrl);
     return true;
   } catch (error) {
     console.error('Error al inicializar el servicio de email Resend:', error);
@@ -131,6 +133,32 @@ export async function sendWelcomeEmail(to: string, name: string, isAgent: boolea
   }
 }
 
+// Helper function to get environment-aware frontend URL
+function getFrontendUrl(): string {
+  // If FRONTEND_URL is explicitly set, use it
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL;
+  }
+  
+  // Check if we're in Replit development environment
+  const replitDevDomain = process.env.REPLIT_DEV_DOMAIN;
+  if (replitDevDomain) {
+    return `https://${replitDevDomain}`;
+  }
+  
+  // Check for deployment URL
+  const replitDeploymentUrl = process.env.REPL_SLUG 
+    ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+    : null;
+  
+  if (replitDeploymentUrl) {
+    return replitDeploymentUrl;
+  }
+  
+  // Fallback to production domain
+  return 'https://realista.homes';
+}
+
 // Función para enviar invitación a agente
 export async function sendAgentInvitation(
   to: string, 
@@ -140,9 +168,10 @@ export async function sendAgentInvitation(
 ) {
   try {
     const { client, fromEmail } = await getUncachableResendClient();
+    const frontendUrl = getFrontendUrl();
     
     const subject = `Invitación para unirse a ${agencyName} en Realista`;
-    const registrationUrl = `${process.env.FRONTEND_URL || 'https://realista.homes'}/registrarse?email=${encodeURIComponent(to)}&name=${encodeURIComponent(name)}&surname=${encodeURIComponent(surname)}`;
+    const registrationUrl = `${frontendUrl}/registrarse?email=${encodeURIComponent(to)}&name=${encodeURIComponent(name)}&surname=${encodeURIComponent(surname)}`;
     
     const htmlContent = `
       <!DOCTYPE html>
