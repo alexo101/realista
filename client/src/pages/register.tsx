@@ -96,23 +96,54 @@ export default function RegisterPage() {
     }
   };
 
+  // Track if this is an invitation flow
+  const [isInvitation, setIsInvitation] = useState(false);
+  const [invitationData, setInvitationData] = useState<{
+    email?: string;
+    name?: string;
+    surname?: string;
+    agencyId?: string;
+    agencyName?: string;
+  }>({});
+
   // Parse URL parameters on component mount
   useEffect(() => {
     const params = new URLSearchParams(location.split('?')[1] || '');
     const plan = params.get('plan');
     const type = params.get('type'); // "agency" or "agent"  
     const billing = params.get('billing'); // "monthly" or "yearly"
+    const invitation = params.get('invitation'); // "true" for invitations
+    const email = params.get('email');
+    const name = params.get('name');
+    const surname = params.get('surname');
+    const agencyId = params.get('agencyId');
+    const agencyName = params.get('agencyName');
     
-    if (plan) {
-      setSelectedPlan(plan);
-      form.setValue('subscriptionPlan', plan);
-    }
-    if (type) {
-      form.setValue('subscriptionType', type);
-      form.setValue('profileType', type === 'agency' ? 'agency' : 'agent');
-    }
-    if (billing) {
-      form.setValue('isYearlyBilling', billing === 'yearly');
+    // Handle invitation flow
+    if (invitation === 'true') {
+      setIsInvitation(true);
+      setInvitationData({ email: email || '', name: name || '', surname: surname || '', agencyId: agencyId || '', agencyName: agencyName || '' });
+      
+      // Pre-populate form fields
+      if (email) form.setValue('email', email);
+      if (name) form.setValue('name', name);
+      if (surname) form.setValue('surname', surname);
+      
+      // Force agent profile type for invitations
+      form.setValue('profileType', 'agent');
+    } else {
+      // Regular registration flow
+      if (plan) {
+        setSelectedPlan(plan);
+        form.setValue('subscriptionPlan', plan);
+      }
+      if (type) {
+        form.setValue('subscriptionType', type);
+        form.setValue('profileType', type === 'agency' ? 'agency' : 'agent');
+      }
+      if (billing) {
+        form.setValue('isYearlyBilling', billing === 'yearly');
+      }
     }
   }, [location, form]);
 
@@ -120,7 +151,43 @@ export default function RegisterPage() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      // Determinar si el usuario será un agente admin basado en la selección
+      // Handle invitation flow differently
+      if (isInvitation && invitationData.agencyId) {
+        // Invited agent registration
+        const payload = {
+          email: data.email,
+          password: data.password,
+          name: data.name || null,
+          surname: data.surname || null,
+          agencyId: parseInt(invitationData.agencyId),
+        };
+
+        console.log("Enviando datos de registro de agente invitado:", payload);
+
+        const response = await apiRequest("POST", "/api/auth/register-invited-agent", payload);
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+
+          toast({
+            title: "¡Bienvenido al equipo!",
+            description: `Te has unido exitosamente a ${invitationData.agencyName}`,
+          });
+
+          navigate("/gestionar");
+        } else {
+          const error = await response.json();
+          toast({
+            title: "Error al registrarse",
+            description: error.message || "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      // Regular registration flow
       const isAdmin = data.profileType === "agency";
 
       // Preparamos el payload según el tipo de perfil seleccionado
@@ -189,7 +256,19 @@ export default function RegisterPage() {
       <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto">
         {/* Columna de formulario */}
         <div className="lg:w-1/2 bg-white p-8 rounded-lg shadow">
-          <h1 className="text-3xl font-bold mb-6">Crear una cuenta</h1>
+          <h1 className="text-3xl font-bold mb-6">
+            {isInvitation ? `Únete a ${invitationData.agencyName}` : 'Crear una cuenta'}
+          </h1>
+          
+          {/* Invitation welcome message */}
+          {isInvitation && invitationData.agencyName && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-gray-700">
+                Has sido invitado/a a unirte a <strong>{invitationData.agencyName}</strong>. 
+                Completa tu registro para empezar a trabajar con el equipo.
+              </p>
+            </div>
+          )}
           
           {/* Plan Selection Display */}
           {selectedPlan && (() => {
@@ -230,40 +309,89 @@ export default function RegisterPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="profileType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de perfil</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="grid grid-cols-1 gap-4"
-                      >
-                        <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                          <RadioGroupItem value="agent" id="agent" />
-                          <UserIcon className="h-6 w-6 text-primary" />
-                          <FormLabel htmlFor="agent" className="font-normal cursor-pointer flex-1">
-                            <div className="font-medium">Anunciarme como agente</div>
-                            <div className="text-sm text-gray-500">Trabaja de forma independiente</div>
-                          </FormLabel>
-                        </div>
-                        <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                          <RadioGroupItem value="agency" id="agency" />
-                          <Building className="h-6 w-6 text-primary" />
-                          <FormLabel htmlFor="agency" className="font-normal cursor-pointer flex-1">
-                            <div className="font-medium">Anunciar mi agencia</div>
-                            <div className="text-sm text-gray-500">Gestiona una agencia inmobiliaria</div>
-                          </FormLabel>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Hide profile type selector for invitations */}
+              {!isInvitation && (
+                <FormField
+                  control={form.control}
+                  name="profileType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de perfil</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="grid grid-cols-1 gap-4"
+                        >
+                          <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+                            <RadioGroupItem value="agent" id="agent" />
+                            <UserIcon className="h-6 w-6 text-primary" />
+                            <FormLabel htmlFor="agent" className="font-normal cursor-pointer flex-1">
+                              <div className="font-medium">Anunciarme como agente</div>
+                              <div className="text-sm text-gray-500">Trabaja de forma independiente</div>
+                            </FormLabel>
+                          </div>
+                          <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+                            <RadioGroupItem value="agency" id="agency" />
+                            <Building className="h-6 w-6 text-primary" />
+                            <FormLabel htmlFor="agency" className="font-normal cursor-pointer flex-1">
+                              <div className="font-medium">Anunciar mi agencia</div>
+                              <div className="text-sm text-gray-500">Gestiona una agencia inmobiliaria</div>
+                            </FormLabel>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Name field - for invitations or agency registration */}
+              {(isInvitation || form.watch("profileType") === "agency") && (
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Juan"
+                          type="text"
+                          data-testid="input-name"
+                          disabled={isInvitation}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Surname field - for invitations or agency registration */}
+              {(isInvitation || form.watch("profileType") === "agency") && (
+                <FormField
+                  control={form.control}
+                  name="surname"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Apellido</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="García"
+                          type="text"
+                          data-testid="input-surname"
+                          disabled={isInvitation}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -275,6 +403,8 @@ export default function RegisterPage() {
                       <Input
                         placeholder="tu@correo.com"
                         type="email"
+                        disabled={isInvitation}
+                        data-testid="input-email"
                         {...field}
                       />
                     </FormControl>
@@ -283,47 +413,18 @@ export default function RegisterPage() {
                 )}
               />
 
-              {/* Name and Surname fields - only for agency registration */}
-              {form.watch("profileType") === "agency" && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre del administrador</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Juan"
-                            type="text"
-                            data-testid="input-admin-name"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="surname"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Apellido del administrador</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="García"
-                            type="text"
-                            data-testid="input-admin-surname"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
+              {/* Agency display for invitations */}
+              {isInvitation && invitationData.agencyName && (
+                <FormItem>
+                  <FormLabel>Agencia</FormLabel>
+                  <FormControl>
+                    <Input
+                      value={invitationData.agencyName}
+                      disabled
+                      data-testid="input-agency"
+                    />
+                  </FormControl>
+                </FormItem>
               )}
 
               <FormField
@@ -365,8 +466,9 @@ export default function RegisterPage() {
                 type="submit"
                 className="w-full"
                 disabled={isSubmitting}
+                data-testid="button-submit"
               >
-                {isSubmitting ? "Registrando..." : "Crear cuenta"}
+                {isSubmitting ? "Registrando..." : isInvitation ? "Unirme a mi agencia" : "Crear cuenta"}
               </Button>
 
               <p className="text-center text-sm text-gray-500 mt-4">

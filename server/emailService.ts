@@ -164,14 +164,19 @@ export async function sendAgentInvitation(
   to: string, 
   name: string, 
   surname: string, 
-  agencyName: string
+  agencyName: string,
+  agencyId?: number
 ) {
   try {
     const { client, fromEmail } = await getUncachableResendClient();
     const frontendUrl = getFrontendUrl();
     
     const subject = `Invitación para unirse a ${agencyName} en Realista`;
-    const registrationUrl = `${frontendUrl}/registrarse?email=${encodeURIComponent(to)}&name=${encodeURIComponent(name)}&surname=${encodeURIComponent(surname)}`;
+    let registrationUrl = `${frontendUrl}/registrarse?email=${encodeURIComponent(to)}&name=${encodeURIComponent(name)}&surname=${encodeURIComponent(surname)}&invitation=true`;
+    
+    if (agencyId) {
+      registrationUrl += `&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName)}`;
+    }
     
     const htmlContent = `
       <!DOCTYPE html>

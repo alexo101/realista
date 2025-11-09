@@ -351,6 +351,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Invited agent registration endpoint
+  app.post("/api/auth/register-invited-agent", async (req, res) => {
+    try {
+      console.log('Invited Agent Registration - Datos recibidos:', req.body);
+      const { email, password, name, surname, agencyId } = req.body;
+
+      // Validate required fields
+      if (!email || !password || !name || !surname || !agencyId) {
+        return res.status(400).json({ 
+          message: "Todos los campos son requeridos" 
+        });
+      }
+
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "Ya existe una cuenta con este correo electrónico" 
+        });
+      }
+
+      // Verify agency exists
+      const agency = await storage.getAgencyById(agencyId);
+      if (!agency) {
+        return res.status(404).json({ 
+          message: "La agencia no existe" 
+        });
+      }
+
+      // Create agent linked to agency
+      const agentData = {
+        email,
+        password,
+        name,
+        surname,
+        agencyId: agencyId,
+        agentType: 'agency_member',
+        subscriptionPlan: null, // Agency members inherit agency subscription
+        isYearlyBilling: false,
+        city: null
+      };
+
+      const agent = await storage.createUser(agentData);
+      console.log('Invited agent created:', agent.id, 'for agency:', agencyId);
+
+      // Link agent to agency via agency_agents table (atomic with seat check)
+      await storage.addAgentToAgencyAtomic(
+        agencyId,
+        agent.id,
+        'member',
+        agent.id // Self-registration through invitation
+      );
+      console.log('Agent successfully linked to agency:', agencyId);
+
+      // Create session with proper user object
+      (req as any).session.user = {
+        id: agent.id,
+        email: agent.email,
+        name: agent.name,
+        surname: agent.surname,
+        isAdmin: false,
+        isClient: false,
+        phone: agent.phone,
+        agencyId: agencyId,
+        agencyName: agency.agencyName
+      };
+      
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(agent.email, `${name} ${surname}`, true);
+        console.log('Email de bienvenida enviado a:', agent.email);
+      } catch (emailError) {
+        console.error('Error enviando email de bienvenida:', emailError);
+      }
+
+      // Return user data without password
+      const { password: _, ...agentResponse } = agent;
+      res.status(201).json({
+        ...agentResponse,
+        isAdmin: false,
+        isClient: false,
+        agencyName: agency.agencyName
+      });
+    } catch (error) {
+      console.error('Error registering invited agent:', error);
+      res.status(500).json({ message: "Error al registrar el agente invitado" });
+    }
+  });
+
   // Agent registration with subscription plan
   app.post("/api/auth/register-agent", async (req, res) => {
     try {
@@ -458,7 +554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send invitation email using Resend
       try {
-        const emailSent = await sendAgentInvitation(email, name, surname, agencyName);
+        const emailSent = await sendAgentInvitation(email, name, surname, agencyName, agencyId ? parseInt(agencyId) : undefined);
         
         if (emailSent) {
           console.log('Invitation email sent successfully to:', email);
