@@ -53,7 +53,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
   // Create agent invitation mutation
   const createAgentMutation = useMutation({
     mutationFn: async (agentData: CreateAgentFormData) => {
-      return apiRequest("/api/agents/invite", "POST", {
+      return apiRequest("POST", "/api/agents/invite", {
         name: agentData.name,
         surname: agentData.surname,
         email: agentData.email,
