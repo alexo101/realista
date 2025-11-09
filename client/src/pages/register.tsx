@@ -108,7 +108,10 @@ export default function RegisterPage() {
 
   // Parse URL parameters on component mount
   useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
+    const urlParams = window.location.search;
+    console.log('Full URL search params:', urlParams);
+    const params = new URLSearchParams(urlParams);
+    
     const plan = params.get('plan');
     const type = params.get('type'); // "agency" or "agent"  
     const billing = params.get('billing'); // "monthly" or "yearly"
@@ -119,8 +122,11 @@ export default function RegisterPage() {
     const agencyId = params.get('agencyId');
     const agencyName = params.get('agencyName');
     
+    console.log('Parsed invitation params:', { invitation, email, name, surname, agencyId, agencyName });
+    
     // Handle invitation flow
     if (invitation === 'true') {
+      console.log('Setting invitation mode to true');
       setIsInvitation(true);
       setInvitationData({ email: email || '', name: name || '', surname: surname || '', agencyId: agencyId || '', agencyName: agencyName || '' });
       
