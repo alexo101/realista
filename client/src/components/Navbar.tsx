@@ -58,8 +58,8 @@ export function Navbar() {
               
               {user ? (
                 <>
-                  {user.isClient ? (
-                    <Link href="/perfil-cliente">
+                  {user.isClient && user.clientUuid ? (
+                    <Link href={`/perfil-cliente/${user.clientUuid}/perfil`}>
                       <Button variant="outline">
                         {t('nav.profile')}
                       </Button>
@@ -123,8 +123,8 @@ export function Navbar() {
               
               {user ? (
                 <>
-                  {user.isClient ? (
-                    <Link href="/perfil-cliente" className="block">
+                  {user.isClient && user.clientUuid ? (
+                    <Link href={`/perfil-cliente/${user.clientUuid}/perfil`} className="block">
                       <Button variant="outline" className="w-full justify-start">
                         {t('nav.profile')}
                       </Button>

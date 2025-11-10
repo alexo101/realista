@@ -34,6 +34,7 @@ function Router() {
       <Route path="/registro-plan-agencia" component={AgencyPlanRegister} />
       <Route path="/registro-plan-agente" component={AgentPlanRegister} />
       <Route path="/registro-cliente" component={ClientRegisterPage} />
+      <Route path="/perfil-cliente/:clientUuid/:section" component={ClientProfile} />
       <Route path="/perfil-cliente" component={ClientProfile} />
       <Route path="/buscar/comprar" component={Search} />
       <Route path="/buscar/alquilar" component={Search} />

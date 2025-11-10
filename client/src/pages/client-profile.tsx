@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Form,
   FormControl,
@@ -39,7 +40,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
-import { useLocation, Redirect } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ClientConversationalMessages } from "@/components/ClientConversationalMessages";
 import { cn } from "@/lib/utils";
@@ -79,6 +80,17 @@ interface FavoriteAgency {
   agencyInfluenceNeighborhoods?: string[];
 }
 
+// Valid dashboard sections
+const VALID_SECTIONS = [
+  'perfil',
+  'busquedas',
+  'citas',
+  'favoritos',
+  'mensajes'
+] as const;
+
+type DashboardSection = typeof VALID_SECTIONS[number];
+
 // Client profile form schema
 const clientProfileSchema = z.object({
   name: z.string().min(1, "Nombre es obligatorio"),
@@ -106,15 +118,82 @@ type ClientProfileFormData = z.infer<typeof clientProfileSchema>;
 
 
 export default function ClientProfile() {
-  const { user } = useUser();
+  const { user, isLoading } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [section, setSection] = useState("profile");
+  // Extract route parameters
+  const [match, params] = useRoute("/perfil-cliente/:clientUuid/:section");
+  const urlClientUuid = params?.clientUuid;
+  const urlSection = params?.section as DashboardSection | undefined;
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+
+  // Route guards
+  useEffect(() => {
+    // Wait for user context to load before applying guards
+    if (isLoading) {
+      return;
+    }
+
+    if (!user) {
+      // Not authenticated - redirect to login
+      navigate("/iniciar-sesion");
+      return;
+    }
+
+    if (!user.isClient) {
+      // Agents should use their own dashboard
+      if (user.agentUuid) {
+        navigate(`/gestionar/${user.agentUuid}/calendario`);
+      } else {
+        navigate("/");
+      }
+      return;
+    }
+
+    if (!user.clientUuid) {
+      // Client without UUID - something is wrong
+      toast({
+        title: "Error",
+        description: "Tu perfil no tiene un identificador válido. Contacta soporte.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if accessing without UUID in URL (backward compatibility)
+    if (!match) {
+      // Redirect to UUID-based URL with default section
+      navigate(`/perfil-cliente/${user.clientUuid}/perfil`);
+      return;
+    }
+
+    // Validate UUID matches logged-in user
+    if (urlClientUuid !== user.clientUuid) {
+      // Attempting to access another client's dashboard
+      toast({
+        title: "Acceso denegado",
+        description: "No puedes acceder al perfil de otro cliente.",
+        variant: "destructive"
+      });
+      navigate(`/perfil-cliente/${user.clientUuid}/perfil`);
+      return;
+    }
+
+    // Validate section is valid
+    if (!urlSection || !VALID_SECTIONS.includes(urlSection)) {
+      // Invalid section - redirect to perfil
+      navigate(`/perfil-cliente/${user.clientUuid}/perfil`);
+      return;
+    }
+  }, [user, match, urlClientUuid, urlSection, navigate, toast, isLoading]);
+
+  // Determine current section from URL or default to perfil
+  const currentSection = urlSection && VALID_SECTIONS.includes(urlSection) ? urlSection : 'perfil';
 
   // Query to fetch existing client profile data
   const { data: clientProfileData, isLoading: isLoadingProfile } = useQuery({
@@ -353,13 +432,23 @@ export default function ClientProfile() {
   const [editingSearchName, setEditingSearchName] = useState("");
   const [deletingSearchId, setDeletingSearchId] = useState<number | null>(null);
 
+  // Show loading spinner while user context is loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Don't render anything if guards haven't passed yet
   if (!user || !user.isClient) {
     return null;
   }
 
   const renderMainContent = () => {
-    switch (section) {
-      case "profile":
+    switch (currentSection) {
+      case "perfil":
         return (
           <div className="space-y-6">
             <div className="mb-8">
@@ -863,170 +952,7 @@ export default function ClientProfile() {
           </div>
         );
 
-      case "agents":
-        return (
-          <div className="space-y-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agentes Favoritos</h1>
-              <p className="text-gray-600">Agentes inmobiliarios que has marcado como favoritos</p>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-red-500" />
-                  Agentes favoritos ({favoriteAgents.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {favoriteAgents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes agentes favoritos
-                    </h3>
-                    <p className="text-gray-500">
-                      Explora nuestros agentes y marca como favoritos los que más te interesen
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {favoriteAgents.map((agent) => (
-                      <Card key={agent.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={agent.avatar} />
-                              <AvatarFallback>
-                                {agent.name?.[0]}{agent.surname?.[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900">
-                                {agent.name} {agent.surname}
-                              </h3>
-                              <p className="text-sm text-gray-500 mb-2">{agent.email}</p>
-                              {agent.yearsOfExperience && (
-                                <p className="text-sm text-gray-600 mb-2">
-                                  {agent.yearsOfExperience} años de experiencia
-                                </p>
-                              )}
-                              {agent.influenceNeighborhoods && (
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {agent.influenceNeighborhoods.slice(0, 2).map((neighborhood) => (
-                                    <Badge key={neighborhood} variant="secondary" className="text-xs">
-                                      {neighborhood}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                              <Button 
-                                size="sm" 
-                                onClick={() => navigate(`/agentes/${agent.slug || agent.id}`)}
-                              >
-                                Ver perfil
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      case "agencies":
-        return (
-          <div className="space-y-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agencias Favoritas</h1>
-              <p className="text-gray-600">Agencias inmobiliarias que has marcado como favoritas</p>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-blue-500" />
-                  Agencias favoritas ({favoriteAgencies.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {favoriteAgencies.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes agencias favoritas
-                    </h3>
-                    <p className="text-gray-500">
-                      Explora nuestras agencias y marca como favoritas las que más te interesen
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {favoriteAgencies.map((agency) => (
-                      <Card key={agency.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="h-12 w-12 flex-shrink-0">
-                              {agency.agencyLogo ? (
-                                <img
-                                  src={agency.agencyLogo}
-                                  alt={agency.agencyName}
-                                  className="h-full w-full object-contain rounded"
-                                />
-                              ) : (
-                                <div className="h-full w-full bg-gray-100 rounded flex items-center justify-center">
-                                  <Building2 className="h-6 w-6 text-gray-400" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900 mb-1">
-                                {agency.agencyName}
-                              </h3>
-                              <p className="text-sm text-gray-500 mb-2">{agency.email}</p>
-                              {agency.agencyAddress && (
-                                <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {agency.agencyAddress}
-                                </p>
-                              )}
-                              {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {agency.agencyInfluenceNeighborhoods.slice(0, 2).map((neighborhood) => (
-                                    <Badge key={neighborhood} variant="secondary" className="text-xs">
-                                      {neighborhood}
-                                    </Badge>
-                                  ))}
-                                  {agency.agencyInfluenceNeighborhoods.length > 2 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      +{agency.agencyInfluenceNeighborhoods.length - 2}
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
-                              <Button 
-                                size="sm" 
-                                onClick={() => navigate(`/agency/${agency.id}`)}
-                              >
-                                Ver perfil
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      case "properties":
+      case "favoritos":
         return (
           <div className="space-y-6">
             <div className="mb-8">
@@ -1124,7 +1050,28 @@ export default function ClientProfile() {
           </div>
         );
 
-      case "messages":
+      case "citas":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Citas</h1>
+              <p className="text-gray-600">Gestiona tus citas programadas con agentes</p>
+            </div>
+            <Card>
+              <CardContent className="p-8 text-center">
+                <CalendarDays className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Próximamente
+                </h3>
+                <p className="text-gray-500">
+                  Esta sección estará disponible próximamente para gestionar tus citas
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case "mensajes":
         return (
           <div className="space-y-6">
             <div className="mb-8">
@@ -1136,7 +1083,7 @@ export default function ClientProfile() {
           </div>
         );
 
-      case "saved-searches":
+      case "busquedas":
         return (
           <div className="space-y-6">
             <div className="mb-8">
@@ -1338,78 +1285,65 @@ export default function ClientProfile() {
               {/* Profile Section */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => setSection("profile")}
-                  isActive={section === "profile"}
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/perfil`)}
+                  isActive={currentSection === "perfil"}
                   className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-profile"
+                  data-testid="sidebar-perfil"
                 >
                   <User className="h-4 w-4" />
                   {!sidebarCollapsed && <span>Mi Perfil</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Agents Section */}
+              {/* Searches Section */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => setSection("agents")}
-                  isActive={section === "agents"}
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/busquedas`)}
+                  isActive={currentSection === "busquedas"}
                   className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-agents"
+                  data-testid="sidebar-busquedas"
+                >
+                  <Bookmark className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Mis búsquedas</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Appointments Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/citas`)}
+                  isActive={currentSection === "citas"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-citas"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Mis citas</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Favorites Section */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/favoritos`)}
+                  isActive={currentSection === "favoritos"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-favoritos"
                 >
                   <Heart className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Agentes favoritos</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Agencies Section */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setSection("agencies")}
-                  isActive={section === "agencies"}
-                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-agencies"
-                >
-                  <Building2 className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Agencias favoritas</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Properties Section */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setSection("properties")}
-                  isActive={section === "properties"}
-                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-properties"
-                >
-                  <Home className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Propiedades favoritas</span>}
+                  {!sidebarCollapsed && <span>Favoritos</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* Messages Section */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => setSection("messages")}
-                  isActive={section === "messages"}
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/mensajes`)}
+                  isActive={currentSection === "mensajes"}
                   className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-messages"
+                  data-testid="sidebar-mensajes"
                 >
                   <MessageCircle className="h-4 w-4" />
                   {!sidebarCollapsed && <span>Mensajes</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Saved Searches Section */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => setSection("saved-searches")}
-                  isActive={section === "saved-searches"}
-                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-saved-searches"
-                >
-                  <Bookmark className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Mis búsquedas</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
