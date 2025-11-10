@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: false,
         isClient: false,
         phone: agent.phone,
-        agencyId: agencyId,
+        agencyId: invitation.agencyId,
         agencyName: agency.agencyName
       };
       
@@ -468,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send welcome email
       try {
-        await sendWelcomeEmail(agent.email, `${name} ${surname}`, true);
+        await sendWelcomeEmail(agent.email, `${agent.name} ${agent.surname}`, true);
         console.log('Email de bienvenida enviado a:', agent.email);
       } catch (emailError) {
         console.error('Error enviando email de bienvenida:', emailError);
