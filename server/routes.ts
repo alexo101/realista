@@ -480,7 +480,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...agentResponse,
         isAdmin: false,
         isClient: false,
-        agencyName: agency.agencyName
+        agencyId: invitation.agencyId,
+        agencyName: agency.agencyName,
+        role: 'member',
+        subscriptionPlan: agency.subscriptionPlan,
+        isYearlyBilling: agency.isYearlyBilling
       });
     } catch (error) {
       console.error('Error registering invited agent:', error);
