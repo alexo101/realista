@@ -2886,23 +2886,22 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Agency not found');
       }
 
-      if (!agency.seatsLimit) {
-        throw new Error('Agency has no subscription plan');
-      }
+      // Only check seat limits if seatsLimit is set (NULL means unlimited seats)
+      if (agency.seatsLimit !== null) {
+        // Count current active members (no lock needed - agency row is already locked)
+        const [seatCount] = await tx
+          .select({ count: count() })
+          .from(agencyAgents)
+          .where(
+            and(
+              eq(agencyAgents.agencyId, agencyId),
+              isNull(agencyAgents.leftAt)
+            )
+          );
 
-      // Count current active members (no lock needed - agency row is already locked)
-      const [seatCount] = await tx
-        .select({ count: count() })
-        .from(agencyAgents)
-        .where(
-          and(
-            eq(agencyAgents.agencyId, agencyId),
-            isNull(agencyAgents.leftAt)
-          )
-        );
-
-      if (seatCount.count >= agency.seatsLimit) {
-        throw new Error(`Agency seat limit reached (${agency.seatsLimit} seats)`);
+        if (seatCount.count >= agency.seatsLimit) {
+          throw new Error(`Agency seat limit reached (${agency.seatsLimit} seats)`);
+        }
       }
 
       // Add agent to agency
