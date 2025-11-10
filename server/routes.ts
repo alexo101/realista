@@ -188,7 +188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isClient: isClient,
         phone: user.phone,
         agencyId: null,
-        agencyName: null
+        agencyName: null,
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
       };
 
       await new Promise((resolve, reject) => {
@@ -215,7 +216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({
         ...userResponse,
         isAdmin: isAdmin,
-        isClient: isClient
+        isClient: isClient,
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
       });
     } catch (error) {
       console.error('Error registering user:', error);
@@ -315,7 +317,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: null,
         agencyId: agency.id,
         agencyName: agency.agencyName,
-        subscriptionPlan: agency.subscriptionPlan
+        subscriptionPlan: agency.subscriptionPlan,
+        agentUuid: adminAgent.uuid
       };
       
       await new Promise((resolve, reject) => {
@@ -343,7 +346,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyName: agency.agencyName,
         role: 'admin',
         subscriptionPlan: agency.subscriptionPlan,
-        isYearlyBilling: agency.isYearlyBilling
+        isYearlyBilling: agency.isYearlyBilling,
+        agentUuid: adminAgent.uuid
       });
     } catch (error) {
       console.error('Error registering agency:', error);
@@ -456,7 +460,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isClient: false,
         phone: agent.phone,
         agencyId: invitation.agencyId,
-        agencyName: agency.agencyName
+        agencyName: agency.agencyName,
+        agentUuid: agent.uuid
       };
       
       await new Promise((resolve, reject) => {
@@ -484,7 +489,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyName: agency.agencyName,
         role: 'member',
         subscriptionPlan: agency.subscriptionPlan,
-        isYearlyBilling: agency.isYearlyBilling
+        isYearlyBilling: agency.isYearlyBilling,
+        agentUuid: agent.uuid
       });
     } catch (error) {
       console.error('Error registering invited agent:', error);
@@ -530,7 +536,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: agent.phone,
         agencyId: null,
         agencyName: null,
-        subscriptionPlan: agent.subscriptionPlan
+        subscriptionPlan: agent.subscriptionPlan,
+        agentUuid: agent.uuid
       };
       
       await new Promise((resolve, reject) => {
@@ -553,7 +560,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({
         ...userResponse,
         isAdmin: false,
-        isClient: false
+        isClient: false,
+        agentUuid: agent.uuid
       });
     } catch (error) {
       console.error('Error registering agent:', error);
@@ -730,7 +738,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: user.phone,
         agencyId: agencyId,
         agencyName: agencyName,
-        subscriptionPlan: subscriptionPlan
+        subscriptionPlan: subscriptionPlan,
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
       };
 
       // Save session to database
@@ -754,7 +763,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin,
         agencyId,
         agencyName,
-        subscriptionPlan
+        subscriptionPlan,
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
       });
     } catch (error) {
       console.error('Error during login:', error);
