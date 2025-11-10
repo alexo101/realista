@@ -104,71 +104,87 @@ export default function RegisterPage() {
     surname?: string;
     agencyId?: string;
     agencyName?: string;
+    token?: string;
   }>({});
 
-  // Parse URL parameters on component mount
+  // Parse URL parameters on component mount and enforce invitation-only access
   useEffect(() => {
     const urlParams = window.location.search;
     console.log('Full URL search params:', urlParams);
     const params = new URLSearchParams(urlParams);
     
-    const plan = params.get('plan');
-    const type = params.get('type'); // "agency" or "agent"  
-    const billing = params.get('billing'); // "monthly" or "yearly"
-    const invitation = params.get('invitation'); // "true" for invitations
-    const email = params.get('email');
-    const name = params.get('name');
-    const surname = params.get('surname');
-    const agencyId = params.get('agencyId');
-    const agencyName = params.get('agencyName');
+    const token = params.get('token'); // Invitation token
     
-    console.log('Parsed invitation params:', { invitation, email, name, surname, agencyId, agencyName });
+    console.log('Parsed token:', token);
     
-    // Handle invitation flow
-    if (invitation === 'true') {
-      console.log('Setting invitation mode to true');
-      setIsInvitation(true);
-      setInvitationData({ email: email || '', name: name || '', surname: surname || '', agencyId: agencyId || '', agencyName: agencyName || '' });
-      
-      // Pre-populate form fields
-      if (email) form.setValue('email', email);
-      if (name) form.setValue('name', name);
-      if (surname) form.setValue('surname', surname);
-      
-      // Force agent profile type for invitations
-      form.setValue('profileType', 'agent');
-    } else {
-      // Regular registration flow
-      if (plan) {
-        setSelectedPlan(plan);
-        form.setValue('subscriptionPlan', plan);
-      }
-      if (type) {
-        form.setValue('subscriptionType', type);
-        form.setValue('profileType', type === 'agency' ? 'agency' : 'agent');
-      }
-      if (billing) {
-        form.setValue('isYearlyBilling', billing === 'yearly');
-      }
+    // Redirect to /realista-pro if no token
+    if (!token) {
+      console.log('No invitation token, redirecting to /realista-pro');
+      navigate('/realista-pro');
+      return;
     }
-  }, [location, form]);
+    
+    // Validate token and fetch invitation details
+    const validateInvitation = async () => {
+      try {
+        const response = await fetch(`/api/auth/validate-invitation/${token}`);
+        
+        if (!response.ok) {
+          toast({
+            title: "Invitación inválida",
+            description: "La invitación ha expirado o no es válida",
+            variant: "destructive",
+          });
+          navigate('/realista-pro');
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('Invitation data:', data);
+        
+        // Set invitation mode and data
+        setIsInvitation(true);
+        setInvitationData({ 
+          email: data.email, 
+          name: data.name, 
+          surname: data.surname, 
+          agencyId: data.agencyId.toString(), 
+          agencyName: data.agencyName,
+          token: token
+        });
+        
+        // Pre-populate form fields
+        form.setValue('email', data.email);
+        form.setValue('name', data.name);
+        form.setValue('surname', data.surname);
+        form.setValue('profileType', 'agent');
+      } catch (error) {
+        console.error('Error validating invitation:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo validar la invitación",
+          variant: "destructive",
+        });
+        navigate('/realista-pro');
+      }
+    };
+    
+    validateInvitation();
+  }, [location, form, navigate, toast]);
 
   // Manejar envío del formulario
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
       // Handle invitation flow differently
-      if (isInvitation && invitationData.agencyId) {
+      if (isInvitation && invitationData.token) {
         // Invited agent registration
         const payload = {
-          email: data.email,
+          token: invitationData.token,
           password: data.password,
-          name: data.name || null,
-          surname: data.surname || null,
-          agencyId: parseInt(invitationData.agencyId),
         };
 
-        console.log("Enviando datos de registro de agente invitado:", payload);
+        console.log("Enviando datos de registro de agente invitado con token");
 
         const response = await apiRequest("POST", "/api/auth/register-invited-agent", payload);
 
@@ -259,11 +275,11 @@ export default function RegisterPage() {
 
   return (
     <div className="container mx-auto pt-24 pb-12">
-      <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto">
-        {/* Columna de formulario */}
-        <div className="lg:w-1/2 bg-white p-8 rounded-lg shadow">
+      <div className="flex flex-col gap-8 max-w-xl mx-auto">
+        {/* Formulario de registro (solo para invitaciones) */}
+        <div className="w-full bg-white p-8 rounded-lg shadow">
           <h1 className="text-3xl font-bold mb-6">
-            {isInvitation ? `Únete a ${invitationData.agencyName}` : 'Crear una cuenta'}
+            Únete a {invitationData.agencyName || 'tu agencia'}
           </h1>
           
           {/* Invitation welcome message */}
@@ -492,40 +508,6 @@ export default function RegisterPage() {
               </p>
             </form>
           </Form>
-        </div>
-
-        {/* Columna de hero/información */}
-        <div className="lg:w-1/2 bg-primary/5 p-8 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4">Impulsa tu negocio inmobiliario</h2>
-          <p className="mb-6 text-gray-700">
-            Únete a la plataforma inmobiliaria líder en España y conecta con clientes potenciales interesados en propiedades en tu zona de influencia.
-          </p>
-
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <UserIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium">Perfil de agente</h3>
-                <p className="text-sm text-gray-600">
-                  Ideal para agentes inmobiliarios independientes que quieren promocionar sus servicios y propiedades.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <Building className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-medium">Perfil de agencia</h3>
-                <p className="text-sm text-gray-600">
-                  Perfecto para agencias inmobiliarias que quieren gestionar sus propiedades y equipo de agentes en una sola plataforma.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

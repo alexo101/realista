@@ -351,21 +351,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Validate invitation token and get details
+  app.get("/api/auth/validate-invitation/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      const invitation = await storage.getInvitationByToken(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ 
+          message: "Invitación no válida o expirada" 
+        });
+      }
+      
+      // Get agency name
+      const agency = await storage.getAgencyById(invitation.agencyId);
+      
+      res.status(200).json({
+        email: invitation.email,
+        name: invitation.name,
+        surname: invitation.surname,
+        agencyId: invitation.agencyId,
+        agencyName: agency?.agencyName || 'Realista'
+      });
+    } catch (error) {
+      console.error('Error validating invitation:', error);
+      res.status(500).json({ message: "Error al validar la invitación" });
+    }
+  });
+
   // Invited agent registration endpoint
   app.post("/api/auth/register-invited-agent", async (req, res) => {
     try {
       console.log('Invited Agent Registration - Datos recibidos:', req.body);
-      const { email, password, name, surname, agencyId } = req.body;
+      const { token, password } = req.body;
 
       // Validate required fields
-      if (!email || !password || !name || !surname || !agencyId) {
+      if (!token || !password) {
         return res.status(400).json({ 
-          message: "Todos los campos son requeridos" 
+          message: "Token y contraseña son requeridos" 
+        });
+      }
+
+      // Validate invitation token
+      const invitation = await storage.getInvitationByToken(token);
+      if (!invitation) {
+        return res.status(404).json({ 
+          message: "Invitación no válida o expirada" 
         });
       }
 
       // Check if email already exists
-      const existingUser = await storage.getUserByEmail(email);
+      const existingUser = await storage.getUserByEmail(invitation.email);
       if (existingUser) {
         return res.status(400).json({ 
           message: "Ya existe una cuenta con este correo electrónico" 
@@ -373,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify agency exists
-      const agency = await storage.getAgencyById(agencyId);
+      const agency = await storage.getAgencyById(invitation.agencyId);
       if (!agency) {
         return res.status(404).json({ 
           message: "La agencia no existe" 
@@ -382,11 +419,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create agent linked to agency
       const agentData = {
-        email,
+        email: invitation.email,
         password,
-        name,
-        surname,
-        agencyId: agencyId,
+        name: invitation.name,
+        surname: invitation.surname,
+        agencyId: invitation.agencyId,
         agentType: 'agency_member',
         subscriptionPlan: null, // Agency members inherit agency subscription
         isYearlyBilling: false,
@@ -394,16 +431,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const agent = await storage.createUser(agentData);
-      console.log('Invited agent created:', agent.id, 'for agency:', agencyId);
+      console.log('Invited agent created:', agent.id, 'for agency:', invitation.agencyId);
 
       // Link agent to agency via agency_agents table (atomic with seat check)
       await storage.addAgentToAgencyAtomic(
-        agencyId,
+        invitation.agencyId,
         agent.id,
         'member',
         agent.id // Self-registration through invitation
       );
-      console.log('Agent successfully linked to agency:', agencyId);
+      console.log('Agent successfully linked to agency:', invitation.agencyId);
+
+      // Mark invitation as consumed
+      await storage.consumeInvitation(token);
+      console.log('Invitation consumed for:', invitation.email);
 
       // Create session with proper user object
       (req as any).session.user = {
@@ -531,9 +572,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create agent invitation endpoint for team management
   app.post("/api/agents/invite", async (req, res) => {
     try {
+      // Check authentication
+      const currentUser = (req as any).session?.user;
+      if (!currentUser) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
       console.log('Creating agent invitation - Received data:', req.body);
 
       const { name, surname, email, agencyId } = req.body;
+
+      // Validate required fields
+      if (!agencyId) {
+        return res.status(400).json({ message: "Se requiere ID de agencia" });
+      }
 
       // Check if email already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -543,18 +595,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get agency information if provided
-      let agencyName = 'Realista';
-      if (agencyId) {
-        const agency = await storage.getAgencyById(parseInt(agencyId));
-        if (agency) {
-          agencyName = agency.agencyName || 'Realista';
-        }
+      // Get agency information
+      const agency = await storage.getAgencyById(parseInt(agencyId));
+      if (!agency) {
+        return res.status(404).json({ message: "Agencia no encontrada" });
       }
+
+      const agencyName = agency.agencyName || 'Realista';
 
       // Send invitation email using Resend
       try {
-        const emailSent = await sendAgentInvitation(email, name, surname, agencyName, agencyId ? parseInt(agencyId) : undefined);
+        const emailSent = await sendAgentInvitation(
+          email, 
+          name, 
+          surname, 
+          agencyName, 
+          parseInt(agencyId),
+          currentUser.id // invitedBy
+        );
         
         if (emailSent) {
           console.log('Invitation email sent successfully to:', email);

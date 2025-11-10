@@ -508,6 +508,27 @@ export const insertSavedSearchSchema = createInsertSchema(savedSearches).omit({
 export type SavedSearch = typeof savedSearches.$inferSelect;
 export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;
 
+// Agent invitations table for secure invitation flow
+export const agentInvitations = pgTable("agent_invitations", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(), // Unique token for validation
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  surname: text("surname").notNull(),
+  agencyId: integer("agency_id").notNull().references(() => agencies.id, { onDelete: "cascade" }),
+  invitedBy: integer("invited_by").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  consumedAt: timestamp("consumed_at"), // null = not yet used
+  expiresAt: timestamp("expires_at").notNull(), // Invitation expiration
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAgentInvitationSchema = createInsertSchema(agentInvitations).omit({
+  id: true,
+  createdAt: true,
+});
+export type AgentInvitation = typeof agentInvitations.$inferSelect;
+export type InsertAgentInvitation = z.infer<typeof insertAgentInvitationSchema>;
+
 // Subscription plan limits configuration
 // Note: null = unlimited
 export const SUBSCRIPTION_LIMITS = {

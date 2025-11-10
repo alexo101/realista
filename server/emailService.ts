@@ -1,4 +1,6 @@
 import { Resend } from 'resend';
+import { randomUUID } from 'crypto';
+import { storage } from './storage';
 
 let connectionSettings: any;
 
@@ -165,18 +167,33 @@ export async function sendAgentInvitation(
   name: string, 
   surname: string, 
   agencyName: string,
-  agencyId?: number
+  agencyId: number,
+  invitedBy: number
 ) {
   try {
+    // Generate secure token
+    const token = randomUUID();
+    
+    // Set expiration to 7 days from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    
+    // Create invitation record in database
+    await storage.createInvitation({
+      token,
+      email: to,
+      name,
+      surname,
+      agencyId,
+      invitedBy,
+      expiresAt
+    });
+    
     const { client, fromEmail } = await getUncachableResendClient();
     const frontendUrl = getFrontendUrl();
     
     const subject = `Invitación para unirse a ${agencyName} en Realista`;
-    let registrationUrl = `${frontendUrl}/registrarse?email=${encodeURIComponent(to)}&name=${encodeURIComponent(name)}&surname=${encodeURIComponent(surname)}&invitation=true`;
-    
-    if (agencyId) {
-      registrationUrl += `&agencyId=${agencyId}&agencyName=${encodeURIComponent(agencyName)}`;
-    }
+    const registrationUrl = `${frontendUrl}/registrarse?token=${token}`;
     
     const htmlContent = `
       <!DOCTYPE html>

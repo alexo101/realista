@@ -75,6 +75,9 @@ import {
   savedSearches,
   type SavedSearch,
   type InsertSavedSearch,
+  agentInvitations,
+  type AgentInvitation,
+  type InsertAgentInvitation,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -226,6 +229,12 @@ export interface IStorage {
   getSavedSearchesByClient(clientId: number): Promise<SavedSearch[]>;
   updateSavedSearchName(id: number, name: string): Promise<SavedSearch>;
   deleteSavedSearch(id: number): Promise<void>;
+
+  // Agent Invitations
+  createInvitation(invitationData: InsertAgentInvitation): Promise<AgentInvitation>;
+  getInvitationByToken(token: string): Promise<AgentInvitation | undefined>;
+  consumeInvitation(token: string): Promise<AgentInvitation | undefined>;
+  cleanupExpiredInvitations(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2967,6 +2976,46 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSavedSearch(id: number): Promise<void> {
     await db.delete(savedSearches).where(eq(savedSearches.id, id));
+  }
+
+  // Agent Invitations methods
+  async createInvitation(invitationData: InsertAgentInvitation): Promise<AgentInvitation> {
+    const [invitation] = await db.insert(agentInvitations).values(invitationData).returning();
+    return invitation;
+  }
+
+  async getInvitationByToken(token: string): Promise<AgentInvitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(agentInvitations)
+      .where(and(
+        eq(agentInvitations.token, token),
+        isNull(agentInvitations.consumedAt), // Only get unconsumed invitations
+        gte(agentInvitations.expiresAt, new Date()) // Only get non-expired invitations
+      ));
+    return invitation;
+  }
+
+  async consumeInvitation(token: string): Promise<AgentInvitation | undefined> {
+    const [consumed] = await db
+      .update(agentInvitations)
+      .set({ consumedAt: new Date() })
+      .where(eq(agentInvitations.token, token))
+      .returning();
+    return consumed;
+  }
+
+  async cleanupExpiredInvitations(): Promise<void> {
+    // Delete invitations that are expired and unconsumed after 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    await db
+      .delete(agentInvitations)
+      .where(and(
+        isNull(agentInvitations.consumedAt),
+        lte(agentInvitations.expiresAt, thirtyDaysAgo)
+      ));
   }
 }
 
