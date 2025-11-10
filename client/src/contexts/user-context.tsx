@@ -9,6 +9,7 @@ interface User {
   isAdmin?: boolean;
   isClient?: boolean;
   agentUuid?: string;
+  clientUuid?: string;
   
   // Campos para perfil de agente
   surname?: string;

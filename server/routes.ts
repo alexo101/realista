@@ -114,10 +114,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Cliente creado exitosamente:', newClient);
 
+      // Create session with client data
+      (req as any).session.user = {
+        id: newClient.id,
+        email: newClient.email,
+        name: newClient.name,
+        surname: newClient.surname,
+        isAdmin: false,
+        isClient: true,
+        phone: newClient.phone,
+        agencyId: null,
+        agencyName: null,
+        subscriptionPlan: null,
+        clientUuid: newClient.uuid
+      };
+
+      // Save session to database
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) {
+            console.error('Error saving session:', err);
+            reject(err);
+          } else {
+            console.log('Session saved successfully for client:', newClient.email);
+            resolve(true);
+          }
+        });
+      });
+
       // Responder con éxito (sin incluir datos sensibles)
+      const { password: _, ...clientResponse } = newClient;
       res.status(201).json({
-        message: "Cuenta creada exitosamente",
-        clientId: newClient.id
+        ...clientResponse,
+        isClient: true,
+        isAdmin: false,
+        clientUuid: newClient.uuid,
+        message: "Cuenta creada exitosamente"
       });
 
     } catch (error) {
@@ -189,7 +221,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: user.phone,
         agencyId: null,
         agencyName: null,
-        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
+        ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       };
 
       await new Promise((resolve, reject) => {
@@ -217,7 +250,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...userResponse,
         isAdmin: isAdmin,
         isClient: isClient,
-        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
+        ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       });
     } catch (error) {
       console.error('Error registering user:', error);
@@ -668,6 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Convertir cliente a formato de usuario para compatibilidad
           user = {
             id: client.id,
+            uuid: client.uuid, // Include client UUID
             email: client.email,
             password: client.password,
             name: client.name,
@@ -739,7 +774,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: agencyId,
         agencyName: agencyName,
         subscriptionPlan: subscriptionPlan,
-        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
+        ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       };
 
       // Save session to database
@@ -764,7 +800,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId,
         agencyName,
         subscriptionPlan,
-        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {})
+        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
+        ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       });
     } catch (error) {
       console.error('Error during login:', error);
