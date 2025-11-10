@@ -114,6 +114,7 @@ export const properties = pgTable("properties", {
 
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
+  uuid: uuid("uuid").notNull().unique().defaultRandom(), // Public-facing UUID for security
   name: text("name").notNull(),
   surname: text("surname"),
   email: text("email").notNull(),
