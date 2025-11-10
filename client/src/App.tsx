@@ -47,6 +47,7 @@ function Router() {
       <Route path="/inmueble/:slug" component={Property} />
       <Route path="/agentes/:slug" component={AgentProfile} />
       <Route path="/agencias/:slug" component={AgencyProfile} />
+      <Route path="/gestionar/:agentUuid/:section" component={Manage} />
       <Route path="/gestionar" component={Manage} />
       <Route path="/app/mejora-tu-plan" component={UpgradePlan} />
       

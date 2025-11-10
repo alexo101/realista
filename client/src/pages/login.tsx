@@ -56,16 +56,22 @@ export default function LoginPage() {
         duration: 3000,
       });
 
-      // Check if there's a pending saved search
-      const pendingSavedSearch = sessionStorage.getItem('pendingSavedSearch');
-      if (pendingSavedSearch) {
-        const searchData = JSON.parse(pendingSavedSearch);
-        // Don't clear the pending search here - let the search page handle it
-        // Redirect back to the search page
-        navigate(searchData.returnUrl || "/gestionar");
+      // For agents, always redirect to their calendar dashboard
+      if (!userData.isClient && userData.agentUuid) {
+        // Clear any pending saved search for agents
+        sessionStorage.removeItem('pendingSavedSearch');
+        navigate(`/gestionar/${userData.agentUuid}/calendario`);
       } else {
-        // Redirect to calendar page after login
-        navigate("/gestionar");
+        // For clients, check if there's a pending saved search
+        const pendingSavedSearch = sessionStorage.getItem('pendingSavedSearch');
+        if (pendingSavedSearch) {
+          const searchData = JSON.parse(pendingSavedSearch);
+          // Redirect back to the search page
+          navigate(searchData.returnUrl || "/perfil-cliente");
+        } else {
+          // Redirect to client profile
+          navigate("/perfil-cliente");
+        }
       }
     } catch (error: any) {
       toast({

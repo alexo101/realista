@@ -64,13 +64,13 @@ export function Navbar() {
                         {t('nav.profile')}
                       </Button>
                     </Link>
-                  ) : (
-                    <Link href="/gestionar">
+                  ) : user.agentUuid ? (
+                    <Link href={`/gestionar/${user.agentUuid}/calendario`}>
                       <Button variant="outline">
                         {t('nav.manage')}
                       </Button>
                     </Link>
-                  )}
+                  ) : null}
                   <UserMenu />
                 </>
               ) : (
@@ -129,13 +129,13 @@ export function Navbar() {
                         {t('nav.profile')}
                       </Button>
                     </Link>
-                  ) : (
-                    <Link href="/gestionar" className="block">
+                  ) : user.agentUuid ? (
+                    <Link href={`/gestionar/${user.agentUuid}/calendario`} className="block">
                       <Button variant="outline" className="w-full justify-start">
                         {t('nav.manage')}
                       </Button>
                     </Link>
-                  )}
+                  ) : null}
                   <div className="pt-2">
                     <UserMenu />
                   </div>

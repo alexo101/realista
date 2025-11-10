@@ -113,8 +113,12 @@ export default function AgentPlanRegister() {
         description: "Tu cuenta de agente ha sido creada y ya puedes empezar a gestionar tus propiedades"
       });
 
-      // Redirect to manage page (Spanish route)
-      navigate('/gestionar');
+      // Redirect to agent calendar
+      if (userData.agentUuid) {
+        navigate(`/gestionar/${userData.agentUuid}/calendario`);
+      } else {
+        navigate('/gestionar');
+      }
     } catch (error: any) {
       console.error('Error al registrar agente:', error);
       

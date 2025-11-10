@@ -8,6 +8,7 @@ interface User {
   isAgent?: boolean;
   isAdmin?: boolean;
   isClient?: boolean;
+  agentUuid?: string;
   
   // Campos para perfil de agente
   surname?: string;
@@ -58,12 +59,14 @@ interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   logout: () => void;
+  isLoading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check for existing session on app load
   useEffect(() => {
@@ -81,6 +84,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         // No active session, user remains null
         console.log("No active session found");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -99,7 +104,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser, logout }}>
+    <UserContext.Provider value={{ user, setUser, logout, isLoading }}>
       {children}
     </UserContext.Provider>
   );

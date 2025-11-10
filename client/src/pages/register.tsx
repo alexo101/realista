@@ -197,7 +197,12 @@ export default function RegisterPage() {
             description: `Te has unido exitosamente a ${invitationData.agencyName}`,
           });
 
-          navigate("/gestionar");
+          // Redirect to agent's calendar dashboard
+          if (userData.agentUuid) {
+            navigate(`/gestionar/${userData.agentUuid}/calendario`);
+          } else {
+            navigate("/gestionar");
+          }
         } else {
           const error = await response.json();
           toast({
@@ -245,12 +250,17 @@ export default function RegisterPage() {
           description: successMessage,
         });
 
-        // Redirigir a la página de gestión con la pestaña adecuada según el tipo de perfil (Spanish route)
-        if (isAdmin) {
-          // Si es una agencia o red de agencias, dirigir a la sección de perfil de agencia
-          navigate("/gestionar?tab=agency-profile");
+        // Redirigir a la página de gestión con la sección adecuada según el tipo de perfil
+        if (userData.agentUuid) {
+          if (isAdmin) {
+            // Si es una agencia, dirigir a la sección de perfil de agencia
+            navigate(`/gestionar/${userData.agentUuid}/perfil-agencia`);
+          } else {
+            // Si es un agente independiente, dirigir al calendario
+            navigate(`/gestionar/${userData.agentUuid}/calendario`);
+          }
         } else {
-          // Si es un agente, dirigir a la sección de perfil de agente
+          // Fallback
           navigate("/gestionar");
         }
       } else {

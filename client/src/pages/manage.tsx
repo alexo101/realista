@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Redirect, useLocation } from "wouter";
+import { Redirect, useLocation, useRoute, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
 import {
@@ -42,23 +42,89 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { type Property, type Client } from "@shared/schema";
 
+// Valid dashboard sections
+const VALID_SECTIONS = [
+  'calendario', 
+  'perfil-agente', 
+  'perfil-agencia', 
+  'propiedades', 
+  'clientes', 
+  'mensajes', 
+  'resenas', 
+  'equipo'
+] as const;
+
+type DashboardSection = typeof VALID_SECTIONS[number];
+
 export default function ManagePage() {
-  const { user, setUser } = useUser();
+  const { user, setUser, isLoading } = useUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+  
+  // Extract route parameters
+  const [match, params] = useRoute("/gestionar/:agentUuid/:section");
+  const urlAgentUuid = params?.agentUuid;
+  const urlSection = params?.section as DashboardSection | undefined;
 
-  // Obtener el parámetro 'tab' de la URL si existe
-  const getInitialSection = () => {
-    const params = new URLSearchParams(location.split('?')[1]);
-    const tabParam = params.get('tab');
+  // Route guards
+  useEffect(() => {
+    // Wait for user context to load before applying guards
+    if (isLoading) {
+      return;
+    }
 
-    // Validar que el tab sea uno de los valores permitidos
-    const validTabs = ['calendar', 'agent-profile', 'agency-profile', 'properties', 'clients', 'inquiries', 'team'];
-    return validTabs.includes(tabParam || '') ? tabParam : 'calendar';
-  };
+    if (!user) {
+      // Not authenticated - redirect to login
+      navigate("/iniciar-sesion");
+      return;
+    }
 
-  const [section, setSection] = useState(getInitialSection);
+    if (user.isClient) {
+      // Clients should use their own profile page
+      navigate("/perfil-cliente");
+      return;
+    }
+
+    if (!user.agentUuid) {
+      // Agent without UUID - something is wrong
+      toast({
+        title: "Error",
+        description: "Tu perfil no tiene un identificador válido. Contacta soporte.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if accessing without UUID in URL (backward compatibility)
+    if (!match) {
+      // Redirect to UUID-based URL with default section
+      navigate(`/gestionar/${user.agentUuid}/calendario`);
+      return;
+    }
+
+    // Validate UUID matches logged-in user
+    if (urlAgentUuid !== user.agentUuid) {
+      // Attempting to access another agent's dashboard
+      toast({
+        title: "Acceso denegado",
+        description: "No puedes acceder al panel de otro agente.",
+        variant: "destructive"
+      });
+      navigate(`/gestionar/${user.agentUuid}/calendario`);
+      return;
+    }
+
+    // Validate section is valid
+    if (!urlSection || !VALID_SECTIONS.includes(urlSection)) {
+      // Invalid section - redirect to calendar
+      navigate(`/gestionar/${user.agentUuid}/calendario`);
+      return;
+    }
+  }, [user, match, urlAgentUuid, urlSection, navigate, toast, isLoading]);
+
+  // Determine current section from URL or default to calendar
+  const currentSection = urlSection && VALID_SECTIONS.includes(urlSection) ? urlSection : 'calendario';
 
   // Estados para la gestión de propiedades y clientes
   const [isAddingProperty, setIsAddingProperty] = useState(false);
@@ -102,7 +168,7 @@ export default function ManagePage() {
   const [hasAgencyChanges, setHasAgencyChanges] = useState(false); // Added
 
 
-  // Cargar valores iniciales cuando el usuario cambia y actualizar sección inicial
+  // Cargar valores iniciales cuando el usuario cambia
   useEffect(() => {
     if (user) {
       // Cargar datos de perfil de agente
@@ -113,11 +179,8 @@ export default function ManagePage() {
       setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
       setYearsOfExperience(user.yearsOfExperience);
       setLanguagesSpoken(user.languagesSpoken || []);
-
-      // Actualizar la sección según la URL y tipo de usuario
-      setSection(getInitialSection());
     }
-  }, [user, location]);
+  }, [user]);
 
   // Fetch agencies for admin user
   const { data: agencies } = useQuery<any[]>({
@@ -152,14 +215,14 @@ export default function ManagePage() {
     }
   }, [currentAgency]);
 
-  const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
+  const { data: properties, isLoading: isLoadingProperties} = useQuery<Property[]>({
     queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`],
-    enabled: section === 'properties' && Boolean(user?.id),
+    enabled: currentSection === 'propiedades' && Boolean(user?.id),
   });
 
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: [`/api/clients?agentId=${user?.id}`],
-    enabled: (section === 'clients' || section === 'reviews') && Boolean(user?.id),
+    enabled: (currentSection === 'clientes' || currentSection === 'resenas') && Boolean(user?.id),
   });
 
   const createPropertyMutation = useMutation({
@@ -320,11 +383,19 @@ export default function ManagePage() {
     }
   };
 
-  // Redireccionar si el usuario no está autenticado
-  if (!user) {
-    return <Redirect to="/" />;
+  // Show loading state while user context is loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="mt-2 text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
   }
 
+  // Route guards will handle redirects - no need for redirect here
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
@@ -334,8 +405,8 @@ export default function ManagePage() {
               {/* CRM Section */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={section === "clients" || section === "appointments"}
-                  onClick={() => setSection("clients")}
+                  isActive={currentSection === "clientes"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes`)}
                   className="relative group"
                   title={sidebarCollapsed ? "CRM" : ""}
                 >
@@ -351,8 +422,8 @@ export default function ManagePage() {
 
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
-                  isActive={section === "calendar"}
-                  onClick={() => setSection("calendar")}
+                  isActive={currentSection === "calendario"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/calendario`)}
                   className="relative group"
                   title={sidebarCollapsed ? "Calendario" : ""}
                 >
@@ -368,8 +439,8 @@ export default function ManagePage() {
 
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
-                  isActive={section === "clients"}
-                  onClick={() => setSection("clients")}
+                  isActive={currentSection === "clientes"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes`)}
                   className="relative group"
                   title={sidebarCollapsed ? "Clientes" : ""}
                 >
@@ -385,8 +456,8 @@ export default function ManagePage() {
 
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
-                  isActive={section === "messages"}
-                  onClick={() => setSection("messages")}
+                  isActive={currentSection === "mensajes"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/mensajes`)}
                   className="relative group"
                   title={sidebarCollapsed ? "Mensajes" : ""}
                 >
@@ -402,8 +473,8 @@ export default function ManagePage() {
 
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={section === "agent-profile"}
-                  onClick={() => setSection("agent-profile")}
+                  isActive={currentSection === "perfil-agente"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agente`)}
                   className="relative group"
                   title={sidebarCollapsed ? "Mi perfil de agente" : ""}
                 >
@@ -421,8 +492,8 @@ export default function ManagePage() {
               {user?.isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    isActive={section === "agency-profile"}
-                    onClick={() => setSection("agency-profile")}
+                    isActive={currentSection === "perfil-agencia"}
+                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agencia`)}
                     className="relative group"
                     title={sidebarCollapsed ? "Gestionar agencia" : ""}
                   >
@@ -439,8 +510,8 @@ export default function ManagePage() {
 
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={section === "properties"}
-                  onClick={() => setSection("properties")}
+                  isActive={currentSection === "propiedades"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/propiedades`)}
                   className="relative group"
                   title={sidebarCollapsed ? "Gestionar propiedades" : ""}
                 >
@@ -456,8 +527,8 @@ export default function ManagePage() {
 
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={section === "reviews"}
-                  onClick={() => setSection("reviews")}
+                  isActive={currentSection === "resenas"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/resenas`)}
                   className="relative group"
                   title={sidebarCollapsed ? "Gestionar reseñas" : ""}
                 >
@@ -475,8 +546,8 @@ export default function ManagePage() {
               {user?.isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    isActive={section === "team"}
-                    onClick={() => setSection("team")}
+                    isActive={currentSection === "equipo"}
+                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
                     className="relative group"
                     title={sidebarCollapsed ? "Gestionar mi equipo" : ""}
                   >
@@ -484,13 +555,13 @@ export default function ManagePage() {
                     {!sidebarCollapsed && <span>Gestionar mi equipo</span>}
                     {sidebarCollapsed && (
                       <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                        Gestionar mi equipo
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
+                      Gestionar mi equipo
+                    </div>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+          </SidebarMenu>
           </SidebarContent>
         </Sidebar>
 
@@ -498,54 +569,54 @@ export default function ManagePage() {
         <div className="md:hidden fixed top-16 left-0 right-0 bg-white border-b z-40">
           <div className="flex overflow-x-auto p-2 gap-2">
             <Button
-              variant={section === "clients" ? "default" : "ghost"}
+              variant={currentSection === "clientes" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setSection("clients")}
+              onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes`)}
               className="whitespace-nowrap"
             >
               <Users className="h-4 w-4 mr-1" />
               CRM
             </Button>
             <Button
-              variant={section === "calendar" ? "default" : "ghost"}
+              variant={currentSection === "calendario" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setSection("calendar")}
+              onClick={() => navigate(`/gestionar/${user?.agentUuid}/calendario`)}
               className="whitespace-nowrap"
             >
               <Calendar className="h-4 w-4 mr-1" />
               Calendario
             </Button>
             <Button
-              variant={section === "agent-profile" ? "default" : "ghost"}
+              variant={currentSection === "perfil-agente" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setSection("agent-profile")}
+              onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agente`)}
               className="whitespace-nowrap"
             >
               <UserCircle className="h-4 w-4 mr-1" />
               Perfil
             </Button>
             <Button
-              variant={section === "properties" ? "default" : "ghost"}
+              variant={currentSection === "propiedades" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setSection("properties")}
+              onClick={() => navigate(`/gestionar/${user?.agentUuid}/propiedades`)}
               className="whitespace-nowrap"
             >
               <Building2 className="h-4 w-4 mr-1" />
               Propiedades
             </Button>
             <Button
-              variant={section === "inquiries" ? "default" : "ghost"}
+              variant={currentSection === "mensajes" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setSection("inquiries")}
+              onClick={() => navigate(`/gestionar/${user?.agentUuid}/mensajes`)}
               className="whitespace-nowrap"
             >
               <MessageSquare className="h-4 w-4 mr-1" />
               Consultas
             </Button>
             <Button
-              variant={section === "reviews" ? "default" : "ghost"}
+              variant={currentSection === "resenas" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setSection("reviews")}
+              onClick={() => navigate(`/gestionar/${user?.agentUuid}/resenas`)}
               className="whitespace-nowrap"
             >
               <Star className="h-4 w-4 mr-1" />
@@ -554,31 +625,22 @@ export default function ManagePage() {
             {user?.isAdmin && (
               <>
                 <Button
-                  variant={section === "agency-profile" ? "default" : "ghost"}
+                  variant={currentSection === "perfil-agencia" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setSection("agency-profile")}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agencia`)}
                   className="whitespace-nowrap"
                 >
                   <Building className="h-4 w-4 mr-1" />
                   Agencia
                 </Button>
                 <Button
-                  variant={section === "team" ? "default" : "ghost"}
+                  variant={currentSection === "equipo" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setSection("team")}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
                   className="whitespace-nowrap"
                 >
                   <Users className="h-4 w-4 mr-1" />
                   Equipo
-                </Button>
-                <Button
-                  variant={section === "agencies" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setSection("agencies")}
-                  className="whitespace-nowrap"
-                >
-                  <Building2 className="h-4 w-4 mr-1" />
-                  Multi-agencia
                 </Button>
               </>
             )}
@@ -598,13 +660,13 @@ export default function ManagePage() {
         </div>
 
         <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
-          {section === "calendar" && user?.id && (
+          {currentSection === "calendario" && user?.id && (
             <div className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />
             </div>
           )}
 
-          {section === "agent-profile" && (
+          {currentSection === "perfil-agente" && (
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
@@ -815,13 +877,13 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "agency-profile" && user?.isAdmin && (
+          {currentSection === "perfil-agencia" && user?.isAdmin && (
             <div>
               <AgenciesList />
             </div>
           )}
 
-          {section === "agency-profile-old" && (!user?.isAgent || user?.agencyName) && (
+          {currentSection === "agency-profile-old" && (!user?.isAgent || user?.agencyName) && (
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center">
                 <div className="w-48 h-48 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
@@ -1137,7 +1199,7 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "properties" && (
+          {currentSection === "propiedades" && (
             <div className="space-y-4">
               <Button 
                 onClick={() => {
@@ -1311,7 +1373,7 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "clients" && (
+          {currentSection === "clientes" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Gestión de Clientes</h2>
@@ -1476,7 +1538,7 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "reviews" && (
+          {currentSection === "resenas" && (
             <div className="max-w-4xl mx-auto">
               {user ? (
                 <Tabs defaultValue="management" className="w-full">
@@ -1559,13 +1621,13 @@ export default function ManagePage() {
             </div>
           )}
 
-          {section === "messages" && (
+          {currentSection === "mensajes" && (
             <div className="max-w-6xl mx-auto">
               <ConversationalMessages />
             </div>
           )}
 
-          {section === "team" && user?.isAdmin && (
+          {currentSection === "equipo" && user?.isAdmin && (
             <div className="max-w-6xl mx-auto">
               <TeamManagement agencyId={user.agencyId ? parseInt(user.agencyId) : undefined} />
             </div>
