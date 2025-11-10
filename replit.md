@@ -45,14 +45,23 @@ Preferred communication style: Simple, everyday language.
 - **Scalability**: Cloud storage for images, Neon serverless PostgreSQL with connection pooling.
 - **Data Integrity**: Drizzle ORM for schema management and migrations, database-enforced business rules.
 - **User Experience**: Focused on intuitive interfaces, clear error messaging, and responsive layouts.
-- **Session Consistency**: All registration endpoints (`/api/auth/register`, `/api/auth/register-agency`, `/api/auth/register-agent`) return consistent user data structure including `isAdmin` and `isClient` flags, ensuring frontend receives complete user context for proper UI rendering (October 2025).
+- **Session Consistency**: All registration endpoints (`/api/auth/register`, `/api/auth/register-agency`, `/api/auth/register-agent`, `/api/clients/register`) return consistent user data structure including `isAdmin` and `isClient` flags, ensuring frontend receives complete user context for proper UI rendering. Client registration auto-creates session with `clientUuid` (November 2025).
+- **UUID-Based Secure Routing** (November 2025):
+    - **Agent Dashboard**: `/gestionar/{agentUuid}/{section}` - sections: calendario, perfil-agente, perfil-agencia, propiedades, clientes, mensajes, resenas, equipo
+    - **Client Dashboard**: `/perfil-cliente/{clientUuid}/{section}` - sections: perfil, busquedas, citas, favoritos, mensajes
+    - **Database UUIDs**: Both `agents.uuid` and `clients.uuid` columns (UUID type, NOT NULL, UNIQUE, defaultRandom)
+    - **Session Security**: Sessions include `agentUuid` for agents and `clientUuid` for clients
+    - **Route Guards**: Both dashboards validate UUID matches logged-in user, redirect with toast if mismatch
+    - **Loading State**: UserContext provides `isLoading` to prevent premature authentication redirects
+    - **Auto-Login**: Client registration creates session immediately, eliminating separate login step
+    - **Important**: Users with sessions created before UUID updates must log out and log back in to receive UUID-enabled sessions
 - **Spanish SEO-Optimized URLs** (October 2025):
     - **Slug-Based Routing**: All entities (agents, agencies, properties) have auto-generated slugs stored in database.
     - **Slug Generation**: `shared/slug-utils.ts` handles Spanish characters (á, é, í, ó, ú, ñ) and creates SEO-friendly URLs.
-    - **Spanish Route Translation**: All routes use Spanish terminology (`/agencias`, `/agentes`, `/inmueble`, `/buscar`, `/barrio`, `/gestionar`, `/iniciar-sesion`, `/registrarse`).
+    - **Spanish Route Translation**: All routes use Spanish terminology (`/agencias`, `/agentes`, `/inmueble`, `/buscar`, `/barrio`, `/gestionar`, `/iniciar-sesion`, `/registrarse`, `/perfil-cliente`).
     - **Dual Identifier Support**: Backend routes accept both slug and numeric ID for backward compatibility.
     - **Auto-Slug Creation**: New entities automatically receive slugs on creation via storage layer.
-    - **URL Examples**: `/agencias/lider-agencia`, `/agentes/rodolfo-lider-8`, `/inmueble/atico-gracia-AT-01-3`.
+    - **URL Examples**: `/agencias/lider-agencia`, `/agentes/rodolfo-lider-8`, `/inmueble/atico-gracia-AT-01-3`, `/gestionar/{uuid}/calendario`, `/perfil-cliente/{uuid}/perfil`.
 
 ## External Dependencies
 
