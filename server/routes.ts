@@ -2903,17 +2903,17 @@ Gracias!
   });
 
   // Rutas para gestión multi-agencia desde el frontend
-  app.get("/api/agencies", async (req, res) => {
+  app.get("/api/agencies", requireAuth, authorize({ allowAdmin: true }), async (req, res) => {
     try {
-      const adminAgentId = req.query.adminAgentId ? parseInt(req.query.adminAgentId as string) : undefined;
-      const sessionUserId = (req as any).session?.user?.id;
+      const adminAgentId = req.query.adminAgentId ? parseInt(req.query.adminAgentId as string) : req.user!.id;
 
-      // Si se proporciona adminAgentId, obtener solo las agencias de ese administrador
-      const agencies = adminAgentId 
-        ? await storage.getAgenciesByAdmin(adminAgentId)
-        : await storage.getAgenciesByAdmin(sessionUserId || 0);
+      // Security: Only allow fetching own agencies unless admin
+      if (adminAgentId !== req.user!.id && !req.user!.isAdmin) {
+        return res.status(403).json({ message: "No autorizado para ver estas agencias" });
+      }
 
-      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId || sessionUserId}`);
+      const agencies = await storage.getAgenciesByAdmin(adminAgentId);
+      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId}`);
       res.json(agencies);
     } catch (error) {
       console.error('Error fetching agencies:', error);
@@ -2921,18 +2921,14 @@ Gracias!
     }
   });
 
-  app.post("/api/agencies", async (req, res) => {
+  app.post("/api/agencies", requireAuth, authorize({ allowAdmin: true }), async (req, res) => {
     try {
       console.log('Creating agency with data:', req.body);
-      const sessionUserId = (req as any).session?.user?.id;
-      
-      if (!req.body.adminAgentId && !sessionUserId) {
-        return res.status(400).json({ message: "Missing adminAgentId" });
-      }
 
+      // Security: Force adminAgentId to be the current user
       const agencyData = {
         ...req.body,
-        adminAgentId: req.body.adminAgentId || sessionUserId
+        adminAgentId: req.user!.id
       };
 
       const result = await storage.createAgency(agencyData);
@@ -2946,7 +2942,16 @@ Gracias!
     }
   });
 
-  app.patch("/api/agencies/:id", async (req, res) => {
+  app.patch("/api/agencies/:id", 
+    requireAuth,
+    authorize({
+      custom: async (user, req) => {
+        const agencyId = parseInt(req.params.id);
+        const agency = await storage.getAgency(agencyId);
+        return agency !== undefined && isAgencyAdmin(user, agencyId);
+      }
+    }),
+    async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       console.log(`Updating agency ${id} with data:`, req.body);
@@ -2959,7 +2964,16 @@ Gracias!
     }
   });
 
-  app.delete("/api/agencies/:id", async (req, res) => {
+  app.delete("/api/agencies/:id",
+    requireAuth,
+    authorize({
+      custom: async (user, req) => {
+        const agencyId = parseInt(req.params.id);
+        const agency = await storage.getAgency(agencyId);
+        return agency !== undefined && isAgencyAdmin(user, agencyId);
+      }
+    }),
+    async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       console.log(`Deleting agency ${id}`);
@@ -2972,25 +2986,24 @@ Gracias!
   });
 
   // Upgrade agency subscription plan
-  app.patch("/api/agencies/:id/upgrade-plan", async (req, res) => {
+  app.patch("/api/agencies/:id/upgrade-plan", 
+    requireAuth,
+    authorize({
+      custom: async (user, req) => {
+        const agencyId = parseInt(req.params.id);
+        const agency = await storage.getAgency(agencyId);
+        return agency !== undefined && isAgencyAdmin(user, agencyId);
+      }
+    }),
+    async (req, res) => {
     try {
       const agencyId = parseInt(req.params.id);
       const { plan } = req.body;
-      const sessionUserId = (req as any).session?.user?.id;
 
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
-      // Get the agency to verify the user is the admin
+      // Get the agency
       const agency = await storage.getAgency(agencyId);
       if (!agency) {
         return res.status(404).json({ message: "Agencia no encontrada" });
-      }
-
-      // Verify the user is the agency admin
-      if (agency.adminAgentId !== sessionUserId) {
-        return res.status(403).json({ message: "Solo el administrador puede mejorar el plan" });
       }
 
       // Validate the plan

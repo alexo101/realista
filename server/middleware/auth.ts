@@ -81,7 +81,7 @@ export const requireRole = (...roles: UserRole[]) => {
 };
 
 export const authorize = (options: AuthorizeOptions) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.user) {
       res.status(401).json({ message: "Autenticación requerida" });
       return;
@@ -110,11 +110,27 @@ export const authorize = (options: AuthorizeOptions) => {
     }
 
     if (!isAuthorized && options.allowSelf) {
-      isAuthorized = options.allowSelf(req.user, req);
+      try {
+        const result = options.allowSelf(req.user, req);
+        isAuthorized = result && typeof (result as any).then === 'function' 
+          ? await (result as Promise<boolean>) 
+          : result as boolean;
+      } catch (error) {
+        console.error('Error in allowSelf check:', error);
+        isAuthorized = false;
+      }
     }
 
     if (!isAuthorized && options.custom) {
-      isAuthorized = options.custom(req.user, req);
+      try {
+        const result = options.custom(req.user, req);
+        isAuthorized = result && typeof (result as any).then === 'function' 
+          ? await (result as Promise<boolean>) 
+          : result as boolean;
+      } catch (error) {
+        console.error('Error in custom authorization check:', error);
+        isAuthorized = false;
+      }
     }
 
     if (!isAuthorized) {
