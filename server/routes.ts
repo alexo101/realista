@@ -12,6 +12,7 @@ import {
   insertPropertyVisitRequestSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { requireAuth, requireRole, authorize, isAgencyAdmin, isResourceOwner } from "./middleware/auth";
 
 // Client profile update schema - only allow specific fields
 const updateClientProfileSchema = insertClientSchema.pick({
@@ -616,14 +617,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create agent invitation endpoint for team management
-  app.post("/api/agents/invite", async (req, res) => {
+  app.post("/api/agents/invite", requireAuth, async (req, res) => {
     try {
-      // Check authentication
-      const currentUser = (req as any).session?.user;
-      if (!currentUser) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
       console.log('Creating agent invitation - Received data:', req.body);
 
       const { name, surname, email, agencyId } = req.body;
@@ -657,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           surname, 
           agencyName, 
           parseInt(agencyId),
-          currentUser.id // invitedBy
+          req.user!.id // invitedBy
         );
         
         if (emailSent) {
@@ -825,13 +820,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/me", async (req, res) => {
+  app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
-      const sessionUser = (req as any).session?.user;
-      if (!sessionUser) {
-        return res.status(401).json({ message: "No hay sesión activa" });
-      }
-      res.json(sessionUser);
+      res.json(req.user);
     } catch (error) {
       console.error('Error getting current user:', error);
       res.status(500).json({ message: "Error al obtener información del usuario" });
@@ -1607,7 +1598,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update client profile
-  app.put("/api/clients/:clientId/profile", async (req, res) => {
+  app.put("/api/clients/:clientId/profile", 
+    requireAuth,
+    authorize({
+      allowAdmin: true,
+      allowSelf: (user, req) => user.isClient && user.id === parseInt(req.params.clientId),
+      custom: async (user, req) => {
+        const clientId = parseInt(req.params.clientId);
+        const existingClient = await storage.getClient(clientId);
+        return !user.isClient && existingClient !== undefined && existingClient.agentId === user.id;
+      }
+    }),
+    async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
       
@@ -1615,39 +1617,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid client ID" });
       }
       
-      // Authentication check - ensure user is logged in
-      const sessionUser = (req as any).session?.user;
-      if (!sessionUser) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
       // Check if client exists first
       const existingClient = await storage.getClient(clientId);
       if (!existingClient) {
         return res.status(404).json({ message: "Client not found" });
-      }
-      
-      // Authorization check - only allow updates if:
-      // 1. User is the client owner (logged in as client with matching ID)
-      // 2. User is the assigned agent for this client
-      // 3. User is an admin
-      let isAuthorized = false;
-      
-      if (sessionUser.isClient && sessionUser.id === clientId) {
-        // Client updating their own profile
-        isAuthorized = true;
-      } else if (!sessionUser.isClient && sessionUser.isAdmin) {
-        // Admin can update any client profile
-        isAuthorized = true;
-      } else if (!sessionUser.isClient && existingClient.agentId === sessionUser.id) {
-        // Agent updating their assigned client's profile
-        isAuthorized = true;
-      }
-      
-      if (!isAuthorized) {
-        return res.status(403).json({ 
-          message: "You are not authorized to update this client profile" 
-        });
       }
       
       // Validate the request body using Zod schema
@@ -1681,20 +1654,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Saved Searches
-  app.post("/api/saved-searches", async (req, res) => {
+  app.post("/api/saved-searches", requireAuth, requireRole('client'), async (req, res) => {
     try {
-      const sessionUser = (req as any).session?.user;
-      if (!sessionUser || !sessionUser.isClient) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
       // Get count of existing searches for this client to generate default name
-      const existingSearches = await storage.getSavedSearchesByClient(sessionUser.id);
+      const existingSearches = await storage.getSavedSearchesByClient(req.user!.id);
       const searchCount = existingSearches.length + 1;
       
       const searchData = {
         ...req.body,
-        clientId: sessionUser.id,
+        clientId: req.user!.id,
         name: req.body.name || `Mi búsqueda ${searchCount}`,
       };
 
@@ -1706,14 +1674,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/saved-searches", async (req, res) => {
+  app.get("/api/saved-searches", requireAuth, requireRole('client'), async (req, res) => {
     try {
-      const sessionUser = (req as any).session?.user;
-      if (!sessionUser || !sessionUser.isClient) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const searches = await storage.getSavedSearchesByClient(sessionUser.id);
+      const searches = await storage.getSavedSearchesByClient(req.user!.id);
       res.json(searches);
     } catch (error) {
       console.error('Error fetching saved searches:', error);
@@ -1721,13 +1684,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/saved-searches/:id", async (req, res) => {
+  app.put("/api/saved-searches/:id", requireAuth, requireRole('client'), async (req, res) => {
     try {
-      const sessionUser = (req as any).session?.user;
-      if (!sessionUser || !sessionUser.isClient) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
       const id = parseInt(req.params.id);
       const { name } = req.body;
 
@@ -1743,13 +1701,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/saved-searches/:id", async (req, res) => {
+  app.delete("/api/saved-searches/:id", requireAuth, requireRole('client'), async (req, res) => {
     try {
-      const sessionUser = (req as any).session?.user;
-      if (!sessionUser || !sessionUser.isClient) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
       const id = parseInt(req.params.id);
       await storage.deleteSavedSearch(id);
       res.json({ message: "Búsqueda eliminada exitosamente" });
