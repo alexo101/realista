@@ -11,6 +11,7 @@ import {
   check,
   uniqueIndex,
   uuid,
+  index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -111,7 +112,21 @@ export const properties = pgTable("properties", {
   isActive: boolean("is_active").default(true).notNull(), // Para activar/desactivar la visibilidad de la propiedad
   fraudCount: integer("fraud_count").default(0).notNull(), // Contador de reportes de fraude
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  // Performance indexes for frequent queries
+  neighborhoodIdx: index("properties_neighborhood_idx").on(table.neighborhood),
+  cityIdx: index("properties_city_idx").on(table.city),
+  agentIdIdx: index("properties_agent_id_idx").on(table.agentId),
+  agencyIdIdx: index("properties_agency_id_idx").on(table.agencyId),
+  operationTypeIdx: index("properties_operation_type_idx").on(table.operationType),
+  isActiveIdx: index("properties_is_active_idx").on(table.isActive),
+  // Composite indexes for common query patterns
+  neighborhoodOperationIdx: index("properties_neighborhood_operation_idx").on(table.neighborhood, table.operationType),
+  agentActiveIdx: index("properties_agent_active_idx").on(table.agentId, table.isActive),
+  agencyActiveIdx: index("properties_agency_active_idx").on(table.agencyId, table.isActive),
+  // Index for sorting by view count (most viewed properties)
+  viewCountIdx: index("properties_view_count_idx").on(table.viewCount),
+}));
 
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
@@ -143,7 +158,12 @@ export const clients = pgTable("clients", {
   petsDescription: text("pets_description"), // Description of pets if they have any
   moveInTiming: text("move_in_timing"), // "Lo antes posible", "Tengo flexibilidad", "Fecha exacta"
   moveInDate: timestamp("move_in_date"), // Specific date if "Fecha exacta" is selected
-});
+}, (table) => ({
+  // Index for querying clients by agent
+  agentIdIdx: index("clients_agent_id_idx").on(table.agentId),
+  // Index for email lookups (login, etc)
+  emailIdx: index("clients_email_idx").on(table.email),
+}));
 
 export const neighborhoodRatings = pgTable("neighborhood_ratings", {
   id: serial("id").primaryKey(),
