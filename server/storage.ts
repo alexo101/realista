@@ -89,13 +89,13 @@ export interface IStorage {
 
   // Agents/Agencies Search & Profiles
   searchAgents(query: string): Promise<UserWithReviews[]>;
-  searchAgencies(query: string): Promise<Agency[]>;
+  searchAgencies(query: string): Promise<User[]>;
   getAgentById(id: number): Promise<User | undefined>;
   getAgentByUuid(uuid: string): Promise<User | undefined>;
   getAgentBySlug(slug: string): Promise<User | undefined>;
-  getAgencyById(id: number): Promise<Agency | undefined>;
-  getAgencyByUuid(uuid: string): Promise<Agency | undefined>;
-  getAgencyBySlug(slug: string): Promise<Agency | undefined>;
+  getAgencyById(id: number): Promise<User | undefined>;
+  getAgencyByUuid(uuid: string): Promise<User | undefined>;
+  getAgencyBySlug(slug: string): Promise<User | undefined>;
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
