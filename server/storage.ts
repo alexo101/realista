@@ -1,6 +1,5 @@
 import { db } from "./db";
 import { cache } from "./cache";
-import { logger } from "./utils/logger";
 import {
   eq,
   sql,
@@ -296,6 +295,14 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      console.log(
+        "Updating user with cleaned data:",
+        Object.keys(cleanedUserData),
+      );
+      console.log(
+        "Full cleaned user data:",
+        JSON.stringify(cleanedUserData, null, 2),
+      );
 
       const [updatedUser] = await db
         .update(agents)
@@ -303,10 +310,14 @@ export class DatabaseStorage implements IStorage {
         .where(eq(agents.id, id))
         .returning();
 
+      console.log(
+        "User after update:",
+        JSON.stringify(updatedUser, null, 2),
+      );
 
       return updatedUser;
     } catch (error) {
-      logger.error("Error in updateUser SQL:", error);
+      console.error("Error in updateUser SQL:", error);
       throw error;
     }
   }
@@ -320,6 +331,7 @@ export class DatabaseStorage implements IStorage {
       const agentName = params.get("agentName");
       const neighborhoodsStr = params.get("neighborhoods");
 
+      console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
 
       // First, get the agents with standard filtering
       let dbQuery = db.select().from(agents);
@@ -337,6 +349,7 @@ export class DatabaseStorage implements IStorage {
       // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
         const neighborhoods = neighborhoodsStr.split(",");
+        console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
 
         // Usamos la sintaxis directa de PostgreSQL para arrays
         const arrayQuery = `ARRAY[${neighborhoods.map(n => `'${n.replace(/'/g, "''")}'`).join(',')}]::text[]`;
@@ -349,7 +362,9 @@ export class DatabaseStorage implements IStorage {
       // Limitamos los resultados para evitar sobrecargar la respuesta
       dbQuery = dbQuery.limit(10);
 
+      console.log(`Ejecutando búsqueda de agentes...`);
       const agentResults = await dbQuery;
+      console.log(`Found ${agentResults.length} agents in the database`);
 
       // Now enhance each agent with review statistics
       const enhancedAgents = await Promise.all(
@@ -378,7 +393,7 @@ export class DatabaseStorage implements IStorage {
 
       return enhancedAgents;
     } catch (error) {
-      logger.error("Error searching agents:", error);
+      console.error("Error en searchAgents:", error);
       throw error;
     }
   }
@@ -392,12 +407,14 @@ export class DatabaseStorage implements IStorage {
       const neighborhoodsStr = params.get("neighborhoods");
       const city = params.get("city");
 
+      console.log(`Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}, city=${city}`);
 
       // Collect all WHERE conditions first
       const conditions: any[] = [];
 
       // Filter by city if provided
       if (city && city.trim() !== "") {
+        console.log(`Filtrando agencias por ciudad: ${city}`);
         conditions.push(eq(agencies.city, city));
       }
 
@@ -410,6 +427,7 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
+        console.log(`Filtrando agencias por barrios: ${neighborhoodsStr}`);
 
         // Parse the neighborhood display name to extract city, district, and neighborhood
         const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
@@ -422,14 +440,17 @@ export class DatabaseStorage implements IStorage {
           // Format: ", Sant Andreu, Barcelona" means we're searching at district level
           if (!neighborhood || neighborhood.trim() === "") {
             neighborhood = district;
+            console.log(`District-level search detected, using district: ${neighborhood}`);
           }
           
+          console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
           
           // Expand the search hierarchically:
           // - If it's a city, get all neighborhoods in that city
           // - If it's a district, get all neighborhoods in that district
           // - If it's a neighborhood, get just that neighborhood
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
+          console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
 
           if (expandedNeighborhoods.length > 0) {
             // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
@@ -440,6 +461,7 @@ export class DatabaseStorage implements IStorage {
             );
           }
         } else {
+          console.log(`Could not parse neighborhood display name: ${neighborhoodsStr}`);
         }
       }
 
@@ -454,7 +476,9 @@ export class DatabaseStorage implements IStorage {
       dbQuery = dbQuery.limit(10);
 
       // Ejecutamos la consulta
+      console.log(`Ejecutando búsqueda de agencias...`);
       const agencyResults = await dbQuery;
+      console.log(`Found ${agencyResults.length} agencies in the database`);
 
       // Enrich agencies with review statistics (matching agency profile calculation)
       const enhancedAgencies = await Promise.all(
@@ -512,7 +536,7 @@ export class DatabaseStorage implements IStorage {
 
       return enhancedAgencies;
     } catch (error) {
-      logger.error("Error searching agencies:", error);
+      console.error("Error en searchAgencies:", error);
       throw error;
     }
   }
@@ -628,7 +652,7 @@ export class DatabaseStorage implements IStorage {
           : item,
       );
     } catch (error) {
-      logger.error("Error parsing array field:", error);
+      console.error("Error al parsear campo de array:", error);
       return typeof value === "string" ? [value] : [];
     }
   }
@@ -644,7 +668,7 @@ export class DatabaseStorage implements IStorage {
     try {
       return JSON.parse(value);
     } catch (error) {
-      logger.error("Error parsing JSON field:", error);
+      console.error("Error al parsear campo JSON:", error);
       return {};
     }
   }
@@ -701,7 +725,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(sql`${reviews.date} DESC`);
       return result;
     } catch (error) {
-      logger.error("Error getting agent reviews:", error);
+      console.error("Error obteniendo reseñas del agente:", error);
       return [];
     }
   }
@@ -717,7 +741,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(sql`${reviews.date} DESC`);
       return result;
     } catch (error) {
-      logger.error("Error getting agency reviews:", error);
+      console.error("Error obteniendo reseñas de la agencia:", error);
       return [];
     }
   }
@@ -725,6 +749,7 @@ export class DatabaseStorage implements IStorage {
   // Método para responder a una reseña
   async respondToReview(reviewId: number, response: string): Promise<Review> {
     try {
+      console.log(`Respondiendo a reseña ${reviewId} con respuesta: ${response}`);
 
       const [updatedReview] = await db
         .update(reviews)
@@ -741,6 +766,7 @@ export class DatabaseStorage implements IStorage {
 
       return updatedReview;
     } catch (error) {
+      console.error(`Error al responder a la reseña ${reviewId}:`, error);
       throw new Error(`No se pudo guardar la respuesta: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
@@ -748,6 +774,7 @@ export class DatabaseStorage implements IStorage {
   // Método para destacar/quitar destaque de una reseña
   async pinReview(reviewId: number, pinned: boolean): Promise<Review> {
     try {
+      console.log(`${pinned ? 'Destacando' : 'Quitando destaque de'} reseña ${reviewId}`);
 
       // Primero obtenemos la reseña para conocer su targetId y targetType
       const [currentReview] = await db
@@ -786,6 +813,7 @@ export class DatabaseStorage implements IStorage {
 
       return updatedReview;
     } catch (error) {
+      console.error(`Error al actualizar el estado de la reseña ${reviewId}:`, error);
       throw new Error(`No se pudo actualizar la reseña: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
@@ -793,6 +821,7 @@ export class DatabaseStorage implements IStorage {
   // Multi-agency management methods
   async getAgenciesByAdmin(adminAgentId: number): Promise<Agency[]> {
     try {
+      console.log(`Fetching agencies for admin with ID: ${adminAgentId}`);
 
       const result = await db
         .select({
@@ -827,9 +856,10 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(agencies.agencyName);
 
+      console.log(`Found ${result.length} agencies for admin ${adminAgentId}`);
       return result;
     } catch (error) {
-      logger.error("Error fetching agencies by admin:", error);
+      console.error("Error fetching agencies by admin:", error);
       return [];
     }
   }
@@ -875,12 +905,14 @@ export class DatabaseStorage implements IStorage {
 
       return result || null;
     } catch (error) {
+      console.error(`Error fetching agency ${agencyId}:`, error);
       return null;
     }
   }
 
   async createAgency(agencyData: Partial<InsertAgency>): Promise<Agency> {
     try {
+      console.log("Creating agency with data:", agencyData);
 
       // Aseguramos que el nombre de agencia existe
       if (!agencyData.agencyName) {
@@ -911,9 +943,10 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
+      console.log("Agency created successfully:", newAgency);
       return newAgency;
     } catch (error) {
-      logger.error("Error creating agency:", error);
+      console.error("Error creating agency:", error);
       throw new Error(
         `Failed to create agency: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -925,6 +958,7 @@ export class DatabaseStorage implements IStorage {
     agencyData: Partial<InsertAgency>,
   ): Promise<Agency> {
     try {
+      console.log(`Updating agency ${id} with data:`, agencyData);
 
       // Preparar los datos de actualización con mapeo de campos
       const updates: any = {};
@@ -951,6 +985,7 @@ export class DatabaseStorage implements IStorage {
       if (agencyData.activePropertiesLimit !== undefined) updates.activePropertiesLimit = agencyData.activePropertiesLimit;
       if (agencyData.isYearlyBilling !== undefined) updates.isYearlyBilling = agencyData.isYearlyBilling;
 
+      console.log('Final update object:', updates);
 
       // Actualizamos la agencia
       const [updatedAgency] = await db
@@ -963,9 +998,10 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Agency with ID ${id} not found`);
       }
 
+      console.log("Agency updated successfully:", updatedAgency);
       return updatedAgency;
     } catch (error) {
-      logger.error("Error updating agency:", error);
+      console.error("Error updating agency:", error);
       throw new Error(
         `Failed to update agency: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -974,6 +1010,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgency(id: number): Promise<void> {
     try {
+      console.log(`Hard deleting agency ${id} with cascade to admin agents and properties`);
 
       // Verificamos que la agencia existe
       const [agency] = await db
@@ -996,6 +1033,7 @@ export class DatabaseStorage implements IStorage {
         ));
 
       const adminAgentIds = adminAgents.map(a => a.agentId);
+      console.log(`Found ${adminAgentIds.length} admin agents to hard delete for agency ${id}`);
 
       // Get all properties owned by this agency
       const agencyProperties = await db
@@ -1004,6 +1042,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(properties.agencyId, id));
 
       const propertyIds = agencyProperties.map(p => p.id);
+      console.log(`Found ${propertyIds.length} properties to delete for agency ${id}`);
 
       // Use a transaction to ensure all operations succeed or fail together
       await db.transaction(async (tx) => {
@@ -1053,6 +1092,7 @@ export class DatabaseStorage implements IStorage {
             .delete(clientFavoriteAgents)
             .where(inArray(clientFavoriteAgents.agentId, adminAgentIds));
 
+          console.log(`Deleted related data for ${adminAgentIds.length} admin agents`);
         }
 
         // 2. Delete agency properties and their related data
@@ -1082,6 +1122,7 @@ export class DatabaseStorage implements IStorage {
             .delete(properties)
             .where(inArray(properties.id, propertyIds));
 
+          console.log(`Deleted ${propertyIds.length} properties and their related data`);
         }
 
         // 3. Delete agency reviews
@@ -1116,6 +1157,7 @@ export class DatabaseStorage implements IStorage {
               eq(agents.agentType, 'agency_member')
             ));
           
+          console.log(`Hard deleted ${adminAgentIds.length} admin agents: ${adminAgentIds.join(', ')}`);
         }
 
         // 8. Finally, delete the agency itself
@@ -1124,8 +1166,9 @@ export class DatabaseStorage implements IStorage {
           .where(eq(agencies.id, id));
       });
 
+      console.log(`Agency ${id}, its admin agents, and all related data deleted successfully`);
     } catch (error) {
-      logger.error("Error deleting agency:", error);
+      console.error("Error deleting agency:", error);
       throw new Error(
         `Failed to delete agency: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -1135,6 +1178,7 @@ export class DatabaseStorage implements IStorage {
   // Agency Agents
   async getAgencyAgents(agencyId: number): Promise<User[]> {
     try {
+      console.log(`Buscando agentes con agencyId = ${agencyId}`);
 
       // Select agents through the agency_agents junction table
       const result = await db
@@ -1170,6 +1214,7 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(agents.name);
 
+      console.log(`Encontrados ${result.length} agentes vinculados a la agencia ${agencyId}`);
 
       // Para cada agente, obtenemos su puntuación y número de reseñas
       const agentsWithReviews = await Promise.all(
@@ -1193,6 +1238,7 @@ export class DatabaseStorage implements IStorage {
 
       return agentsWithReviews;
     } catch (error) {
+      console.error(`Error al obtener agentes de la agencia ${agencyId}:`, error);
       return [];
     }
   }
@@ -1247,9 +1293,11 @@ export class DatabaseStorage implements IStorage {
       const cacheKey = `most_viewed_properties_${limit}_${operationType || 'all'}`;
       const cached = cache.get<Property[]>(cacheKey);
       if (cached) {
+        console.log(`Returning cached most viewed properties for ${operationType || 'all'}`);
         return cached;
       }
 
+      console.log(`Database query for most viewed properties: ${operationType || 'all'}`);
       
       // Construir la consulta base con campos específicos para mejor rendimiento
       let query = db
@@ -1286,6 +1334,9 @@ export class DatabaseStorage implements IStorage {
 
       // Si se especifica un tipo de operación, añadir el filtro
       if (operationType) {
+        console.log(
+          `Filtrando propiedades más vistas por tipo de operación: ${operationType}`,
+        );
         query = query.where(
           and(
             eq(properties.isActive, true),
@@ -1309,7 +1360,7 @@ export class DatabaseStorage implements IStorage {
       
       return processedResults;
     } catch (error) {
-      logger.error('Error getting most viewed properties:', error);
+      console.error('Error al obtener propiedades más vistas:', error);
       return [];
     }
   }
@@ -1322,16 +1373,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {
+    console.log(`Fetching active properties for agent ID: ${agentId}`);
     const result = await db
       .select()
       .from(properties)
       .where(and(eq(properties.agentId, agentId), eq(properties.isActive, true)))
       .orderBy(sql`${properties.createdAt} DESC`);
 
+    console.log(`Found ${result.length} active properties for agent ID: ${agentId}`);
     return result;
   }
 
   async getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]> {
+    console.log(`Fetching all properties (active and inactive) for agent ID: ${agentId}, limit: ${limit}, offset: ${offset}`);
     
     // Lean projection with all required fields (never undefined)
     const baseFields = {
@@ -1381,6 +1435,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     const result = await query;
+    console.log(`Found ${result.length} total properties for agent ID: ${agentId} (lean projection with pagination)`);
     
     // Compatibility layer: ensure imageUrls is always an array
     return result.map(property => ({
@@ -1391,6 +1446,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPropertiesByAgency(agencyId: number): Promise<Property[]> {
     try {
+      console.log(`Obteniendo propiedades para la agencia ${agencyId}`);
 
       // 1. Obtener propiedades directamente vinculadas a la agencia
       const directProperties = await db
@@ -1399,9 +1455,11 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(properties.agencyId, agencyId), eq(properties.isActive, true)))
         .orderBy(sql`${properties.createdAt} DESC`);
 
+      console.log(`Encontradas ${directProperties.length} propiedades directamente vinculadas a la agencia ${agencyId}`);
 
       // 2. Obtener agentes vinculados a esta agencia
       const agencyAgents = await this.getAgencyAgents(agencyId);
+      console.log(`Encontrados ${agencyAgents.length} agentes vinculados a la agencia ${agencyId}`);
 
       // 3. Obtener propiedades de cada agente
       const agentPropertiesPromises = agencyAgents.map(agent => 
@@ -1412,6 +1470,7 @@ export class DatabaseStorage implements IStorage {
 
       // 4. Aplanar el array de arrays de propiedades
       const agentProperties = agentPropertiesArrays.flat();
+      console.log(`Encontradas ${agentProperties.length} propiedades de agentes vinculados a la agencia ${agencyId}`);
 
       // 5. Combinar propiedades directas y de agentes, eliminando duplicados por ID
       const allProperties = [...directProperties];
@@ -1423,6 +1482,7 @@ export class DatabaseStorage implements IStorage {
         }
       });
 
+      console.log(`Total de propiedades para la agencia ${agencyId}: ${allProperties.length}`);
 
       // Ordenar por fecha de creación (más recientes primero)
       return allProperties.sort((a, b) => {
@@ -1431,6 +1491,7 @@ export class DatabaseStorage implements IStorage {
         return dateB - dateA;
       });
     } catch (error) {
+      console.error(`Error al obtener propiedades para la agencia ${agencyId}:`, error);
       return [];
     }
   }
@@ -1464,9 +1525,11 @@ export class DatabaseStorage implements IStorage {
         .where(whereCondition);
 
       const totalCount = result[0]?.count ?? 0;
+      console.log(`Active properties count for agency ${agencyId}: ${totalCount} (distinct count, no duplicates)`);
       
       return totalCount;
     } catch (error) {
+      console.error(`Error counting active properties for agency ${agencyId}:`, error);
       return 0;
     }
   }
@@ -1476,9 +1539,11 @@ export class DatabaseStorage implements IStorage {
     const cacheKey = `search_properties_${JSON.stringify(filters)}`;
     const cached = cache.get<Property[]>(cacheKey);
     if (cached) {
+      console.log("Returning cached property search results for filters:", filters);
       return cached;
     }
 
+    console.log("Database query for property search filters:", filters);
 
     // Collect all WHERE conditions
     const whereConditions = [];
@@ -1487,6 +1552,9 @@ export class DatabaseStorage implements IStorage {
     if (filters) {
       // Filtrar por tipo de operación (Venta o Alquiler)
       if (filters.operationType) {
+        console.log(
+          `Filtrando por tipo de operación: ${filters.operationType}`,
+        );
         whereConditions.push(eq(properties.operationType, filters.operationType));
       }
 
@@ -1502,6 +1570,7 @@ export class DatabaseStorage implements IStorage {
           neighborhoods = [filters.neighborhoods];
         }
 
+        console.log(`Filtrando por barrios: ${neighborhoods.join(", ")}`);
 
         // Si hay múltiples barrios, usamos OR
         if (neighborhoods.length > 1) {
@@ -1516,21 +1585,25 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por precio mínimo si está definido
       if (filters.priceMin !== undefined && filters.priceMin !== null) {
+        console.log(`Filtrando por precio mínimo: ${filters.priceMin}`);
         whereConditions.push(gte(properties.price, Number(filters.priceMin)));
       }
 
       // Filtrar por precio máximo si está definido
       if (filters.priceMax !== undefined && filters.priceMax !== null) {
+        console.log(`Filtrando por precio máximo: ${filters.priceMax}`);
         whereConditions.push(lte(properties.price, Number(filters.priceMax)));
       }
 
       // Filtrar por número de habitaciones si está definido
       if (filters.bedrooms !== undefined && filters.bedrooms !== null) {
+        console.log(`Filtrando por habitaciones: ${filters.bedrooms}`);
         whereConditions.push(gte(properties.bedrooms, Number(filters.bedrooms)));
       }
 
       // Filtrar por número de baños si está definido
       if (filters.bathrooms !== undefined && filters.bathrooms !== null) {
+        console.log(`Filtrando por baños: ${filters.bathrooms}`);
         whereConditions.push(gte(properties.bathrooms, Number(filters.bathrooms)));
       }
 
@@ -1541,6 +1614,7 @@ export class DatabaseStorage implements IStorage {
           : filters.features.split(",");
 
         if (features.length > 0) {
+          console.log(`Filtrando por características: ${features.join(", ")}`);
           // Para cada característica, verificamos que esté en el array de la propiedad
           features.forEach((feature: string) => {
             whereConditions.push(
@@ -1587,13 +1661,16 @@ export class DatabaseStorage implements IStorage {
     let query = db.select(searchFields).from(properties);
     
     if (whereConditions.length > 0) {
+      console.log(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
       query = query.where(and(...whereConditions));
     }
 
     // Ordenar por precio (por defecto)
     query = query.orderBy(properties.price);
 
+    console.log("Ejecutando consulta de propiedades con filtros");
     const result = await query;
+    console.log(`Consulta completada. Encontradas ${result.length} propiedades que coinciden con los filtros.`);
     
     // Compatibility layer: ensure imageUrls is always an array
     const compatibleResult = result.map(property => ({
@@ -1719,7 +1796,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return updatedClient;
     } catch (error) {
-      logger.error('Error updating client profile:', error);
+      console.error('Error updating client profile:', error);
       return undefined;
     }
   }
@@ -1755,9 +1832,11 @@ export class DatabaseStorage implements IStorage {
       const cacheKey = `neighborhood_ratings_${city}_${district || 'all'}_${neighborhood}`;
       const cached = cache.get<Record<string, number>>(cacheKey);
       if (cached) {
+        console.log(`Cache hit for neighborhood ratings: ${neighborhood}`);
         return cached;
       }
 
+      console.log(`Calculating averages for neighborhood: ${neighborhood}`);
 
       // Build conditions for hierarchical filtering
       const conditions = [
@@ -1776,12 +1855,14 @@ export class DatabaseStorage implements IStorage {
         .where(and(...conditions));
 
       if (!ratings || ratings.length === 0) {
+        console.log(`No ratings found for neighborhood: ${neighborhood}`);
         const result = { count: 0 };
         // Cache for 5 minutes to reduce database load even for empty results
         cache.set(cacheKey, result, 300);
         return result;
       }
 
+      console.log(`Found ${ratings.length} ratings for ${neighborhood}`);
 
       // Calculate averages
       const averages = {
@@ -1794,12 +1875,14 @@ export class DatabaseStorage implements IStorage {
         services: Number((ratings.reduce((sum, r) => sum + Number(r.services), 0) / ratings.length).toFixed(1)),
       };
 
+      console.log(`Calculated averages for ${neighborhood}:`, averages);
 
       // Cache for 10 minutes to eliminate repeated API calls
       cache.set(cacheKey, averages, 600);
       
       return averages;
     } catch (error) {
+      console.error(`Error calculating averages for neighborhood ${neighborhood}:`, error);
       // Return empty result on error
       return { count: 0 };
     }
@@ -2808,9 +2891,9 @@ class DatabaseStorageWithConnection extends DatabaseStorage {
   async testConnection(): Promise<void> {
     try {
       await db.execute(sql`SELECT 1`);
-      logger.debug('Database connection successful');
+      console.log('Database connection successful');
     } catch (error) {
-      logger.error('Database connection failed:', error);
+      console.error('Database connection failed:', error);
       throw new Error('Database connection failed');
     }
   }
