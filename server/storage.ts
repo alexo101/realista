@@ -1259,8 +1259,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Properties
-  async getProperties(): Promise<Property[]> {
-    return await db.select().from(properties);
+  async getProperties(limit: number = 100): Promise<Property[]> {
+    // Apply default pagination limit to prevent unbounded queries
+    // Clamp limit to max 1000 to prevent abuse
+    const clampedLimit = Math.min(Math.max(1, limit), 1000);
+    const query = db
+      .select()
+      .from(properties)
+      .orderBy(sql`${properties.createdAt} DESC`)
+      .limit(clampedLimit);
+    return await query;
   }
 
   async getProperty(id: number): Promise<Property | undefined> {
@@ -1451,48 +1459,38 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`Obteniendo propiedades para la agencia ${agencyId}`);
 
-      // 1. Obtener propiedades directamente vinculadas a la agencia
-      const directProperties = await db
-        .select()
-        .from(properties)
-        .where(and(eq(properties.agencyId, agencyId), eq(properties.isActive, true)))
-        .orderBy(sql`${properties.createdAt} DESC`);
-
-      console.log(`Encontradas ${directProperties.length} propiedades directamente vinculadas a la agencia ${agencyId}`);
-
-      // 2. Obtener agentes vinculados a esta agencia
+      // Get agency agents first to build the query
       const agencyAgents = await this.getAgencyAgents(agencyId);
+      const agentIds = agencyAgents.map(agent => agent.id);
       console.log(`Encontrados ${agencyAgents.length} agentes vinculados a la agencia ${agencyId}`);
 
-      // 3. Obtener propiedades de cada agente
-      const agentPropertiesPromises = agencyAgents.map(agent => 
-        this.getPropertiesByAgent(agent.id)
-      );
+      // Fixed N+1 query: Use a single query instead of mapping over agents
+      // Get all properties in one query using OR condition:
+      // - Properties directly linked to agency (agencyId matches), OR
+      // - Properties belonging to agency agents (agentId in agency agents list)
+      let whereCondition;
+      if (agentIds.length > 0) {
+        whereCondition = and(
+          sql`(${properties.agencyId} = ${agencyId} OR ${properties.agentId} IN (${sql.join(agentIds.map(id => sql`${id}`), sql`, `)}))`,
+          eq(properties.isActive, true)
+        );
+      } else {
+        whereCondition = and(
+          eq(properties.agencyId, agencyId),
+          eq(properties.isActive, true)
+        );
+      }
 
-      const agentPropertiesArrays = await Promise.all(agentPropertiesPromises);
+      // Execute single query to get all properties (avoids N+1 problem)
+      const allProperties = await db
+        .select()
+        .from(properties)
+        .where(whereCondition)
+        .orderBy(sql`${properties.createdAt} DESC`);
 
-      // 4. Aplanar el array de arrays de propiedades
-      const agentProperties = agentPropertiesArrays.flat();
-      console.log(`Encontradas ${agentProperties.length} propiedades de agentes vinculados a la agencia ${agencyId}`);
+      console.log(`Total de propiedades para la agencia ${agencyId}: ${allProperties.length} (optimized single query)`);
 
-      // 5. Combinar propiedades directas y de agentes, eliminando duplicados por ID
-      const allProperties = [...directProperties];
-
-      // Añadir propiedades de agentes solo si no están ya incluidas
-      agentProperties.forEach(agentProperty => {
-        if (!allProperties.some(p => p.id === agentProperty.id)) {
-          allProperties.push(agentProperty);
-        }
-      });
-
-      console.log(`Total de propiedades para la agencia ${agencyId}: ${allProperties.length}`);
-
-      // Ordenar por fecha de creación (más recientes primero)
-      return allProperties.sort((a, b) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return dateB - dateA;
-      });
+      return allProperties;
     } catch (error) {
       console.error(`Error al obtener propiedades para la agencia ${agencyId}:`, error);
       return [];
@@ -1670,6 +1668,10 @@ export class DatabaseStorage implements IStorage {
 
     // Ordenar por precio (por defecto)
     query = query.orderBy(properties.price);
+    
+    // Apply pagination limit to prevent unbounded queries (max 500 results)
+    const maxResults = 500;
+    query = query.limit(maxResults);
 
     console.log("Ejecutando consulta de propiedades con filtros");
     const result = await query;
