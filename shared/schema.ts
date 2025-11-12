@@ -306,6 +306,49 @@ export type UserWithReviews = User & {
   reviewAverage?: number;
 };
 
+// DTO types for enriched objects with joined/computed data
+// Agency DTO - includes agency data formatted for routes
+export type AgencyDTO = {
+  id: number;
+  uuid: string;
+  slug: string | null;
+  name: string | null; // Maps to agencyName
+  agencyName: string; // Original field
+  agencyAddress: string | null;
+  agencyDescription: string | null;
+  agencyLogo: string | null;
+  agencyEmailToDisplay: string | null;
+  agencyPhone: string | null;
+  phone: string | null; // Alias for agencyPhone
+  agencyActiveSince: string | null;
+  city: string | null;
+  agencyInfluenceNeighborhoods: string[] | null;
+  agencySupportedLanguages: string[] | null;
+  agencyWebsite: string | null;
+  agencySocialMedia: any;
+  subscriptionPlan: string | null;
+  isYearlyBilling: boolean | null;
+  seatsLimit: number | null;
+  activePropertiesLimit: number | null;
+  deletedAt: Date | null;
+  createdAt: Date;
+  reviewCount?: number;
+  reviewAverage?: number;
+};
+
+// AgencyAgent with enriched agent details
+export type AgencyAgentWithDetails = AgencyAgent & {
+  agentName?: string;
+  agentEmail?: string;
+  agentAvatar?: string | null;
+};
+
+// Inquiry with joined property and agent data
+export type InquiryWithDetails = Inquiry & {
+  property?: Property;
+  agent?: Agent;
+};
+
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   targetId: integer("target_id").notNull(), // Puede ser un id de agente o agencia
