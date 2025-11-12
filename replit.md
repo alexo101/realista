@@ -45,6 +45,15 @@ Preferred communication style: Simple, everyday language.
 - **Scalability**: Cloud storage for images, Neon serverless PostgreSQL with connection pooling.
 - **Data Integrity**: Drizzle ORM for schema management and migrations, database-enforced business rules.
 - **User Experience**: Focused on intuitive interfaces, clear error messaging, and responsive layouts.
+- **Performance Optimization** (November 2025):
+    - **Database Indexes**: Strategic indexes on high-traffic columns for faster queries:
+        - Single-column indexes: `neighborhood`, `city`, `agent_id`, `agency_id`, `operation_type`, `is_active`, `view_count`, `email`
+        - Composite indexes: `(neighborhood, operation_type)`, `(agent_id, is_active)`, `(agency_id, is_active)` for common query patterns
+    - **Query Optimization**:
+        - Fixed N+1 query in `getPropertiesByAgency`: Replaced agent loop with single unified WHERE clause using OR/IN
+        - Added pagination limits: `getProperties` (default 100, max 1000), `searchProperties` (max 500) to prevent unbounded queries
+        - Deterministic ordering: Added `ORDER BY created_at DESC` to paginated queries for consistent results
+    - **Caching**: In-memory caching for search results (5-minute TTL) to optimize tab switching and repeated queries
 - **Session Consistency**: All registration endpoints (`/api/auth/register`, `/api/auth/register-agency`, `/api/auth/register-agent`, `/api/clients/register`) return consistent user data structure including `isAdmin` and `isClient` flags, ensuring frontend receives complete user context for proper UI rendering. Client registration auto-creates session with `clientUuid` (November 2025).
 - **UUID-Based Secure Routing** (November 2025):
     - **Agent Dashboard**: `/gestionar/{agentUuid}/{section}` - sections: calendario, perfil-agente, perfil-agencia, propiedades, clientes, mensajes, resenas, equipo
