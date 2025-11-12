@@ -89,13 +89,13 @@ export interface IStorage {
 
   // Agents/Agencies Search & Profiles
   searchAgents(query: string): Promise<UserWithReviews[]>;
-  searchAgencies(query: string): Promise<User[]>;
+  searchAgencies(query: string): Promise<Agency[]>;
   getAgentById(id: number): Promise<User | undefined>;
   getAgentByUuid(uuid: string): Promise<User | undefined>;
   getAgentBySlug(slug: string): Promise<User | undefined>;
-  getAgencyById(id: number): Promise<User | undefined>;
-  getAgencyByUuid(uuid: string): Promise<User | undefined>;
-  getAgencyBySlug(slug: string): Promise<User | undefined>;
+  getAgencyById(id: number): Promise<Agency | undefined>;
+  getAgencyByUuid(uuid: string): Promise<Agency | undefined>;
+  getAgencyBySlug(slug: string): Promise<Agency | undefined>;
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
@@ -146,6 +146,7 @@ export interface IStorage {
     city?: string, 
     district?: string
   ): Promise<Record<string, number>>;
+  getAllNeighborhoodsWithRatings(): Promise<string[]>;
   createNeighborhoodRating(
     rating: InsertNeighborhoodRating,
   ): Promise<NeighborhoodRating>;
@@ -397,7 +398,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async searchAgencies(queryString: string): Promise<User[]> {
+  async searchAgencies(queryString: string): Promise<Agency[]> {
     try {
       // Parseamos los parámetros de la URL
       const params = new URLSearchParams(queryString);
@@ -528,48 +529,8 @@ export class DatabaseStorage implements IStorage {
             }
           }
 
-          const stats = {
-            reviewCount: totalReviews,
-            reviewAverage: finalScore
-          };
-
-          // Procesar los campos que deberían ser arrays
-          const neighborhoods = this.parseArrayField(agency.agencyInfluenceNeighborhoods);
-          const languages = this.parseArrayField(agency.agencySupportedLanguages);
-
-          // Asegurarnos de que agencySocialMedia sea un objeto
-          const socialMedia = agency.agencySocialMedia
-            ? this.parseJsonField(agency.agencySocialMedia as object | string)
-            : {};
-
-          // Formato compatible con User
-          return {
-            id: agency.id,
-            email: agency.agencyEmailToDisplay || "agency@example.com",
-            password: "",
-            name: agency.agencyName,
-            surname: null,
-            description: agency.agencyDescription,
-            avatar: agency.agencyLogo,
-            agencyLogo: agency.agencyLogo,
-            createdAt: agency.createdAt || new Date(),
-            influenceNeighborhoods: neighborhoods,
-            yearsOfExperience: null,
-            languagesSpoken: languages,
-            agencyId: String(agency.adminAgentId),
-            isAdmin: false,
-            agencyName: agency.agencyName,
-            agencyWebsite: agency.agencyWebsite,
-            agencySocialMedia: socialMedia,
-            agencyActiveSince: agency.agencyActiveSince,
-            agencyAddress: agency.agencyAddress,
-            agencyInfluenceNeighborhoods: neighborhoods,
-            // Review statistics
-            reviewCount: Number(stats?.reviewCount) || 0,
-            reviewAverage: Number(stats?.reviewAverage) || 0,
-            isAgent: false,
-            isAgency: true,
-          } as User;
+          // Return the agency directly
+          return agency;
         })
       );
 
@@ -712,104 +673,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAgencyById(id: number): Promise<User | undefined> {
-    // Como tenemos compatibilidad hacia atrás con User = Agent
-    // convertimos la agencia a formato agente para devolver
+  async getAgencyById(id: number): Promise<Agency | undefined> {
     const [agency] = await db
       .select()
       .from(agencies)
       .where(eq(agencies.id, id));
-    if (!agency) return undefined;
-
-    // Get review statistics for this agency (matching agency profile calculation)
-    // Get direct agency reviews
-    const agencyReviewResults = await db.execute(
-      sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
-          FROM reviews 
-          WHERE target_id = ${id} AND target_type = 'agency'`
-    );
-
-    const agencyReviewCount = agencyReviewResults.rows[0]?.count || 0;
-    const agencyScore = agencyReviewResults.rows[0]?.average || 0;
-
-    // Get reviews from linked agents (through agency_agents junction table)
-    const linkedAgentReviews = await db.execute(
-      sql`SELECT COUNT(r.*)::integer as agent_review_count, 
-                 COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average
-          FROM reviews r 
-          JOIN agency_agents aa ON r.target_id = aa.agent_id 
-          WHERE aa.agency_id = ${id} AND r.target_type = 'agent' AND aa.left_at IS NULL`
-    );
-
-    const agentReviewCount = linkedAgentReviews.rows[0]?.agent_review_count || 0;
-    const agentReviewAverage = linkedAgentReviews.rows[0]?.agent_review_average || 0;
-
-    // Calculate combined score (matching agency profile logic)
-    const totalReviews = Number(agencyReviewCount) + Number(agentReviewCount);
-    let finalScore = 0;
-    
-    if (totalReviews > 0) {
-      if (agencyScore > 0 && agentReviewAverage > 0) {
-        finalScore = (Number(agencyScore) + Number(agentReviewAverage)) / 2;
-      } else if (agencyScore > 0) {
-        finalScore = Number(agencyScore);
-      } else {
-        finalScore = Number(agentReviewAverage);
-      }
-    }
-
-    const reviewCount = totalReviews;
-    const reviewAverage = finalScore;
-
-    // Procesar los campos que deberían ser arrays
-    const neighborhoods = this.parseArrayField(
-      agency.agencyInfluenceNeighborhoods,
-    );
-    const languages = this.parseArrayField(agency.agencySupportedLanguages);
-
-    // Asegurarnos de que agencySocialMedia sea un objeto o string antes de procesarlo
-    const socialMedia = agency.agencySocialMedia
-      ? this.parseJsonField(agency.agencySocialMedia as object | string)
-      : {};
-
-    // Convertir formato agencia a agente para mantener compatibilidad
-    const agentFormat = {
-      id: agency.id,
-      email: agency.agencyEmailToDisplay || "agency@example.com", // Email público de la agencia
-      password: "", // Campo requerido por el tipo pero no se usa
-      name: agency.agencyName,
-      surname: null, // Las agencias no tienen apellidos
-      description: agency.agencyDescription,
-      avatar: agency.agencyLogo,
-      createdAt: new Date(), // Fecha actual como aproximación si no existe
-      // Barrios de actuación de la agencia
-      influenceNeighborhoods: neighborhoods,
-      // Campos específicos de agentes que no son relevantes para agencias
-      yearsOfExperience: null,
-      // Idiomas soportados
-      languagesSpoken: languages,
-      // ID de administrador de la agencia (casteado a string para mantener compatibilidad)
-      agencyId: String(agency.adminAgentId),
-      isAdmin: false,
-      // Campos adicionales específicos de agencias para frontend
-      agencyName: agency.agencyName,
-      agencyWebsite: agency.agencyWebsite,
-      agencySocialMedia: socialMedia,
-      agencyActiveSince: agency.agencyActiveSince,
-      agencyAddress: agency.agencyAddress,
-      // Review statistics
-      reviewCount: Number(reviewCount),
-      reviewAverage: Number(reviewAverage),
-      // Subscription plan fields
-      subscriptionPlan: agency.subscriptionPlan,
-      isYearlyBilling: agency.isYearlyBilling,
-      seatsLimit: agency.seatsLimit,
-      // Flag para diferenciar agentes de agencias
-      isAgent: false,
-      isAgency: true,
-    } as User;
-
-    return agentFormat;
+    return agency;
   }
 
   async getAgentByUuid(uuid: string): Promise<User | undefined> {
@@ -826,14 +695,14 @@ export class DatabaseStorage implements IStorage {
     return this.getAgentById(agent.id);
   }
 
-  async getAgencyByUuid(uuid: string): Promise<User | undefined> {
+  async getAgencyByUuid(uuid: string): Promise<Agency | undefined> {
     const [agency] = await db.select().from(agencies).where(eq(agencies.uuid, uuid));
     if (!agency) return undefined;
 
     return this.getAgencyById(agency.id);
   }
 
-  async getAgencyBySlug(slug: string): Promise<User | undefined> {
+  async getAgencyBySlug(slug: string): Promise<Agency | undefined> {
     const [agency] = await db.select().from(agencies).where(eq(agencies.slug, slug));
     if (!agency) return undefined;
 

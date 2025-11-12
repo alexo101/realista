@@ -52,6 +52,7 @@ export const agents = pgTable("agents", {
   password: text("password").notNull(),
   name: text("name"),
   surname: text("surname"),
+  phone: text("phone"), // Contact phone number
   description: text("description"),
   avatar: text("avatar"),
   city: text("city"),
