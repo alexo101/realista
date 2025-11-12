@@ -40,7 +40,7 @@ class MemoryCache {
   // Clean expired entries periodically
   cleanExpired(): void {
     const now = Date.now();
-    for (const [key, item] of this.cache.entries()) {
+    for (const [key, item] of Array.from(this.cache.entries())) {
       if (now - item.timestamp > item.ttl) {
         this.cache.delete(key);
       }

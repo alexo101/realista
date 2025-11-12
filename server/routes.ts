@@ -33,7 +33,7 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInDate: true,
 }).partial();
 import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation } from "./emailService";
-import { expandNeighborhoodSearch, isCityWideSearch, getCities, getDistrictsByCity, getNeighborhoodsByDistrict } from "./utils/neighborhoods";
+import { expandNeighborhoodSearch, isCityWideSearch, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 import multer from 'multer';
