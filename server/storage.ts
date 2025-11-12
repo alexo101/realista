@@ -89,13 +89,13 @@ export interface IStorage {
 
   // Agents/Agencies Search & Profiles
   searchAgents(query: string): Promise<UserWithReviews[]>;
-  searchAgencies(query: string): Promise<User[]>;
+  searchAgencies(query: string): Promise<Agency[]>;
   getAgentById(id: number): Promise<User | undefined>;
   getAgentByUuid(uuid: string): Promise<User | undefined>;
   getAgentBySlug(slug: string): Promise<User | undefined>;
-  getAgencyById(id: number): Promise<User | undefined>;
-  getAgencyByUuid(uuid: string): Promise<User | undefined>;
-  getAgencyBySlug(slug: string): Promise<User | undefined>;
+  getAgencyById(id: number): Promise<Agency | undefined>;
+  getAgencyByUuid(uuid: string): Promise<Agency | undefined>;
+  getAgencyBySlug(slug: string): Promise<Agency | undefined>;
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
@@ -826,6 +826,8 @@ export class DatabaseStorage implements IStorage {
       const result = await db
         .select({
           id: agencies.id,
+          uuid: agencies.uuid,
+          slug: agencies.slug,
           agencyName: agencies.agencyName,
           agencyAddress: agencies.agencyAddress,
           agencyDescription: agencies.agencyDescription,
@@ -841,6 +843,7 @@ export class DatabaseStorage implements IStorage {
           subscriptionPlan: agencies.subscriptionPlan,
           isYearlyBilling: agencies.isYearlyBilling,
           seatsLimit: agencies.seatsLimit,
+          activePropertiesLimit: agencies.activePropertiesLimit,
           deletedAt: agencies.deletedAt,
           createdAt: agencies.createdAt,
         })
@@ -974,10 +977,10 @@ export class DatabaseStorage implements IStorage {
       if (agencyData.agencyWebsite !== undefined) updates.agencyWebsite = agencyData.agencyWebsite;
       if (agencyData.agencySocialMedia !== undefined) updates.agencySocialMedia = agencyData.agencySocialMedia;
       
-      // Campos con mapeo especial
-      if (agencyData.yearEstablished !== undefined) updates.agencyActiveSince = agencyData.yearEstablished.toString();
-      if (agencyData.agencyLanguagesSpoken !== undefined) updates.agencySupportedLanguages = agencyData.agencyLanguagesSpoken;
+      // Campos adicionales
+      if (agencyData.agencySupportedLanguages !== undefined) updates.agencySupportedLanguages = agencyData.agencySupportedLanguages;
       if (agencyData.agencyInfluenceNeighborhoods !== undefined) updates.agencyInfluenceNeighborhoods = agencyData.agencyInfluenceNeighborhoods;
+      if (agencyData.agencyActiveSince !== undefined) updates.agencyActiveSince = agencyData.agencyActiveSince;
       
       // Subscription fields
       if (agencyData.subscriptionPlan !== undefined) updates.subscriptionPlan = agencyData.subscriptionPlan;
