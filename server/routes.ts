@@ -13,6 +13,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { requireAuth, requireRole, authorize, isAgencyAdmin, isResourceOwner } from "./middleware/auth";
+import { logger } from "./utils/logger";
 
 // Client profile update schema - only allow specific fields
 const updateClientProfileSchema = insertClientSchema.pick({
@@ -77,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(config);
     } catch (error) {
-      console.error('Error fetching client metrics config:', error);
+      logger.error('Error fetching client metrics config:', error);
       res.status(500).json({ message: "Failed to fetch client metrics configuration" });
     }
   });
@@ -85,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para registro de clientes desde la web
   app.post("/api/clients/register", async (req, res) => {
     try {
-      console.log('Registro de cliente - Datos recibidos:', req.body);
+      logger.debug('Client registration attempt');
 
       // Validar los datos usando el schema de clientes
       const validatedData = insertClientSchema.parse({
@@ -113,8 +114,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crear el cliente
       const newClient = await storage.createClient(validatedData);
 
-      console.log('Cliente creado exitosamente:', newClient);
-
       // Create session with client data
       (req as any).session.user = {
         id: newClient.id,
@@ -134,10 +133,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await new Promise((resolve, reject) => {
         (req as any).session.save((err: any) => {
           if (err) {
-            console.error('Error saving session:', err);
+            logger.error('Error saving session:', err);
             reject(err);
           } else {
-            console.log('Session saved successfully for client:', newClient.email);
             resolve(true);
           }
         });
@@ -154,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error) {
-      console.error('Error en registro de cliente:', error);
+      logger.error('Error en registro de cliente:', error);
 
       if (error instanceof Error && error.message.includes('validation')) {
         return res.status(400).json({ 
@@ -180,14 +178,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: 1 
       });
     } catch (error) {
-      console.error('Error checking invited agent email:', error);
+      logger.error('Error checking invited agent email:', error);
       res.status(500).json({ message: "Failed to check invited agent email" });
     }
   });
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      console.log('Registro - Datos recibidos:', req.body);
+      logger.debug('User registration attempt');
 
       // Asegurar que isAgent sea un booleano
       const userData = {
@@ -199,10 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isYearlyBilling: req.body.isYearlyBilling || false
       };
 
-      console.log('Registro - Datos procesados:', userData);
-
       const user = await storage.createUser(userData);
-      console.log('Usuario creado:', user);
 
       // Determine if user is client or agent
       const isClient = !userData.isAgent;
@@ -239,9 +234,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         await sendWelcomeEmail(user.email, userName, isAgentOrAgency);
-        console.log('Email de bienvenida enviado a:', user.email);
+        logger.debug('Welcome email sent to', user.email);
       } catch (emailError) {
-        console.error('Error al enviar email de bienvenida:', emailError);
+        logger.error('Error sending welcome email:', emailError);
         // No interrumpimos el flujo si falla el envío de email
       }
 
@@ -255,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       });
     } catch (error) {
-      console.error('Error registering user:', error);
+      logger.error('Error registering user:', error);
       res.status(400).json({ message: "Invalid registration data" });
     }
   });
@@ -263,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agency registration with subscription plan
   app.post("/api/auth/register-agency", async (req, res) => {
     try {
-      console.log('Agency Registration - Datos recibidos:', req.body);
+      logger.debug('Agency registration attempt');
       const { agencyName, city, email, password, name, surname, subscriptionPlan, isYearlyBilling } = req.body;
 
       // Validate agency name
@@ -318,7 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const agency = await storage.createAgency(agencyData);
-      console.log('Agency created:', agency.id);
+      logger.debug('Agency created, ID:', agency.id);
 
       // Create admin agent (agency_member type) with admin's personal information
       const adminAgentData = {
@@ -331,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const adminAgent = await storage.createUser(adminAgentData);
-      console.log('Admin agent created:', adminAgent.id);
+      logger.debug('Admin agent created, ID:', adminAgent.id);
 
       // Link admin agent to agency via agency_agents table (atomic with seat check)
       await storage.addAgentToAgencyAtomic(
@@ -366,9 +361,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send welcome email
       try {
         await sendWelcomeEmail(adminAgent.email, agencyData.agencyName, true);
-        console.log('Email de bienvenida enviado a:', adminAgent.email);
+        logger.debug('Welcome email sent to', adminAgent.email);
       } catch (emailError) {
-        console.error('Error al enviar email de bienvenida:', emailError);
+        logger.error('Error sending welcome email:', emailError);
       }
 
       // Return user data without password
@@ -385,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentUuid: adminAgent.uuid
       });
     } catch (error) {
-      console.error('Error registering agency:', error);
+      logger.error('Error registering agency:', error);
       res.status(500).json({ message: "Error al registrar la agencia" });
     }
   });
@@ -414,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyName: agency?.agencyName || 'Realista'
       });
     } catch (error) {
-      console.error('Error validating invitation:', error);
+      logger.error('Error validating invitation:', error);
       res.status(500).json({ message: "Error al validar la invitación" });
     }
   });
@@ -422,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Invited agent registration endpoint
   app.post("/api/auth/register-invited-agent", async (req, res) => {
     try {
-      console.log('Invited Agent Registration - Datos recibidos:', req.body);
+      logger.debug('Invited agent registration attempt');
       const { token, password } = req.body;
 
       // Validate required fields
@@ -470,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const agent = await storage.createUser(agentData);
-      console.log('Invited agent created:', agent.id, 'for agency:', invitation.agencyId);
+      logger.debug('Invited agent created');
 
       // Link agent to agency via agency_agents table (atomic with seat check)
       await storage.addAgentToAgencyAtomic(
@@ -479,11 +474,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'member',
         agent.id // Self-registration through invitation
       );
-      console.log('Agent successfully linked to agency:', invitation.agencyId);
+      logger.debug('Agent linked to agency');
 
       // Mark invitation as consumed
       await storage.consumeInvitation(token);
-      console.log('Invitation consumed for:', invitation.email);
+      logger.debug('Invitation consumed');
 
       // Create session with proper user object
       (req as any).session.user = {
@@ -509,9 +504,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send welcome email
       try {
         await sendWelcomeEmail(agent.email, `${agent.name} ${agent.surname}`, true);
-        console.log('Email de bienvenida enviado a:', agent.email);
+        logger.debug('Welcome email sent to', agent.email);
       } catch (emailError) {
-        console.error('Error enviando email de bienvenida:', emailError);
+        logger.error('Error sending welcome email:', emailError);
       }
 
       // Return user data without password
@@ -528,7 +523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentUuid: agent.uuid
       });
     } catch (error) {
-      console.error('Error registering invited agent:', error);
+      logger.error('Error registering invited agent:', error);
       res.status(500).json({ message: "Error al registrar el agente invitado" });
     }
   });
@@ -536,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agent registration with subscription plan
   app.post("/api/auth/register-agent", async (req, res) => {
     try {
-      console.log('Agent Registration - Datos recibidos:', req.body);
+      logger.debug('Agent registration attempt');
       const { email, password, subscriptionPlan, isYearlyBilling } = req.body;
 
       // Check if email already exists
@@ -558,7 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const agent = await storage.createUser(agentData);
-      console.log('Agent created:', agent.id);
+      logger.debug('Agent created, ID:', agent.id);
 
       // Create session with proper user object
       (req as any).session.user = {
@@ -585,9 +580,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send welcome email
       try {
         await sendWelcomeEmail(agent.email, email.split('@')[0], true);
-        console.log('Email de bienvenida enviado a:', agent.email);
+        logger.debug('Welcome email sent to', agent.email);
       } catch (emailError) {
-        console.error('Error al enviar email de bienvenida:', emailError);
+        logger.error('Error sending welcome email:', emailError);
       }
 
       // Return user data without password
@@ -599,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentUuid: agent.uuid
       });
     } catch (error) {
-      console.error('Error registering agent:', error);
+      logger.error('Error registering agent:', error);
       res.status(500).json({ message: "Error al registrar el agente" });
     }
   });
@@ -611,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agencies = await storage.getAgenciesByAdmin(adminId);
       res.json(agencies);
     } catch (error) {
-      console.error('Error fetching admin agencies:', error);
+      logger.error('Error fetching admin agencies:', error);
       res.status(500).json({ message: "Failed to fetch agencies" });
     }
   });
@@ -619,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create agent invitation endpoint for team management
   app.post("/api/agents/invite", requireAuth, async (req, res) => {
     try {
-      console.log('Creating agent invitation - Received data:', req.body);
+      logger.debug('Creating agent invitation');
 
       const { name, surname, email, agencyId } = req.body;
 
@@ -656,7 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (emailSent) {
-          console.log('Invitation email sent successfully to:', email);
+          logger.debug('Invitation email sent');
           res.status(200).json({ 
             message: "Invitación enviada exitosamente",
             email: email,
@@ -666,13 +661,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('Failed to send invitation email');
         }
       } catch (emailError) {
-        console.error('Error sending invitation email:', emailError);
+        logger.error('Error sending invitation email:', emailError);
         res.status(500).json({ 
           message: "Error enviando la invitación por email" 
         });
       }
     } catch (error) {
-      console.error('Error creating agent invitation:', error);
+      logger.error('Error creating agent invitation:', error);
       res.status(500).json({ 
         message: "Error procesando la invitación del agente" 
       });
@@ -681,7 +676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      console.log('Login - Datos recibidos:', req.body);
+      logger.debug('Login attempt');
       const { email, password } = req.body;
 
       // Primero intentar encontrar en la tabla de agentes/usuarios
@@ -716,10 +711,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log('Login - Usuario encontrado:', user ? 'Sí' : 'No', isClient ? '(Cliente)' : '(Agente)');
+      logger.debug('User found in login');
 
       if (!user || (!isClient && user.password !== password)) {
-        console.log('Login - Credenciales inválidas');
+        logger.debug('Invalid credentials');
         return res.status(401).json({ message: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo" });
       }
 
@@ -747,16 +742,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log('Login - Éxito, devolviendo usuario:', {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: isAdmin,
-        isClient: isClient,
-        agencyId: agencyId,
-        subscriptionPlan: subscriptionPlan
-      });
-
       // Store user data in session
       (req as any).session.user = {
         id: user.id,
@@ -777,10 +762,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await new Promise((resolve, reject) => {
         (req as any).session.save((err: any) => {
           if (err) {
-            console.error('Error saving session:', err);
+            logger.error('Error saving session:', err);
             reject(err);
           } else {
-            console.log('Session saved successfully for user:', user.email);
             resolve(true);
           }
         });
@@ -799,7 +783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       });
     } catch (error) {
-      console.error('Error during login:', error);
+      logger.error('Error during login:', error);
       res.status(500).json({ message: "Error en el inicio de sesión" });
     }
   });
@@ -809,13 +793,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       (req as any).session.destroy((err: any) => {
         if (err) {
-          console.error('Error destroying session:', err);
+          logger.error('Error destroying session:', err);
           return res.status(500).json({ message: "Error al cerrar sesión" });
         }
         res.json({ message: "Sesión cerrada exitosamente" });
       });
     } catch (error) {
-      console.error('Error during logout:', error);
+      logger.error('Error during logout:', error);
       res.status(500).json({ message: "Error al cerrar sesión" });
     }
   });
@@ -824,7 +808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       res.json(req.user);
     } catch (error) {
-      console.error('Error getting current user:', error);
+      logger.error('Error getting current user:', error);
       res.status(500).json({ message: "Error al obtener información del usuario" });
     }
   });
@@ -839,7 +823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ apiKey });
     } catch (error) {
-      console.error('Error getting maps config:', error);
+      logger.error('Error getting maps config:', error);
       res.status(500).json({ message: "Maps configuration error" });
     }
   });
@@ -864,7 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       if (!response.ok) {
-        console.warn(`Google Maps Geocoding failed for address: ${address}, Status: ${response.status}`);
+        logger.warn(`Google Maps Geocoding failed for address: ${address}, Status: ${response.status}`);
         return res.status(response.status).json({ message: "Geocoding service unavailable" });
       }
 
@@ -880,11 +864,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.json(result);
       } else {
-        console.warn(`No geocoding results found for: ${address}, Status: ${data.status}`);
+        logger.warn(`No geocoding results found for: ${address}, Status: ${data.status}`);
         res.status(404).json({ message: "Address not found" });
       }
     } catch (error) {
-      console.error('Google Maps Geocoding error:', error);
+      logger.error('Google Maps Geocoding error:', error);
       res.status(500).json({ message: "Geocoding service error" });
     }
   });
@@ -896,7 +880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteProperty(parseInt(id));
       res.status(200).json({ message: "Propiedad eliminada exitosamente" });
     } catch (error) {
-      console.error('Error deleting property:', error);
+      logger.error('Error deleting property:', error);
       res.status(500).json({ message: "Error al eliminar la propiedad" });
     }
   });
@@ -909,14 +893,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedProperty = await storage.togglePropertyStatus(parseInt(id), isActive);
       res.status(200).json(updatedProperty);
     } catch (error) {
-      console.error('Error toggling property status:', error);
+      logger.error('Error toggling property status:', error);
       res.status(500).json({ message: "Error al cambiar el estado de la propiedad" });
     }
   });
 
   app.post("/api/properties", async (req, res) => {
     try {
-      console.log('Attempting to create property with data:', req.body);
+      logger.debug('Creating property');
       const property = insertPropertySchema.parse(req.body);
       
       // Check active properties limit for agencies
@@ -943,23 +927,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const result = await storage.createProperty(property);
-      console.log('Property created successfully:', result);
+      logger.debug('Property created');
       res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating property:', error);
+      logger.error('Error creating property:', error);
       res.status(400).json({ message: "Invalid property data" });
     }
   });
 
   app.patch("/api/properties/:id", async (req, res) => {
     try {
-      console.log('Attempting to update property:', req.params.id, req.body);
+      logger.debug('Updating property');
       const property = insertPropertySchema.parse(req.body);
       const result = await storage.updateProperty(parseInt(req.params.id), property);
-      console.log('Property updated successfully:', result);
+      logger.debug('Property updated');
       res.json(result);
     } catch (error) {
-      console.error('Error updating property:', error);
+      logger.error('Error updating property:', error);
       res.status(400).json({ message: "Invalid property data" });
     }
   });
@@ -972,7 +956,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const includeInactive = req.query.includeInactive === 'true';
       const operationType = req.query.operationType as string | undefined;
 
-      console.log(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}, agencyId=${agencyId}, includeInactive=${includeInactive}`);
 
       let properties;
       if (mostViewed) {
@@ -992,7 +975,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
         properties = await storage.getMostViewedProperties(limit, operationType);
-        console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
         // Add pagination support for better performance
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
@@ -1017,14 +999,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // If it's a city-wide search, remove neighborhood filter
           if (isCityWideSearch(neighborhood)) {
-            console.log('City-wide search for Barcelona - showing all properties');
             delete updatedQuery.neighborhoods; // Don't filter by specific neighborhoods
           } 
           // If it's a district or specific neighborhood, expand the search
           else {
             // Expand the neighborhood or district to a list of neighborhoods
             const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-            console.log(`Expanded search for ${neighborhood} includes: ${expandedNeighborhoods.join(', ')}`);
 
             if (expandedNeighborhoods.length > 0) {
               // Replace the original filter with the expanded list
@@ -1037,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(properties);
     } catch (error) {
-      console.error('Error fetching properties:', error);
+      logger.error('Error fetching properties:', error);
       res.status(500).json({ message: "Failed to fetch properties" });
     }
   });
@@ -1069,7 +1049,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedProperty = await storage.getProperty(property.id);
       res.json(updatedProperty);
     } catch (error) {
-      console.error('Error fetching property:', error);
+      logger.error('Error fetching property:', error);
       res.status(500).json({ message: "Failed to fetch property" });
     }
   });
@@ -1077,26 +1057,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clients
   app.post("/api/clients", async (req, res) => {
     try {
-      console.log('Attempting to create client with data:', req.body);
+      logger.debug('Creating client');
       const client = insertClientSchema.parse(req.body);
       const result = await storage.createClient(client);
-      console.log('Client created successfully:', result);
+      logger.debug('Client created');
       res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating client:', error);
+      logger.error('Error creating client:', error);
       res.status(400).json({ message: "Invalid client data" });
     }
   });
 
   app.patch("/api/clients/:id", async (req, res) => {
     try {
-      console.log('Attempting to update client:', req.params.id, req.body);
+      logger.debug('Updating client');
       const client = insertClientSchema.parse(req.body);
       const result = await storage.updateClient(parseInt(req.params.id), client);
-      console.log('Client updated successfully:', result);
+      logger.debug('Client updated');
       res.json(result);
     } catch (error) {
-      console.error('Error updating client:', error);
+      logger.error('Error updating client:', error);
       res.status(400).json({ message: "Invalid client data" });
     }
   });
@@ -1107,7 +1087,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = await storage.getClientsByAgent(agentId);
       res.json(clients);
     } catch (error) {
-      console.error('Error fetching clients:', error);
+      logger.error('Error fetching clients:', error);
       res.status(500).json({ message: "Failed to fetch clients" });
     }
   });
@@ -1133,7 +1113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clients = await storage.getClientsByAgent(agentId);
       res.json(clients);
     } catch (error) {
-      console.error('Error fetching clients for agent:', error);
+      logger.error('Error fetching clients for agent:', error);
       res.status(500).json({ message: "Failed to fetch clients" });
     }
   });
@@ -1156,7 +1136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentId: agentId
       });
     } catch (error) {
-      console.error('Error updating favorite agent:', error);
+      logger.error('Error updating favorite agent:', error);
       res.status(500).json({ message: "Error al actualizar favoritos" });
     }
   });
@@ -1167,7 +1147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const favoriteAgents = await storage.getFavoriteAgentsByClient(clientId);
       res.status(200).json(favoriteAgents);
     } catch (error) {
-      console.error('Error fetching favorite agents:', error);
+      logger.error('Error fetching favorite agents:', error);
       res.status(500).json({ message: "Failed to fetch favorite agents" });
     }
   });
@@ -1179,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isFavorite = await storage.isFavoriteAgent(clientId, agentId);
       res.status(200).json({ isFavorite });
     } catch (error) {
-      console.error('Error checking favorite status:', error);
+      logger.error('Error checking favorite status:', error);
       res.status(500).json({ message: "Failed to check favorite status" });
     }
   });
@@ -1198,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const favoriteStatuses = await storage.getBatchFavoriteAgentStatus(clientId, agentIds);
       res.status(200).json(favoriteStatuses);
     } catch (error) {
-      console.error('Error checking batch agent favorite status:', error);
+      logger.error('Error checking batch agent favorite status:', error);
       res.status(500).json({ message: "Failed to check batch agent favorite status" });
     }
   });
@@ -1223,7 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: isFavorite ? "Agency added to favorites" : "Agency removed from favorites" 
       });
     } catch (error) {
-      console.error('Error toggling agency favorite:', error);
+      logger.error('Error toggling agency favorite:', error);
       res.status(500).json({ message: "Failed to update agency favorites" });
     }
   });
@@ -1234,7 +1214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const favoriteAgencies = await storage.getFavoriteAgenciesByClient(clientId);
       res.status(200).json(favoriteAgencies);
     } catch (error) {
-      console.error('Error fetching favorite agencies:', error);
+      logger.error('Error fetching favorite agencies:', error);
       res.status(500).json({ message: "Failed to fetch favorite agencies" });
     }
   });
@@ -1246,7 +1226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isFavorite = await storage.isFavoriteAgency(clientId, agencyId);
       res.status(200).json({ isFavorite });
     } catch (error) {
-      console.error('Error checking favorite status:', error);
+      logger.error('Error checking favorite status:', error);
       res.status(500).json({ message: "Failed to check favorite status" });
     }
   });
@@ -1265,7 +1245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const favoriteStatuses = await storage.getBatchFavoriteAgencyStatus(clientId, agencyIds);
       res.status(200).json(favoriteStatuses);
     } catch (error) {
-      console.error('Error checking batch agency favorite status:', error);
+      logger.error('Error checking batch agency favorite status:', error);
       res.status(500).json({ message: "Failed to check batch agency favorite status" });
     }
   });
@@ -1276,10 +1256,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const propertyId = parseInt(req.params.propertyId);
       const { clientId } = req.body;
 
-      console.log('Toggle property favorite request:', { propertyId, clientId, body: req.body });
 
       if (!clientId) {
-        console.log('Missing clientId in request body');
         return res.status(400).json({ message: "Client ID is required" });
       }
 
@@ -1293,7 +1271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: isFavorite ? "Property added to favorites" : "Property removed from favorites" 
       });
     } catch (error) {
-      console.error('Error toggling property favorite:', error);
+      logger.error('Error toggling property favorite:', error);
       res.status(500).json({ message: "Failed to update property favorites" });
     }
   });
@@ -1304,7 +1282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const favoriteProperties = await storage.getFavoritePropertiesByClient(clientId);
       res.status(200).json(favoriteProperties);
     } catch (error) {
-      console.error('Error fetching favorite properties:', error);
+      logger.error('Error fetching favorite properties:', error);
       res.status(500).json({ message: "Failed to fetch favorite properties" });
     }
   });
@@ -1316,7 +1294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isFavorite = await storage.isFavoriteProperty(clientId, propertyId);
       res.status(200).json({ isFavorite });
     } catch (error) {
-      console.error('Error checking property favorite status:', error);
+      logger.error('Error checking property favorite status:', error);
       res.status(500).json({ message: "Failed to check property favorite status" });
     }
   });
@@ -1335,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const favoriteStatuses = await storage.getBatchFavoritePropertyStatus(clientId, propertyIds);
       res.status(200).json(favoriteStatuses);
     } catch (error) {
-      console.error('Error checking batch property favorite status:', error);
+      logger.error('Error checking batch property favorite status:', error);
       res.status(500).json({ message: "Failed to check batch property favorite status" });
     }
   });
@@ -1355,7 +1333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const visitRequest = await storage.createPropertyVisitRequest(visitRequestData);
       res.status(201).json(visitRequest);
     } catch (error) {
-      console.error('Error creating property visit request:', error);
+      logger.error('Error creating property visit request:', error);
       res.status(500).json({ message: "Failed to create property visit request" });
     }
   });
@@ -1366,7 +1344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const visitRequests = await storage.getPropertyVisitRequestsByClient(clientId);
       res.status(200).json(visitRequests);
     } catch (error) {
-      console.error('Error getting client visit requests:', error);
+      logger.error('Error getting client visit requests:', error);
       res.status(500).json({ message: "Failed to get visit requests" });
     }
   });
@@ -1391,7 +1369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const visitRequests = await storage.getPropertyVisitRequestsByAgent(agentId);
       res.status(200).json(visitRequests);
     } catch (error) {
-      console.error('Error getting agent visit requests:', error);
+      logger.error('Error getting agent visit requests:', error);
       res.status(500).json({ message: "Failed to get visit requests" });
     }
   });
@@ -1404,7 +1382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedRequest = await storage.updatePropertyVisitRequestStatus(id, status, agentNotes);
       res.status(200).json(updatedRequest);
     } catch (error) {
-      console.error('Error updating visit request status:', error);
+      logger.error('Error updating visit request status:', error);
       res.status(500).json({ message: "Failed to update visit request status" });
     }
   });
@@ -1442,7 +1420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fraudCount: updatedProperty?.fraudCount || 0
       });
     } catch (error) {
-      console.error('Error reporting property fraud:', error);
+      logger.error('Error reporting property fraud:', error);
       res.status(500).json({ message: "Error al reportar la propiedad" });
     }
   });
@@ -1462,7 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(200).json({ fraudCount: property.fraudCount || 0 });
     } catch (error) {
-      console.error('Error getting property fraud count:', error);
+      logger.error('Error getting property fraud count:', error);
       res.status(500).json({ message: "Error al obtener el contador de reportes" });
     }
   });
@@ -1484,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const event = await storage.createAgentEvent(eventData);
       res.status(201).json(event);
     } catch (error) {
-      console.error('Error creating agent event:', error);
+      logger.error('Error creating agent event:', error);
       res.status(500).json({ message: "Failed to create agent event" });
     }
   });
@@ -1523,7 +1501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json(filteredEvents);
     } catch (error) {
-      console.error('Error getting agent events:', error);
+      logger.error('Error getting agent events:', error);
       res.status(500).json({ message: "Failed to get agent events" });
     }
   });
@@ -1538,7 +1516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json(result);
     } catch (error) {
-      console.error('Error getting all agent events:', error);
+      logger.error('Error getting all agent events:', error);
       res.status(500).json({ message: "Failed to get all agent events" });
     }
   });
@@ -1551,7 +1529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedEvent = await storage.updateAgentEvent(id, eventData);
       res.status(200).json(updatedEvent);
     } catch (error) {
-      console.error('Error updating agent event:', error);
+      logger.error('Error updating agent event:', error);
       res.status(500).json({ message: "Failed to update agent event" });
     }
   });
@@ -1563,7 +1541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteAgentEvent(id);
       res.status(200).json({ message: "Agent event deleted successfully" });
     } catch (error) {
-      console.error('Error deleting agent event:', error);
+      logger.error('Error deleting agent event:', error);
       res.status(500).json({ message: "Failed to delete agent event" });
     }
   });
@@ -1575,7 +1553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requests = await storage.getPropertyVisitRequestsByClient(clientId);
       res.status(200).json(requests);
     } catch (error) {
-      console.error('Error getting client visit requests:', error);
+      logger.error('Error getting client visit requests:', error);
       res.status(500).json({ message: "Failed to get client visit requests" });
     }
   });
@@ -1592,7 +1570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json(client);
     } catch (error) {
-      console.error("Error getting client:", error);
+      logger.error("Error getting client:", error);
       res.status(500).json({ message: "Failed to get client" });
     }
   });
@@ -1648,7 +1626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json(updatedClient);
     } catch (error) {
-      console.error('Error updating client profile:', error);
+      logger.error('Error updating client profile:', error);
       res.status(500).json({ message: "Failed to update client profile" });
     }
   });
@@ -1669,7 +1647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const savedSearch = await storage.createSavedSearch(searchData);
       res.status(201).json(savedSearch);
     } catch (error) {
-      console.error('Error creating saved search:', error);
+      logger.error('Error creating saved search:', error);
       res.status(500).json({ message: "Error al guardar la búsqueda" });
     }
   });
@@ -1679,7 +1657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const searches = await storage.getSavedSearchesByClient(req.user!.id);
       res.json(searches);
     } catch (error) {
-      console.error('Error fetching saved searches:', error);
+      logger.error('Error fetching saved searches:', error);
       res.status(500).json({ message: "Error al obtener las búsquedas guardadas" });
     }
   });
@@ -1696,7 +1674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedSearch = await storage.updateSavedSearchName(id, name);
       res.json(updatedSearch);
     } catch (error) {
-      console.error('Error updating saved search:', error);
+      logger.error('Error updating saved search:', error);
       res.status(500).json({ message: "Error al actualizar la búsqueda" });
     }
   });
@@ -1707,7 +1685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteSavedSearch(id);
       res.json({ message: "Búsqueda eliminada exitosamente" });
     } catch (error) {
-      console.error('Error deleting saved search:', error);
+      logger.error('Error deleting saved search:', error);
       res.status(500).json({ message: "Error al eliminar la búsqueda" });
     }
   });
@@ -1715,11 +1693,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Neighborhood Ratings
   app.post("/api/neighborhoods/ratings", async (req, res) => {
     try {
-      console.log('Recibiendo valoración de barrio:', req.body);
+      logger.debug('Received neighborhood rating');
 
       // Verificar que el barrio esté presente
       if (!req.body.neighborhood) {
-        console.error('Barrio no especificado en la valoración');
+        logger.error('Neighborhood not specified in rating');
         return res.status(400).json({ 
           success: false,
           message: "Datos incompletos. Se requiere especificar un barrio.", 
@@ -1736,7 +1714,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ratingFields = ['security', 'parking', 'familyFriendly', 'publicTransport', 'greenSpaces', 'services'];
       for (const field of ratingFields) {
         if (typeof req.body[field] !== 'number') {
-          console.error(`Field ${field} is not a number:`, req.body[field]);
           return res.status(400).json({ 
             success: false,
             message: `El campo ${field} debe ser un número`, 
@@ -1747,10 +1724,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         const rating = insertNeighborhoodRatingSchema.parse(req.body);
-        console.log('Rating data validada:', rating);
 
         const result = await storage.createNeighborhoodRating(rating);
-        console.log('Valoración guardada en la base de datos:', result);
 
         // Invalidar cualquier caché para este barrio específico
         // (En un entorno de producción esto requeriría un mecanismo de invalidación de caché)
@@ -1761,7 +1736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           data: result
         });
       } catch (validationError) {
-        console.error('Error validando datos de valoración:', validationError);
+        logger.error('Error validando datos de valoración:', validationError);
         res.status(400).json({ 
           success: false,
           message: "Datos inválidos para la valoración del barrio", 
@@ -1769,7 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-      console.error('Error general al crear valoración de barrio:', error);
+      logger.error('Error general al crear valoración de barrio:', error);
       res.status(500).json({ 
         success: false,
         message: "Error interno al procesar la valoración",
@@ -1786,7 +1761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ratings = await storage.getNeighborhoodRatings(neighborhood, city, district);
       res.json(ratings);
     } catch (error) {
-      console.error('Error fetching neighborhood ratings:', error);
+      logger.error('Error fetching neighborhood ratings:', error);
       res.status(500).json({ message: "Failed to fetch neighborhood ratings" });
     }
   });
@@ -1797,7 +1772,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const city = (req.query.city as string) || 'Barcelona';
       const district = req.query.district as string;
       
-      console.log(`Recibida solicitud para promedios de barrio: ${neighborhood}, ciudad: ${city}, distrito: ${district || 'N/A'}`);
 
       if (!neighborhood) {
         return res.status(400).json({ 
@@ -1811,13 +1785,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
 
-      console.log(`Obteniendo promedios para barrio: ${neighborhood} en ${city} a las ${new Date().toISOString()}`);
       const averages = await storage.getNeighborhoodRatingsAverage(neighborhood, city, district);
-      console.log(`Promedios para ${neighborhood} en ${city} obtenidos:`, averages);
 
       return res.json(averages);
     } catch (error) {
-      console.error('Error al calcular promedios para el barrio:', error);
+      logger.error('Error al calcular promedios para el barrio:', error);
       res.status(500).json({ 
         success: false,
         message: "Error al calcular los promedios de valoraciones del barrio",
@@ -1832,7 +1804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const neighborhoods = await storage.getAllNeighborhoodsWithRatings();
       res.json(neighborhoods);
     } catch (error) {
-      console.error('Error fetching neighborhoods:', error);
+      logger.error('Error fetching neighborhoods:', error);
       res.status(500).json({ message: "Failed to fetch neighborhoods" });
     }
   });
@@ -1843,7 +1815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cities = getCities();
       res.json(cities);
     } catch (error) {
-      console.error('Error fetching cities:', error);
+      logger.error('Error fetching cities:', error);
       res.status(500).json({ message: "Failed to fetch cities" });
     }
   });
@@ -1854,7 +1826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const districts = getDistrictsByCity(city);
       res.json(districts);
     } catch (error) {
-      console.error('Error fetching districts:', error);
+      logger.error('Error fetching districts:', error);
       res.status(500).json({ message: "Failed to fetch districts" });
     }
   });
@@ -1865,7 +1837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const neighborhoods = getNeighborhoodsByDistrict(district, city);
       res.json(neighborhoods);
     } catch (error) {
-      console.error('Error fetching neighborhoods:', error);
+      logger.error('Error fetching neighborhoods:', error);
       res.status(500).json({ message: "Failed to fetch neighborhoods" });
     }
   });
@@ -1877,7 +1849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agents = await storage.searchAgents(queryString);
       res.json(agents);
     } catch (error) {
-      console.error('Error searching agents:', error);
+      logger.error('Error searching agents:', error);
       res.status(500).json({ message: "Failed to search agents" });
     }
   });
@@ -1900,14 +1872,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId = id;
       }
 
-      console.log(`Fetching agents for agency ID: ${agencyId}`);
 
       const agents = await storage.getAgencyAgents(agencyId);
-      console.log(`Found ${agents.length} agents for agency ${agencyId}`);
 
       res.json(agents);
     } catch (error) {
-      console.error(`Error fetching agents for agency: ${error}`);
+      logger.error('Error fetching agents for agency:', error);
       res.status(500).json({ message: "Failed to fetch agents for this agency" });
     }
   });
@@ -1918,7 +1888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agencies = await storage.searchAgencies(queryString);
       res.json(agencies);
     } catch (error) {
-      console.error('Error searching agencies:', error);
+      logger.error('Error searching agencies:', error);
       res.status(500).json({ message: "Failed to search agencies" });
     }
   });
@@ -1926,7 +1896,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Añadir rutas para búsqueda desde la página de búsqueda
   app.get("/api/search/agencies", async (req, res) => {
     try {
-      console.log('Search agencies params:', req.query);
 
       // Usamos las funciones de neighborhoods importadas al principio del archivo
 
@@ -1947,7 +1916,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Extract city name from the search query (e.g., "Barcelona" or "Barcelona (Todos los barrios)")
           const cityMatch = neighborhood.match(/(Barcelona|Madrid)/i);
           const cityName = cityMatch ? cityMatch[1] : 'Barcelona';
-          console.log(`Búsqueda para toda ${cityName} - mostrando todas las agencias de ${cityName}`);
           updatedQuery.showAll = 'true';
           updatedQuery.city = cityName; // Add city filter
           delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
@@ -1956,7 +1924,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
 
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
@@ -1966,7 +1933,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
       else if (!showAll && !hasSearchTerm) {
-        console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
 
@@ -1978,19 +1944,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
-      console.log('Search agencies queryString:', queryString);
       
       // Check cache for agencies search
       const agenciesCacheKey = `agencies_search:${queryString}`;
       let agencies = cache.get(agenciesCacheKey);
       
       if (!agencies) {
-        console.log('Cache miss for agencies search, querying database');
         agencies = await storage.searchAgencies(queryString);
         // Cache agencies for 10 minutes for faster tab switching
         cache.set(agenciesCacheKey, agencies, 600);
       } else {
-        console.log('Cache hit for agencies search');
       }
 
       // Procesamos los resultados para asegurar que se usen las propiedades correctas
@@ -2005,16 +1968,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Add detailed logging to see what's coming from the database
-      console.log('Agency resultsbefore normalization:', JSON.stringify(processedResults, null, 2));
 
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
-        console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
 
         // Get the agency neighborhoods from the standardized field
         const rawNeighborhoods = agency.agencyInfluenceNeighborhoods;
-        console.log('- Original neighborhoods:', rawNeighborhoods);
-        console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
 
         // Initialize array to store neighborhood values
         let neighborhoodsArray = [];
@@ -2039,9 +1998,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
             }
 
-            console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
           } catch (e) {
-            console.log('- Failed to parse neighborhoods:', e.message);
             neighborhoodsArray = [];
           }
         } else if (Array.isArray(rawNeighborhoods)) {
@@ -2051,23 +2008,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set field to standardized name
         agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
 
-        console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
         return agency;
       });
 
-      console.log('Agency results after normalization:', JSON.stringify(normalizedResults, null, 2));
 
-      console.log('Search agencies results:', normalizedResults.length);
       res.json(normalizedResults);
     } catch (error) {
-      console.error('Error searching agencies:', error);
+      logger.error('Error searching agencies:', error);
       res.status(500).json({ message: "Failed to search agencies" });
     }
   });
 
   app.get("/api/search/agents", async (req, res) => {
     try {
-      console.log('Search agents params:', req.query);
 
       // Usamos las funciones de neighborhoods importadas al principio del archivo
 
@@ -2085,7 +2038,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Si es búsqueda a nivel de ciudad, mostramos todos los agentes
         if (isCityWideSearch(neighborhood)) {
-          console.log('Búsqueda para toda Barcelona - mostrando todos los agentes');
           updatedQuery.showAll = 'true';
           delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
         } 
@@ -2093,7 +2045,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
 
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
@@ -2103,7 +2054,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
       else if (!showAll && !hasSearchTerm) {
-        console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
 
@@ -2115,25 +2065,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
-      console.log('Search agents queryString:', queryString);
       
       // Check cache for agents search
       const agentsCacheKey = `agents_search:${queryString}`;
       let agents = cache.get(agentsCacheKey);
       
       if (!agents) {
-        console.log('Cache miss for agents search, querying database');
         agents = await storage.searchAgents(queryString);
         // Cache agents for 10 minutes for faster tab switching
         cache.set(agentsCacheKey, agents, 600);
       } else {
-        console.log('Cache hit for agents search');
       }
       
-      console.log('Search agents results:', agents.length);
       res.json(agents);
     } catch (error) {
-      console.error('Error searching agents:', error);
+      logger.error('Error searching agents:', error);
       res.status(500).json({ message: "Failed to search agents" });
     }
   });
@@ -2153,13 +2099,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
         const searchTerm = filters.neighborhoods;
-        console.log(`Processing hierarchical search for: ${searchTerm}`);
 
         // Parse the hierarchical format ("Neighborhood, District, City")
         const parsed = parseNeighborhoodDisplayName(searchTerm);
         
         if (parsed) {
-          console.log(`Parsed location: ${JSON.stringify(parsed)}`);
           
           // Add hierarchical filters
           filters.city = parsed.city;
@@ -2172,7 +2116,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           delete filters.neighborhoods;
         } else {
           // Fallback: treat as a simple neighborhood name (for backward compatibility)
-          console.log(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
           filters.neighborhood = searchTerm;
           filters.city = 'Barcelona'; // Default fallback
           delete filters.neighborhoods;
@@ -2182,7 +2125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const properties = await storage.searchProperties(filters);
       res.json(properties);
     } catch (error) {
-      console.error('Error searching properties for buying:', error);
+      logger.error('Error searching properties for buying:', error);
       res.status(500).json({ message: "Failed to search properties" });
     }
   });
@@ -2212,13 +2155,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
         const searchTerm = filters.neighborhoods;
-        console.log(`Processing hierarchical search for: ${searchTerm}`);
 
         // Parse the hierarchical format ("Neighborhood, District, City")
         const parsed = parseNeighborhoodDisplayName(searchTerm);
         
         if (parsed) {
-          console.log(`Parsed location: ${JSON.stringify(parsed)}`);
           
           // Add hierarchical filters
           filters.city = parsed.city;
@@ -2231,7 +2172,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           delete filters.neighborhoods;
         } else {
           // Fallback: treat as a simple neighborhood name (for backward compatibility)
-          console.log(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
           filters.neighborhood = searchTerm;
           filters.city = 'Barcelona'; // Default fallback
           delete filters.neighborhoods;
@@ -2245,7 +2185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json([]);
       }
     } catch (error) {
-      console.error('Error searching properties for renting:', error);
+      logger.error('Error searching properties for renting:', error);
       res.status(500).json({ message: "Failed to search properties" });
     }
   });
@@ -2255,7 +2195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const review = await storage.createAgentReview(req.body);
       res.status(201).json(review);
     } catch (error) {
-      console.error('Error creating agent review:', error);
+      logger.error('Error creating agent review:', error);
       res.status(400).json({ message: "Invalid review data" });
     }
   });
@@ -2279,7 +2219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(agent);
     } catch (error) {
-      console.error('Error getting agent details:', error);
+      logger.error('Error getting agent details:', error);
       res.status(500).json({ message: "Failed to get agent details" });
     }
   });
@@ -2302,12 +2242,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentId = id;
       }
 
-      console.log(`Fetching properties for agent ID: ${agentId} from route handler`);
       const properties = await storage.getPropertiesByAgent(agentId);
-      console.log(`Returning ${properties.length} properties for agent ID: ${agentId}`);
       res.json(properties);
     } catch (error) {
-      console.error('Error getting agent properties:', error);
+      logger.error('Error getting agent properties:', error);
       res.status(500).json({ message: "Failed to get agent properties" });
     }
   });
@@ -2330,7 +2268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(agency);
     } catch (error) {
-      console.error('Error getting agency details:', error);
+      logger.error('Error getting agency details:', error);
       res.status(500).json({ message: "Failed to get agency details" });
     }
   });
@@ -2356,7 +2294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const properties = await storage.getPropertiesByAgency(agencyId);
       res.json(properties);
     } catch (error) {
-      console.error('Error getting agency properties:', error);
+      logger.error('Error getting agency properties:', error);
       res.status(500).json({ message: "Failed to get agency properties" });
     }
   });
@@ -2405,7 +2343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionPlan
       });
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       res.status(500).json({ message: "Failed to update user profile" });
     }
   });
@@ -2417,7 +2355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agents = await storage.getAgencyAgents(agencyId);
       res.json(agents);
     } catch (error) {
-      console.error('Error fetching agency agents:', error);
+      logger.error('Error fetching agency agents:', error);
       res.status(500).json({ message: "Failed to fetch agency agents" });
     }
   });
@@ -2428,26 +2366,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.createAgencyAgent(agentData);
 
       // Simulamos envío de correo (en un entorno real usaríamos un servicio de email)
-      console.log(`
------------------------------------
-ENVIANDO EMAIL DE INVITACIÓN:
-Para: ${agentData.agentEmail}
-Asunto: Bienvenido a Realista - Tu perfil ha sido añadido
-
-Contenido:
-Hola ${agentData.agentName},
-
-Un agente de tu agencia ha añadido tu perfil a Realista. 
-Sigue el siguiente link para acceder a tu cuenta:
-[Botón con link a la agencia]
-
-Gracias!
------------------------------------
-`);
 
       res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating agency agent:', error);
+      logger.error('Error creating agency agent:', error);
       res.status(400).json({ message: "Invalid agent data" });
     }
   });
@@ -2458,7 +2380,7 @@ Gracias!
       await storage.deleteAgencyAgent(id);
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting agency agent:', error);
+      logger.error('Error deleting agency agent:', error);
       res.status(500).json({ message: "Failed to delete agency agent" });
     }
   });
@@ -2470,7 +2392,7 @@ Gracias!
       const appointments = await storage.getAppointmentsByClient(clientId);
       res.json(appointments);
     } catch (error) {
-      console.error('Error fetching client appointments:', error);
+      logger.error('Error fetching client appointments:', error);
       res.status(500).json({ message: "Failed to fetch appointments" });
     }
   });
@@ -2481,14 +2403,14 @@ Gracias!
       const appointments = await storage.getAppointmentsByAgent(agentId);
       res.json(appointments);
     } catch (error) {
-      console.error('Error fetching agent appointments:', error);
+      logger.error('Error fetching agent appointments:', error);
       res.status(500).json({ message: "Failed to fetch appointments" });
     }
   });
 
   app.post("/api/appointments", async (req, res) => {
     try {
-      console.log('Attempting to create appointment with data:', req.body);
+      logger.debug('Creating appointment');
 
       // Primero preparamos los datos para asegurarnos de que la fecha es un objeto Date
       const data = {
@@ -2496,15 +2418,13 @@ Gracias!
         date: req.body.date ? new Date(req.body.date) : null
       };
 
-      console.log('Parsed appointment data:', data);
 
       // Validamos con el esquema
       const appointment = insertAppointmentSchema.parse(data);
       const result = await storage.createAppointment(appointment);
-      console.log('Appointment created successfully:', result);
       res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating appointment:', error);
+      logger.error('Error creating appointment:', error);
       res.status(400).json({ message: "Invalid appointment data" });
     }
   });
@@ -2519,11 +2439,11 @@ Gracias!
         date: req.body.date ? new Date(req.body.date) : undefined
       };
 
-      console.log('Updating appointment with data:', appointmentData);
+      logger.debug('Updating appointment with data:', appointmentData);
       const updatedAppointment = await storage.updateAppointment(id, appointmentData);
       res.json(updatedAppointment);
     } catch (error) {
-      console.error('Error updating appointment:', error);
+      logger.error('Error updating appointment:', error);
       res.status(500).json({ message: "Failed to update appointment" });
     }
   });
@@ -2534,7 +2454,7 @@ Gracias!
       await storage.deleteAppointment(id);
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting appointment:', error);
+      logger.error('Error deleting appointment:', error);
       res.status(500).json({ message: "Failed to delete appointment" });
     }
   });
@@ -2546,7 +2466,7 @@ Gracias!
       const inquiries = await storage.getInquiriesByAgent(agentId);
       res.json(inquiries);
     } catch (error) {
-      console.error('Error getting inquiries:', error);
+      logger.error('Error getting inquiries:', error);
       res.status(500).json({ message: "Error al obtener consultas" });
     }
   });
@@ -2562,7 +2482,7 @@ Gracias!
 
       res.json(inquiry);
     } catch (error) {
-      console.error('Error getting inquiry:', error);
+      logger.error('Error getting inquiry:', error);
       res.status(500).json({ message: "Error al obtener la consulta" });
     }
   });
@@ -2576,11 +2496,11 @@ Gracias!
         createdAt: new Date()
       };
 
-      console.log('Creating inquiry with data:', inquiryData);
+      logger.debug('Creating inquiry with data:', inquiryData);
       const newInquiry = await storage.createInquiry(inquiryData);
       res.status(201).json(newInquiry);
     } catch (error) {
-      console.error('Error creating inquiry:', error);
+      logger.error('Error creating inquiry:', error);
       res.status(500).json({ message: "Error al crear la consulta" });
     }
   });
@@ -2597,7 +2517,7 @@ Gracias!
       const updatedInquiry = await storage.updateInquiryStatus(id, status);
       res.json(updatedInquiry);
     } catch (error) {
-      console.error('Error updating inquiry status:', error);
+      logger.error('Error updating inquiry status:', error);
       res.status(500).json({ message: "Error al actualizar el estado de la consulta" });
     }
   });
@@ -2622,7 +2542,7 @@ Gracias!
       const reviews = await storage.getAgentReviews(agentId);
       res.status(200).json(reviews);
     } catch (error) {
-      console.error('Error getting agent reviews:', error);
+      logger.error('Error getting agent reviews:', error);
       res.status(500).json({ message: "Failed to get reviews" });
     }
   });
@@ -2647,7 +2567,7 @@ Gracias!
       const reviews = await storage.getAgencyReviews(agencyId);
       res.status(200).json(reviews);
     } catch (error) {
-      console.error('Error getting agency reviews:', error);
+      logger.error('Error getting agency reviews:', error);
       res.status(500).json({ message: "Failed to get agency reviews" });
     }
   });
@@ -2677,7 +2597,7 @@ Gracias!
       });
       res.status(201).json(review);
     } catch (error) {
-      console.error('Error creating agent review:', error);
+      logger.error('Error creating agent review:', error);
       res.status(500).json({ message: "Failed to create review" });
     }
   });
@@ -2707,7 +2627,7 @@ Gracias!
       });
       res.status(201).json(review);
     } catch (error) {
-      console.error('Error creating agency review:', error);
+      logger.error('Error creating agency review:', error);
       res.status(500).json({ message: "Failed to create agency review" });
     }
   });
@@ -2799,7 +2719,7 @@ Gracias!
 
       res.json(sortedReviews);
     } catch (error) {
-      console.error('Error obteniendo reseñas para gestionar:', error);
+      logger.error('Error obteniendo reseñas para gestionar:', error);
       res.status(500).json({ message: "Error al obtener las reseñas" });
     }
   });
@@ -2819,7 +2739,7 @@ Gracias!
 
       res.json(updatedReview);
     } catch (error) {
-      console.error('Error respondiendo a la reseña:', error);
+      logger.error('Error respondiendo a la reseña:', error);
       res.status(500).json({ message: "Error al guardar la respuesta" });
     }
   });
@@ -2839,7 +2759,7 @@ Gracias!
 
       res.json(updatedReview);
     } catch (error) {
-      console.error('Error actualizando el estado de la reseña:', error);
+      logger.error('Error actualizando el estado de la reseña:', error);
       res.status(500).json({ message: "Error al actualizar el estado de la reseña" });
     }
   });
@@ -2856,23 +2776,22 @@ Gracias!
       const agencies = await storage.getAgenciesByAdmin(adminAgentId);
       res.json(agencies);
     } catch (error) {
-      console.error('Error fetching agencies:', error);
+      logger.error('Error fetching agencies:', error);
       res.status(500).json({ message: "Failed to fetch agencies" });
     }
   });
 
   app.post("/api/admin/agencies", async (req, res) => {
     try {
-      console.log('Creating agency with data:', req.body);
+      logger.debug('Creating agency with data:', req.body);
       const agencyData = {
         ...req.body,
         adminAgentId: parseInt(req.body.adminAgentId),
       };
       const result = await storage.createAgency(agencyData);
-      console.log('Agency created successfully:', result);
       res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating agency:', error);
+      logger.error('Error creating agency:', error);
       res.status(400).json({ message: "Invalid agency data" });
     }
   });
@@ -2880,12 +2799,10 @@ Gracias!
   app.patch("/api/admin/agencies/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Updating agency ${id} with data:`, req.body);
       const result = await storage.updateAgency(id, req.body);
-      console.log('Agency updated successfully:', result);
       res.json(result);
     } catch (error) {
-      console.error('Error updating agency:', error);
+      logger.error('Error updating agency:', error);
       res.status(500).json({ message: "Failed to update agency" });
     }
   });
@@ -2893,11 +2810,10 @@ Gracias!
   app.delete("/api/admin/agencies/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Deleting agency ${id}`);
       await storage.deleteAgency(id);
       res.status(200).json({ message: "Agency deleted successfully" });
     } catch (error) {
-      console.error('Error deleting agency:', error);
+      logger.error('Error deleting agency:', error);
       res.status(500).json({ message: "Failed to delete agency" });
     }
   });
@@ -2913,17 +2829,16 @@ Gracias!
       }
 
       const agencies = await storage.getAgenciesByAdmin(adminAgentId);
-      console.log(`Retrieved ${agencies.length} agencies for admin ${adminAgentId}`);
       res.json(agencies);
     } catch (error) {
-      console.error('Error fetching agencies:', error);
+      logger.error('Error fetching agencies:', error);
       res.status(500).json({ message: "Failed to fetch agencies" });
     }
   });
 
   app.post("/api/agencies", requireAuth, authorize({ allowAdmin: true }), async (req, res) => {
     try {
-      console.log('Creating agency with data:', req.body);
+      logger.debug('Creating agency with data:', req.body);
 
       // Security: Force adminAgentId to be the current user
       const agencyData = {
@@ -2932,10 +2847,9 @@ Gracias!
       };
 
       const result = await storage.createAgency(agencyData);
-      console.log('Agency created successfully:', result);
       return res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating agency:', error);
+      logger.error('Error creating agency:', error);
       return res.status(400).json({ 
         message: error instanceof Error ? error.message : "Invalid agency data" 
       });
@@ -2954,12 +2868,10 @@ Gracias!
     async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Updating agency ${id} with data:`, req.body);
       const result = await storage.updateAgency(id, req.body);
-      console.log('Agency updated successfully:', result);
       res.json(result);
     } catch (error) {
-      console.error('Error updating agency:', error);
+      logger.error('Error updating agency:', error);
       res.status(500).json({ message: "Failed to update agency" });
     }
   });
@@ -2976,11 +2888,10 @@ Gracias!
     async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Deleting agency ${id}`);
       await storage.deleteAgency(id);
       res.status(200).json({ message: "Agency deleted successfully" });
     } catch (error) {
-      console.error('Error deleting agency:', error);
+      logger.error('Error deleting agency:', error);
       res.status(500).json({ message: "Failed to delete agency" });
     }
   });
@@ -3065,10 +2976,9 @@ Gracias!
         },
       });
 
-      console.log(`Agency ${agencyId} upgraded to ${plan} plan`);
       res.json(updatedAgency);
     } catch (error) {
-      console.error('Error upgrading agency plan:', error);
+      logger.error('Error upgrading agency plan:', error);
       res.status(500).json({ message: "Error al mejorar el plan" });
     }
   });
@@ -3077,27 +2987,25 @@ Gracias!
   app.get("/api/agency-agents/:agencyId", async (req, res) => {
     try {
       const agencyId = parseInt(req.params.agencyId);
-      console.log(`Getting agents for agency ${agencyId}`);
       const agents = await storage.getAgencyAgents(agencyId);
       res.json(agents);
     } catch (error) {
-      console.error('Error fetching agency agents:', error);
+      logger.error('Error fetching agency agents:', error);
       res.status(500).json({ message: "Failed to fetch agency agents" });
     }
   });
 
   app.post("/api/agency-agents", async (req, res) => {
     try {
-      console.log('Creating agency agent with data:', req.body);
+      logger.debug('Creating agency agent with data:', req.body);
 
       // Validar los datos con el esquema
       const agentData = insertAgencyAgentSchema.parse(req.body);
 
       const result = await storage.createAgencyAgent(agentData);
-      console.log('Agency agent created successfully:', result);
       res.status(201).json(result);
     } catch (error) {
-      console.error('Error creating agency agent:', error);
+      logger.error('Error creating agency agent:', error);
       res.status(400).json({ message: "Invalid agency agent data" });
     }
   });
@@ -3105,11 +3013,10 @@ Gracias!
   app.delete("/api/agency-agents/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Deleting agency agent ${id}`);
       await storage.deleteAgencyAgent(id);
       res.status(200).json({ message: "Agency agent deleted successfully" });
     } catch (error) {
-      console.error('Error deleting agency agent:', error);
+      logger.error('Error deleting agency agent:', error);
       res.status(500).json({ message: "Failed to delete agency agent" });
     }
   });
@@ -3135,13 +3042,12 @@ Gracias!
       );
       
       if (success) {
-        console.log(`Solicitud de reseña enviada de ${agent.name} para ${client.name}`);
         res.json({ message: "Solicitud de reseña enviada exitosamente" });
       } else {
         res.status(500).json({ message: "Error al enviar la solicitud de reseña" });
       }
     } catch (error) {
-      console.error('Error sending review request:', error);
+      logger.error('Error sending review request:', error);
       res.status(500).json({ message: "Error interno del servidor" });
     }
   });
@@ -3207,7 +3113,7 @@ Gracias!
       
       res.json(conversations);
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      logger.error('Error fetching conversations:', error);
       res.status(500).json({ message: "Error al cargar conversaciones" });
     }
   });
@@ -3272,7 +3178,7 @@ Gracias!
       
       res.json(conversations);
     } catch (error) {
-      console.error('Error fetching client conversations:', error);
+      logger.error('Error fetching client conversations:', error);
       res.status(500).json({ message: "Error al cargar conversaciones del cliente" });
     }
   });
@@ -3317,7 +3223,7 @@ Gracias!
         try {
           await storage.updateInquiryStatus(conversationId, 'contactado');
         } catch (error) {
-          console.error('Error updating inquiry status:', error);
+          logger.error('Error updating inquiry status:', error);
         }
       }
       
@@ -3334,7 +3240,7 @@ Gracias!
       
       res.json(responseMessage);
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       res.status(500).json({ message: "Error al enviar mensaje" });
     }
   });
@@ -3348,7 +3254,7 @@ Gracias!
       
       res.json({ message: "Conversación marcada como leída" });
     } catch (error) {
-      console.error('Error marking conversation as read:', error);
+      logger.error('Error marking conversation as read:', error);
       res.status(500).json({ message: "Error al marcar como leída" });
     }
   });
@@ -3368,7 +3274,7 @@ Gracias!
 
       res.json(pinnedConversation);
     } catch (error) {
-      console.error("Error pinning conversation:", error);
+      logger.error("Error pinning conversation:", error);
       if (error.message === "Cannot pin more than 3 conversations") {
         res.status(400).json({ error: "No puedes fijar más de 3 conversaciones" });
       } else {
@@ -3386,7 +3292,7 @@ Gracias!
       await storage.unpinConversation(userType, userId, userEmail, inquiryId);
       res.json({ success: true });
     } catch (error) {
-      console.error("Error unpinning conversation:", error);
+      logger.error("Error unpinning conversation:", error);
       res.status(500).json({ error: "Error al desfijar conversación" });
     }
   });
@@ -3404,7 +3310,7 @@ Gracias!
 
       res.json(pinnedInquiryIds);
     } catch (error) {
-      console.error("Error getting pinned conversations:", error);
+      logger.error("Error getting pinned conversations:", error);
       res.status(500).json({ error: "Error al obtener conversaciones fijadas" });
     }
   });
@@ -3424,7 +3330,7 @@ Gracias!
 
       res.json({ isPinned });
     } catch (error) {
-      console.error("Error checking pin status:", error);
+      logger.error("Error checking pin status:", error);
       res.status(500).json({ error: "Error al verificar estado de fijado" });
     }
   });
@@ -3498,7 +3404,7 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
 
       res.json({ description });
     } catch (error) {
-      console.error("Error generating description:", error);
+      logger.error("Error generating description:", error);
       res.status(500).json({ error: "Error al generar la descripción" });
     }
   });
@@ -3506,14 +3412,13 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
   // Fix geocoding for existing properties
   app.post("/api/admin/fix-geocoding", async (req, res) => {
     try {
-      console.log("Starting property geocoding fix...");
       await fixPropertyGeocodingData();
       res.json({ 
         success: true, 
         message: "Property geocoding fix completed successfully" 
       });
     } catch (error) {
-      console.error("Error fixing property geocoding:", error);
+      logger.error("Error fixing property geocoding:", error);
       res.status(500).json({ 
         success: false, 
         message: "Failed to fix property geocoding", 
@@ -3535,7 +3440,7 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
       }
       objectStorageService.downloadObject(file, res);
     } catch (error) {
-      console.error("Error serving property image:", error);
+      logger.error("Error serving property image:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -3547,7 +3452,7 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
       const uploadURL = await objectStorageService.getPropertyImageUploadURL();
       res.json({ uploadURL });
     } catch (error) {
-      console.error("Error getting upload URL:", error);
+      logger.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
     }
   });
@@ -3566,16 +3471,14 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
       const fileName = req.file.originalname || `image_${Date.now()}.jpg`;
       const mimeType = req.file.mimetype;
 
-      console.log(`Uploading image: ${fileName}, type: ${mimeType}, size: ${fileBuffer.length} bytes`);
 
       // Upload directly to object storage
       const imageUrl = await objectStorageService.uploadPropertyImageDirect(fileBuffer, fileName, mimeType);
       
-      console.log(`Image uploaded successfully: ${imageUrl}`);
       
       res.json({ imageUrl });
     } catch (error) {
-      console.error("Error processing upload:", error);
+      logger.error("Error processing upload:", error);
       res.status(500).json({ error: "Failed to process upload" });
     }
   });
@@ -3608,7 +3511,7 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
 
       res.json(updatedProperty);
     } catch (error) {
-      console.error("Error adding image to property:", error);
+      logger.error("Error adding image to property:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
