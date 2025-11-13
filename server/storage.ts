@@ -558,15 +558,18 @@ export class DatabaseStorage implements IStorage {
     // Get agency information if the agent has an agency_id
     let agencyName = null;
     let agencyId = null;
+    let agencySlug = null;
     if (agent.agencyId) {
       const [agency] = await db.select({
         id: agencies.id,
-        agencyName: agencies.agencyName
+        agencyName: agencies.agencyName,
+        slug: agencies.slug
       }).from(agencies).where(eq(agencies.id, agent.agencyId));
       
       if (agency) {
         agencyName = agency.agencyName;
         agencyId = agency.id;
+        agencySlug = agency.slug;
       }
     }
 
@@ -603,6 +606,7 @@ export class DatabaseStorage implements IStorage {
       reviewAverage: Number(reviewAverage),
       agencyName: agencyName,
       agencyId: agencyId,
+      agencySlug: agencySlug,
       pinnedReview: pinnedReview,
     } as any;
   }
