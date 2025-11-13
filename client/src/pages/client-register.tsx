@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -193,13 +193,15 @@ export default function ClientRegisterPage() {
                       )}
                     />
 
-                    <Button
+                    <LoadingButton
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting}
+                      isLoading={isSubmitting}
+                      loadingText="Creando cuenta..."
+                      data-testid="button-submit-register"
                     >
-                      {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
-                    </Button>
+                      Crear cuenta
+                    </LoadingButton>
 
                     <p className="text-center text-sm text-gray-500 mt-4">
                       ¿Ya tienes una cuenta?{" "}

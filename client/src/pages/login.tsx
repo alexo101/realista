@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -151,13 +151,15 @@ export default function LoginPage() {
                 )}
               />
 
-              <Button
+              <LoadingButton
                 type="submit"
                 className="w-full"
-                disabled={isSubmitting}
+                isLoading={isSubmitting}
+                loadingText="Procesando..."
+                data-testid="button-submit-login"
               >
-                {isSubmitting ? "Procesando..." : "Iniciar sesión"}
-              </Button>
+                Iniciar sesión
+              </LoadingButton>
 
               <div className="space-y-2 mt-4">
                 <p className="text-center text-sm text-gray-500">
