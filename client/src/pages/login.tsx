@@ -49,37 +49,35 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {      
       const userData = await apiRequest("POST", "/api/auth/login", data);
-      console.log('Login response userData:', userData);
-      console.log('isClient:', userData.isClient);
-      console.log('agentUuid:', userData.agentUuid);
-      console.log('Redirect condition:', !userData.isClient && userData.agentUuid);
+      
+      // Update user context FIRST so destination route has access to it
       setUser(userData);
-
-      toast({
-        title: "¡Bienvenido de nuevo!",
-        duration: 3000,
-      });
-
-      // For agents, always redirect to their calendar dashboard
-      if (!userData.isClient && userData.agentUuid) {
-        // Clear any pending saved search for agents
-        sessionStorage.removeItem('pendingSavedSearch');
-        const targetUrl = `/gestionar/${userData.agentUuid}/calendario`;
-        console.log('About to navigate to:', targetUrl);
-        navigate(targetUrl);
-        console.log('Navigate called successfully');
-      } else {
-        // For clients, check if there's a pending saved search
-        const pendingSavedSearch = sessionStorage.getItem('pendingSavedSearch');
-        if (pendingSavedSearch) {
-          const searchData = JSON.parse(pendingSavedSearch);
-          // Redirect back to the search page
-          navigate(searchData.returnUrl || "/perfil-cliente");
+      
+      // CRITICAL: Use setTimeout to defer navigation until next event loop tick
+      // This ensures React finishes batching the setUser() state update before navigate() runs.
+      // Without this, ManagePage's auth guard would see undefined user and redirect back to login.
+      setTimeout(() => {
+        // For agents, always redirect to their calendar dashboard
+        if (!userData.isClient && userData.agentUuid) {
+          sessionStorage.removeItem('pendingSavedSearch');
+          navigate(`/gestionar/${userData.agentUuid}/calendario`);
         } else {
-          // Redirect to client profile
-          navigate("/perfil-cliente");
+          // For clients, check if there's a pending saved search
+          const pendingSavedSearch = sessionStorage.getItem('pendingSavedSearch');
+          if (pendingSavedSearch) {
+            const searchData = JSON.parse(pendingSavedSearch);
+            navigate(searchData.returnUrl || "/perfil-cliente");
+          } else {
+            navigate("/perfil-cliente");
+          }
         }
-      }
+        
+        // Show toast after navigation
+        toast({
+          title: "¡Bienvenido de nuevo!",
+          duration: 3000,
+        });
+      }, 0);
     } catch (error: any) {
       toast({
         title: "Error",
