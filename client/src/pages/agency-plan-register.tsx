@@ -184,9 +184,9 @@ export default function AgencyPlanRegister() {
         description: "Tu agencia ha sido registrada y ya puedes empezar a gestionar tus propiedades"
       });
 
-      // Redirect to agency profile page
+      // Redirect to calendar page
       if (userData.agentUuid) {
-        navigate(`/gestionar/${userData.agentUuid}/perfil-agencia`);
+        navigate(`/gestionar/${userData.agentUuid}/calendario`);
       } else {
         navigate('/gestionar');
       }
