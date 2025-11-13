@@ -239,12 +239,12 @@ export default function NeighborhoodResultsPage() {
   // Determinar el distrito para barrios (para compatibilidad)
   const legacyDistrict = !currentDistrict && currentNeighborhood ? findDistrictByNeighborhood(currentNeighborhood, currentCity) : currentDistrict;
   
-  // Determinar la pestaña activa según la ruta
+  // Determinar la pestaña activa según la ruta (Spanish routes)
   const getActiveTab = () => {
-    if (currentLocation.includes('/properties')) return 'properties';
-    if (currentLocation.includes('/agencies')) return 'agencies';
-    if (currentLocation.includes('/agents')) return 'agents';
-    if (currentLocation.includes('/overview')) return 'overview';
+    if (currentLocation.includes('/inmuebles')) return 'properties';
+    if (currentLocation.includes('/agencias')) return 'agencies';
+    if (currentLocation.includes('/agentes')) return 'agents';
+    if (currentLocation.includes('/resumen')) return 'overview';
     return 'properties'; // Pestaña por defecto si no hay otra especificada
   };
 
