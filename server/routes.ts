@@ -686,6 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Primero intentar encontrar en la tabla de agentes/usuarios
       let user = await storage.getUserByEmail(email);
+      console.log('Login - User object from getUserByEmail:', JSON.stringify(user, null, 2));
       let isClient = false;
 
       // Si no se encuentra en agentes, buscar en clientes
