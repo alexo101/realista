@@ -64,7 +64,10 @@ export default function LoginPage() {
       if (!userData.isClient && userData.agentUuid) {
         // Clear any pending saved search for agents
         sessionStorage.removeItem('pendingSavedSearch');
-        navigate(`/gestionar/${userData.agentUuid}/calendario`);
+        const targetUrl = `/gestionar/${userData.agentUuid}/calendario`;
+        console.log('About to navigate to:', targetUrl);
+        navigate(targetUrl);
+        console.log('Navigate called successfully');
       } else {
         // For clients, check if there's a pending saved search
         const pendingSavedSearch = sessionStorage.getItem('pendingSavedSearch');
