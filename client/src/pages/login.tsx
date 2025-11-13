@@ -49,6 +49,10 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {      
       const userData = await apiRequest("POST", "/api/auth/login", data);
+      console.log('Login response userData:', userData);
+      console.log('isClient:', userData.isClient);
+      console.log('agentUuid:', userData.agentUuid);
+      console.log('Redirect condition:', !userData.isClient && userData.agentUuid);
       setUser(userData);
 
       toast({
