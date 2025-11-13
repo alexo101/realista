@@ -183,8 +183,12 @@ export const neighborhoodRatings = pgTable("neighborhood_ratings", {
 // Junction table for agent-agency relationships with role enforcement
 export const agencyAgents = pgTable("agency_agents", {
   id: serial("id").primaryKey(),
-  agencyId: integer("agency_id").notNull().references(() => agencies.id),
-  agentId: integer("agent_id").notNull().references(() => agents.id),
+  // Integer foreign keys (will be removed after UUID migration)
+  agencyId: integer("agency_id").references(() => agencies.id),
+  agentId: integer("agent_id").references(() => agents.id),
+  // UUID foreign keys (primary relationship identifiers) - nullable during migration, will be NOT NULL after backfill
+  agencyUuid: uuid("agency_uuid").references(() => agencies.uuid),
+  agentUuid: uuid("agent_uuid").references(() => agents.uuid),
   role: text("role").notNull(), // "admin" or "member"
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
   leftAt: timestamp("left_at"), // For soft delete when agent leaves
@@ -192,10 +196,13 @@ export const agencyAgents = pgTable("agency_agents", {
 }, (table) => ({
   // CHECK constraint: role must be 'admin' or 'member'
   roleCheck: check("role_check", sql`${table.role} IN ('admin', 'member')`),
-  // Partial unique index: Agent can only be active member of ONE agency at a time
-  uniqueActiveAgent: uniqueIndex("unique_active_agent").on(table.agentId).where(sql`${table.leftAt} IS NULL`),
-  // Partial unique index: Only ONE admin per agency
-  uniqueActiveAdmin: uniqueIndex("unique_active_admin").on(table.agencyId).where(sql`${table.role} = 'admin' AND ${table.leftAt} IS NULL`),
+  // Partial unique index: Agent can only be active member of ONE agency at a time (UUID-based)
+  uniqueActiveAgentUuid: uniqueIndex("unique_active_agent_uuid").on(table.agentUuid).where(sql`${table.leftAt} IS NULL`),
+  // Partial unique index: Only ONE admin per agency (UUID-based)
+  uniqueActiveAdminUuid: uniqueIndex("unique_active_admin_uuid").on(table.agencyUuid).where(sql`${table.role} = 'admin' AND ${table.leftAt} IS NULL`),
+  // Indexes for UUID-based lookups
+  agencyUuidIdx: index("agency_agents_agency_uuid_idx").on(table.agencyUuid),
+  agentUuidIdx: index("agency_agents_agent_uuid_idx").on(table.agentUuid),
 }));
 
 export const appointments = pgTable("appointments", {

@@ -555,22 +555,31 @@ export class DatabaseStorage implements IStorage {
     const reviewCount = reviewResults.rows[0]?.count || 0;
     const reviewAverage = reviewResults.rows[0]?.average || 0;
 
-    // Get agency information if the agent has an agency_id
+    // Get agency information by joining with agency_agents (UUID-based)
     let agencyName = null;
     let agencyId = null;
     let agencySlug = null;
-    if (agent.agencyId) {
-      const [agency] = await db.select({
-        id: agencies.id,
+    
+    const [agencyRelationship] = await db
+      .select({
+        agencyId: agencies.id,
         agencyName: agencies.agencyName,
-        slug: agencies.slug
-      }).from(agencies).where(eq(agencies.id, agent.agencyId));
-      
-      if (agency) {
-        agencyName = agency.agencyName;
-        agencyId = agency.id;
-        agencySlug = agency.slug;
-      }
+        agencySlug: agencies.slug
+      })
+      .from(agencyAgents)
+      .leftJoin(agencies, eq(agencyAgents.agencyUuid, agencies.uuid))
+      .where(
+        and(
+          eq(agencyAgents.agentUuid, agent.uuid),
+          isNull(agencyAgents.leftAt)
+        )
+      )
+      .limit(1);
+
+    if (agencyRelationship) {
+      agencyName = agencyRelationship.agencyName;
+      agencyId = agencyRelationship.agencyId;
+      agencySlug = agencyRelationship.agencySlug;
     }
 
     // Get pinned review for this agent
@@ -1251,9 +1260,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent> {
+    // Fetch UUIDs for agent and agency before inserting
+    const [agent] = await db.select({ uuid: agents.uuid }).from(agents).where(eq(agents.id, agentData.agentId));
+    const [agency] = await db.select({ uuid: agencies.uuid }).from(agencies).where(eq(agencies.id, agentData.agencyId));
+    
+    if (!agent) throw new Error('Agent not found');
+    if (!agency) throw new Error('Agency not found');
+    
     const [newAgent] = await db
       .insert(agencyAgents)
-      .values(agentData)
+      .values({
+        ...agentData,
+        agentUuid: agent.uuid,
+        agencyUuid: agency.uuid,
+      })
       .returning();
     return newAgent;
   }
@@ -2169,7 +2189,6 @@ export class DatabaseStorage implements IStorage {
         createdAt: agents.createdAt,
         yearsOfExperience: agents.yearsOfExperience,
         influenceNeighborhoods: agents.influenceNeighborhoods,
-        agencyId: agents.agencyId,
         description: agents.description,
         languagesSpoken: agents.languagesSpoken,
         isAdmin: agents.isAdmin,
@@ -2753,6 +2772,7 @@ export class DatabaseStorage implements IStorage {
       const [agency] = await tx
         .select({
           id: agencies.id,
+          uuid: agencies.uuid,
           seatsLimit: agencies.seatsLimit,
           subscriptionPlan: agencies.subscriptionPlan
         })
@@ -2762,6 +2782,12 @@ export class DatabaseStorage implements IStorage {
 
       if (!agency) {
         throw new Error('Agency not found');
+      }
+
+      // Fetch agent data (including UUID) BEFORE the insert
+      const [agent] = await tx.select().from(agents).where(eq(agents.id, agentId));
+      if (!agent) {
+        throw new Error('Agent not found');
       }
 
       // Only check seat limits if seatsLimit is set (NULL means unlimited seats)
@@ -2782,19 +2808,20 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Add agent to agency
+      // Add agent to agency with both integer IDs and UUIDs
       const [agencyAgent] = await tx
         .insert(agencyAgents)
         .values({
           agencyId,
           agentId,
+          agencyUuid: agency.uuid,
+          agentUuid: agent.uuid,
           role,
         })
         .returning();
 
       // If agent was independent, pause their subscription
-      const [agent] = await tx.select().from(agents).where(eq(agents.id, agentId));
-      if (agent && agent.subscriptionPlan) {
+      if (agent.subscriptionPlan) {
         await tx.update(agents).set({
           pausedSubscriptionPlan: agent.subscriptionPlan,
           pausedIsYearlyBilling: agent.isYearlyBilling,
