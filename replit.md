@@ -64,6 +64,15 @@ Preferred communication style: Simple, everyday language.
     - **Loading State**: UserContext provides `isLoading` to prevent premature authentication redirects
     - **Auto-Login**: Client registration creates session immediately, eliminating separate login step
     - **Important**: Users with sessions created before UUID updates must log out and log back in to receive UUID-enabled sessions
+- **UUID-Based Agency-Agent Relationships** (November 2025):
+    - **Migration Strategy**: Transitioned `agency_agents` junction table from integer-based to UUID-based foreign keys for enhanced security and scalability.
+    - **Database Schema**: Added `agent_uuid` and `agency_uuid` columns (UUID type, NOT NULL) with foreign keys to `agents.uuid` and `agencies.uuid`.
+    - **Dual Key Support**: Both integer IDs and UUIDs coexist in `agency_agents` table during transition for backward compatibility.
+    - **Read Operations**: All queries use UUID-based JOINs (`getAgentById`, `getFavoriteAgentsByClient`) for agency relationship lookups.
+    - **Write Operations**: Both `addAgentToAgencyAtomic` and `createAgencyAgent` populate UUID columns during insert to satisfy NOT NULL constraints.
+    - **Indexes**: Created btree indexes on UUID columns (`agency_agents_agency_uuid_idx`, `agency_agents_agent_uuid_idx`) for query performance.
+    - **Unique Constraints**: UUID-based partial unique indexes (`unique_active_agent_uuid`, `unique_active_admin_uuid`) enforce business rules.
+    - **Data Integrity**: All 9 existing relationships backfilled with UUIDs, zero NULL values remain.
 - **Spanish SEO-Optimized URLs** (October 2025):
     - **Slug-Based Routing**: All entities (agents, agencies, properties) have auto-generated slugs stored in database.
     - **Slug Generation**: `shared/slug-utils.ts` handles Spanish characters (á, é, í, ó, ú, ñ) and creates SEO-friendly URLs.
