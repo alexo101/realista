@@ -6,9 +6,13 @@ import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
 import { Building2, UserCircle } from "lucide-react";
+import { useRouteTransition } from "@/hooks/useRouteTransition";
+import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 
 export default function SearchPage() {
   const [location] = useLocation();
+  const { isTransitioning, endTransition } = useRouteTransition();
+  
   // Support both Spanish and English routes for backward compatibility
   const searchType = location.startsWith('/buscar/agencias') || location.startsWith('/search/agencies')
     ? 'agencies'
@@ -18,7 +22,7 @@ export default function SearchPage() {
     ? 'rent'
     : 'buy';
 
-  const { data: results, isLoading } = useQuery({
+  const { data: results, isFetching, isError } = useQuery({
     queryKey: ['/api/search', searchType, location],
     queryFn: async () => {
       const response = await fetch(`/api${location}`);
@@ -27,6 +31,23 @@ export default function SearchPage() {
     },
     staleTime: 0, // No cache entre cambios de tipo de búsqueda
   });
+
+  // Combine isFetching with route transition for skeleton visibility
+  const showSkeleton = useSkeletonVisibility({ isFetching, isTransitioning });
+
+  // End transition when data is ready
+  useEffect(() => {
+    if (isTransitioning && !isFetching) {
+      endTransition();
+    }
+  }, [isTransitioning, isFetching, endTransition]);
+
+  // Also end transition on error
+  useEffect(() => {
+    if (isError && isTransitioning) {
+      endTransition();
+    }
+  }, [isError, isTransitioning, endTransition]);
 
   return (
     <div className="min-h-screen pt-16">
@@ -37,18 +58,18 @@ export default function SearchPage() {
 
         {/* Propiedades en venta */}
         {searchType === 'buy' && (
-          <PropertyResults results={results || []} isLoading={isLoading} />
+          <PropertyResults results={results || []} showSkeleton={showSkeleton} />
         )}
         
         {/* Propiedades en alquiler */}
         {searchType === 'rent' && (
-          <PropertyResults results={results || []} isLoading={isLoading} />
+          <PropertyResults results={results || []} showSkeleton={showSkeleton} />
         )}
         {searchType === 'agencies' && (
-          <AgencyResults results={results || []} isLoading={isLoading} />
+          <AgencyResults results={results || []} showSkeleton={showSkeleton} />
         )}
         {searchType === 'agents' && (
-          <AgentResults results={results || []} isLoading={isLoading} />
+          <AgentResults results={results || []} showSkeleton={showSkeleton} />
         )}
       </div>
     </div>

@@ -24,10 +24,10 @@ interface Agent {
 
 interface AgentResultsProps {
   results: Agent[];
-  isLoading: boolean;
+  showSkeleton: boolean;
 }
 
-export function AgentResults({ results, isLoading }: AgentResultsProps) {
+export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -92,11 +92,11 @@ export function AgentResults({ results, isLoading }: AgentResultsProps) {
     toggleFavoriteMutation.mutate(agentId);
   };
 
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array(6).fill(0).map((_, i) => (
-          <div key={i} className="bg-gray-100 animate-pulse h-[240px] rounded-lg" />
+          <div key={i} className="bg-primary/10 animate-pulse h-[240px] rounded-lg" />
         ))}
       </div>
     );

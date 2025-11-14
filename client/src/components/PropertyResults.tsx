@@ -31,10 +31,10 @@ interface PropertyResult {
 
 interface PropertyResultsProps {
   results: PropertyResult[];
-  isLoading: boolean;
+  showSkeleton: boolean;
 }
 
-export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
+export function PropertyResults({ results, showSkeleton }: PropertyResultsProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
   const { user } = useUser();
   const { toast } = useToast();
@@ -161,11 +161,11 @@ export function PropertyResults({ results, isLoading }: PropertyResultsProps) {
     }
   };
 
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array(6).fill(0).map((_, i) => (
-          <div key={i} className="bg-gray-100 animate-pulse h-[300px] rounded-lg" />
+          <div key={i} className="bg-primary/10 animate-pulse h-[300px] rounded-lg" />
         ))}
       </div>
     );

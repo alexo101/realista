@@ -19,11 +19,11 @@ interface Agency {
 
 interface AgencyResultsProps {
   results: Agency[];
-  isLoading: boolean;
+  showSkeleton: boolean;
 }
 
-export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
-  if (isLoading) {
+export function AgencyResults({ results, showSkeleton }: AgencyResultsProps) {
+  if (showSkeleton) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array(6)
@@ -31,7 +31,7 @@ export function AgencyResults({ results, isLoading }: AgencyResultsProps) {
           .map((_, i) => (
             <div
               key={i}
-              className="bg-gray-100 animate-pulse h-[240px] rounded-lg"
+              className="bg-primary/10 animate-pulse h-[240px] rounded-lg"
             />
           ))}
       </div>

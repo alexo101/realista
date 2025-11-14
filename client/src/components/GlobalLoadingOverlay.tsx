@@ -1,13 +1,13 @@
 import { PropertySkeleton } from './PropertySkeleton';
-import { useGlobalLoading } from '@/hooks/useGlobalLoading';
+import { useRouteTransition } from '@/hooks/useRouteTransition';
 import { useLocation } from 'wouter';
 
 export function GlobalLoadingOverlay() {
   try {
-    const { isLoading } = useGlobalLoading();
+    const { isTransitioning } = useRouteTransition();
     const [location] = useLocation();
 
-    if (!isLoading) {
+    if (!isTransitioning) {
       return null;
     }
 
