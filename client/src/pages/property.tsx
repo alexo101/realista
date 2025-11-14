@@ -1,6 +1,8 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { useRouteTransition } from "@/contexts/route-transition-context";
+import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
 import { PropertyApplicationForm } from "@/components/PropertyApplicationForm";
@@ -53,13 +55,14 @@ export default function PropertyPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { isTransitioning, endTransition } = useRouteTransition();
 
-  const { data: property, isLoading: propertyLoading } = useQuery<ExtendedProperty>({
+  const { data: property, isFetching: propertyFetching, isError: propertyError } = useQuery<ExtendedProperty>({
     queryKey: [`/api/properties/${identifier}`],
     enabled: !!identifier,
   });
 
-  const { data: agent, isLoading: agentLoading } = useQuery<Agent>({
+  const { data: agent, isFetching: agentFetching } = useQuery<Agent>({
     queryKey: [`/api/agents/${property?.agentId}`],
     enabled: !!property?.agentId,
   });
@@ -75,6 +78,21 @@ export default function PropertyPage() {
     queryKey: [`/api/properties/${identifier}/fraud-count`],
     enabled: !!identifier,
   });
+
+  // Combine critical isFetching states with route transition for skeleton visibility
+  const showSkeleton = useSkeletonVisibility({ 
+    isFetching: propertyFetching || agentFetching, 
+    isTransitioning 
+  });
+
+  // End transition when critical data is ready
+  useEffect(() => {
+    if (isTransitioning && !propertyFetching && !agentFetching) {
+      endTransition();
+    } else if (propertyError && isTransitioning) {
+      endTransition();
+    }
+  }, [isTransitioning, propertyFetching, agentFetching, propertyError, endTransition]);
 
   useEffect(() => {
     if (favoriteStatus?.isFavorite !== undefined) {

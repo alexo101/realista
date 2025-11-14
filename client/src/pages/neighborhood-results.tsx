@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
+import { useRouteTransition } from "@/contexts/route-transition-context";
+import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 import { PropertyResults } from "@/components/PropertyResults";
 import { GoogleMapsPropertyMap } from "@/components/GoogleMapsPropertyMap";
 import { AgencyResults } from "@/components/AgencyResults";
@@ -41,6 +43,7 @@ export default function NeighborhoodResultsPage() {
   const queryClient = useQueryClient();
   const { user } = useUser();
   const { toast } = useToast();
+  const { isTransitioning, endTransition } = useRouteTransition();
   
   // State for save search button
   const [isSaveConfirming, setIsSaveConfirming] = useState(false);
@@ -344,7 +347,7 @@ export default function NeighborhoodResultsPage() {
   };
 
   // Consultas para propiedades
-  const { data: properties, isLoading: propertiesLoading } = useQuery({
+  const { data: properties, isFetching: propertiesFetching, isError: propertiesError } = useQuery({
     queryKey: ['/api/properties', { 
       neighborhoods: effectiveNeighborhood,
       operationType: propertyFilters.operationType,
@@ -395,7 +398,7 @@ export default function NeighborhoodResultsPage() {
   });
 
   // Consultas para agencias
-  const { data: agencies, isLoading: agenciesLoading } = useQuery({
+  const { data: agencies, isFetching: agenciesFetching, isError: agenciesError } = useQuery({
     queryKey: ['/api/search/agencies', { neighborhoods: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -412,7 +415,7 @@ export default function NeighborhoodResultsPage() {
   });
 
   // Consultas para agentes
-  const { data: agents, isLoading: agentsLoading } = useQuery({
+  const { data: agents, isFetching: agentsFetching, isError: agentsError } = useQuery({
     queryKey: ['/api/search/agents', { neighborhoods: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -429,7 +432,7 @@ export default function NeighborhoodResultsPage() {
   });
   
   // Consulta para las valoraciones del barrio
-  const { data: ratings, isLoading: ratingsLoading, refetch: refetchRatings } = useQuery({
+  const { data: ratings, isFetching: ratingsFetching, refetch: refetchRatings } = useQuery({
     queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: effectiveNeighborhood }],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -448,6 +451,33 @@ export default function NeighborhoodResultsPage() {
     refetchOnMount: false,
     refetchOnReconnect: false,
   });
+
+  // Combine isFetching states with route transition for skeleton visibility
+  const showPropertiesSkeleton = useSkeletonVisibility({ 
+    isFetching: propertiesFetching, 
+    isTransitioning 
+  });
+  const showAgenciesSkeleton = useSkeletonVisibility({ 
+    isFetching: agenciesFetching, 
+    isTransitioning 
+  });
+  const showAgentsSkeleton = useSkeletonVisibility({ 
+    isFetching: agentsFetching, 
+    isTransitioning 
+  });
+
+  // End transition when data is ready
+  useEffect(() => {
+    const anyFetching = propertiesFetching || agenciesFetching || agentsFetching || ratingsFetching;
+    const anyError = propertiesError || agenciesError || agentsError;
+    
+    if (isTransitioning && !anyFetching) {
+      endTransition();
+    } else if (anyError && isTransitioning) {
+      endTransition();
+    }
+  }, [isTransitioning, propertiesFetching, agenciesFetching, agentsFetching, ratingsFetching, 
+      propertiesError, agenciesError, agentsError, endTransition]);
 
   return (
     <div className="min-h-screen flex flex-col pt-16">
@@ -628,7 +658,7 @@ export default function NeighborhoodResultsPage() {
                         return sortedProperties;
                     }
                   }, [properties, propertyFilters.sortBy]) || []} 
-                  isLoading={propertiesLoading} 
+                  showSkeleton={showPropertiesSkeleton} 
                 />
               ) : (
                 <GoogleMapsNeighborhoodMap
@@ -708,7 +738,7 @@ export default function NeighborhoodResultsPage() {
                       return sortedAgencies;
                   }
                 }, [agencies, agenciesFilter]) || []} 
-                isLoading={agenciesLoading} 
+                showSkeleton={showAgenciesSkeleton} 
               />
             </TabsContent>
 
@@ -752,7 +782,7 @@ export default function NeighborhoodResultsPage() {
                       return sortedAgents;
                   }
                 }, [agents, agentsFilter]) || []} 
-                isLoading={agentsLoading} 
+                showSkeleton={showAgentsSkeleton} 
               />
             </TabsContent>
 

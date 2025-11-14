@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useRouteTransition } from "@/contexts/route-transition-context";
+import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer } from "@/components/ui/chart";
@@ -111,6 +113,7 @@ export default function AgentProfile() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { isTransitioning, endTransition } = useRouteTransition();
 
   // Mutación para manejar favoritos
   const toggleFavoriteMutation = useMutation({
@@ -211,7 +214,7 @@ export default function AgentProfile() {
   };
 
   // Consulta para obtener los datos del agente
-  const { data: agent, isLoading, error } = useQuery<Agent>({
+  const { data: agent, isFetching: agentFetching, error } = useQuery<Agent>({
     queryKey: [`/api/agents/${identifier}`],
     queryFn: async () => {
       const response = await fetch(`/api/agents/${identifier}`);
@@ -223,7 +226,7 @@ export default function AgentProfile() {
   });
 
   // Explicitly fetch properties for this agent
-  const { data: agentProperties = [] } = useQuery<Property[]>({
+  const { data: agentProperties = [], isFetching: propertiesFetching } = useQuery<Property[]>({
     queryKey: [`/api/agents/${identifier}/properties`],
     queryFn: async () => {
       const response = await fetch(`/api/agents/${identifier}/properties`);
@@ -236,7 +239,7 @@ export default function AgentProfile() {
   });
 
   // Query para verificar si el agente ya está en favoritos
-  const { data: favoriteStatus } = useQuery({
+  const { data: favoriteStatus, isFetching: favoriteStatusFetching } = useQuery({
     queryKey: [`/api/clients/${user?.id}/favorites/agents/${identifier}/status`],
     queryFn: async () => {
       if (!user || !user.isClient || !identifier) return { isFavorite: false };
@@ -261,6 +264,21 @@ export default function AgentProfile() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [identifier]);
+
+  // Combine critical isFetching states with route transition for skeleton visibility
+  const showSkeleton = useSkeletonVisibility({ 
+    isFetching: agentFetching || propertiesFetching, 
+    isTransitioning 
+  });
+
+  // End transition when critical data is ready
+  useEffect(() => {
+    if (isTransitioning && !agentFetching && !propertiesFetching) {
+      endTransition();
+    } else if (error && isTransitioning) {
+      endTransition();
+    }
+  }, [isTransitioning, agentFetching, propertiesFetching, error, endTransition]);
 
   // Consulta para obtener las reseñas del agente
   const { data: reviews = [] } = useQuery<Review[]>({
@@ -297,7 +315,7 @@ export default function AgentProfile() {
   });
 
   // Si los datos están cargando, mostramos un esqueleto de carga
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8 mb-8">

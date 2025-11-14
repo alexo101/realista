@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouteTransition } from "@/contexts/route-transition-context";
+import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Star, Phone, Mail, MapPin, Building2, Building, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle, Home, Heart, Share2 } from "lucide-react";
@@ -106,6 +108,7 @@ export default function AgencyProfile() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { isTransitioning, endTransition } = useRouteTransition();
 
   // La galería no mostrará imágenes predeterminadas, solo las que agregue el agente
   const agencyImages: string[] = [];
@@ -210,7 +213,7 @@ export default function AgencyProfile() {
   };
 
   // Consulta para obtener los datos de la agencia
-  const { data: agency, isLoading, error } = useQuery<Agency>({
+  const { data: agency, isFetching: agencyFetching, error } = useQuery<Agency>({
     queryKey: [`/api/agencies/${identifier}`],
     queryFn: async () => {
       const response = await fetch(`/api/agencies/${identifier}`);
@@ -223,7 +226,7 @@ export default function AgencyProfile() {
   });
   
   // Consulta para obtener las reseñas directas de la agencia
-  const { data: agencyReviews = [] } = useQuery({
+  const { data: agencyReviews = [], isFetching: reviewsFetching } = useQuery({
     queryKey: [`/api/agencies/${identifier}/reviews`],
     queryFn: async () => {
       const response = await fetch(`/api/agencies/${identifier}/reviews`);
@@ -237,7 +240,7 @@ export default function AgencyProfile() {
   });
   
   // Consulta para obtener los agentes vinculados a esta agencia
-  const { data: linkedAgents = [] } = useQuery({
+  const { data: linkedAgents = [], isFetching: agentsFetching } = useQuery({
     queryKey: [`/api/agencies/${identifier}/agents`],
     queryFn: async () => {
       const response = await fetch(`/api/agencies/${identifier}/agents`);
@@ -263,7 +266,7 @@ export default function AgencyProfile() {
   });
   
   // Consulta para obtener las propiedades de la agencia con optimización de carga
-  const { data: agencyProperties = [], isLoading: isLoadingProperties } = useQuery<Property[]>({
+  const { data: agencyProperties = [], isFetching: propertiesFetching } = useQuery<Property[]>({
     queryKey: [`/api/agencies/${identifier}/properties`],
     queryFn: async () => {
       if (!identifier) {
@@ -318,8 +321,23 @@ export default function AgencyProfile() {
     window.scrollTo(0, 0);
   }, [identifier]);
 
+  // Combine critical isFetching states with route transition for skeleton visibility
+  const showSkeleton = useSkeletonVisibility({ 
+    isFetching: agencyFetching || agentsFetching || reviewsFetching, 
+    isTransitioning 
+  });
+
+  // End transition when critical data is ready
+  useEffect(() => {
+    if (isTransitioning && !agencyFetching && !agentsFetching && !reviewsFetching) {
+      endTransition();
+    } else if (error && isTransitioning) {
+      endTransition();
+    }
+  }, [isTransitioning, agencyFetching, agentsFetching, reviewsFetching, error, endTransition]);
+
   // Si los datos están cargando, mostramos un esqueleto de carga
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8 mb-8">
