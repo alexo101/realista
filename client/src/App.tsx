@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Navbar } from "@/components/Navbar";
 import { UserProvider } from "@/contexts/user-context";
 import { LanguageProvider } from "@/contexts/language-context";
+import { RouteTransitionProvider } from "@/contexts/route-transition-context";
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
 import Home from "@/pages/home";
 import Search from "@/pages/search";
@@ -87,10 +88,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <UserProvider>
-          <Navbar />
-          <Router />
-          <GlobalLoadingOverlay />
-          <Toaster />
+          <RouteTransitionProvider>
+            <Navbar />
+            <Router />
+            <GlobalLoadingOverlay />
+            <Toaster />
+          </RouteTransitionProvider>
         </UserProvider>
       </LanguageProvider>
     </QueryClientProvider>

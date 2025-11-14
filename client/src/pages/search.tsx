@@ -6,7 +6,7 @@ import { PropertyResults } from "@/components/PropertyResults";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
 import { Building2, UserCircle } from "lucide-react";
-import { useRouteTransition } from "@/hooks/useRouteTransition";
+import { useRouteTransition } from "@/contexts/route-transition-context";
 import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 
 export default function SearchPage() {

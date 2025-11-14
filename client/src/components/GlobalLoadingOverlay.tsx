@@ -1,5 +1,5 @@
 import { PropertySkeleton } from './PropertySkeleton';
-import { useRouteTransition } from '@/hooks/useRouteTransition';
+import { useRouteTransition } from '@/contexts/route-transition-context';
 import { useLocation } from 'wouter';
 
 export function GlobalLoadingOverlay() {

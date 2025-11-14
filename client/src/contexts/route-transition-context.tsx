@@ -1,7 +1,14 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useLayoutEffect, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 
-export function useRouteTransition() {
+interface RouteTransitionContextType {
+  isTransitioning: boolean;
+  endTransition: () => void;
+}
+
+const RouteTransitionContext = createContext<RouteTransitionContextType | null>(null);
+
+export function RouteTransitionProvider({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const previousLocation = useRef(location);
@@ -9,29 +16,33 @@ export function useRouteTransition() {
   const transitionStartAt = useRef<number | null>(null);
   const minDisplayTime = 150; // Minimum 150ms to prevent flash
 
-  // Synchronously detect route change to provide instant skeleton coverage
-  if (location !== previousLocation.current && !isTransitioning) {
-    setIsTransitioning(true);
-    transitionStartAt.current = Date.now();
-    previousLocation.current = location;
-  }
+  // Use layout effect to detect route changes BEFORE paint for instant coverage
+  useLayoutEffect(() => {
+    if (location !== previousLocation.current) {
+      setIsTransitioning(true);
+      transitionStartAt.current = Date.now();
+      previousLocation.current = location;
 
-  useEffect(() => {
-    if (isTransitioning && !transitionTimer.current) {
       // Auto-hide after max 2 seconds if not manually cleared
+      if (transitionTimer.current) {
+        clearTimeout(transitionTimer.current);
+      }
+
       transitionTimer.current = setTimeout(() => {
         setIsTransitioning(false);
         transitionStartAt.current = null;
       }, 2000);
     }
+  }, [location]);
 
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       if (transitionTimer.current) {
         clearTimeout(transitionTimer.current);
-        transitionTimer.current = undefined;
       }
     };
-  }, [isTransitioning]);
+  }, []);
 
   const endTransition = useCallback(() => {
     // Clear any existing timer
@@ -55,11 +66,25 @@ export function useRouteTransition() {
     }
   }, [minDisplayTime]);
 
-  return useMemo(
+  const value = useMemo(
     () => ({
       isTransitioning,
       endTransition
     }),
     [isTransitioning, endTransition]
   );
+
+  return (
+    <RouteTransitionContext.Provider value={value}>
+      {children}
+    </RouteTransitionContext.Provider>
+  );
+}
+
+export function useRouteTransition() {
+  const context = useContext(RouteTransitionContext);
+  if (!context) {
+    throw new Error('useRouteTransition must be used within RouteTransitionProvider');
+  }
+  return context;
 }

@@ -80,6 +80,14 @@ Preferred communication style: Simple, everyday language.
     - **Dual Identifier Support**: Backend routes accept both slug and numeric ID for backward compatibility.
     - **Auto-Slug Creation**: New entities automatically receive slugs on creation via storage layer.
     - **URL Examples**: `/agencias/lider-agencia`, `/agentes/rodolfo-lider-8`, `/inmueble/atico-gracia-AT-01-3`, `/gestionar/{uuid}/calendario`, `/perfil-cliente/{uuid}/perfil`.
+- **Instant Skeleton Loading System** (November 2025):
+    - **RouteTransitionContext**: Shared context using `useLayoutEffect` for pre-paint route change detection, providing instant skeleton coverage (no blank screen flash).
+    - **Page-Level Coordinator Pattern**: Pages use `isFetching` from React Query + `useRouteTransition` + `useSkeletonVisibility` to compute single `showSkeleton` boolean.
+    - **Minimum Display Time**: 150ms minimum enforced via `useSkeletonVisibility` to prevent skeleton flash on instant cached responses.
+    - **Component Integration**: PropertyResults, AgentResults, AgencyResults accept `showSkeleton` prop (not `isLoading`) for consistent behavior.
+    - **Brand Color Skeletons**: All skeleton loaders use primary blue color (`bg-primary/10`) for consistent branding.
+    - **Automatic Dismissal**: Pages call `endTransition()` when data ready or on error, GlobalLoadingOverlay auto-hides after 2s fallback.
+    - **Architecture**: Coordinates full-page GlobalLoadingOverlay with component-level skeletons to avoid double-loading states.
 
 ## External Dependencies
 
