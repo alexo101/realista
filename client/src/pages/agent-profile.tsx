@@ -396,11 +396,6 @@ export default function AgentProfile() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {agent.phone && (
-              <Button size="sm">
-                <Phone className="mr-2 h-4 w-4" /> Llamar
-              </Button>
-            )}
             <Button size="sm" variant="outline">
               <Mail className="mr-2 h-4 w-4" /> Contactar
             </Button>
