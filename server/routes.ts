@@ -34,7 +34,7 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInDate: true,
 }).partial();
 import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation } from "./emailService";
-import { expandNeighborhoodSearch, isCityWideSearch, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
+import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 import multer from 'multer';
@@ -2094,7 +2094,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
+          console.log(`Búsqueda expandida para "${neighborhood}" incluye ${expandedNeighborhoods.length} barrios:`, expandedNeighborhoods.join(', '));
 
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida

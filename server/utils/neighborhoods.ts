@@ -206,24 +206,45 @@ export function isCityWideSearch(queryNeighborhood: string, city: string = 'Barc
 
 // Función para expandir la búsqueda basada en la jerarquía
 export function expandNeighborhoodSearch(queryNeighborhood: string, city: string = 'Barcelona'): string[] {
-  const cityStructure = ALL_CITIES.find(c => c.city === city);
+  // CRITICAL FIX: Parse hierarchical labels like "Gràcia, Barcelona" or "Vila de Gràcia, Gràcia, Barcelona"
+  // The frontend sends these hierarchical formats but we need to extract the actual location name
+  let actualQuery = queryNeighborhood;
+  let effectiveCity = city; // Use local variable to avoid mutating the parameter
+  
+  const parsed = parseNeighborhoodDisplayName(queryNeighborhood);
+  
+  if (parsed) {
+    // If it's a full 3-part format (Neighborhood, District, City)
+    actualQuery = parsed.neighborhood;
+    effectiveCity = parsed.city;
+  } else {
+    // Check if it's a 2-part format like "District, City" or "Neighborhood, City"
+    const parts = queryNeighborhood.split(',').map(p => p.trim());
+    if (parts.length === 2) {
+      // First part is district or neighborhood, second part is city
+      actualQuery = parts[0];
+      effectiveCity = parts[1];
+    }
+  }
+  
+  const cityStructure = ALL_CITIES.find(c => c.city === effectiveCity);
   if (!cityStructure) return [];
   
   const allNeighborhoods = cityStructure.districts.flatMap(d => d.neighborhoods);
   
   // Si es búsqueda a nivel de ciudad, devolver todos los barrios
-  if (isCityWideSearch(queryNeighborhood, city)) {
+  if (isCityWideSearch(actualQuery, effectiveCity)) {
     return allNeighborhoods;
   }
   
   // Si es un distrito, devolver todos los barrios de ese distrito
-  if (isDistrict(queryNeighborhood, city)) {
-    return getNeighborhoodsByDistrict(queryNeighborhood, city);
+  if (isDistrict(actualQuery, effectiveCity)) {
+    return getNeighborhoodsByDistrict(actualQuery, effectiveCity);
   }
   
   // Si es un barrio específico, solo devolvemos ese barrio
-  if (allNeighborhoods.includes(queryNeighborhood)) {
-    return [queryNeighborhood];
+  if (allNeighborhoods.includes(actualQuery)) {
+    return [actualQuery];
   }
   
   // Si no coincide con ninguno, devolvemos array vacío
