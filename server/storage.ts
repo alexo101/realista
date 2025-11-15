@@ -348,15 +348,51 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-        const neighborhoods = neighborhoodsStr.split(",");
-        console.log(`Filtrando agentes por barrios: ${neighborhoods.join(', ')}`);
+        console.log(`Filtrando agentes por barrios: ${neighborhoodsStr}`);
 
-        // Usamos la sintaxis directa de PostgreSQL para arrays
-        const arrayQuery = `ARRAY[${neighborhoods.map(n => `'${n.replace(/'/g, "''")}'`).join(',')}]::text[]`;
-        
+        // CRITICAL: Always exclude agents with NULL or empty influenceNeighborhoods when neighborhood filter is applied
         dbQuery = dbQuery.where(
-          sql`${agents.influenceNeighborhoods} && ${sql.raw(arrayQuery)}`
+          sql`cardinality(coalesce(${agents.influenceNeighborhoods}, ARRAY[]::text[])) > 0`
         );
+
+        // Parse the neighborhood display name to extract city, district, and neighborhood
+        const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
+        const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
+        
+        let expandedNeighborhoods: string[] = [];
+        
+        if (parsed) {
+          let { neighborhood, district, city } = parsed;
+          
+          // Handle district-level search: when neighborhood is empty, use district as the search term
+          if (!neighborhood || neighborhood.trim() === "") {
+            neighborhood = district;
+            console.log(`District-level search detected, using district: ${neighborhood}`);
+          }
+          
+          console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
+          
+          // Expand the search hierarchically
+          expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
+        } else {
+          // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
+          console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
+          expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
+        }
+
+        console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+
+        if (expandedNeighborhoods.length > 0) {
+          // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
+          // match any of the agent's influence neighborhoods
+          dbQuery = dbQuery.where(
+            sql`${agents.influenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+          );
+        } else {
+          // Fail closed: if expansion returns empty, return no results
+          console.log(`WARNING: Neighborhood expansion returned empty array for: ${neighborhoodsStr}`);
+          return [];
+        }
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
@@ -429,9 +465,16 @@ export class DatabaseStorage implements IStorage {
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
         console.log(`Filtrando agencias por barrios: ${neighborhoodsStr}`);
 
+        // CRITICAL: Always exclude agencies with NULL or empty influenceNeighborhoods when neighborhood filter is applied
+        conditions.push(
+          sql`cardinality(coalesce(${agencies.agencyInfluenceNeighborhoods}, ARRAY[]::text[])) > 0`
+        );
+
         // Parse the neighborhood display name to extract city, district, and neighborhood
         const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
         const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
+        
+        let expandedNeighborhoods: string[] = [];
         
         if (parsed) {
           let { neighborhood, district, city } = parsed;
@@ -445,23 +488,26 @@ export class DatabaseStorage implements IStorage {
           
           console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
           
-          // Expand the search hierarchically:
-          // - If it's a city, get all neighborhoods in that city
-          // - If it's a district, get all neighborhoods in that district
-          // - If it's a neighborhood, get just that neighborhood
-          const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
-          console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
-
-          if (expandedNeighborhoods.length > 0) {
-            // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
-            // match any of the agency's influence neighborhoods
-            // Cast both sides to text[] to ensure type compatibility
-            conditions.push(
-              sql`${agencies.agencyInfluenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
-            );
-          }
+          // Expand the search hierarchically
+          expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
         } else {
-          console.log(`Could not parse neighborhood display name: ${neighborhoodsStr}`);
+          // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
+          console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
+          expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
+        }
+
+        console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+
+        if (expandedNeighborhoods.length > 0) {
+          // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
+          // match any of the agency's influence neighborhoods
+          conditions.push(
+            sql`${agencies.agencyInfluenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+          );
+        } else {
+          // Fail closed: if expansion returns empty, return no results
+          console.log(`WARNING: Neighborhood expansion returned empty array for: ${neighborhoodsStr}`);
+          return [];
         }
       }
 
