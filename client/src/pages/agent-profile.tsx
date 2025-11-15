@@ -561,6 +561,22 @@ export default function AgentProfile() {
                     </div>
                   )}
 
+                  {agent.influence_neighborhoods && agent.influence_neighborhoods.length > 0 && (
+                    <div className="flex">
+                      <MapPin className="h-5 w-5 mr-3 text-gray-500" />
+                      <div>
+                        <div className="font-medium">Zonas de especialidad</div>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {agent.influence_neighborhoods.map((neighborhood) => (
+                            <Badge key={neighborhood} variant="secondary">
+                              {neighborhood}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {agent.languagesSpoken && agent.languagesSpoken.length > 0 && (
                     <div className="flex">
                       <div className="h-5 w-5 mr-3 text-gray-500">🌍</div>
