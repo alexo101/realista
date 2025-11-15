@@ -5,7 +5,7 @@ import { useRouteTransition } from "@/contexts/route-transition-context";
 import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, Phone, Mail, MapPin, Building2, Building, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle, Home, Heart, Share2 } from "lucide-react";
+import { Star, Phone, Mail, MapPin, Building2, Building, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle, Home, Heart, Share2, Copy, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -102,6 +102,8 @@ export default function AgencyProfile() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isFavorite, setIsFavorite] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [phoneRevealed, setPhoneRevealed] = useState(false);
+  const [phoneCopied, setPhoneCopied] = useState(false);
 
   // Hooks para autenticación y navegación
   const { user } = useUser();
@@ -212,6 +214,51 @@ export default function AgencyProfile() {
     }
   };
 
+  // Detectar si el usuario está en un dispositivo móvil (solo userAgent, NO viewport)
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  // Función para manejar el click en el botón de teléfono
+  const handlePhoneClick = () => {
+    if (!agency?.agencyPhone) return;
+
+    if (isMobileDevice()) {
+      // En móvil: abrir la app de teléfono
+      window.location.href = `tel:${agency.agencyPhone}`;
+    } else {
+      // En desktop: revelar el número
+      setPhoneRevealed(true);
+    }
+  };
+
+  // Función para copiar el número de teléfono
+  const handleCopyPhone = async () => {
+    if (!agency?.agencyPhone) return;
+
+    try {
+      await navigator.clipboard.writeText(agency.agencyPhone);
+      setPhoneCopied(true);
+      
+      toast({
+        title: "Número copiado",
+        description: "El número de teléfono ha sido copiado al portapapeles",
+      });
+
+      // Reset después de 2 segundos
+      setTimeout(() => {
+        setPhoneCopied(false);
+      }, 2000);
+    } catch (error) {
+      // Error en contexto inseguro o permisos denegados
+      toast({
+        title: "No se pudo copiar",
+        description: "Por favor, selecciona y copia el número manualmente",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Consulta para obtener los datos de la agencia
   const { data: agency, isFetching: agencyFetching, error } = useQuery<Agency>({
     queryKey: [`/api/agencies/${identifier}`],
@@ -224,6 +271,12 @@ export default function AgencyProfile() {
     },
     enabled: !!identifier,
   });
+
+  // Reset phone reveal state when navigating to a different agency
+  useEffect(() => {
+    setPhoneRevealed(false);
+    setPhoneCopied(false);
+  }, [identifier]);
   
   // Consulta para obtener las reseñas directas de la agencia
   const { data: agencyReviews = [], isFetching: reviewsFetching } = useQuery({
@@ -448,16 +501,41 @@ export default function AgencyProfile() {
             </div>
           )}
           <div className="flex flex-wrap gap-3">
+            {/* Botón de contacto telefónico con comportamiento específico por plataforma */}
             {agency.agencyPhone && (
-              <Button size="sm">
-                <Phone className="mr-2 h-4 w-4" /> Llamar
-              </Button>
+              !phoneRevealed ? (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={handlePhoneClick}
+                  data-testid="button-contact-agency-phone"
+                >
+                  <Phone className="mr-2 h-4 w-4" /> Contactar agencia
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-background">
+                  <Phone className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium select-text" data-testid="text-revealed-phone">
+                    {agency.agencyPhone}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={handleCopyPhone}
+                    data-testid="button-copy-phone"
+                  >
+                    {phoneCopied ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              )
             )}
             <Button size="sm" variant="outline">
               <Mail className="mr-2 h-4 w-4" /> Contactar
-            </Button>
-            <Button size="sm" variant="outline">
-              <Phone className="mr-2 h-4 w-4" /> Contactar agencia
             </Button>
             
             {/* Botón de favoritos */}
