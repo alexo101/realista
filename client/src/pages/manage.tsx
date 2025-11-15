@@ -140,6 +140,7 @@ export default function ManagePage() {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [description, setDescription] = useState("");
+  const [phone, setPhone] = useState("");
   const [city, setCity] = useState("Barcelona");
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   const [yearsOfExperience, setYearsOfExperience] = useState<number | undefined>(undefined);
@@ -175,6 +176,7 @@ export default function ManagePage() {
       setName(user.name || "");
       setSurname(user.surname || "");
       setDescription(user.description || "");
+      setPhone(user.phone || "");
       setCity(user.city || "Barcelona");
       setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
       setYearsOfExperience(user.yearsOfExperience);
@@ -793,6 +795,19 @@ export default function ManagePage() {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="agent-phone">Número de teléfono</Label>
+                  <Input 
+                    id="agent-phone" 
+                    placeholder="Teléfono de contacto (ej: 612345678)" 
+                    value={phone}
+                    onChange={(e) => {setPhone(e.target.value); setHasAgentChanges(true);}}
+                    data-testid="input-agent-phone"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formato válido: +34 612 345 678, 612345678, etc.
+                  </p>
+                </div>
+                <div>
                   <Label htmlFor="languagesSpoken">Idiomas que hablas</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
@@ -857,16 +872,33 @@ export default function ManagePage() {
                 <Button
                   type="button"
                   className="relative"
-                  onClick={() => updateProfileMutation.mutate({
-                    name,
-                    surname,
-                    description,
-                    city,
-                    influenceNeighborhoods,
-                    yearsOfExperience,
-                    languagesSpoken
-                  })}
+                  onClick={() => {
+                    // Validate phone number if provided
+                    if (phone && phone.trim() !== '') {
+                      const phoneRegex = /^(\+34|0034|34)?[\s\-]?[6789]\d{2}[\s\-]?\d{3}[\s\-]?\d{3}$/;
+                      if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+                        toast({
+                          title: "Número de teléfono inválido",
+                          description: "Por favor, introduce un número de teléfono español válido (ej: 612345678 o +34 612 345 678)",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                    }
+
+                    updateProfileMutation.mutate({
+                      name,
+                      surname,
+                      description,
+                      phone,
+                      city,
+                      influenceNeighborhoods,
+                      yearsOfExperience,
+                      languagesSpoken
+                    });
+                  }}
                   disabled={updateProfileMutation.isPending || !hasAgentChanges} // Added disable logic
+                  data-testid="button-save-agent-profile"
                 >
                   {showSavedIndicator && (
                     <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
