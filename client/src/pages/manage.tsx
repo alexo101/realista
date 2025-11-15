@@ -667,7 +667,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "perfil-agente" && (
-            <div className="max-w-2xl mx-auto space-y-8">
+            <div className="max-w-2xl mx-auto space-y-8 pb-16">
               <div className="flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
                   {user?.avatar ? (
