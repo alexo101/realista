@@ -333,16 +333,18 @@ export default function NeighborhoodResultsPage() {
     return () => clearTimeout(timer);
   }, [decodedNeighborhood, propertyFilters, queryClient]);
 
+  // Helper to get Spanish route segment from tab value
+  const getSpanishTabSegment = (tabValue: string): string => {
+    if (tabValue === 'properties') return 'inmuebles';
+    if (tabValue === 'agencies') return 'agencias';
+    if (tabValue === 'agents') return 'agentes';
+    if (tabValue === 'overview') return 'resumen';
+    return 'inmuebles'; // Default
+  };
+
   // Optimized tab change using state instead of page reload
   const handleTabChange = (value: string) => {
-    // Use client-side navigation instead of full page reload (Spanish routes)
-    // Translate tab names to Spanish
-    let spanishTab = value;
-    if (value === 'properties') spanishTab = 'inmuebles';
-    else if (value === 'agencies') spanishTab = 'agencias';
-    else if (value === 'agents') spanishTab = 'agentes';
-    else if (value === 'overview') spanishTab = 'resumen';
-    
+    const spanishTab = getSpanishTabSegment(value);
     setLocation(`/barrio/${encodeURIComponent(decodedNeighborhood)}/${spanishTab}`);
   };
 
@@ -488,7 +490,8 @@ export default function NeighborhoodResultsPage() {
             {/* Inicio - Always at top level */}
             <span 
               className="cursor-pointer hover:text-primary"
-              onClick={() => window.location.href = '/'}
+              onClick={() => setLocation('/')}
+              data-testid="breadcrumb-inicio"
             >
               Inicio
             </span>
@@ -497,7 +500,7 @@ export default function NeighborhoodResultsPage() {
             {/* City Level with district dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
+                <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-city">
                   {currentCity}
                 </span>
               </DropdownMenuTrigger>
@@ -505,15 +508,17 @@ export default function NeighborhoodResultsPage() {
                 {getDistrictsByCity(currentCity).map(districtOption => (
                   <DropdownMenuItem
                     key={districtOption}
-                    onClick={() => window.location.href = `/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/inmuebles`}
+                    onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
                     className="cursor-pointer"
+                    data-testid={`breadcrumb-district-${districtOption}`}
                   >
                     {districtOption}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuItem
-                  onClick={() => window.location.href = `/barrio/${encodeURIComponent(currentCity)}/inmuebles`}
+                  onClick={() => setLocation(`/barrio/${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
                   className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                  data-testid="breadcrumb-city-all"
                 >
                   Ver todo {currentCity}
                 </DropdownMenuItem>
@@ -526,7 +531,7 @@ export default function NeighborhoodResultsPage() {
                 <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline">
+                    <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-district">
                       {currentDistrict}
                     </span>
                   </DropdownMenuTrigger>
@@ -534,15 +539,17 @@ export default function NeighborhoodResultsPage() {
                     {getNeighborhoodsByDistrict(currentDistrict, currentCity).map(neighborhoodOption => (
                       <DropdownMenuItem
                         key={neighborhoodOption}
-                        onClick={() => window.location.href = `/barrio/${encodeURIComponent(neighborhoodOption)}, ${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/inmuebles`}
+                        onClick={() => setLocation(`/barrio/${encodeURIComponent(neighborhoodOption)}, ${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
                         className="cursor-pointer"
+                        data-testid={`breadcrumb-neighborhood-${neighborhoodOption}`}
                       >
                         {neighborhoodOption}
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuItem
-                      onClick={() => window.location.href = `/barrio/${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/inmuebles`}
+                      onClick={() => setLocation(`/barrio/${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
                       className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                      data-testid="breadcrumb-district-all"
                     >
                       Ver todo {currentDistrict}
                     </DropdownMenuItem>
@@ -825,8 +832,9 @@ export default function NeighborhoodResultsPage() {
                           key={neighborhood}
                           className="bg-gray-100 px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-primary/10"
                           onClick={() => {
-                            window.location.href = `/barrio/${encodeURIComponent(neighborhood)}, ${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/properties`;
+                            setLocation(`/barrio/${encodeURIComponent(neighborhood)}, ${encodeURIComponent(currentDistrict)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`);
                           }}
+                          data-testid={`district-neighborhood-link-${neighborhood}`}
                         >
                           {neighborhood}
                         </span>
@@ -848,7 +856,8 @@ export default function NeighborhoodResultsPage() {
                         <span 
                           key={districtOption}
                           className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
-                          onClick={() => window.location.href = `/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/inmuebles`}
+                          onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
+                          data-testid={`city-district-link-${districtOption}`}
                         >
                           {districtOption}
                         </span>
