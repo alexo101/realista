@@ -148,25 +148,22 @@ export function NeighborhoodSelector({
     <div className="space-y-2">
       {/* Selected neighborhoods display */}
       {selectedNeighborhoods.length > 0 && (
-        <div>
-          <p className="text-sm text-gray-500 mb-2">{singleSelection ? `BARRIO SELECCIONADO (${city})` : `SELECCIONADOS (${city})`}</p>
-          <div className="flex flex-wrap gap-2">
-            {selectedNeighborhoods.map(neighborhood => (
-              <span
-                key={neighborhood}
-                className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1"
+        <div className="flex flex-wrap gap-2">
+          {selectedNeighborhoods.map(neighborhood => (
+            <span
+              key={neighborhood}
+              className="bg-primary/10 rounded-full px-3 py-1 text-sm flex items-center gap-1"
+            >
+              {neighborhood}
+              <button
+                type="button"
+                onClick={() => removeNeighborhood(neighborhood)}
+                className="hover:text-red-500"
               >
-                {neighborhood}
-                <button
-                  type="button"
-                  onClick={() => removeNeighborhood(neighborhood)}
-                  className="hover:text-red-500"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-          </div>
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
         </div>
       )}
 
