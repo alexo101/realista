@@ -865,7 +865,7 @@ export default function NeighborhoodResultsPage() {
                     </p>
                     
                     {/* Valoraciones del barrio */}
-                    {!ratingsLoading && ratings && (
+                    {!ratingsFetching && ratings && (
                       <div className="mb-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <h3 className="text-lg font-semibold mb-2 flex items-center">
                           <Star className="h-5 w-5 mr-2 text-yellow-500" />
