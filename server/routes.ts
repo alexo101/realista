@@ -2395,6 +2395,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionPlan = updatedUser.subscriptionPlan;
       }
       
+      // Update session to keep it synchronized with database
+      if (req.session.user && req.session.user.id === updatedUser.id) {
+        req.session.user = {
+          ...req.session.user,
+          name: updatedUser.name,
+          isAdmin,
+          isClient,
+          agencyId,
+          agencyName,
+          subscriptionPlan,
+          agentUuid: updatedUser.uuid
+        };
+        
+        // Save session to ensure persistence
+        await new Promise((resolve, reject) => {
+          (req as any).session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
+        });
+      }
+      
       // Return user data with consistent structure (matching login/register endpoints)
       const { password: _, ...userResponse } = updatedUser;
       res.json({
@@ -2403,7 +2425,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isClient,
         agencyId,
         agencyName,
-        subscriptionPlan
+        subscriptionPlan,
+        agentUuid: updatedUser.uuid
       });
     } catch (error) {
       console.error('Error updating user:', error);
