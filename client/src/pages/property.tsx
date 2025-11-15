@@ -38,6 +38,13 @@ interface Agent {
   influenceNeighborhoods?: string[];
   reviewCount?: number;
   reviewAverage?: number;
+  pinnedReview?: {
+    id: number;
+    rating: number;
+    comment?: string;
+    author: string;
+    date: string;
+  };
 }
 
 export default function PropertyPage() {
@@ -258,17 +265,17 @@ export default function PropertyPage() {
     }
   };
 
-  if (propertyLoading) {
+  if (showSkeleton) {
     return (
       <div className="min-h-screen pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="h-[400px] bg-gray-100 rounded-lg animate-pulse mb-8" />
+          <div className="h-[400px] bg-primary/10 rounded-lg animate-pulse mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-              <div className="h-8 bg-gray-100 rounded animate-pulse w-3/4" />
-              <div className="h-32 bg-gray-100 rounded animate-pulse" />
+              <div className="h-8 bg-primary/10 rounded animate-pulse w-3/4" />
+              <div className="h-32 bg-primary/10 rounded animate-pulse" />
             </div>
-            <div className="h-[400px] bg-gray-100 rounded-lg animate-pulse" />
+            <div className="h-[400px] bg-primary/10 rounded-lg animate-pulse" />
           </div>
         </div>
       </div>
@@ -434,7 +441,7 @@ export default function PropertyPage() {
           </div>
 
           <div className="space-y-6">
-            {agent && !agentLoading && (
+            {agent && !agentFetching && (
               <Card>
                 <CardContent className="pt-6">
                   {!agentCardExpanded ? (
