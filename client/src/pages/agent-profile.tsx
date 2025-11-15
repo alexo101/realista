@@ -60,7 +60,7 @@ interface Agent {
   agencyName?: string | null;
   agencyId?: number;
   agencySlug?: string;
-  influence_neighborhoods?: string[];
+  influenceNeighborhoods?: string[];
   isAgent: boolean;
   properties?: Property[];
   reviewCount?: number;
@@ -480,14 +480,14 @@ export default function AgentProfile() {
                      y dedicado a cada cliente.`}
                   </p>
 
-                  {agent.influence_neighborhoods && agent.influence_neighborhoods.length > 0 && (
+                  {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
                     <div className="mt-4">
                       <h3 className="font-medium mb-2 flex items-center">
                         <MapPin className="h-5 w-5 mr-2 text-gray-500" />
                         Zonas de especialidad
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {agent.influence_neighborhoods.map((neighborhood) => (
+                        {agent.influenceNeighborhoods.map((neighborhood) => (
                           <Badge key={neighborhood} variant="secondary">
                             {neighborhood}
                           </Badge>
@@ -561,13 +561,13 @@ export default function AgentProfile() {
                     </div>
                   )}
 
-                  {agent.influence_neighborhoods && agent.influence_neighborhoods.length > 0 && (
+                  {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
                     <div className="flex">
                       <MapPin className="h-5 w-5 mr-3 text-gray-500" />
                       <div>
                         <div className="font-medium">Zonas de especialidad</div>
                         <div className="flex flex-wrap gap-2 mt-1">
-                          {agent.influence_neighborhoods.map((neighborhood) => (
+                          {agent.influenceNeighborhoods.map((neighborhood) => (
                             <Badge key={neighborhood} variant="secondary">
                               {neighborhood}
                             </Badge>
