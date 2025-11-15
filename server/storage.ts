@@ -333,12 +333,12 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
 
-      // First, get the agents with standard filtering
-      let dbQuery = db.select().from(agents);
+      // Collect all WHERE conditions first (like searchAgencies)
+      const conditions: any[] = [];
 
       // Filtrar por nombre o apellido de agente si se proporciona
       if (agentName && agentName.trim() !== "") {
-        dbQuery = dbQuery.where(
+        conditions.push(
           or(
             sql`${agents.name} ILIKE ${`%${agentName}%`}`,
             sql`${agents.surname} ILIKE ${`%${agentName}%`}`
@@ -351,7 +351,7 @@ export class DatabaseStorage implements IStorage {
         console.log(`Filtrando agentes por barrios: ${neighborhoodsStr}`);
 
         // CRITICAL: Always exclude agents with NULL or empty influenceNeighborhoods when neighborhood filter is applied
-        dbQuery = dbQuery.where(
+        conditions.push(
           sql`cardinality(coalesce(${agents.influenceNeighborhoods}, ARRAY[]::text[])) > 0`
         );
 
@@ -385,7 +385,7 @@ export class DatabaseStorage implements IStorage {
         if (expandedNeighborhoods.length > 0) {
           // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
           // match any of the agent's influence neighborhoods
-          dbQuery = dbQuery.where(
+          conditions.push(
             sql`${agents.influenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
           );
         } else {
@@ -393,6 +393,13 @@ export class DatabaseStorage implements IStorage {
           console.log(`WARNING: Neighborhood expansion returned empty array for: ${neighborhoodsStr}`);
           return [];
         }
+      }
+
+      // Build the query with all conditions combined
+      let dbQuery = db.select().from(agents);
+      
+      if (conditions.length > 0) {
+        dbQuery = dbQuery.where(and(...conditions));
       }
 
       // Limitamos los resultados para evitar sobrecargar la respuesta
