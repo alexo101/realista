@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
-import { getDistrictsByCity, getAllNeighborhoodsByCity, getCities } from "@/utils/neighborhoods";
+import { getAllNeighborhoodsByCity, findDistrictByNeighborhood } from "@/utils/neighborhoods";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
@@ -27,21 +27,21 @@ export function NeighborhoodSelector({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Get neighborhoods and districts for the selected city
+  // Get neighborhoods for the selected city
   const cityNeighborhoods = getAllNeighborhoodsByCity(city);
-  const cityDistricts = getDistrictsByCity(city);
   const dynamicTitle = title || `BARRIOS DE ${city.toUpperCase()}`;
   
-  // Filter neighborhoods, districts, and city option based on search
+  // Filter neighborhoods and city option based on search
+  // Enhanced: match by neighborhood name OR its parent district
   const filteredResults = search.length >= 3 
     ? [
         ...(`${city} (Todos los barrios)`.toLowerCase().includes(search.toLowerCase()) ? [`${city} (Todos los barrios)`] : []),
-        ...cityDistricts.filter((d: string) =>
-          d.toLowerCase().includes(search.toLowerCase())
-        ),
-        ...cityNeighborhoods.filter((n: string) =>
-          n.toLowerCase().includes(search.toLowerCase())
-        )
+        ...cityNeighborhoods.filter((n: string) => {
+          const neighborhoodMatch = n.toLowerCase().includes(search.toLowerCase());
+          const district = findDistrictByNeighborhood(n, city);
+          const districtMatch = district?.toLowerCase().includes(search.toLowerCase());
+          return neighborhoodMatch || districtMatch;
+        })
       ].slice(0, 10) // Limit to 10 results
     : [];
 
