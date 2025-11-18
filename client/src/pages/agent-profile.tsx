@@ -557,22 +557,6 @@ export default function AgentProfile() {
                      Con un profundo conocimiento del mercado local, ${agent.name} ofrece un servicio personalizado
                      y dedicado a cada cliente.`}
                   </p>
-
-                  {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="font-medium mb-2 flex items-center">
-                        <MapPin className="h-5 w-5 mr-2 text-gray-500" />
-                        Zonas de especialidad
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {agent.influenceNeighborhoods.map((neighborhood) => (
-                          <Badge key={neighborhood} variant="secondary">
-                            {neighborhood}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Estadísticas del agente */}
