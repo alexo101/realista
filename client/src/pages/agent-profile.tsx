@@ -535,7 +535,6 @@ export default function AgentProfile() {
           </div>
         </div>
       </div>
-
       {/* Tabs de Navegación */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
         <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex">
@@ -589,7 +588,7 @@ export default function AgentProfile() {
 
             <Card>
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Información de contacto</h2>
+                <h2 className="text-xl font-semibold mb-4">Competencias</h2>
                 <div className="space-y-4">
                   {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
                     <div className="flex">
@@ -868,7 +867,6 @@ export default function AgentProfile() {
           </div>
         </TabsContent>
       </Tabs>
-
       {/* Modal de reseñas */}
       <AgentReviewFlow 
         agentId={agent?.id || 0}
