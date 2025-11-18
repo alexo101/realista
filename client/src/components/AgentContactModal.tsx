@@ -28,12 +28,7 @@ export function AgentContactModal({ isOpen, onClose, agentName, agentId }: Agent
 
   const contactMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await apiRequest(`/api/agents/${agentId}/contact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      return response;
+      return await apiRequest("POST", `/api/agents/${agentId}/contact`, data);
     },
     onSuccess: () => {
       toast({
