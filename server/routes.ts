@@ -33,7 +33,7 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInTiming: true,
   moveInDate: true,
 }).partial();
-import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation } from "./emailService";
+import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
@@ -2673,6 +2673,50 @@ Gracias!
     } catch (error) {
       console.error('Error getting agency reviews:', error);
       res.status(500).json({ message: "Failed to get agency reviews" });
+    }
+  });
+
+  // Ruta para enviar mensaje de contacto a un agente
+  app.post("/api/agents/:identifier/contact", async (req, res) => {
+    try {
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agent;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agent
+        agent = await storage.getAgentBySlug(identifier);
+      } else {
+        agent = await storage.getAgentById(id);
+      }
+
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+
+      const { name, phone, email, message } = req.body;
+
+      // Validar campos requeridos
+      if (!name || !phone || !email || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Enviar email al agente
+      const agentName = `${agent.name || ''} ${agent.surname || ''}`.trim() || 'Agente';
+      const emailSent = await sendAgentContactEmail(
+        agent.email,
+        agentName,
+        { name, phone, email, message }
+      );
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send email" });
+      }
+
+      res.status(200).json({ success: true, message: "Message sent successfully" });
+    } catch (error) {
+      console.error('Error sending agent contact:', error);
+      res.status(500).json({ message: "Failed to send message" });
     }
   });
 

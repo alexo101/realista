@@ -287,3 +287,68 @@ export async function sendReviewRequest(to: string, clientName: string, agentNam
     return false;
   }
 }
+
+// Función para enviar contacto de cliente a agente
+export async function sendAgentContactEmail(
+  agentEmail: string,
+  agentName: string,
+  contactData: {
+    name: string;
+    phone: string;
+    email: string;
+    message: string;
+  }
+) {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    
+    const subject = `Nuevo contacto de ${contactData.name} - Realista`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2563eb;">Nuevo mensaje de cliente</h2>
+        <p>Hola ${agentName},</p>
+        <p>Has recibido un nuevo mensaje de un cliente interesado en tus servicios.</p>
+        
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #1f2937;">Información del cliente:</h3>
+          <p><strong>Nombre:</strong> ${contactData.name}</p>
+          <p><strong>Teléfono:</strong> ${contactData.phone}</p>
+          <p><strong>Email:</strong> ${contactData.email}</p>
+          <p><strong>Mensaje:</strong></p>
+          <p style="background-color: white; padding: 15px; border-left: 4px solid #2563eb; margin: 10px 0;">
+            ${contactData.message}
+          </p>
+        </div>
+        
+        <p>Puedes contactar con el cliente directamente usando la información proporcionada.</p>
+        <p style="margin-top: 30px;">El equipo de Realista</p>
+      </body>
+      </html>
+    `;
+
+    const { data, error } = await client.emails.send({
+      from: `Realista <${fromEmail}>`,
+      to: [agentEmail],
+      replyTo: contactData.email,
+      subject,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('Error de Resend al enviar email de contacto:', error);
+      return false;
+    }
+
+    console.log('Email de contacto enviado:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('Error al enviar email de contacto:', error);
+    return false;
+  }
+}
