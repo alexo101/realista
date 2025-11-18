@@ -591,38 +591,6 @@ export default function AgentProfile() {
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Información de contacto</h2>
                 <div className="space-y-4">
-                  <div className="flex">
-                    <Mail className="h-5 w-5 mr-3 text-gray-500" />
-                    <div>
-                      <div className="font-medium">Email</div>
-                      <a href={`mailto:${agent.email}`} className="text-blue-600 hover:underline">
-                        {agent.email}
-                      </a>
-                    </div>
-                  </div>
-
-                  {agent.phone && (
-                    <div className="flex">
-                      <Phone className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <div className="font-medium">Teléfono</div>
-                        <a href={`tel:${agent.phone}`} className="text-blue-600 hover:underline">
-                          {agent.phone}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {agent.agencyName && (
-                    <div className="flex">
-                      <Building2 className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <div className="font-medium">Agencia</div>
-                        <div>{agent.agencyName}</div>
-                      </div>
-                    </div>
-                  )}
-
                   {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
                     <div className="flex">
                       <MapPin className="h-5 w-5 mr-3 text-gray-500" />
