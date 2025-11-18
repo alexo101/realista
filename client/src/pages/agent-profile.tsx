@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { PropertyCard } from "@/components/PropertyCard";
 import { AgentReviewFlow } from "@/components/AgentReviewFlow";
+import { AgentContactModal } from "@/components/AgentContactModal";
 import { Tooltip as RechartsTooltip } from "recharts";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -106,6 +107,7 @@ export default function AgentProfile() {
   // Estados para la pestaña activa y el modal de reseñas
   const [activeTab, setActiveTab] = useState("overview");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [phoneCopied, setPhoneCopied] = useState(false);
@@ -448,7 +450,12 @@ export default function AgentProfile() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button size="sm" variant="outline">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setContactModalOpen(true)}
+              data-testid="button-open-contact-modal"
+            >
               <Mail className="mr-2 h-4 w-4" /> Contactar
             </Button>
             
@@ -872,6 +879,14 @@ export default function AgentProfile() {
         agentId={agent?.id || 0}
         isOpen={reviewModalOpen}
         onClose={() => setReviewModalOpen(false)}
+      />
+
+      {/* Modal de contacto */}
+      <AgentContactModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        agentName={fullName}
+        agentId={agent?.id || 0}
       />
     </div>
   );
