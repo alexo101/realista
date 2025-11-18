@@ -410,7 +410,7 @@ export default function AgentProfile() {
   return (
     <div className="container pt-16 pb-8 max-w-7xl mx-auto">
       {/* Header del Perfil */}
-      <div className="flex flex-col md:flex-row gap-8 mb-8">
+      <div className="flex flex-col md:flex-row gap-6 md:gap-12 mb-8">
         <div className="md:w-36 lg:w-48">
           <Avatar className="h-36 w-36 lg:h-48 lg:w-48 rounded-lg">
             <AvatarImage src={agent.avatar} />
