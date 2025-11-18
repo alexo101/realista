@@ -464,7 +464,7 @@ export default function AgentProfile() {
                   <Phone className="mr-2 h-4 w-4" /> Contactar agente
                 </Button>
               ) : (
-                <div className="flex items-center gap-2 px-3 py-2 border rounded-md bg-background">
+                <div className="flex items-center gap-2 px-3 h-9 border rounded-md bg-background">
                   <Phone className="h-4 w-4 text-gray-500" />
                   <span className="text-sm font-medium select-text" data-testid="text-revealed-phone">
                     {agent.phone}
