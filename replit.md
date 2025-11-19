@@ -88,6 +88,12 @@ Preferred communication style: Simple, everyday language.
     - **Brand Color Skeletons**: All skeleton loaders use primary blue color (`bg-primary/10`) for consistent branding.
     - **Automatic Dismissal**: Pages call `endTransition()` when data ready or on error, GlobalLoadingOverlay auto-hides after 2s fallback.
     - **Architecture**: Coordinates full-page GlobalLoadingOverlay with component-level skeletons to avoid double-loading states.
+- **Hierarchical Location Search** (November 2025):
+    - **District-to-Neighborhood Expansion**: Frontend uses `expandNeighborhoodSearch` to convert district names to their constituent neighborhoods before API calls.
+    - **Example**: Searching "Sant Andreu" district expands to ["Sant Andreu del Palomar", "La Sagrera", "El Congrés i els Indians", "Navas", ...].
+    - **Dual-Layer Handling**: Storage layer detects pre-expanded comma-separated lists vs hierarchical strings to avoid double expansion.
+    - **Result Inclusion**: Agents/agencies with `influenceNeighborhoods` and properties with `neighborhood` matching any constituent neighborhood appear on district pages.
+    - **Contact Feature**: Agent profiles include contact modal with form fields (Nombre, Teléfono, Email, Mensaje), Spanish phone validation, and Resend email integration.
 
 ## External Dependencies
 
