@@ -63,6 +63,7 @@ export const agents = pgTable("agents", {
   influenceNeighborhoods: text("influence_neighborhoods").array(),
   yearsOfExperience: integer("years_of_experience"),
   languagesSpoken: text("languages_spoken").array(),
+  socialMedia: jsonb("social_media"),
   // Agent type: "independent" or "agency_member"
   agentType: text("agent_type").notNull().default("independent"),
   // Personal subscription (ONLY active for independent agents)
