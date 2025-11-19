@@ -63,6 +63,7 @@ interface Agency {
     facebook?: string;
     instagram?: string;
     twitter?: string;
+    linkedin?: string;
   };
   agencyLogo?: string;
   agencyInfluenceNeighborhoods?: string[];
