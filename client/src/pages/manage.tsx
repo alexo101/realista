@@ -145,6 +145,9 @@ export default function ManagePage() {
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   const [yearsOfExperience, setYearsOfExperience] = useState<number | undefined>(undefined);
   const [languagesSpoken, setLanguagesSpoken] = useState<string[]>([]);
+  const [agentFacebookUrl, setAgentFacebookUrl] = useState("");
+  const [agentInstagramUrl, setAgentInstagramUrl] = useState("");
+  const [agentLinkedinUrl, setAgentLinkedinUrl] = useState("");
 
   // Estados para los campos de perfil de agencia
   const [agencyName, setAgencyName] = useState("");
@@ -181,6 +184,12 @@ export default function ManagePage() {
       setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
       setYearsOfExperience(user.yearsOfExperience);
       setLanguagesSpoken(user.languagesSpoken || []);
+      
+      // Cargar redes sociales si existen
+      const socialMedia = (user as any).socialMedia || {};
+      setAgentFacebookUrl(socialMedia.facebook || "");
+      setAgentInstagramUrl(socialMedia.instagram || "");
+      setAgentLinkedinUrl(socialMedia.linkedin || "");
     }
   }, [user]);
 
@@ -866,6 +875,58 @@ export default function ManagePage() {
                     Estos barrios se utilizarán para relacionar tu perfil con las búsquedas de los clientes.
                   </p>
                 </div>
+
+                <div className="space-y-4">
+                  <Label>Redes sociales</Label>
+                  <p className="text-sm text-gray-500">
+                    Añade tus perfiles de redes sociales para que aparezcan en tu perfil público.
+                  </p>
+                  
+                  <div className="space-y-3 mt-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                        </svg>
+                      </div>
+                      <Input
+                        placeholder="URL de Facebook"
+                        value={agentFacebookUrl}
+                        onChange={(e) => {setAgentFacebookUrl(e.target.value); setHasAgentChanges(true);}}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                        </svg>
+                      </div>
+                      <Input
+                        placeholder="URL de Instagram"
+                        value={agentInstagramUrl}
+                        onChange={(e) => {setAgentInstagramUrl(e.target.value); setHasAgentChanges(true);}}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                          <rect x="2" y="9" width="4" height="12"></rect>
+                          <circle cx="4" cy="4" r="2"></circle>
+                        </svg>
+                      </div>
+                      <Input
+                        placeholder="URL de LinkedIn"
+                        value={agentLinkedinUrl}
+                        onChange={(e) => {setAgentLinkedinUrl(e.target.value); setHasAgentChanges(true);}}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end mt-4">
@@ -886,6 +947,12 @@ export default function ManagePage() {
                       }
                     }
 
+                    // Crear el objeto de redes sociales
+                    const socialMedia: Record<string, string> = {};
+                    if (agentFacebookUrl) socialMedia.facebook = agentFacebookUrl;
+                    if (agentInstagramUrl) socialMedia.instagram = agentInstagramUrl;
+                    if (agentLinkedinUrl) socialMedia.linkedin = agentLinkedinUrl;
+
                     updateProfileMutation.mutate({
                       name,
                       surname,
@@ -894,7 +961,8 @@ export default function ManagePage() {
                       city,
                       influenceNeighborhoods,
                       yearsOfExperience,
-                      languagesSpoken
+                      languagesSpoken,
+                      socialMedia: Object.keys(socialMedia).length > 0 ? socialMedia : undefined
                     });
                   }}
                   disabled={updateProfileMutation.isPending || !hasAgentChanges} // Added disable logic
