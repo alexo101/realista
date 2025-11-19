@@ -645,14 +645,6 @@ export default function AgencyProfile() {
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Información de la agencia</h2>
                 <div className="space-y-4">
-                  <div className="flex">
-                    <Building2 className="h-5 w-5 mr-3 text-gray-500" />
-                    <div>
-                      <div className="font-medium">Nombre</div>
-                      <div>{agency.agencyName}</div>
-                    </div>
-                  </div>
-                  
                   {agency.yearEstablished && (
                     <div className="flex">
                       <Calendar className="h-5 w-5 mr-3 text-gray-500" />
