@@ -355,6 +355,9 @@ export class DatabaseStorage implements IStorage {
           sql`cardinality(coalesce(${agents.influenceNeighborhoods}, ARRAY[]::text[])) > 0`
         );
 
+        // Import ALL_ZONES constant
+        const { ALL_ZONES } = await import('../shared/schema.js');
+
         let expandedNeighborhoods: string[] = [];
         
         // CRITICAL FIX: Check if this is already a comma-separated list (from routes.ts expansion)
@@ -394,10 +397,13 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (expandedNeighborhoods.length > 0) {
-          // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
-          // match any of the agent's influence neighborhoods
+          // Use PostgreSQL array overlap operator with OR condition for ALL_ZONES
+          // Agents with ALL_ZONES should match any neighborhood search
           conditions.push(
-            sql`${agents.influenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+            or(
+              sql`${sql`${ALL_ZONES}`} = ANY(${agents.influenceNeighborhoods})`,
+              sql`${agents.influenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+            )
           );
         } else {
           // Fail closed: if expansion returns empty, return no results
@@ -488,6 +494,11 @@ export class DatabaseStorage implements IStorage {
           sql`cardinality(coalesce(${agencies.agencyInfluenceNeighborhoods}, ARRAY[]::text[])) > 0`
         );
 
+        // Import ALL_ZONES constant
+        const { ALL_ZONES } = await import('../shared/schema.js');
+
+        // Check if any agencies have ALL_ZONES - they should match ALL neighborhood searches
+        // We'll use an OR condition: either agency has ALL_ZONES, or it overlaps with the search
         let expandedNeighborhoods: string[] = [];
         
         // CRITICAL FIX: Check if this is already a comma-separated list (from routes.ts expansion)
@@ -528,10 +539,13 @@ export class DatabaseStorage implements IStorage {
         }
 
         if (expandedNeighborhoods.length > 0) {
-          // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
-          // match any of the agency's influence neighborhoods
+          // Use PostgreSQL array overlap operator with OR condition for ALL_ZONES
+          // Agencies with ALL_ZONES should match any neighborhood search
           conditions.push(
-            sql`${agencies.agencyInfluenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+            or(
+              sql`${sql`${ALL_ZONES}`} = ANY(${agencies.agencyInfluenceNeighborhoods})`,
+              sql`${agencies.agencyInfluenceNeighborhoods}::text[] && ARRAY[${sql.join(expandedNeighborhoods.map(n => sql`${n}`), sql`, `)}]::text[]`
+            )
           );
         } else {
           // Fail closed: if expansion returns empty, return no results
