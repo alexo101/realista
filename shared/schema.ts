@@ -17,6 +17,9 @@ import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Sentinel value for "all zones" selection
+export const ALL_ZONES = "Todas las zonas";
+
 // Agency table with agency-level subscription
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
