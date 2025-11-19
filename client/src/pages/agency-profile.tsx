@@ -18,7 +18,7 @@ import { AgencyReview } from "@/components/AgencyReview";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { getAllNeighborhoodsByCity } from "@/utils/neighborhoods";
+import { ALL_ZONES } from "@shared/schema";
 
 interface AgencyAgent {
   id: number;
@@ -648,32 +648,19 @@ export default function AgencyProfile() {
                     <div>
                       <div className="font-medium">Zonas de especialidad</div>
                       {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 ? (
-                        (() => {
-                          const barcelonaNeighborhoods = getAllNeighborhoodsByCity('Barcelona');
-                          const madridNeighborhoods = getAllNeighborhoodsByCity('Madrid');
-                          const hasAllBarcelonaZones = agency.agencyInfluenceNeighborhoods.length === barcelonaNeighborhoods.length;
-                          const hasAllMadridZones = agency.agencyInfluenceNeighborhoods.length === madridNeighborhoods.length;
-                          
-                          if (hasAllBarcelonaZones || hasAllMadridZones) {
-                            return (
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                <Badge variant="secondary" data-testid="badge-sin-limites">
-                                  Sin limites de zona
-                                </Badge>
-                              </div>
-                            );
-                          }
-                          
-                          return (
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
-                                <Badge key={neighborhood} variant="secondary" data-testid={`badge-neighborhood-${neighborhood}`}>
-                                  {neighborhood}
-                                </Badge>
-                              ))}
-                            </div>
-                          );
-                        })()
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {agency.agencyInfluenceNeighborhoods.includes(ALL_ZONES) ? (
+                            <Badge variant="secondary" data-testid="badge-sin-limites">
+                              Sin limites de zona
+                            </Badge>
+                          ) : (
+                            agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
+                              <Badge key={neighborhood} variant="secondary" data-testid={`badge-neighborhood-${neighborhood}`}>
+                                {neighborhood}
+                              </Badge>
+                            ))
+                          )}
+                        </div>
                       ) : (
                         <div className="text-sm text-gray-500 mt-1">No especificado</div>
                       )}
