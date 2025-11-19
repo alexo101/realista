@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { getAllNeighborhoodsByCity, findDistrictByNeighborhood } from "@/utils/neighborhoods";
+import { ALL_ZONES } from "@shared/schema";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
@@ -123,7 +124,7 @@ export function NeighborhoodSelector({
   };
 
   const selectAll = () => {
-    onChange([...cityNeighborhoods]);
+    onChange([ALL_ZONES]);
   };
 
   const clearAll = () => {
