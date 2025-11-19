@@ -166,7 +166,6 @@ export function NeighborhoodSelector({
           ))}
         </div>
       )}
-
       {/* Search input with autocomplete */}
       <div className="relative" ref={containerRef}>
         <Input
@@ -201,7 +200,6 @@ export function NeighborhoodSelector({
           </div>
         )}
       </div>
-
       {/* Action buttons for multi-selection */}
       {!singleSelection && (
         <div className="flex gap-2">
@@ -218,9 +216,7 @@ export function NeighborhoodSelector({
             onClick={selectAll}
             size="sm"
             type="button"
-          >
-            Seleccionar todos
-          </Button>
+          >Todas las zonas</Button>
         </div>
       )}
     </div>
