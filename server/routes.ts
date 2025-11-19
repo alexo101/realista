@@ -33,7 +33,7 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInTiming: true,
   moveInDate: true,
 }).partial();
-import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail } from "./emailService";
+import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail } from "./emailService";
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
@@ -2716,6 +2716,61 @@ Gracias!
       res.status(200).json({ success: true, message: "Message sent successfully" });
     } catch (error) {
       console.error('Error sending agent contact:', error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Ruta para enviar mensaje de contacto a una agencia (el owner recibe el email)
+  app.post("/api/agencies/:identifier/contact", async (req, res) => {
+    try {
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agency;
+      if (isNaN(id)) {
+        // It's a slug, lookup the agency
+        agency = await storage.getAgencyBySlug(identifier);
+      } else {
+        agency = await storage.getAgencyById(id);
+      }
+
+      if (!agency) {
+        return res.status(404).json({ message: "Agency not found" });
+      }
+
+      const { name, phone, email, message } = req.body;
+
+      // Validar campos requeridos
+      if (!name || !phone || !email || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Obtener el owner de la agencia (admin agent)
+      if (!agency.adminAgentId) {
+        return res.status(404).json({ message: "Agency owner not found" });
+      }
+
+      const owner = await storage.getAgentById(agency.adminAgentId);
+      if (!owner) {
+        return res.status(404).json({ message: "Agency owner not found" });
+      }
+
+      // Enviar email al owner de la agencia
+      const ownerName = `${owner.name || ''} ${owner.surname || ''}`.trim() || 'Propietario';
+      const emailSent = await sendAgencyContactEmail(
+        owner.email,
+        ownerName,
+        agency.name,
+        { name, phone, email, message }
+      );
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send email" });
+      }
+
+      res.status(200).json({ success: true, message: "Message sent successfully" });
+    } catch (error) {
+      console.error('Error sending agency contact:', error);
       res.status(500).json({ message: "Failed to send message" });
     }
   });
