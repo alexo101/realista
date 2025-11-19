@@ -355,32 +355,43 @@ export class DatabaseStorage implements IStorage {
           sql`cardinality(coalesce(${agents.influenceNeighborhoods}, ARRAY[]::text[])) > 0`
         );
 
-        // Parse the neighborhood display name to extract city, district, and neighborhood
-        const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
-        const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
-        
         let expandedNeighborhoods: string[] = [];
         
-        if (parsed) {
-          let { neighborhood, district, city } = parsed;
+        // CRITICAL FIX: Check if this is already a comma-separated list (from routes.ts expansion)
+        // If it contains commas but NOT the hierarchical format, treat as pre-expanded list
+        const isPreExpanded = neighborhoodsStr.includes(',') && 
+                              !neighborhoodsStr.match(/^[^,]+,\s*[^,]+$/); // Not "District, City" format
+        
+        if (isPreExpanded) {
+          // Already expanded by routes.ts - use directly
+          expandedNeighborhoods = neighborhoodsStr.split(',').map(n => n.trim()).filter(Boolean);
+          console.log(`Using pre-expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+        } else {
+          // Not pre-expanded - perform expansion here
+          const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
+          const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
           
-          // Handle district-level search: when neighborhood is empty, use district as the search term
-          if (!neighborhood || neighborhood.trim() === "") {
-            neighborhood = district;
-            console.log(`District-level search detected, using district: ${neighborhood}`);
+          if (parsed) {
+            let { neighborhood, district, city } = parsed;
+            
+            // Handle district-level search: when neighborhood is empty, use district as the search term
+            if (!neighborhood || neighborhood.trim() === "") {
+              neighborhood = district;
+              console.log(`District-level search detected, using district: ${neighborhood}`);
+            }
+            
+            console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
+            
+            // Expand the search hierarchically
+            expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
+          } else {
+            // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
+            console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
+            expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
           }
           
-          console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
-          
-          // Expand the search hierarchically
-          expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
-        } else {
-          // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
-          console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
-          expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
+          console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
         }
-
-        console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
 
         if (expandedNeighborhoods.length > 0) {
           // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
@@ -477,33 +488,44 @@ export class DatabaseStorage implements IStorage {
           sql`cardinality(coalesce(${agencies.agencyInfluenceNeighborhoods}, ARRAY[]::text[])) > 0`
         );
 
-        // Parse the neighborhood display name to extract city, district, and neighborhood
-        const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
-        const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
-        
         let expandedNeighborhoods: string[] = [];
         
-        if (parsed) {
-          let { neighborhood, district, city } = parsed;
+        // CRITICAL FIX: Check if this is already a comma-separated list (from routes.ts expansion)
+        // If it contains commas but NOT the hierarchical format, treat as pre-expanded list
+        const isPreExpanded = neighborhoodsStr.includes(',') && 
+                              !neighborhoodsStr.match(/^[^,]+,\s*[^,]+$/); // Not "District, City" format
+        
+        if (isPreExpanded) {
+          // Already expanded by routes.ts - use directly
+          expandedNeighborhoods = neighborhoodsStr.split(',').map(n => n.trim()).filter(Boolean);
+          console.log(`Using pre-expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+        } else {
+          // Not pre-expanded - perform expansion here
+          const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
+          const parsed = parseNeighborhoodDisplayName(neighborhoodsStr);
           
-          // Handle district-level search: when neighborhood is empty, use district as the search term
-          // Format: ", Sant Andreu, Barcelona" means we're searching at district level
-          if (!neighborhood || neighborhood.trim() === "") {
-            neighborhood = district;
-            console.log(`District-level search detected, using district: ${neighborhood}`);
+          if (parsed) {
+            let { neighborhood, district, city } = parsed;
+            
+            // Handle district-level search: when neighborhood is empty, use district as the search term
+            // Format: ", Sant Andreu, Barcelona" means we're searching at district level
+            if (!neighborhood || neighborhood.trim() === "") {
+              neighborhood = district;
+              console.log(`District-level search detected, using district: ${neighborhood}`);
+            }
+            
+            console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
+            
+            // Expand the search hierarchically
+            expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
+          } else {
+            // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
+            console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
+            expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
           }
           
-          console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
-          
-          // Expand the search hierarchically
-          expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
-        } else {
-          // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
-          console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
-          expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
+          console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
         }
-
-        console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
 
         if (expandedNeighborhoods.length > 0) {
           // Use PostgreSQL array overlap operator to check if any expanded neighborhoods
