@@ -307,7 +307,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label htmlFor="agencyLanguagesSpoken">Idiomas que se hablan en la agencia</Label>
+              <Label htmlFor="agencySupportedLanguages">Idiomas que se hablan en la agencia</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
                   <Button

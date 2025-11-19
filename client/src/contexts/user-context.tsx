@@ -28,7 +28,7 @@ interface User {
   agencyLogo?: string;
   agencyInfluenceNeighborhoods?: string[];
   yearEstablished?: number;
-  agencyLanguagesSpoken?: string[];
+  agencySupportedLanguages?: string[];
   agencySocialMedia?: {
     facebook?: string;
     instagram?: string;

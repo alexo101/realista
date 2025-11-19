@@ -155,7 +155,7 @@ export default function ManagePage() {
   const [agencyCity, setAgencyCity] = useState("Barcelona");
   const [agencyInfluenceNeighborhoods, setAgencyInfluenceNeighborhoods] = useState<string[]>([]);
   const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
-  const [agencyLanguagesSpoken, setAgencyLanguagesSpoken] = useState<string[]>([]);
+  const [agencySupportedLanguages, setAgencySupportedLanguages] = useState<string[]>([]);
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -204,7 +204,7 @@ export default function ManagePage() {
       setAgencyCity(currentAgency.city || "Barcelona");
       setAgencyInfluenceNeighborhoods(currentAgency.agencyInfluenceNeighborhoods || []);
       setYearEstablished(currentAgency.agencyActiveSince ? parseInt(currentAgency.agencyActiveSince) : undefined);
-      setAgencyLanguagesSpoken(currentAgency.agencySupportedLanguages || []);
+      setAgencySupportedLanguages(currentAgency.agencySupportedLanguages || []);
 
       // Cargar redes sociales si existen
       const socialMedia = currentAgency.agencySocialMedia as Record<string, string> | undefined;
@@ -1104,19 +1104,19 @@ export default function ManagePage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="agencyLanguagesSpoken">Idiomas que se hablan en la agencia</Label>
+                  <Label htmlFor="agencySupportedLanguages">Idiomas que se hablan en la agencia</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
                       <Button 
                         key={lang}
                         type="button" 
-                        variant={agencyLanguagesSpoken.includes(lang) ? "default" : "outline"}
+                        variant={agencySupportedLanguages.includes(lang) ? "default" : "outline"}
                         size="sm"
                         onClick={() => {
-                          if (agencyLanguagesSpoken.includes(lang)) {
-                            setAgencyLanguagesSpoken(agencyLanguagesSpoken.filter(l => l !== lang));
+                          if (agencySupportedLanguages.includes(lang)) {
+                            setAgencySupportedLanguages(agencySupportedLanguages.filter(l => l !== lang));
                           } else {
-                            setAgencyLanguagesSpoken([...agencyLanguagesSpoken, lang]);
+                            setAgencySupportedLanguages([...agencySupportedLanguages, lang]);
                           }
                           setHasAgencyChanges(true); // Added change detection
                         }}
@@ -1212,7 +1212,7 @@ export default function ManagePage() {
                     city: agencyCity,
                     agencyInfluenceNeighborhoods,
                     yearEstablished,
-                    agencyLanguagesSpoken,
+                    agencySupportedLanguages,
                     agencySocialMedia: {
                       facebook: facebookUrl,
                       instagram: instagramUrl,

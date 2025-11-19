@@ -58,7 +58,7 @@ interface Agency {
   agencyPhone?: string;
   agencyWebsite?: string;
   yearEstablished?: number;
-  agencyLanguagesSpoken?: string[];
+  agencySupportedLanguages?: string[];
   agencySocialMedia?: {
     facebook?: string;
     instagram?: string;
