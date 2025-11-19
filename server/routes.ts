@@ -2726,14 +2726,20 @@ Gracias!
       const identifier = req.params.identifier;
       const id = parseInt(identifier);
 
-      let agency;
+      let agencyBasic;
       if (isNaN(id)) {
-        // It's a slug, lookup the agency
-        agency = await storage.getAgencyBySlug(identifier);
+        // It's a slug, lookup the agency first to get the ID
+        agencyBasic = await storage.getAgencyBySlug(identifier);
       } else {
-        agency = await storage.getAgencyById(id);
+        agencyBasic = await storage.getAgencyById(id);
       }
 
+      if (!agencyBasic) {
+        return res.status(404).json({ message: "Agency not found" });
+      }
+
+      // Get full agency details with adminAgentId
+      const agency = await storage.getAgency(agencyBasic.id);
       if (!agency) {
         return res.status(404).json({ message: "Agency not found" });
       }
@@ -2760,7 +2766,7 @@ Gracias!
       const emailSent = await sendAgencyContactEmail(
         owner.email,
         ownerName,
-        agency.name,
+        agency.agencyName,
         { name, phone, email, message }
       );
 
