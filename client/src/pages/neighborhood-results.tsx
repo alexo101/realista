@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities } from "@/utils/neighborhoods";
+import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities, expandNeighborhoodSearch } from "@/utils/neighborhoods";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -236,8 +236,13 @@ export default function NeighborhoodResultsPage() {
   // Verificar si es una página de barrio específico
   const isNeighborhoodPage = currentCity && currentNeighborhood && currentNeighborhood !== currentCity;
   
-  // Para compatibilidad con búsquedas existentes
-  const effectiveNeighborhood = decodedNeighborhood;
+  // CRITICAL FIX: Expand districts to their constituent neighborhoods
+  // This ensures agents/properties assigned to specific neighborhoods appear on district pages
+  // Example: "Sant Andreu" district expands to ["Sant Andreu del Palomar", "La Sagrera", ...]
+  const expandedNeighborhoods = expandNeighborhoodSearch(decodedNeighborhood, currentCity);
+  const effectiveNeighborhood = expandedNeighborhoods.length > 0 
+    ? expandedNeighborhoods.join(',') 
+    : decodedNeighborhood;
   
   // Determinar el distrito para barrios (para compatibilidad)
   const legacyDistrict = !currentDistrict && currentNeighborhood ? findDistrictByNeighborhood(currentNeighborhood, currentCity) : currentDistrict;
