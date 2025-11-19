@@ -94,6 +94,14 @@ Preferred communication style: Simple, everyday language.
     - **Dual-Layer Handling**: Storage layer detects pre-expanded comma-separated lists vs hierarchical strings to avoid double expansion.
     - **Result Inclusion**: Agents/agencies with `influenceNeighborhoods` and properties with `neighborhood` matching any constituent neighborhood appear on district pages.
     - **Contact Feature**: Agent profiles include contact modal with form fields (Nombre, Teléfono, Email, Mensaje), Spanish phone validation, and Resend email integration.
+- **ALL_ZONES Sentinel Value** (November 2025):
+    - **Purpose**: Agencies selecting "Todas las zonas" store a single sentinel value instead of all 73+ Barcelona or 130+ Madrid neighborhoods.
+    - **Constant**: `ALL_ZONES = "Todas las zonas"` exported from `shared/schema.ts` for consistent reference across frontend/backend.
+    - **Storage Efficiency**: Reduces database storage from 73+ strings to 1 string per agency when operating city-wide.
+    - **Display Logic**: Agency profiles detect `ALL_ZONES` in `agencyInfluenceNeighborhoods` array and display "Sin limites de zona" pill instead of listing all neighborhoods.
+    - **Search Behavior**: Backend search/filtering treats `ALL_ZONES` as wildcard - agencies with this value match ANY neighborhood search query using OR condition.
+    - **Migration**: `scripts/migrate-all-zones.ts` converts legacy agencies with complete neighborhood lists to sentinel value.
+    - **Implementation**: Both `searchAgents` and `searchAgencies` in `server/storage.ts` include OR branch: `ALL_ZONES = ANY(neighborhoods)` alongside array overlap filter.
 
 ## External Dependencies
 
