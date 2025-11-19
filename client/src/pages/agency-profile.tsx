@@ -427,7 +427,7 @@ export default function AgencyProfile() {
 
   // Renderizamos el perfil completo de la agencia
   return (
-    <div className="container pt-16 pb-8 max-w-7xl mx-auto">
+    <div className="container pt-24 pb-8 max-w-7xl mx-auto">
       {/* Header del Perfil */}
       <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="md:w-36 lg:w-48">
