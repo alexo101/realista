@@ -68,6 +68,11 @@ interface Agent {
   reviewAverage?: number;
   yearsOfExperience?: number;
   languagesSpoken?: string[];
+  socialMedia?: {
+    facebook?: string;
+    instagram?: string;
+    linkedin?: string;
+  };
 }
 
 interface Property {
@@ -626,6 +631,69 @@ export default function AgentProfile() {
                       )}
                     </div>
                   </div>
+
+                  {agent.socialMedia && (agent.socialMedia.facebook || agent.socialMedia.instagram || agent.socialMedia.linkedin) && (
+                    <>
+                      <div className="border-t pt-4 mt-4">
+                        <div className="font-medium mb-3">Redes sociales</div>
+                      </div>
+
+                      {agent.socialMedia.facebook && (
+                        <a
+                          href={agent.socialMedia.facebook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center hover:text-primary transition-colors"
+                          data-testid="link-facebook"
+                        >
+                          <div className="h-5 w-5 mr-3 text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                            </svg>
+                          </div>
+                          <div className="font-medium">Facebook</div>
+                        </a>
+                      )}
+                      
+                      {agent.socialMedia.instagram && (
+                        <a
+                          href={agent.socialMedia.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center hover:text-primary transition-colors"
+                          data-testid="link-instagram"
+                        >
+                          <div className="h-5 w-5 mr-3 text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                            </svg>
+                          </div>
+                          <div className="font-medium">Instagram</div>
+                        </a>
+                      )}
+                      
+                      {agent.socialMedia.linkedin && (
+                        <a
+                          href={agent.socialMedia.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center hover:text-primary transition-colors"
+                          data-testid="link-linkedin"
+                        >
+                          <div className="h-5 w-5 mr-3 text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                              <rect x="2" y="9" width="4" height="12"></rect>
+                              <circle cx="4" cy="4" r="2"></circle>
+                            </svg>
+                          </div>
+                          <div className="font-medium">LinkedIn</div>
+                        </a>
+                      )}
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
