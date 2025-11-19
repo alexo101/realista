@@ -609,32 +609,6 @@ export default function AgencyProfile() {
                      Ofrecemos servicios de compra, venta y alquiler de inmuebles, con un enfoque
                      personalizado para cada cliente.`}
                   </p>
-                  
-                  <div className="mt-6">
-                    <h3 className="font-medium mb-3 flex items-center">
-                      <MapPin className="h-5 w-5 mr-2 text-gray-500" />
-                      Barrios de influencia
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {agency.agencyInfluenceNeighborhoods && Array.isArray(agency.agencyInfluenceNeighborhoods) && agency.agencyInfluenceNeighborhoods.length > 0 ? (
-                        agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
-                          <Badge key={neighborhood} variant="secondary" className="text-sm">
-                            {neighborhood}
-                          </Badge>
-                        ))
-                      ) : (
-                        agency.influenceNeighborhoods && Array.isArray(agency.influenceNeighborhoods) && agency.influenceNeighborhoods.length > 0 ? (
-                          agency.influenceNeighborhoods.map((neighborhood) => (
-                            <Badge key={neighborhood} variant="secondary" className="text-sm">
-                              {neighborhood}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-gray-500 text-sm">No hay barrios especificados</span>
-                        )
-                      )}
-                    </div>
-                  </div>
                 </div>
                 
                 
@@ -667,11 +641,11 @@ export default function AgencyProfile() {
                     </div>
                   )}
                   
-                  {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
-                    <div className="flex">
-                      <Building className="h-5 w-5 mr-3 text-gray-500" />
-                      <div>
-                        <div className="font-medium">Barrios de influencia</div>
+                  <div className="flex">
+                    <MapPin className="h-5 w-5 mr-3 text-gray-500" />
+                    <div>
+                      <div className="font-medium">Zonas de especialidad</div>
+                      {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 ? (
                         <div className="flex flex-wrap gap-2 mt-1">
                           {agency.agencyInfluenceNeighborhoods.map((neighborhood) => (
                             <Badge key={neighborhood} variant="secondary">
@@ -679,9 +653,23 @@ export default function AgencyProfile() {
                             </Badge>
                           ))}
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 mt-1">No especificado</div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  
+                  <div className="flex">
+                    <div className="h-5 w-5 mr-3 text-gray-500">🌍</div>
+                    <div>
+                      <div className="font-medium">Idiomas</div>
+                      {agency.agencySupportedLanguages && agency.agencySupportedLanguages.length > 0 ? (
+                        <div className="mt-1">{agency.agencySupportedLanguages.join(', ')}</div>
+                      ) : (
+                        <div className="text-sm text-gray-500 mt-1">No especificado</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
