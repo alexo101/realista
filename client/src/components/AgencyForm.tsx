@@ -21,7 +21,7 @@ export interface Agency {
   agencyInfluenceNeighborhoods?: string[];
   agencyEmailToDisplay?: string;
   yearEstablished?: number;
-  agencyLanguagesSpoken?: string[];
+  agencySupportedLanguages?: string[];
   agencySocialMedia?: Record<string, string>;
   adminAgentId: number;
 }
@@ -42,7 +42,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   const [agencyWebsite, setAgencyWebsite] = useState("");
   const [agencyEmailToDisplay, setAgencyEmailToDisplay] = useState("");
   const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
-  const [agencyLanguagesSpoken, setAgencyLanguagesSpoken] = useState<string[]>([]);
+  const [agencySupportedLanguages, setAgencySupportedLanguages] = useState<string[]>([]);
   const [agencyLogo, setAgencyLogo] = useState<string | undefined>();
   const [city, setCity] = useState("");
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
@@ -87,7 +87,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       setAgencyWebsite(agency.agencyWebsite || "");
       setAgencyEmailToDisplay(agency.agencyEmailToDisplay || "");
       setYearEstablished(agency.yearEstablished);
-      setAgencyLanguagesSpoken(agency.agencyLanguagesSpoken || []);
+      setAgencySupportedLanguages(agency.agencySupportedLanguages || []);
       setAgencyLogo(agency.agencyLogo);
       setCity((agency as any).city || "");
       setInfluenceNeighborhoods(agency.agencyInfluenceNeighborhoods || []);
@@ -125,7 +125,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       agencyWebsite,
       agencyEmailToDisplay,
       yearEstablished,
-      agencyLanguagesSpoken,
+      agencySupportedLanguages,
       agencyLogo,
       city,
       agencyInfluenceNeighborhoods: influenceNeighborhoods,
@@ -313,13 +313,13 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   <Button
                     key={lang}
                     type="button"
-                    variant={agencyLanguagesSpoken.includes(lang) ? "default" : "outline"}
+                    variant={agencySupportedLanguages.includes(lang) ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
-                      if (agencyLanguagesSpoken.includes(lang)) {
-                        setAgencyLanguagesSpoken(agencyLanguagesSpoken.filter(l => l !== lang));
+                      if (agencySupportedLanguages.includes(lang)) {
+                        setAgencySupportedLanguages(agencySupportedLanguages.filter(l => l !== lang));
                       } else {
-                        setAgencyLanguagesSpoken([...agencyLanguagesSpoken, lang]);
+                        setAgencySupportedLanguages([...agencySupportedLanguages, lang]);
                       }
                     }}
                   >
