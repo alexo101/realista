@@ -15,6 +15,7 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AgencyReview } from "@/components/AgencyReview";
+import { AgencyContactModal } from "@/components/AgencyContactModal";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -104,6 +105,7 @@ export default function AgencyProfile() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isFavorite, setIsFavorite] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [phoneRevealed, setPhoneRevealed] = useState(false);
   const [phoneCopied, setPhoneCopied] = useState(false);
 
@@ -536,7 +538,12 @@ export default function AgencyProfile() {
                 </div>
               )
             )}
-            <Button size="sm" variant="outline">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setIsContactModalOpen(true)}
+              data-testid="button-contact-agency"
+            >
               <Mail className="mr-2 h-4 w-4" /> Contactar
             </Button>
             
@@ -1095,6 +1102,16 @@ export default function AgencyProfile() {
       {isReviewModalOpen && (
         <AgencyReview 
           onClose={() => setIsReviewModalOpen(false)}
+        />
+      )}
+
+      {/* Modal de contacto */}
+      {agency && (
+        <AgencyContactModal
+          isOpen={isContactModalOpen}
+          onClose={() => setIsContactModalOpen(false)}
+          agencyName={agency.agencyName}
+          agencyId={agency.id}
         />
       )}
     </div>
