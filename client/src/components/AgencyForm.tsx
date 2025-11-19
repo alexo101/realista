@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building, X, Check } from "lucide-react";
+import { SiGooglemaps } from "react-icons/si";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { getCities } from "@/utils/neighborhoods";
 
@@ -48,7 +49,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   const [influenceNeighborhoods, setInfluenceNeighborhoods] = useState<string[]>([]);
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
-  const [twitterUrl, setTwitterUrl] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
@@ -97,7 +98,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       const socialMedia = agency.agencySocialMedia || {};
       setFacebookUrl(socialMedia.facebook || "");
       setInstagramUrl(socialMedia.instagram || "");
-      setTwitterUrl(socialMedia.twitter || "");
+      setGoogleMapsUrl(socialMedia.googleMaps || "");
       setLinkedinUrl(socialMedia.linkedin || "");
     }
   }, [agency]);
@@ -114,7 +115,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     const socialMedia: Record<string, string> = {};
     if (facebookUrl) socialMedia.facebook = facebookUrl;
     if (instagramUrl) socialMedia.instagram = instagramUrl;
-    if (twitterUrl) socialMedia.twitter = twitterUrl;
+    if (googleMapsUrl) socialMedia.googleMaps = googleMapsUrl;
     if (linkedinUrl) socialMedia.linkedin = linkedinUrl;
 
     const data: Partial<Agency> = {
@@ -398,14 +399,12 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
 
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-                    </svg>
+                    <SiGooglemaps className="w-5 h-5 text-primary" />
                   </div>
                   <Input
-                    placeholder="URL de Twitter"
-                    value={twitterUrl}
-                    onChange={(e) => setTwitterUrl(e.target.value)}
+                    placeholder="URL de Google Maps"
+                    value={googleMapsUrl}
+                    onChange={(e) => setGoogleMapsUrl(e.target.value)}
                   />
                 </div>
 

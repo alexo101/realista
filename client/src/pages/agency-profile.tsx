@@ -5,7 +5,8 @@ import { useRouteTransition } from "@/contexts/route-transition-context";
 import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, Phone, Mail, MapPin, Building2, Building, Calendar, ExternalLink, Globe, Facebook, Instagram, Twitter, MessageCircle, Home, Heart, Share2, Copy, Check } from "lucide-react";
+import { Star, Phone, Mail, MapPin, Building2, Building, Calendar, ExternalLink, Globe, Facebook, Instagram, MessageCircle, Home, Heart, Share2, Copy, Check } from "lucide-react";
+import { SiGooglemaps } from "react-icons/si";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -64,7 +65,7 @@ interface Agency {
   agencySocialMedia?: {
     facebook?: string;
     instagram?: string;
-    twitter?: string;
+    googleMaps?: string;
     linkedin?: string;
   };
   agencyLogo?: string;
@@ -724,20 +725,18 @@ export default function AgencyProfile() {
                         </a>
                       )}
                       
-                      {agency.agencySocialMedia.twitter && (
+                      {agency.agencySocialMedia.googleMaps && (
                         <a
-                          href={agency.agencySocialMedia.twitter}
+                          href={agency.agencySocialMedia.googleMaps}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center hover:text-primary transition-colors"
-                          data-testid="link-twitter"
+                          data-testid="link-googlemaps"
                         >
                           <div className="h-5 w-5 mr-3 text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-                            </svg>
+                            <SiGooglemaps className="w-5 h-5" />
                           </div>
-                          <div className="font-medium">Twitter</div>
+                          <div className="font-medium">Google Maps</div>
                         </a>
                       )}
                       
