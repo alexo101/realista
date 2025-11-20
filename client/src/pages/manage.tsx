@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
@@ -133,6 +133,7 @@ export default function ManagePage() {
   const [isRequestingReview, setIsRequestingReview] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
   const [reviewRequestClient, setReviewRequestClient] = useState<{ id: number; name: string } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -292,6 +293,26 @@ export default function ManagePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
       setEditingClient(null);
+    },
+  });
+
+  const deleteClientMutation = useMutation({
+    mutationFn: async (clientId: number) => {
+      return await apiRequest('DELETE', `/api/clients/${clientId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente ha sido eliminado correctamente",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente",
+        variant: "destructive",
+      });
     },
   });
 
@@ -1578,19 +1599,27 @@ export default function ManagePage() {
                     </div>
                   ) : (
                     clients.map((client) => (
-                      <div 
-                        key={client.id} 
-                        className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
-                        onClick={() => {
-                          setSelectedClientForHistory(client);
-                        }}
+                      <div
+                        key={client.id}
+                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => setSelectedClientForHistory(client)}
+                        data-testid={`card-client-${client.id}`}
                       >
                         <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="text-lg font-medium">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900">
                               {client.name} {client.surname || ''}
                             </h3>
-                            <p className="text-sm text-gray-600 mt-1">Email: {client.email} • Teléfono: {client.phone}</p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <span className="flex items-center gap-1.5 text-sm text-gray-600">
+                                <Mail className="h-4 w-4" />
+                                {client.email}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-sm text-gray-600">
+                                <Phone className="h-4 w-4" />
+                                {client.phone}
+                              </span>
+                            </div>
 
                             {client.operationType && (
                               <div className="mt-4 flex flex-wrap gap-2">
@@ -1629,13 +1658,70 @@ export default function ManagePage() {
                             )}
                           </div>
 
-                          
+                          <div className="flex gap-2 items-start">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingClient(client);
+                              }}
+                              data-testid={`button-edit-client-${client.id}`}
+                            >
+                              <Pencil className="h-4 w-4 text-gray-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setClientToDelete(client);
+                              }}
+                              data-testid={`button-delete-client-${client.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-gray-600" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))
                   )}
                 </div>
               )}
+
+              <Dialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Eliminar cliente</DialogTitle>
+                    <DialogDescription>
+                      ¿Estás seguro de que quieres eliminar a {clientToDelete?.name} {clientToDelete?.surname || ''}? 
+                      Esta acción es permanente y no se puede deshacer.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setClientToDelete(null)}
+                      data-testid="button-cancel-delete"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        if (clientToDelete) {
+                          deleteClientMutation.mutate(clientToDelete.id);
+                          setClientToDelete(null);
+                        }
+                      }}
+                      disabled={deleteClientMutation.isPending}
+                      data-testid="button-confirm-delete"
+                    >
+                      {deleteClientMutation.isPending ? "Eliminando..." : "Eliminar"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {isRequestingReview && (
                 <ReviewRequestForm
