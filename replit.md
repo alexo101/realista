@@ -31,7 +31,8 @@ Preferred communication style: Simple, everyday language.
 - **User Management**: Role-based authentication, dedicated registration flows, and profile management for agents and agencies.
 - **Property Management**: Full CRUD operations for properties, advanced filtering, and integration with Barcelona's district and neighborhood data.
 - **Search & Discovery**: Real-time autocomplete search for properties, agents, and agencies, with neighborhood-based search capabilities.
-- **Client Relationship Management (CRM)**: Client profiles, appointment scheduling, real-time conversational messaging, and lead/inquiry tracking with property visit request workflows.
+- **Client Relationship Management (CRM)**: Client profiles with status tracking, appointment scheduling, real-time conversational messaging, and lead/inquiry tracking with property visit request workflows.
+    - **Client Status Tracking** (November 2025): 10-tier client lifecycle management with colored visual indicators (Nuevo, Contactado, En seguimiento, Visitando / Programando visita, Oferta realizada, En negociación, Reservado / En proceso de cierre, Ganado, Perdido / No interesado, Inactivo). Default status "Nuevo" auto-assigned on creation. Status field stored in `clients.status` column (TEXT, NOT NULL, default 'Nuevo').
 - **Review & Rating System**: Multi-criteria agent reviews and a property verification workflow.
 - **RealistaPro Subscription System**:
     - **Model**: Three-tier (Agency, Independent Agent, Inherited Agency Access) with seat limits.
