@@ -14,12 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2 } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
 import { AddClientModal } from "@/components/AddClientModal";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
+import { ClientsKanban } from "@/components/ClientsKanban";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { getCities } from "@/utils/neighborhoods";
@@ -186,6 +187,17 @@ export default function ManagePage() {
   const [isUploadingAgencyLogo, setIsUploadingAgencyLogo] = useState(false);
   const [hasAgentChanges, setHasAgentChanges] = useState(false); // Added
   const [hasAgencyChanges, setHasAgencyChanges] = useState(false); // Added
+
+  // Clients view mode (list or kanban)
+  const [clientsView, setClientsView] = useState<'list' | 'kanban'>(() => {
+    const saved = localStorage.getItem('clientsView');
+    return (saved === 'kanban' || saved === 'list') ? saved : 'list';
+  });
+
+  // Persist clients view preference
+  useEffect(() => {
+    localStorage.setItem('clientsView', clientsView);
+  }, [clientsView]);
 
 
   // Cargar valores iniciales cuando el usuario cambia
@@ -1513,16 +1525,41 @@ export default function ManagePage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Gestión de Clientes</h2>
-                <Button 
-                  onClick={() => {
-                    setIsAddingClient(true);
-                    setEditingClient(null);
-                  }}
-                  data-testid="button-add-client"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Añadir cliente
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* View toggle buttons */}
+                  <div className="flex items-center border rounded-md">
+                    <Button 
+                      variant={clientsView === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setClientsView('list')}
+                      className="rounded-r-none"
+                      data-testid="button-view-list"
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      Lista
+                    </Button>
+                    <Button 
+                      variant={clientsView === 'kanban' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setClientsView('kanban')}
+                      className="rounded-l-none"
+                      data-testid="button-view-kanban"
+                    >
+                      <LayoutGrid className="h-4 w-4 mr-1" />
+                      Kanban
+                    </Button>
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      setIsAddingClient(true);
+                      setEditingClient(null);
+                    }}
+                    data-testid="button-add-client"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Añadir cliente
+                  </Button>
+                </div>
               </div>
 
               <AddClientModal
@@ -1551,21 +1588,37 @@ export default function ManagePage() {
                 isEditing={!!editingClient}
               />
 
-              <div className="grid gap-6">
-                {isLoadingClients ? (
-                  <div className="text-center py-8">
-                    <p>Cargando clientes...</p>
-                  </div>
-                ) : !clients?.length ? (
-                    <div className="text-center py-16 bg-gray-50 rounded-lg">
-                      <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-lg font-medium text-gray-900">Sin clientes</h3>
-                      <p className="mt-1 text-gray-500">
-                        Empieza añadiendo tu primer cliente al CRM
-                      </p>
-                    </div>
-                  ) : (
-                    clients.map((client) => (
+              {/* Conditional rendering based on view mode */}
+              {isLoadingClients ? (
+                <div className="text-center py-8">
+                  <p>Cargando clientes...</p>
+                </div>
+              ) : !clients?.length ? (
+                <div className="text-center py-16 bg-gray-50 rounded-lg">
+                  <Users className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-lg font-medium text-gray-900">Sin clientes</h3>
+                  <p className="mt-1 text-gray-500">
+                    Empieza añadiendo tu primer cliente al CRM
+                  </p>
+                </div>
+              ) : clientsView === 'kanban' ? (
+                <ClientsKanban
+                  clients={clients}
+                  onEditClient={setEditingClient}
+                  onDeleteClient={setClientToDelete}
+                  onUpdateClientStatus={async (clientId, newStatus) => {
+                    const client = clients.find(c => c.id === clientId);
+                    if (client) {
+                      await updateClientMutation.mutateAsync({
+                        ...client,
+                        status: newStatus
+                      });
+                    }
+                  }}
+                />
+              ) : (
+                <div className="grid gap-6">
+                  {clients.map((client) => (
                       <div
                         key={client.id}
                         className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
@@ -1658,9 +1711,9 @@ export default function ManagePage() {
                           </div>
                         </div>
                       </div>
-                    ))
-                  )}
+                    ))}
                 </div>
+              )}
 
               <Dialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
                 <DialogContent>
