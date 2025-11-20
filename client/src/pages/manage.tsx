@@ -18,6 +18,7 @@ import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircl
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { ClientForm } from "@/components/ClientForm";
+import { AddClientModal } from "@/components/AddClientModal";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
@@ -1482,26 +1483,32 @@ export default function ManagePage() {
                     setIsAddingClient(true);
                     setEditingClient(null);
                   }}
+                  data-testid="button-add-client"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Añadir cliente
                 </Button>
               </div>
 
-              {(isAddingClient || editingClient) ? (
+              <AddClientModal
+                isOpen={isAddingClient}
+                onClose={() => setIsAddingClient(false)}
+                onSubmit={async (data) => {
+                  await createClientMutation.mutateAsync(data);
+                  setIsAddingClient(false);
+                }}
+                isSubmitting={createClientMutation.isPending}
+              />
+
+              {editingClient ? (
                 <ClientForm 
                   onSubmit={async (data) => {
-                    if (editingClient) {
-                      await updateClientMutation.mutateAsync(data);
-                    } else {
-                      await createClientMutation.mutateAsync(data);
-                    }
+                    await updateClientMutation.mutateAsync(data);
                   }}
                   onClose={() => {
-                    setIsAddingClient(false);
                     setEditingClient(null);
                   }}
-                  initialData={editingClient ? {
+                  initialData={{
                     name: editingClient.name,
                     surname: editingClient.surname || "",
                     email: editingClient.email,
@@ -1515,8 +1522,8 @@ export default function ManagePage() {
                     minSize: editingClient.minSize || undefined,
                     preferredFeatures: editingClient.preferredFeatures || [],
                     operationType: editingClient.operationType || undefined,
-                  } : undefined}
-                  isEditing={!!editingClient}
+                  }}
+                  isEditing={true}
                 />
               ) : selectedClientForHistory ? (
                 <div className="space-y-6">
