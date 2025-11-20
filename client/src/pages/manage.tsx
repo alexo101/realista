@@ -57,6 +57,20 @@ const VALID_SECTIONS = [
 
 type DashboardSection = typeof VALID_SECTIONS[number];
 
+// Client status options with colors
+const CLIENT_STATUSES = [
+  { value: "Nuevo", label: "Nuevo", color: "bg-blue-500" },
+  { value: "Contactado", label: "Contactado", color: "bg-yellow-500" },
+  { value: "En seguimiento", label: "En seguimiento", color: "bg-green-500" },
+  { value: "Visitando / Programando visita", label: "Visitando / Programando visita", color: "bg-orange-500" },
+  { value: "Oferta realizada", label: "Oferta realizada", color: "bg-purple-500" },
+  { value: "En negociación", label: "En negociación", color: "bg-amber-700" },
+  { value: "Reservado / En proceso de cierre", label: "Reservado / En proceso de cierre", color: "bg-teal-500" },
+  { value: "Ganado", label: "Ganado", color: "bg-green-600" },
+  { value: "Perdido / No interesado", label: "Perdido / No interesado", color: "bg-gray-500" },
+  { value: "Inactivo", label: "Inactivo", color: "bg-red-500" }
+] as const;
+
 export default function ManagePage() {
   const { user, setUser, isLoading } = useUser();
   const queryClient = useQueryClient();
@@ -1531,7 +1545,8 @@ export default function ManagePage() {
                   name: editingClient.name,
                   surname: editingClient.surname || "",
                   email: editingClient.email,
-                  phone: editingClient.phone
+                  phone: editingClient.phone,
+                  status: editingClient.status
                 } : undefined}
                 isEditing={!!editingClient}
               />
@@ -1561,6 +1576,14 @@ export default function ManagePage() {
                             <h3 className="text-lg font-semibold text-gray-900">
                               {client.name} {client.surname || ''}
                             </h3>
+                            {client.status && (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <div className={`w-2 h-2 rounded-full ${CLIENT_STATUSES.find(s => s.value === client.status)?.color}`} />
+                                <span className="text-sm text-gray-600">
+                                  {CLIENT_STATUSES.find(s => s.value === client.status)?.label}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-4 mt-2">
                               <span className="flex items-center gap-1.5 text-sm text-gray-600">
                                 <Mail className="h-4 w-4" />
