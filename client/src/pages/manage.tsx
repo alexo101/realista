@@ -1536,50 +1536,12 @@ export default function ManagePage() {
                 isEditing={!!editingClient}
               />
 
-              {selectedClientForHistory ? (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-semibold">
-                        {selectedClientForHistory.name} {selectedClientForHistory.surname || ''}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {selectedClientForHistory.email} • {selectedClientForHistory.phone}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setEditingClient(selectedClientForHistory);
-                          setSelectedClientForHistory(null);
-                        }}
-                      >
-                        Editar cliente
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setSelectedClientForHistory(null)}
-                      >
-                        Volver
-                      </Button>
-                    </div>
+              <div className="grid gap-6">
+                {isLoadingClients ? (
+                  <div className="text-center py-8">
+                    <p>Cargando clientes...</p>
                   </div>
-                  
-                  {user?.id && (
-                    <ClientHistoryTimeline 
-                      clientId={selectedClientForHistory.id} 
-                      agentId={user.id}
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="grid gap-6">
-                  {isLoadingClients ? (
-                    <div className="text-center py-8">
-                      <p>Cargando clientes...</p>
-                    </div>
-                  ) : !clients?.length ? (
+                ) : !clients?.length ? (
                     <div className="text-center py-16 bg-gray-50 rounded-lg">
                       <Users className="mx-auto h-12 w-12 text-gray-400" />
                       <h3 className="mt-2 text-lg font-medium text-gray-900">Sin clientes</h3>
@@ -1591,8 +1553,7 @@ export default function ManagePage() {
                     clients.map((client) => (
                       <div
                         key={client.id}
-                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => setSelectedClientForHistory(client)}
+                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
                         data-testid={`card-client-${client.id}`}
                       >
                         <div className="flex items-start justify-between">
@@ -1677,7 +1638,6 @@ export default function ManagePage() {
                     ))
                   )}
                 </div>
-              )}
 
               <Dialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
                 <DialogContent>
