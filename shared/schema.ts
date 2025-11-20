@@ -139,6 +139,7 @@ export const clients = pgTable("clients", {
   surname: text("surname"),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
+  status: text("status").notNull().default("Nuevo"), // Client status: Nuevo, Contactado, En seguimiento, etc.
   password: text("password"), // Contraseña para clientes auto-registrados
   propertyInterest: text("property_interest"), // Tipo de propiedad de interés
   budget: integer("budget"), // Presupuesto
