@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,16 +10,30 @@ interface AddClientModalProps {
   onClose: () => void;
   onSubmit: (data: { name: string; surname: string; email: string; phone: string }) => Promise<void>;
   isSubmitting?: boolean;
+  initialData?: { name: string; surname: string; email: string; phone: string };
+  isEditing?: boolean;
 }
 
-export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false }: AddClientModalProps) {
+export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false, initialData, isEditing = false }: AddClientModalProps) {
   const [formData, setFormData] = useState({
-    name: "",
-    surname: "",
-    email: "",
-    phone: ""
+    name: initialData?.name || "",
+    surname: initialData?.surname || "",
+    email: initialData?.email || "",
+    phone: initialData?.phone || ""
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        surname: initialData.surname || "",
+        email: initialData.email || "",
+        phone: initialData.phone || ""
+      });
+    }
+  }, [initialData]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -78,7 +92,9 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl">Añadir nuevo cliente</DialogTitle>
+          <DialogTitle className="text-xl">
+            {isEditing ? "Editar cliente" : "Añadir nuevo cliente"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
@@ -154,6 +170,8 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Guardando...
                 </>
+              ) : isEditing ? (
+                "Guardar"
               ) : (
                 "Guardar"
               )}

@@ -1512,41 +1512,31 @@ export default function ManagePage() {
               </div>
 
               <AddClientModal
-                isOpen={isAddingClient}
-                onClose={() => setIsAddingClient(false)}
-                onSubmit={async (data) => {
-                  await createClientMutation.mutateAsync(data);
+                isOpen={isAddingClient || !!editingClient}
+                onClose={() => {
                   setIsAddingClient(false);
+                  setEditingClient(null);
                 }}
-                isSubmitting={createClientMutation.isPending}
+                onSubmit={async (data) => {
+                  if (editingClient) {
+                    await updateClientMutation.mutateAsync(data);
+                  } else {
+                    await createClientMutation.mutateAsync(data);
+                  }
+                  setIsAddingClient(false);
+                  setEditingClient(null);
+                }}
+                isSubmitting={editingClient ? updateClientMutation.isPending : createClientMutation.isPending}
+                initialData={editingClient ? {
+                  name: editingClient.name,
+                  surname: editingClient.surname || "",
+                  email: editingClient.email,
+                  phone: editingClient.phone
+                } : undefined}
+                isEditing={!!editingClient}
               />
 
-              {editingClient ? (
-                <ClientForm 
-                  onSubmit={async (data) => {
-                    await updateClientMutation.mutateAsync(data);
-                  }}
-                  onClose={() => {
-                    setEditingClient(null);
-                  }}
-                  initialData={{
-                    name: editingClient.name,
-                    surname: editingClient.surname || "",
-                    email: editingClient.email,
-                    phone: editingClient.phone,
-                    notes: editingClient.notes,
-                    preferredNeighborhoods: editingClient.preferredNeighborhoods || [],
-                    budget: editingClient.budget || undefined,
-                    propertyType: editingClient.propertyType || undefined,
-                    minBedrooms: editingClient.minBedrooms || undefined,
-                    minBathrooms: editingClient.minBathrooms || undefined,
-                    minSize: editingClient.minSize || undefined,
-                    preferredFeatures: editingClient.preferredFeatures || [],
-                    operationType: editingClient.operationType || undefined,
-                  }}
-                  isEditing={true}
-                />
-              ) : selectedClientForHistory ? (
+              {selectedClientForHistory ? (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
