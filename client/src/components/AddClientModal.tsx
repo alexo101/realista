@@ -3,14 +3,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+
+const CLIENT_STATUSES = [
+  { value: "Nuevo", label: "Nuevo", color: "bg-blue-500" },
+  { value: "Contactado", label: "Contactado", color: "bg-yellow-500" },
+  { value: "En seguimiento", label: "En seguimiento", color: "bg-green-500" },
+  { value: "Visitando / Programando visita", label: "Visitando / Programando visita", color: "bg-orange-500" },
+  { value: "Oferta realizada", label: "Oferta realizada", color: "bg-purple-500" },
+  { value: "En negociación", label: "En negociación", color: "bg-amber-700" },
+  { value: "Reservado / En proceso de cierre", label: "Reservado / En proceso de cierre", color: "bg-teal-500" },
+  { value: "Ganado", label: "Ganado", color: "bg-green-600" },
+  { value: "Perdido / No interesado", label: "Perdido / No interesado", color: "bg-gray-500" },
+  { value: "Inactivo", label: "Inactivo", color: "bg-red-500" }
+] as const;
 
 interface AddClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { name: string; surname: string; email: string; phone: string }) => Promise<void>;
+  onSubmit: (data: { name: string; surname: string; email: string; phone: string; status: string }) => Promise<void>;
   isSubmitting?: boolean;
-  initialData?: { name: string; surname: string; email: string; phone: string };
+  initialData?: { name: string; surname: string; email: string; phone: string; status?: string };
   isEditing?: boolean;
 }
 
@@ -19,7 +33,8 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
     name: initialData?.name || "",
     surname: initialData?.surname || "",
     email: initialData?.email || "",
-    phone: initialData?.phone || ""
+    phone: initialData?.phone || "",
+    status: initialData?.status || "Nuevo"
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -30,7 +45,8 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
         name: initialData.name || "",
         surname: initialData.surname || "",
         email: initialData.email || "",
-        phone: initialData.phone || ""
+        phone: initialData.phone || "",
+        status: initialData.status || "Nuevo"
       });
     }
   }, [initialData]);
@@ -70,7 +86,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
     e.preventDefault();
     if (validateForm()) {
       await onSubmit(formData);
-      setFormData({ name: "", surname: "", email: "", phone: "" });
+      setFormData({ name: "", surname: "", email: "", phone: "", status: "Nuevo" });
       setErrors({});
     }
   };
@@ -83,7 +99,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
   };
 
   const handleClose = () => {
-    setFormData({ name: "", surname: "", email: "", phone: "" });
+    setFormData({ name: "", surname: "", email: "", phone: "", status: "Nuevo" });
     setErrors({});
     onClose();
   };
@@ -148,6 +164,33 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
               className={errors.phone ? "border-red-500" : ""}
             />
             {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="status">Estado del cliente</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => handleChange("status", value)}
+            >
+              <SelectTrigger className="w-full" data-testid="select-client-status">
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${CLIENT_STATUSES.find(s => s.value === formData.status)?.color}`} />
+                    {CLIENT_STATUSES.find(s => s.value === formData.status)?.label}
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {CLIENT_STATUSES.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${status.color}`} />
+                      {status.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
