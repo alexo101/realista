@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { Mail, Phone, Pencil, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Mail, Phone } from "lucide-react";
 import { type Client } from "@shared/schema";
 
 const CLIENT_STATUSES = [
@@ -21,10 +20,9 @@ const CLIENT_STATUSES = [
 interface ClientCardProps {
   client: Client;
   onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
 }
 
-function ClientCard({ client, onEdit, onDelete }: ClientCardProps) {
+function ClientCard({ client, onEdit }: ClientCardProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'CLIENT',
     item: { clientId: client.id, currentStatus: client.status },
@@ -42,7 +40,14 @@ function ClientCard({ client, onEdit, onDelete }: ClientCardProps) {
       data-testid={`kanban-card-client-${client.id}`}
     >
       <div className="space-y-2">
-        <div className="font-medium text-sm">
+        <div 
+          className="font-medium text-sm text-primary hover:underline cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(client);
+          }}
+          data-testid={`link-client-name-${client.id}`}
+        >
           {client.name} {client.surname || ''}
         </div>
         <div className="space-y-1">
@@ -55,32 +60,6 @@ function ClientCard({ client, onEdit, onDelete }: ClientCardProps) {
             <span>{client.phone}</span>
           </div>
         </div>
-        <div className="flex gap-1 pt-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(client);
-            }}
-            data-testid={`button-edit-client-${client.id}`}
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(client);
-            }}
-            data-testid={`button-delete-client-${client.id}`}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
       </div>
     </div>
   );
@@ -90,11 +69,10 @@ interface KanbanColumnProps {
   status: typeof CLIENT_STATUSES[number];
   clients: Client[];
   onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
   onDrop: (clientId: number, newStatus: string) => void;
 }
 
-function KanbanColumn({ status, clients, onEdit, onDelete, onDrop }: KanbanColumnProps) {
+function KanbanColumn({ status, clients, onEdit, onDrop }: KanbanColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'CLIENT',
     drop: (item: { clientId: number; currentStatus: string }) => {
@@ -132,7 +110,6 @@ function KanbanColumn({ status, clients, onEdit, onDelete, onDrop }: KanbanColum
               key={client.id}
               client={client}
               onEdit={onEdit}
-              onDelete={onDelete}
             />
           ))
         )}
@@ -144,11 +121,10 @@ function KanbanColumn({ status, clients, onEdit, onDelete, onDrop }: KanbanColum
 interface ClientsKanbanProps {
   clients: Client[];
   onEditClient: (client: Client) => void;
-  onDeleteClient: (client: Client) => void;
   onUpdateClientStatus: (clientId: number, newStatus: string) => void;
 }
 
-export function ClientsKanban({ clients, onEditClient, onDeleteClient, onUpdateClientStatus }: ClientsKanbanProps) {
+export function ClientsKanban({ clients, onEditClient, onUpdateClientStatus }: ClientsKanbanProps) {
   const clientsByStatus = useMemo(() => {
     const grouped: Record<string, Client[]> = {};
     CLIENT_STATUSES.forEach(status => {
@@ -167,7 +143,6 @@ export function ClientsKanban({ clients, onEditClient, onDeleteClient, onUpdateC
               status={status}
               clients={clientsByStatus[status.value] || []}
               onEdit={onEditClient}
-              onDelete={onDeleteClient}
               onDrop={onUpdateClientStatus}
             />
           ))}
