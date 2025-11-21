@@ -1608,7 +1608,6 @@ export default function ManagePage() {
                 <ClientsKanban
                   clients={clients}
                   onEditClient={setEditingClient}
-                  onDeleteClient={setClientToDelete}
                   onUpdateClientStatus={async (clientId, newStatus) => {
                     const client = clients.find(c => c.id === clientId);
                     if (client) {
