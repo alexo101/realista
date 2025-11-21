@@ -311,7 +311,7 @@ export default function ManagePage() {
   const updateClientMutation = useMutation({
     mutationFn: async (data: any) => {
       // apiRequest already returns parsed JSON data, not a Response object
-      return await apiRequest('PATCH', `/api/clients/${editingClient?.id}`, {
+      return await apiRequest('PATCH', `/api/clients/${data.id}`, {
         ...data,
         agentId: user!.id,
       });
@@ -1570,7 +1570,10 @@ export default function ManagePage() {
                 }}
                 onSubmit={async (data) => {
                   if (editingClient) {
-                    await updateClientMutation.mutateAsync(data);
+                    await updateClientMutation.mutateAsync({
+                      ...data,
+                      id: editingClient.id
+                    });
                   } else {
                     await createClientMutation.mutateAsync(data);
                   }
