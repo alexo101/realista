@@ -163,6 +163,9 @@ export const clients = pgTable("clients", {
   petsDescription: text("pets_description"), // Description of pets if they have any
   moveInTiming: text("move_in_timing"), // "Lo antes posible", "Tengo flexibilidad", "Fecha exacta"
   moveInDate: timestamp("move_in_date"), // Specific date if "Fecha exacta" is selected
+  
+  // Contact history timeline
+  contactHistory: jsonb("contact_history").default(sql`'[]'::jsonb`), // Array of {id, status, timestamp, note}
 }, (table) => ({
   // Index for querying clients by agent
   agentIdIdx: index("clients_agent_id_idx").on(table.agentId),
