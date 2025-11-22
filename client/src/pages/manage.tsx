@@ -1544,7 +1544,7 @@ export default function ManagePage() {
                       data-testid="button-view-kanban"
                     >
                       <LayoutGrid className="h-4 w-4 mr-1" />
-                      Kanban
+                      Panel
                     </Button>
                   </div>
                   <Button 
