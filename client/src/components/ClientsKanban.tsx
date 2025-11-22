@@ -5,16 +5,12 @@ import { Mail, Phone } from "lucide-react";
 import { type Client } from "@shared/schema";
 
 const CLIENT_STATUSES = [
-  { value: "Nuevo", label: "Nuevo", color: "bg-blue-500" },
-  { value: "Contactado", label: "Contactado", color: "bg-yellow-500" },
-  { value: "En seguimiento", label: "En seguimiento", color: "bg-green-500" },
-  { value: "Visitando / Programando visita", label: "Visitando / Programando visita", color: "bg-orange-500" },
-  { value: "Oferta realizada", label: "Oferta realizada", color: "bg-purple-500" },
-  { value: "En negociación", label: "En negociación", color: "bg-amber-700" },
-  { value: "Reservado / En proceso de cierre", label: "Reservado / En proceso de cierre", color: "bg-teal-500" },
-  { value: "Ganado", label: "Ganado", color: "bg-green-600" },
-  { value: "Perdido / No interesado", label: "Perdido / No interesado", color: "bg-gray-500" },
-  { value: "Inactivo", label: "Inactivo", color: "bg-red-500" }
+  { value: "Nuevo", label: "Nuevo", color: "bg-blue-100 text-blue-900" },
+  { value: "Seguimiento", label: "Seguimiento", color: "bg-blue-300 text-blue-900" },
+  { value: "En visitas", label: "En visitas", color: "bg-blue-500 text-white" },
+  { value: "Cerrando", label: "Cerrando", color: "bg-blue-700 text-white" },
+  { value: "Ganado", label: "Ganado", color: "bg-blue-900 text-white" },
+  { value: "Perdido", label: "Perdido", color: "bg-gray-500 text-white" }
 ] as const;
 
 interface ClientCardProps {
@@ -86,10 +82,10 @@ function KanbanColumn({ status, clients, onEdit, onDrop }: KanbanColumnProps) {
   }));
 
   return (
-    <div className="flex flex-col h-full min-w-[140px] max-w-[140px]" data-testid={`kanban-column-${status.value}`}>
-      <div className={`${status.color} text-white px-2 py-2 rounded-t flex items-center justify-between gap-1`}>
-        <span className="text-xs font-medium truncate">{status.label}</span>
-        <span className="bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
+    <div className="flex flex-col h-full min-w-[220px] max-w-[220px]" data-testid={`kanban-column-${status.value}`}>
+      <div className={`${status.color} px-3 py-2 rounded-t flex items-center justify-between gap-2`}>
+        <span className="text-sm font-medium truncate">{status.label}</span>
+        <span className="bg-white/20 text-xs px-2 py-0.5 rounded-full flex-shrink-0">
           {clients.length}
         </span>
       </div>
