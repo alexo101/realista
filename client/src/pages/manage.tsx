@@ -1584,7 +1584,8 @@ export default function ManagePage() {
                   surname: editingClient.surname || "",
                   email: editingClient.email,
                   phone: editingClient.phone,
-                  status: editingClient.status
+                  status: editingClient.status,
+                  contactHistory: (editingClient.contactHistory as any) || []
                 } : undefined}
                 isEditing={!!editingClient}
               />
