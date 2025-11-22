@@ -54,7 +54,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [contactHistory, setContactHistory] = useState<ContactHistoryEntry[]>(initialData?.contactHistory || []);
   const [isAddingNote, setIsAddingNote] = useState(false);
-  const [newNote, setNewNote] = useState({ status: "Nuevo", note: "" });
+  const [newNote, setNewNote] = useState("");
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
 
   // Update form data when initialData changes (for edit mode)
@@ -113,15 +113,15 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
   };
 
   const handleAddNote = () => {
-    if (newNote.note.trim()) {
+    if (newNote.trim()) {
       const entry: ContactHistoryEntry = {
         id: crypto.randomUUID(),
-        status: newNote.status,
+        status: formData.status,
         timestamp: new Date().toISOString(),
-        note: newNote.note.trim()
+        note: newNote.trim()
       };
       setContactHistory(prev => [entry, ...prev]); // Add to beginning for reverse chronological order
-      setNewNote({ status: formData.status, note: "" });
+      setNewNote("");
       setIsAddingNote(false);
     }
   };
@@ -141,7 +141,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
     setFormData({ name: "", surname: "", email: "", phone: "", status: "Nuevo" });
     setContactHistory([]);
     setIsAddingNote(false);
-    setNewNote({ status: "Nuevo", note: "" });
+    setNewNote("");
     setErrors({});
     onClose();
   };
@@ -257,37 +257,11 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
               {isAddingNote && (
                 <div className="bg-gray-50 border rounded-lg p-3 mb-4 space-y-3">
                   <div>
-                    <Label htmlFor="note-status">Estado</Label>
-                    <Select
-                      value={newNote.status}
-                      onValueChange={(value) => setNewNote(prev => ({ ...prev, status: value }))}
-                    >
-                      <SelectTrigger className="w-full bg-white" data-testid="select-note-status">
-                        <SelectValue>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${CLIENT_STATUSES.find(s => s.value === newNote.status)?.color}`} />
-                            {CLIENT_STATUSES.find(s => s.value === newNote.status)?.label}
-                          </div>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CLIENT_STATUSES.map((status) => (
-                          <SelectItem key={status.value} value={status.value}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${status.color}`} />
-                              {status.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <Label htmlFor="note-text">Nota</Label>
                     <Textarea
                       id="note-text"
-                      value={newNote.note}
-                      onChange={(e) => setNewNote(prev => ({ ...prev, note: e.target.value }))}
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Describe la interacción con el cliente..."
                       rows={3}
                       className="resize-none"
@@ -301,7 +275,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
                       size="sm"
                       onClick={() => {
                         setIsAddingNote(false);
-                        setNewNote({ status: formData.status, note: "" });
+                        setNewNote("");
                       }}
                       data-testid="button-cancel-note"
                     >
@@ -311,7 +285,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
                       type="button"
                       size="sm"
                       onClick={handleAddNote}
-                      disabled={!newNote.note.trim()}
+                      disabled={!newNote.trim()}
                       data-testid="button-save-note"
                     >
                       Guardar nota
