@@ -311,6 +311,15 @@ export type Agent = typeof agents.$inferSelect;
 export type Agency = typeof agencies.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type Client = typeof clients.$inferSelect;
+
+// Contact history entry type
+export type ContactHistoryEntry = {
+  id: string;
+  status: string;
+  timestamp: string;
+  note: string;
+};
+
 export type NeighborhoodRating = typeof neighborhoodRatings.$inferSelect;
 export type AgencyAgent = typeof agencyAgents.$inferSelect;
 export type Appointment = typeof appointments.$inferSelect;
