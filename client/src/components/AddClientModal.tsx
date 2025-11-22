@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { ContactHistoryEntry } from "@shared/schema";
@@ -55,7 +56,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
   const [contactHistory, setContactHistory] = useState<ContactHistoryEntry[]>(initialData?.contactHistory || []);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [newNote, setNewNote] = useState("");
-  const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   // Update form data when initialData changes (for edit mode)
   useEffect(() => {
@@ -126,8 +127,11 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
     }
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    setContactHistory(prev => prev.filter(entry => entry.id !== noteId));
+  const confirmDeleteNote = () => {
+    if (noteToDelete) {
+      setContactHistory(prev => prev.filter(entry => entry.id !== noteToDelete));
+      setNoteToDelete(null);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -147,13 +151,14 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl">
-            {isEditing ? "Editar cliente" : "Añadir nuevo cliente"}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {isEditing ? "Editar cliente" : "Añadir nuevo cliente"}
+            </DialogTitle>
+          </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
             <Label htmlFor="name">Nombre</Label>
@@ -295,7 +300,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
               )}
 
               {/* Timeline Display */}
-              <div className="space-y-3 max-h-80 overflow-y-auto">
+              <div className="space-y-4">
                 {contactHistory.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-4">
                     No hay notas en el historial
@@ -303,51 +308,45 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
                 ) : (
                   contactHistory.map((entry, index) => {
                     const statusConfig = CLIENT_STATUSES.find(s => s.value === entry.status);
-                    const isHovered = hoveredNoteId === entry.id;
                     
                     return (
                       <div
                         key={entry.id}
-                        className="relative pl-6 pb-3"
-                        onMouseEnter={() => setHoveredNoteId(entry.id)}
-                        onMouseLeave={() => setHoveredNoteId(null)}
+                        className="relative pl-8 pb-2"
                         data-testid={`timeline-note-${entry.id}`}
                       >
                         {/* Vertical line */}
                         {index < contactHistory.length - 1 && (
-                          <div className="absolute left-2 top-6 bottom-0 w-px bg-gray-200" />
+                          <div className="absolute left-[7px] top-6 bottom-0 w-px bg-gray-300" />
                         )}
                         
                         {/* Circle indicator */}
-                        <div className="absolute left-0 top-1 w-4 h-4 rounded-full bg-gray-200" />
+                        <div className="absolute left-0 top-2 w-4 h-4 rounded-full bg-gray-300 border-2 border-white" />
                         
-                        <div className="bg-gray-50 border rounded-lg p-3 relative">
-                          {/* Delete button (appears on hover) */}
-                          {isHovered && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="absolute top-2 right-2 h-6 w-6 text-gray-400 hover:text-red-600"
-                              onClick={() => handleDeleteNote(entry.id)}
-                              data-testid={`button-delete-note-${entry.id}`}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                          
-                          <div className="flex items-center gap-2 mb-2">
-                            {statusConfig && (
-                              <Badge className={`${statusConfig.color} text-xs`}>
-                                {statusConfig.label}
-                              </Badge>
-                            )}
-                            <span className="text-xs text-gray-500">
-                              {format(new Date(entry.timestamp), "dd MMM yyyy, HH:mm", { locale: es })}
-                            </span>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {statusConfig && (
+                                <Badge className={`${statusConfig.color} text-xs px-2 py-0.5 rounded-full`}>
+                                  {statusConfig.label}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {format(new Date(entry.timestamp), "dd MMM yyyy, HH:mm", { locale: es })}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">{entry.note}</p>
                           </div>
-                          
-                          <p className="text-sm text-gray-700">{entry.note}</p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-gray-400 hover:text-red-600 flex-shrink-0"
+                            onClick={() => setNoteToDelete(entry.id)}
+                            data-testid={`button-delete-note-${entry.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     );
@@ -387,5 +386,24 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={!!noteToDelete} onOpenChange={() => setNoteToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar nota?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta acción no se puede deshacer. La nota se eliminará permanentemente del historial de contacto.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDeleteNote} className="bg-red-600 hover:bg-red-700">
+            Eliminar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }
