@@ -31,7 +31,7 @@ export default function Home() {
       <section className="bg-primary/5 py-8 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-2xl md:text-4xl font-bold text-center mb-4">
-            Encuentra tu hogar ideal en Barcelona
+            Encuentra tu hogar ideal con toda la información
           </h1>
           <div className="mb-6 md:mb-8">
             <MessageCarousel />
