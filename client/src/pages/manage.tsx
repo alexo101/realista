@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -1615,101 +1617,61 @@ export default function ManagePage() {
                   }}
                 />
               ) : (
-                <div className="grid gap-6">
-                  {clients.map((client) => (
-                      <div
-                        key={client.id}
-                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-                        data-testid={`card-client-${client.id}`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {client.name} {client.surname || ''}
-                            </h3>
-                            {client.status && (
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <div className={`w-2 h-2 rounded-full ${CLIENT_STATUSES.find(s => s.value === client.status)?.color}`} />
-                                <span className="text-sm text-gray-600">
-                                  {CLIENT_STATUSES.find(s => s.value === client.status)?.label}
-                                </span>
+                <div className="bg-white border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Apellido</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Teléfono</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clients.map((client) => {
+                        const statusConfig = CLIENT_STATUSES.find(s => s.value === client.status);
+                        return (
+                          <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
+                            <TableCell className="font-medium">{client.name}</TableCell>
+                            <TableCell>{client.surname || '-'}</TableCell>
+                            <TableCell>{client.email}</TableCell>
+                            <TableCell>{client.phone}</TableCell>
+                            <TableCell>
+                              {statusConfig && (
+                                <Badge className={`${statusConfig.color}`}>
+                                  {statusConfig.label}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingClient(client)}
+                                  data-testid={`button-edit-client-${client.id}`}
+                                >
+                                  <Pencil className="h-4 w-4 mr-1" />
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setClientToDelete(client)}
+                                  data-testid={`button-delete-client-${client.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Eliminar
+                                </Button>
                               </div>
-                            )}
-                            <div className="flex items-center gap-4 mt-2">
-                              <span className="flex items-center gap-1.5 text-sm text-gray-600">
-                                <Mail className="h-4 w-4" />
-                                {client.email}
-                              </span>
-                              <span className="flex items-center gap-1.5 text-sm text-gray-600">
-                                <Phone className="h-4 w-4" />
-                                {client.phone}
-                              </span>
-                            </div>
-
-                            {client.operationType && (
-                              <div className="mt-4 flex flex-wrap gap-2">
-                                <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                                  {client.operationType === 'venta' ? 'Compra' : 'Alquiler'}
-                                </span>
-                                {client.propertyType && (
-                                  <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
-                                    {client.propertyType}
-                                  </span>
-                                )}
-                                {client.budget && (
-                                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                                    Hasta {client.budget.toLocaleString('es-ES')}€{client.operationType === 'alquiler' ? '/mes' : ''}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-
-                            {client.preferredNeighborhoods && client.preferredNeighborhoods.length > 0 && (
-                              <div className="mt-2">
-                                <p className="text-xs text-gray-500">Zonas de interés:</p>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {client.preferredNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
-                                    <span key={idx} className="bg-gray-100 text-xs px-2 py-0.5 rounded">
-                                      {neighborhood}
-                                    </span>
-                                  ))}
-                                  {client.preferredNeighborhoods.length > 3 && (
-                                    <span className="text-xs text-gray-500">
-                                      +{client.preferredNeighborhoods.length - 3} más
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex gap-2 items-start">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingClient(client);
-                              }}
-                              data-testid={`button-edit-client-${client.id}`}
-                            >
-                              <Pencil className="h-4 w-4 text-gray-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setClientToDelete(client);
-                              }}
-                              data-testid={`button-delete-client-${client.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-gray-600" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
 
