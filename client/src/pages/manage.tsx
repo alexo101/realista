@@ -62,12 +62,12 @@ type DashboardSection = typeof VALID_SECTIONS[number];
 
 // Client status options with colors
 const CLIENT_STATUSES = [
-  { value: "Nuevo", label: "Nuevo", color: "bg-blue-100" },
-  { value: "Seguimiento", label: "Seguimiento", color: "bg-blue-300" },
-  { value: "En visitas", label: "En visitas", color: "bg-blue-500" },
-  { value: "Cerrando", label: "Cerrando", color: "bg-blue-700" },
-  { value: "Ganado", label: "Ganado", color: "bg-blue-900" },
-  { value: "Perdido", label: "Perdido", color: "bg-gray-500" }
+  { value: "Nuevo", label: "Nuevo", color: "bg-blue-100 text-blue-900" },
+  { value: "Seguimiento", label: "Seguimiento", color: "bg-blue-300 text-blue-900" },
+  { value: "En visitas", label: "En visitas", color: "bg-blue-500 text-white" },
+  { value: "Cerrando", label: "Cerrando", color: "bg-blue-700 text-white" },
+  { value: "Ganado", label: "Ganado", color: "bg-blue-900 text-white" },
+  { value: "Perdido", label: "Perdido", color: "bg-gray-500 text-white" }
 ] as const;
 
 export default function ManagePage() {
