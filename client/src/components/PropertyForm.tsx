@@ -304,8 +304,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       floor: undefined,
       description: "",
       price: "" as any, // Se convertirá a número en el validador
-      bedrooms: 1 as any, // Default to 1 bedroom
-      bathrooms: 1 as any, // Default to 1 bathroom
+      bedrooms: "" as any, // Empty by default
+      bathrooms: "" as any, // Empty by default
       superficie: "" as any, // Nuevo campo para superficie en m²
       neighborhood: undefined as any,
       title: "",
