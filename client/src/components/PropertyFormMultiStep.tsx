@@ -310,7 +310,6 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         steps={steps}
         completionPercentage={completionPercentage}
       />
-
       <Form {...form}>
         <form className="space-y-6">
           {/* Step 1: Información básica */}
@@ -999,9 +998,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
               onClick={handlePrevious}
               disabled={currentStep === 1}
               data-testid="button-previous"
-            >
-              Anterior
-            </Button>
+            >Salir</Button>
 
             {currentStep < 5 ? (
               <Button
