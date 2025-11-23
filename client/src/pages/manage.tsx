@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
+import { PropertyFormMultiStep } from "@/components/PropertyFormMultiStep";
 import { ClientForm } from "@/components/ClientForm";
 import { AddClientModal } from "@/components/AddClientModal";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
@@ -1358,44 +1359,53 @@ export default function ManagePage() {
               </Button>
 
               {(isAddingProperty || editingProperty) ? (
-                <PropertyForm 
-                  onSubmit={async (data) => {
-                    if (editingProperty) {
-                      await updatePropertyMutation.mutateAsync(data);
-                    } else {
-                      await createPropertyMutation.mutateAsync(data);
-                    }
-                  }}
-                  onClose={() => {
-                    setIsAddingProperty(false);
-                    setEditingProperty(null);
-                  }}
-                  initialData={editingProperty ? {
-                    id: editingProperty.id,
-                    isActive: editingProperty.isActive,
-                    title: editingProperty.title,
-                    description: editingProperty.description,
-                    price: editingProperty.price,
-                    address: editingProperty.address,
-                    superficie: editingProperty.superficie,
-                    bedrooms: editingProperty.bedrooms,
-                    bathrooms: editingProperty.bathrooms,
-                    images: editingProperty.images || [],
-                    imageUrls: editingProperty.imageUrls || [],
-                    type: editingProperty.type as any,
-                    housingType: editingProperty.housingType || undefined,
-                    housingStatus: editingProperty.housingStatus || undefined,
-                    floor: editingProperty.floor || undefined,
-                    neighborhood: editingProperty.neighborhood,
-                    reference: editingProperty.reference,
-                    operationType: editingProperty.operationType,
-                    features: editingProperty.features || [],
-                    availability: editingProperty.availability || "Inmediatamente",
-                    availabilityDate: editingProperty.availabilityDate ? new Date(editingProperty.availabilityDate) : undefined,
-                    mainImageIndex: editingProperty.mainImageIndex || 0
-                  } : undefined}
-                  isEditing={!!editingProperty}
-                />
+                <>
+                  {/* Use multi-step form for new properties */}
+                  {isAddingProperty && !editingProperty ? (
+                    <PropertyFormMultiStep
+                      onClose={() => {
+                        setIsAddingProperty(false);
+                      }}
+                    />
+                  ) : (
+                    /* Use regular form for editing existing properties */
+                    <PropertyForm 
+                      onSubmit={async (data) => {
+                        await updatePropertyMutation.mutateAsync(data);
+                      }}
+                      onClose={() => {
+                        setEditingProperty(null);
+                      }}
+                      initialData={editingProperty ? {
+                        id: editingProperty.id,
+                        isActive: editingProperty.isActive,
+                        title: editingProperty.title,
+                        description: editingProperty.description,
+                        price: editingProperty.price,
+                        address: editingProperty.address,
+                        escalera: editingProperty.escalera || undefined,
+                        planta: editingProperty.planta || undefined,
+                        puerta: editingProperty.puerta || undefined,
+                        superficie: editingProperty.superficie,
+                        bedrooms: editingProperty.bedrooms,
+                        bathrooms: editingProperty.bathrooms,
+                        imageUrls: editingProperty.imageUrls || [],
+                        type: editingProperty.type as any,
+                        housingType: editingProperty.housingType || undefined,
+                        housingStatus: editingProperty.housingStatus || undefined,
+                        floor: editingProperty.floor || undefined,
+                        neighborhood: editingProperty.neighborhood,
+                        reference: editingProperty.reference,
+                        operationType: editingProperty.operationType as "Venta" | "Alquiler",
+                        features: editingProperty.features || [],
+                        availability: editingProperty.availability || "Inmediatamente",
+                        availabilityDate: editingProperty.availabilityDate ? new Date(editingProperty.availabilityDate) : undefined,
+                        mainImageIndex: editingProperty.mainImageIndex || 0
+                      } : undefined}
+                      isEditing={true}
+                    />
+                  )}
+                </>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                   {isLoadingProperties ? (

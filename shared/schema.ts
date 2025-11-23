@@ -114,6 +114,7 @@ export const properties = pgTable("properties", {
   agentId: integer("agent_id").notNull(), // ID del agente que publicó la propiedad
   agencyId: integer("agency_id"), // ID de la agencia a la que pertenece la propiedad (opcional)
   isActive: boolean("is_active").default(true).notNull(), // Para activar/desactivar la visibilidad de la propiedad
+  isDraft: boolean("is_draft").default(true).notNull(), // Borrador: true hasta completar todos los pasos
   fraudCount: integer("fraud_count").default(0).notNull(), // Contador de reportes de fraude
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({

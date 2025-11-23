@@ -60,12 +60,7 @@ export function AgencyAgentForm({ isOpen, onClose, agencyId }: AgencyAgentFormPr
   // Mutación para crear el agente
   const createAgentMutation = useMutation({
     mutationFn: async (data: AgentFormValues) => {
-      const response = await apiRequest("POST", "/api/agency-agents", data);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Error al crear el agente");
-      }
-      return response.json();
+      return await apiRequest("POST", "/api/agency-agents", data);
     },
     onSuccess: () => {
       // Invalidar la consulta para actualizar la lista de agentes
