@@ -97,7 +97,13 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
+      // Invalidate all events queries for this agent
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "/api/agents" && 
+          query.queryKey[1] === agentId && 
+          query.queryKey[2] === "events"
+      });
       setShowEventForm(false);
       toast({
         title: "Éxito",
@@ -120,7 +126,13 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
+      // Invalidate all events queries for this agent
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "/api/agents" && 
+          query.queryKey[1] === agentId && 
+          query.queryKey[2] === "events"
+      });
       setSelectedEvent(null);
       setShowEventForm(false);
       toast({
@@ -144,7 +156,13 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
+      // Invalidate all events queries for this agent
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === "/api/agents" && 
+          query.queryKey[1] === agentId && 
+          query.queryKey[2] === "events"
+      });
       setEventToDelete(null);
       toast({
         title: "Éxito",
