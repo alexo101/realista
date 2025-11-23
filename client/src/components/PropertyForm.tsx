@@ -304,8 +304,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       floor: undefined,
       description: "",
       price: "" as any, // Se convertirá a número en el validador
-      bedrooms: "" as any, // Empty by default
-      bathrooms: "" as any, // Empty by default
+      bedrooms: undefined, // Empty by default
+      bathrooms: undefined, // Empty by default
       superficie: "" as any, // Nuevo campo para superficie en m²
       neighborhood: undefined as any,
       title: "",
@@ -679,7 +679,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) {
-                            field.onChange("");
+                            field.onChange(undefined);
                           } else if (/^\d+$/.test(value) && Number(value) > 0 && Number.isInteger(Number(value))) {
                             field.onChange(Number(value));
                           }
@@ -716,7 +716,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         onChange={(e) => {
                           const value = e.target.value;
                           if (!value) {
-                            field.onChange("");
+                            field.onChange(undefined);
                           } else if (/^\d+$/.test(value) && Number(value) > 0 && Number.isInteger(Number(value))) {
                             field.onChange(Number(value));
                           }
