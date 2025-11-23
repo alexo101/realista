@@ -1,7 +1,4 @@
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Check, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps } from "@/utils/googleMaps";
 
 interface AddressAutocompleteProps {
@@ -12,10 +9,7 @@ interface AddressAutocompleteProps {
 }
 
 export function AddressAutocomplete({ value, onChange, placeholder, className }: AddressAutocompleteProps) {
-  const [showMapConfirm, setShowMapConfirm] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState<any>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  
   const containerRef = useRef<HTMLDivElement>(null);
   const autocompleteRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -36,7 +30,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
     return null;
   };
 
-  // Initialize Google Places Autocomplete (New API)
+  // Initialize Google Places Autocomplete
   useEffect(() => {
     let mounted = true;
 
@@ -59,13 +53,20 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
 
         console.log('✓ PlaceAutocompleteElement found, initializing...');
 
-        // Create the new PlaceAutocompleteElement
+        // Create the new PlaceAutocompleteElement with Spain restriction
         const placeAutocomplete = new window.google.maps.places.PlaceAutocompleteElement({
-          componentRestrictions: { country: ['es'] }, // Restrict to Spain (all cities)
-          types: ['address'] // Only show full addresses, not businesses or POIs
+          // Use locationBias to strongly prefer Spain
+          locationBias: {
+            north: 43.7913,  // Northern Spain
+            south: 36.0,     // Southern Spain
+            east: 4.3271,    // Eastern Spain
+            west: -9.3003    // Western Spain
+          },
+          componentRestrictions: { country: 'es' }, // Restrict to Spain
+          fields: ['address_components', 'formatted_address', 'geometry', 'name']
         });
 
-        // Handle place selection
+        // Handle place selection - immediately save the address
         placeAutocomplete.addEventListener('gmp-placeselect', async (event: any) => {
           const place = event.place;
           
@@ -74,13 +75,43 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
             return;
           }
 
-          // Fetch required fields
-          await place.fetchFields({
-            fields: ['displayName', 'formattedAddress', 'addressComponents', 'location']
-          });
+          try {
+            // Fetch required fields
+            await place.fetchFields({
+              fields: ['displayName', 'formattedAddress', 'addressComponents', 'location']
+            });
 
-          setSelectedPlace(place);
-          setShowMapConfirm(true);
+            console.log('✓ Address selected:', place.formattedAddress);
+
+            // Extract street address from the place
+            const addressComponents = place.addressComponents || [];
+            
+            // Try to build a clean street address
+            const street = addressComponents.find((c: any) => c.types.includes('route'))?.longText || '';
+            const number = addressComponents.find((c: any) => c.types.includes('street_number'))?.longText || '';
+            
+            let streetAddress = '';
+            if (street && number) {
+              streetAddress = `${street}, ${number}`;
+            } else if (street) {
+              streetAddress = street;
+            } else {
+              // Fallback to formatted address first line
+              const formattedAddress = place.formattedAddress || '';
+              streetAddress = formattedAddress.split(',')[0]?.trim() || formattedAddress;
+            }
+            
+            // Immediately update the form field
+            console.log('✓ Saving address to form:', streetAddress);
+            onChange(streetAddress);
+
+            // Update internal input to match
+            if (inputRef.current) {
+              inputRef.current.value = streetAddress;
+            }
+          } catch (error) {
+            console.error('Error processing selected place:', error);
+          }
         });
 
         // Append to container FIRST
@@ -100,7 +131,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
               }
               
               // Set placeholder
-              internalInput.placeholder = placeholder || 'Escribe la dirección...';
+              internalInput.placeholder = placeholder || 'Introduce la dirección (calle y número)';
               
               // Inject custom CSS into shadow DOM to fix styling
               if (placeAutocomplete.shadowRoot) {
@@ -134,7 +165,6 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
               // Sync typed values to form field in real-time
               const handleInput = () => {
                 if (internalInput) {
-                  console.log('Address input changed:', internalInput.value);
                   onChange(internalInput.value);
                 }
               };
@@ -182,69 +212,6 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
     }
   }, [value]);
 
-  const confirmAddress = () => {
-    if (selectedPlace) {
-      // Extract street address from the place
-      const addressComponents = selectedPlace.addressComponents || [];
-      
-      // Try to build a clean street address
-      const street = addressComponents.find((c: any) => c.types.includes('route'))?.longText || '';
-      const number = addressComponents.find((c: any) => c.types.includes('street_number'))?.longText || '';
-      
-      let streetAddress = '';
-      if (street && number) {
-        streetAddress = `${street}, ${number}`;
-      } else if (street) {
-        streetAddress = street;
-      } else {
-        // Fallback to formatted address first line
-        const formattedAddress = selectedPlace.formattedAddress || '';
-        streetAddress = formattedAddress.split(',')[0]?.trim() || formattedAddress;
-      }
-      
-      onChange(streetAddress);
-    }
-    setShowMapConfirm(false);
-    setSelectedPlace(null);
-  };
-
-  const cancelAddress = () => {
-    setShowMapConfirm(false);
-    setSelectedPlace(null);
-  };
-
-  const formatDisplayAddress = (place: any): string => {
-    if (!place) return '';
-    
-    const addressComponents = place.addressComponents || [];
-    const street = addressComponents.find((c: any) => c.types.includes('route'))?.longText || '';
-    const number = addressComponents.find((c: any) => c.types.includes('street_number'))?.longText || '';
-    
-    if (street && number) {
-      return `${street}, ${number}`;
-    } else if (street) {
-      return street;
-    }
-    
-    return place.formattedAddress?.split(',')[0] || '';
-  };
-
-  const getLocation = (place: any): string => {
-    if (!place) return '';
-    
-    const addressComponents = place.addressComponents || [];
-    const neighborhood = addressComponents.find((c: any) => c.types.includes('neighborhood'))?.longText;
-    const city = addressComponents.find((c: any) => c.types.includes('locality'))?.longText;
-    const province = addressComponents.find((c: any) => c.types.includes('administrative_area_level_2'))?.longText;
-    
-    const parts = [];
-    if (neighborhood) parts.push(neighborhood);
-    if (city) parts.push(city);
-    if (province && province !== city) parts.push(province);
-    
-    return parts.join(', ') || '';
-  };
-
   return (
     <div className="relative">
       <div ref={containerRef} className="relative w-full" data-testid="container-address-autocomplete">
@@ -254,58 +221,6 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
           </div>
         )}
       </div>
-
-      {/* Map confirmation dialog */}
-      <Dialog open={showMapConfirm} onOpenChange={setShowMapConfirm}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Confirmar dirección</DialogTitle>
-          </DialogHeader>
-          
-          {selectedPlace && (
-            <div className="space-y-4">
-              <div className="p-3 bg-accent/20 rounded-lg">
-                <p className="font-medium">{formatDisplayAddress(selectedPlace)}</p>
-                <p className="text-sm text-muted-foreground">
-                  {getLocation(selectedPlace)}
-                </p>
-              </div>
-              
-              <div className="h-64 w-full border rounded-lg overflow-hidden">
-                <div id="map-preview" className="w-full h-full">
-                  {selectedPlace.formattedAddress && (
-                    <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}&q=${encodeURIComponent(selectedPlace.formattedAddress)}&zoom=17`}
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      allowFullScreen
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      title="Mapa de la dirección"
-                    />
-                  )}
-                </div>
-              </div>
-              
-              <p className="text-sm text-muted-foreground">
-                ¿Es esta la ubicación correcta de tu propiedad?
-              </p>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={cancelAddress} data-testid="button-cancel-address">
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button onClick={confirmAddress} data-testid="button-confirm-address">
-              <Check className="h-4 w-4 mr-2" />
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
