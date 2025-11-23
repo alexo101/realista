@@ -4,12 +4,14 @@ import { loadGoogleMaps } from "@/utils/googleMaps";
 interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onValidationChange?: (isValid: boolean) => void;
   placeholder?: string;
   className?: string;
 }
 
-export function AddressAutocomplete({ value, onChange, placeholder, className }: AddressAutocompleteProps) {
+export function AddressAutocomplete({ value, onChange, onValidationChange, placeholder, className }: AddressAutocompleteProps) {
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isValidAddress, setIsValidAddress] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const autocompleteRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -71,6 +73,8 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
           
           if (!place) {
             console.log('No place found');
+            setIsValidAddress(false);
+            onValidationChange?.(false);
             return;
           }
 
@@ -100,8 +104,10 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
               streetAddress = formattedAddress.split(',')[0]?.trim() || formattedAddress;
             }
             
-            // Immediately update the form field
+            // Mark as valid and update the form field
             console.log('✓ Saving address to form:', streetAddress);
+            setIsValidAddress(true);
+            onValidationChange?.(true);
             onChange(streetAddress);
 
             // Update internal input to match
@@ -110,6 +116,8 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
             }
           } catch (error) {
             console.error('Error processing selected place:', error);
+            setIsValidAddress(false);
+            onValidationChange?.(false);
           }
         });
 
@@ -137,33 +145,36 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
                 const style = document.createElement('style');
                 style.textContent = `
                   input {
-                    background-color: hsl(var(--background)) !important;
-                    color: hsl(var(--foreground)) !important;
-                    border: 1px solid hsl(var(--input)) !important;
+                    background-color: #ffffff !important;
+                    color: #111111 !important;
+                    border: 1px solid #e5e7eb !important;
                     border-radius: 0.375rem !important;
                     padding: 0.5rem 0.75rem !important;
                     font-size: 0.875rem !important;
                     line-height: 1.25rem !important;
                     width: 100% !important;
                     height: 2.5rem !important;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
                   }
                   input::placeholder {
-                    color: hsl(var(--muted-foreground)) !important;
+                    color: #9ca3af !important;
                   }
                   input:focus {
                     outline: none !important;
-                    ring: 2px !important;
-                    ring-color: hsl(var(--ring)) !important;
-                    ring-offset: 2px !important;
+                    border-color: #3b82f6 !important;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
                   }
                 `;
                 placeAutocomplete.shadowRoot.appendChild(style);
                 console.log('✓ Custom CSS injected into shadow DOM');
               }
               
-              // Sync typed values to form field in real-time
+              // Mark as invalid when user types (until they select from suggestions)
               const handleInput = () => {
                 if (internalInput) {
+                  // User is typing - mark as invalid until they select
+                  setIsValidAddress(false);
+                  onValidationChange?.(false);
                   onChange(internalInput.value);
                 }
               };

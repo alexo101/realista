@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Google Places Autocomplete Dropdown Styles */
+.pac-container {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  z-index: 20000 !important;
+  margin-top: 4px !important;
+  font-family: inherit !important;
+}
+
+.pac-item, .pac-item * {
+  background: transparent !important;
+  color: #111111 !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  font-size: 0.875rem !important;
+}
+
+.pac-item:hover, .pac-item-selected {
+  background-color: #f3f4f6 !important;
+}
+
+.pac-icon {
+  margin-right: 8px !important;
+}
+
+.pac-item-query {
+  font-weight: 600 !important;
+  color: #111111 !important;
+}
+
 /* Leaflet Map Styles */
 .leaflet-container {
   height: 100%;

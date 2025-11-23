@@ -118,6 +118,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   const [propertyId, setPropertyId] = useState<number | null>(initialData?.id || null);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(initialData?.neighborhood);
+  const [isAddressValid, setIsAddressValid] = useState<boolean>(!!initialData?.address);
 
   const steps = [
     { id: 1, name: "Información básica", completed: currentStep > 1 },
@@ -223,6 +224,16 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   const handleNext = async () => {
     const isValid = await form.trigger();
     if (!isValid) return;
+
+    // On Step 2, validate that a valid address was selected from suggestions
+    if (currentStep === 2 && !isAddressValid) {
+      toast({
+        title: "Dirección requerida",
+        description: "Por favor, selecciona una dirección de las sugerencias de Google Maps.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (currentStep === 2) {
       // After step 2, create the property
@@ -488,10 +499,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                       <AddressAutocomplete
                         value={field.value}
                         onChange={field.onChange}
+                        onValidationChange={setIsAddressValid}
                         placeholder="Introduce la dirección completa"
                         className="w-full"
                       />
                     </FormControl>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      Debes seleccionar una dirección de las sugerencias
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
