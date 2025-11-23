@@ -30,7 +30,7 @@ import { DraggableImageGallery } from "./DraggableImageGallery";
 import { AddressAutocomplete } from "./AddressAutocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
-import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
+import { ALL_CITIES } from "@/utils/neighborhoods";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -82,9 +82,7 @@ const step2Schema = step1Schema.extend({
   escalera: z.enum(escaleraOptions).optional(),
   planta: z.enum(plantaOptions).optional(),
   puerta: z.enum(puertaOptions).optional(),
-  neighborhood: z.enum(BARCELONA_NEIGHBORHOODS as [string, ...string[]], {
-    required_error: "Selecciona un barrio",
-  }),
+  neighborhood: z.string().min(1, "Selecciona un barrio"),
 });
 
 // Step 3 schema: Features
@@ -605,27 +603,29 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                           <CommandInput placeholder="Buscar barrio..." />
                           <CommandList>
                             <CommandEmpty>No se encontró el barrio.</CommandEmpty>
-                            {BARCELONA_DISTRICTS_AND_NEIGHBORHOODS.map((district) => (
-                              <CommandGroup key={district.district} heading={district.district}>
-                                {district.neighborhoods.map((neighborhood) => (
-                                  <CommandItem
-                                    key={neighborhood}
-                                    value={neighborhood}
-                                    onSelect={() => {
-                                      form.setValue("neighborhood", neighborhood);
-                                      setLocalNeighborhood(neighborhood);
-                                    }}
-                                    data-testid={`neighborhood-${neighborhood}`}
-                                  >
-                                    <Check
-                                      className={`mr-2 h-4 w-4 ${
-                                        field.value === neighborhood ? "opacity-100" : "opacity-0"
-                                      }`}
-                                    />
-                                    {neighborhood}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
+                            {ALL_CITIES.map((cityData) => (
+                              cityData.districts.map((district) => (
+                                <CommandGroup key={`${cityData.city}-${district.district}`} heading={`${district.district} (${cityData.city})`}>
+                                  {district.neighborhoods.map((neighborhood) => (
+                                    <CommandItem
+                                      key={`${cityData.city}-${district.district}-${neighborhood}`}
+                                      value={neighborhood}
+                                      onSelect={() => {
+                                        form.setValue("neighborhood", neighborhood);
+                                        setLocalNeighborhood(neighborhood);
+                                      }}
+                                      data-testid={`neighborhood-${neighborhood}`}
+                                    >
+                                      <Check
+                                        className={`mr-2 h-4 w-4 ${
+                                          field.value === neighborhood ? "opacity-100" : "opacity-0"
+                                        }`}
+                                      />
+                                      {neighborhood}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              ))
                             ))}
                           </CommandList>
                         </Command>
