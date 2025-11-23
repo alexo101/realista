@@ -827,7 +827,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Título</FormLabel>
+                  <FormLabel>Título del anuncio</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Título" />
                   </FormControl>
