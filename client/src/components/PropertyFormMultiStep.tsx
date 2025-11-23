@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
@@ -28,6 +28,7 @@ import { PropertyFormStepper } from "./PropertyFormStepper";
 import { ImageUploader } from "./ImageUploader";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { AddressAutocomplete } from "./AddressAutocomplete";
+import { MapPreview } from "./MapPreview";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
@@ -164,6 +165,12 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       title: "",
       description: "",
     },
+  });
+
+  // Watch address field for real-time map updates
+  const currentAddress = useWatch({
+    control: form.control,
+    name: "address",
   });
 
   // Create/update property mutation
@@ -637,36 +644,10 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 )}
               />
 
-              {/* Map preview placeholder */}
-              <div className="border rounded-lg p-6 bg-gray-50">
-                <h3 className="text-sm font-medium text-center mb-4">Vista previa de la ubicación</h3>
-                <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                  <div className="text-center text-gray-400">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-16 w-16 mx-auto mb-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <p className="text-xs text-center text-gray-500 mt-4">
-                  La ubicación exacta no se mostrará públicamente para proteger la privacidad
-                </p>
+              {/* Map preview */}
+              <div>
+                <h3 className="text-sm font-medium mb-3">Vista previa de la ubicación</h3>
+                <MapPreview address={currentAddress || ""} height={200} />
               </div>
             </div>
           )}

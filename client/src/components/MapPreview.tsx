@@ -10,17 +10,47 @@ export function MapPreview({ address, height = 200 }: MapPreviewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const geocodeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAddress, setHasAddress] = useState(false);
+
+  // Cleanup function for map resources
+  const cleanupMap = () => {
+    if (markerRef.current) {
+      markerRef.current.setMap(null);
+      markerRef.current = null;
+    }
+    if (mapInstanceRef.current) {
+      // Clear all listeners
+      window.google?.maps?.event?.clearInstanceListeners(mapInstanceRef.current);
+      mapInstanceRef.current = null;
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
 
-    const initMap = async () => {
-      if (!mapRef.current || !address) {
-        setIsLoading(false);
-        return;
-      }
+    // Clear any pending geocode timeout
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current);
+      geocodeTimeoutRef.current = null;
+    }
+
+    // If no address, clean up and show placeholder
+    if (!address) {
+      setHasAddress(false);
+      setIsLoading(false);
+      setError(null);
+      // Don't cleanup map here to avoid flickering - keep it rendered
+      return;
+    }
+
+    setHasAddress(true);
+
+    // Debounce geocoding to prevent API throttling
+    geocodeTimeoutRef.current = setTimeout(async () => {
+      if (!mounted || !mapRef.current) return;
 
       try {
         setIsLoading(true);
@@ -35,8 +65,12 @@ export function MapPreview({ address, height = 200 }: MapPreviewProps) {
         const geocoder = new window.google.maps.Geocoder();
         const result = await new Promise<any>((resolve, reject) => {
           geocoder.geocode({ address }, (results: any[], status: string) => {
+            if (!mounted) return;
+            
             if (status === 'OK' && results && results.length > 0) {
               resolve(results[0]);
+            } else if (status === 'OVER_QUERY_LIMIT') {
+              reject(new Error('Demasiadas solicitudes. Intenta de nuevo en un momento.'));
             } else {
               reject(new Error('No se pudo encontrar la ubicación'));
             }
@@ -48,7 +82,7 @@ export function MapPreview({ address, height = 200 }: MapPreviewProps) {
         const location = result.geometry.location;
 
         // Create or update map
-        if (!mapInstanceRef.current) {
+        if (!mapInstanceRef.current && mapRef.current) {
           mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
             center: location,
             zoom: 16,
@@ -57,8 +91,9 @@ export function MapPreview({ address, height = 200 }: MapPreviewProps) {
             fullscreenControl: false,
             zoomControl: true,
           });
-        } else {
+        } else if (mapInstanceRef.current) {
           mapInstanceRef.current.setCenter(location);
+          mapInstanceRef.current.setZoom(16);
         }
 
         // Remove old marker if exists
@@ -67,11 +102,13 @@ export function MapPreview({ address, height = 200 }: MapPreviewProps) {
         }
 
         // Add marker
-        markerRef.current = new window.google.maps.Marker({
-          position: location,
-          map: mapInstanceRef.current,
-          title: address,
-        });
+        if (mapInstanceRef.current) {
+          markerRef.current = new window.google.maps.Marker({
+            position: location,
+            map: mapInstanceRef.current,
+            title: address,
+          });
+        }
 
         setIsLoading(false);
       } catch (err) {
@@ -81,14 +118,25 @@ export function MapPreview({ address, height = 200 }: MapPreviewProps) {
           setIsLoading(false);
         }
       }
-    };
-
-    initMap();
+    }, 500); // 500ms debounce
 
     return () => {
       mounted = false;
+      if (geocodeTimeoutRef.current) {
+        clearTimeout(geocodeTimeoutRef.current);
+      }
     };
   }, [address]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupMap();
+      if (geocodeTimeoutRef.current) {
+        clearTimeout(geocodeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (!address) {
     return (
