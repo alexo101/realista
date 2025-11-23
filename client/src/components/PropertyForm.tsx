@@ -601,7 +601,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     <RadioGroup
                       onValueChange={field.onChange}
                       value={field.value}
-                      className="flex space-x-4"
+                      className="flex items-center space-x-4"
                     >
                       {floorOptions.map((option) => (
                         <FormItem key={option} className="flex items-center space-x-2">
