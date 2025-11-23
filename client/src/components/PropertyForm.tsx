@@ -952,7 +952,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         className="flex flex-col space-y-2"
                       >
                         {availabilityOptions.map((option) => (
-                          <FormItem key={option} className="flex flex-row items-center space-x-3">
+                          <FormItem key={option} className="flex flex-row items-center space-x-3 space-y-0">
                             <FormControl>
                               <RadioGroupItem value={option} />
                             </FormControl>
