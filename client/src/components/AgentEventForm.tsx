@@ -63,6 +63,16 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
     },
   });
 
+  // Fetch agent details to get agency information
+  const { data: agentData } = useQuery({
+    queryKey: ["/api/agents", agentId],
+    queryFn: async () => {
+      const response = await fetch(`/api/agents/${agentId}`);
+      if (!response.ok) throw new Error("Failed to fetch agent");
+      return response.json();
+    }
+  });
+
   // Fetch clients for dropdown
   const { data: clients = [] } = useQuery({
     queryKey: ["/api/agents", agentId, "clients"],
@@ -73,11 +83,12 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
     }
   });
 
-  // Fetch properties for dropdown
+  // Fetch properties for dropdown - filtered by agent's agency
   const { data: properties = [] } = useQuery({
-    queryKey: ["/api/properties"],
+    queryKey: ["/api/agencies", agentData?.agencyId, "properties"],
+    enabled: !!agentData?.agencyId,
     queryFn: async () => {
-      const response = await fetch("/api/properties");
+      const response = await fetch(`/api/agencies/${agentData.agencyId}/properties`);
       if (!response.ok) throw new Error("Failed to fetch properties");
       return response.json();
     }
