@@ -51,6 +51,14 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
         // Import the Places library
         await window.google.maps.importLibrary("places");
 
+        // Runtime guard: Check if PlaceAutocompleteElement is available
+        if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
+          console.error('❌ PlaceAutocompleteElement not available - ensure Google Maps API loaded with v=beta');
+          return;
+        }
+
+        console.log('✓ PlaceAutocompleteElement found, initializing...');
+
         // Create the new PlaceAutocompleteElement
         const placeAutocomplete = new window.google.maps.places.PlaceAutocompleteElement({
           componentRestrictions: { country: ['es'] }, // Restrict to Spain (all cities)
