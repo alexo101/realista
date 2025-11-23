@@ -1,0 +1,210 @@
+Thanks — this is solvable. I looked at your screenshot here: `/mnt/data/ed5f142b-5665-4a84-aaa5-9ed77822ff2a.png`.
+
+Below are three focused fixes (CSS, Google Places options, and validation) with copy-paste code you can try immediately. I include both plain JS and a small React example so you can adapt to your stack.
+
+---
+
+# 1) Visual (black) input — quick CSS override
+
+The black bar is almost certainly coming from your global CSS or a library overriding the input background. Add an override that targets the input and the Google autocomplete dropdown (`.pac-container`) and force the desired styles:
+
+```css
+/* Target your autocomplete input specifically (change #address to your input id) */
+#address {
+  background-color: #fff !important;
+  color: #111 !important;
+  border: 1px solid #ddd !important;
+  border-radius: 6px !important;
+  padding: 10px 14px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+
+/* Google Places dropdown (the suggestion list) */
+.pac-container {
+  background-color: #fff !important;
+  color: #111 !important;
+  border: 1px solid #ddd !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12) !important;
+  z-index: 20000 !important; /* big z-index so it isn't hidden under other UI */
+}
+
+/* Each suggestion row */
+.pac-item, .pac-item * {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* Selected item highlight */
+.pac-item-selected {
+  background-color: #f3f4f6 !important;
+}
+```
+
+Paste that into your app stylesheet (or inlined `<style>` for testing). If you use Tailwind or a CSS-in-JS library, apply equivalent styles but keep `!important` for testing to override global rules.
+
+---
+
+# 2) Limit results to Spain
+
+Use the Places Autocomplete `componentRestrictions` plus a Spain bounding box to *bias* and *restrict* results. Example (plain JS):
+
+```html
+<input id="address" placeholder="Enter address" />
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+<script>
+  const input = document.getElementById('address');
+
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    types: ['address'],
+    componentRestrictions: { country: 'es' }, // country restriction to Spain
+    fields: ['place_id', 'geometry', 'formatted_address', 'address_components']
+  });
+
+  // Optional: set bounds to Spain and require them
+  const spainBounds = new google.maps.LatLngBounds(
+    { lat: 43.8, lng: -9.5 }, // NW-ish
+    { lat: 36.0, lng: 4.5 }   // SE-ish
+  );
+  autocomplete.setBounds(spainBounds);
+  autocomplete.setOptions({ strictBounds: false }); // set true to enforce bounds, but may hide some valid suggestions
+
+  // Listen for the user selecting an item
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    console.log('Selected place', place);
+    // ... fill hidden fields or mark input as valid (see validation section)
+  });
+</script>
+```
+
+Notes:
+
+* `componentRestrictions: { country: 'es' }` is the standard way to restrict to Spain (ISO code `es`).
+* If you still see non-Spain results, add the bounds (as above) and consider `strictBounds: true` if you want to *enforce* the bounding box — but that can exclude valid edge cases (e.g., Canary Islands need proper bounds).
+* If you use the Autocomplete **Service** (`getPlacePredictions`), pass `componentRestrictions` there:
+
+  ```js
+  service.getPlacePredictions({ input: text, componentRestrictions: { country: 'es' } }, callback)
+  ```
+
+---
+
+# 3) Validation: why “address not input” on continue
+
+Most flows need a confirmed place (place_id/geometry) rather than just a typed string. Common cause: user types an address and clicks Next without choosing a suggestion, so your app never received `place_changed`. Fix: require selection from suggestions and populate hidden fields (place_id/lat/lng). Example:
+
+### Plain JS — validate on submit
+
+```html
+<form id="myForm">
+  <input id="address" name="address" />
+  <input type="hidden" id="place_id" name="place_id" />
+  <input type="hidden" id="lat" name="lat" />
+  <input type="hidden" id="lng" name="lng" />
+  <button type="submit">Next</button>
+</form>
+
+<script>
+  let placeSelected = false;
+  const input = document.getElementById('address');
+
+  const autocomplete = new google.maps.places.Autocomplete(input, { componentRestrictions: { country: 'es' }, types: ['address'] });
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    placeSelected = !!(place && place.geometry); // true only if a real place was selected
+    if (place && place.geometry) {
+      document.getElementById('place_id').value = place.place_id || '';
+      document.getElementById('lat').value = place.geometry.location.lat();
+      document.getElementById('lng').value = place.geometry.location.lng();
+      input.setCustomValidity(''); // mark valid
+    } else {
+      // no geometry (user selected a prediction without details) -> mark invalid
+      input.setCustomValidity('Please select an address from the list');
+    }
+  });
+
+  document.getElementById('myForm').addEventListener('submit', function(e) {
+    if (!placeSelected) {
+      e.preventDefault();
+      input.reportValidity(); // show browser's validation message
+    } else {
+      // proceed with form submission
+    }
+  });
+
+  // Optional: on blur, if user typed but didn't pick, try geocoding to validate
+  input.addEventListener('blur', async () => {
+    if (!placeSelected && input.value.trim()) {
+      // optionally call Geocoding API here to try to validate
+      // but best UX is to force selection from autocomplete
+      input.setCustomValidity('Please select an address from the suggestions.');
+    }
+  });
+</script>
+```
+
+Key points:
+
+* Only mark the field valid after `place_changed` yields a `place.geometry`.
+* Store `place_id` / lat-lng in hidden fields the rest of your flow expects.
+* If the rest of the flow checks `value.length > 0` only, ensure you update that field programmatically after selection.
+
+---
+
+# React example (functional)
+
+```jsx
+import React, { useEffect, useRef, useState } from 'react';
+
+export default function AddressInput() {
+  const ref = useRef(null);
+  const [selected, setSelected] = useState(false);
+
+  useEffect(() => {
+    if (!window.google) return;
+    const autocomplete = new window.google.maps.places.Autocomplete(ref.current, {
+      types: ['address'],
+      componentRestrictions: { country: 'es' },
+      fields: ['place_id', 'geometry', 'formatted_address']
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place && place.geometry) {
+        // set internal state / formik / react-hook-form values here
+        setSelected(true);
+        // example: set latitude/longitude to state or hidden inputs
+      } else {
+        setSelected(false);
+      }
+    });
+  }, []);
+
+  return (
+    <>
+      <input id="address" ref={ref} placeholder="Dirección" />
+      {!selected && <div className="helper">Please select an address from suggestions</div>}
+    </>
+  );
+}
+```
+
+---
+
+# Debug checklist (quick)
+
+1. Make sure **Places API** is enabled in Google Cloud and billing is active.
+2. Ensure you load the script with `&libraries=places`.
+3. Confirm you use `componentRestrictions: { country: 'es' }` and `types: ['address']`.
+4. Add the CSS override above; verify no higher-specificity rule is still overriding (use inspector).
+5. Log `autocomplete.getPlace()` on `place_changed` to ensure geometry and place_id are present.
+6. Ensure your form submission logic checks for the `place_id` or `lat/lng` rather than only checking `input.value`.
+
+---
+
+If you want I can:
+
+* convert the snippets to your exact framework (Vue/Next/Vanilla) — paste your current autocomplete JS and I’ll adapt it; or
+* review your Replit URL/code and give exact edits (paste code or link).
+
+Again, the screenshot I referenced is: `/mnt/data/ed5f142b-5665-4a84-aaa5-9ed77822ff2a.png`.
