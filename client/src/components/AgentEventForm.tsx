@@ -193,7 +193,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
                   </FormControl>
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[200px] p-0">
-                  <Command>
+                  <Command shouldFilter={false}>
                     <CommandInput 
                       placeholder="Buscar contacto por nombre o apellido..."
                       value={contactSearch}
