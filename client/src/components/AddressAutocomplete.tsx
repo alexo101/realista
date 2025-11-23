@@ -62,8 +62,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
             east: 4.3271,    // Eastern Spain
             west: -9.3003    // Western Spain
           },
-          componentRestrictions: { country: 'es' }, // Restrict to Spain
-          fields: ['address_components', 'formatted_address', 'geometry', 'name']
+          componentRestrictions: { country: 'es' } // Restrict to Spain
         });
 
         // Handle place selection - immediately save the address
