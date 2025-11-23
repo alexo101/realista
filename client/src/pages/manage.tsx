@@ -1348,15 +1348,18 @@ export default function ManagePage() {
 
           {currentSection === "propiedades" && (
             <div className="space-y-4">
-              <Button 
-                onClick={() => {
-                  setIsAddingProperty(true);
-                  setEditingProperty(null);
-                }} 
-                size="lg"
-              >
-                Añadir propiedad
-              </Button>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Gestión de Propiedades</h2>
+                <Button 
+                  onClick={() => {
+                    setIsAddingProperty(true);
+                    setEditingProperty(null);
+                  }} 
+                  size="lg"
+                >
+                  Añadir propiedad
+                </Button>
+              </div>
 
               {(isAddingProperty || editingProperty) ? (
                 <>
