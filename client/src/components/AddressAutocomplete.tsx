@@ -94,19 +94,45 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
               // Set placeholder
               internalInput.placeholder = placeholder || 'Escribe la dirección...';
               
-              // Apply className to the internal input
-              if (className) {
-                internalInput.className = className;
+              // Inject custom CSS into shadow DOM to fix styling
+              if (placeAutocomplete.shadowRoot) {
+                const style = document.createElement('style');
+                style.textContent = `
+                  input {
+                    background-color: hsl(var(--background)) !important;
+                    color: hsl(var(--foreground)) !important;
+                    border: 1px solid hsl(var(--input)) !important;
+                    border-radius: 0.375rem !important;
+                    padding: 0.5rem 0.75rem !important;
+                    font-size: 0.875rem !important;
+                    line-height: 1.25rem !important;
+                    width: 100% !important;
+                    height: 2.5rem !important;
+                  }
+                  input::placeholder {
+                    color: hsl(var(--muted-foreground)) !important;
+                  }
+                  input:focus {
+                    outline: none !important;
+                    ring: 2px !important;
+                    ring-color: hsl(var(--ring)) !important;
+                    ring-offset: 2px !important;
+                  }
+                `;
+                placeAutocomplete.shadowRoot.appendChild(style);
+                console.log('✓ Custom CSS injected into shadow DOM');
               }
               
               // Sync typed values to form field in real-time
               const handleInput = () => {
                 if (internalInput) {
+                  console.log('Address input changed:', internalInput.value);
                   onChange(internalInput.value);
                 }
               };
               
               internalInput.addEventListener('input', handleInput);
+              console.log('✓ Input event listener attached');
               
               // Store cleanup function
               (placeAutocomplete as any)._inputCleanup = () => {
