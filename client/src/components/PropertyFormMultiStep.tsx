@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
@@ -28,7 +28,6 @@ import { PropertyFormStepper } from "./PropertyFormStepper";
 import { ImageUploader } from "./ImageUploader";
 import { DraggableImageGallery } from "./DraggableImageGallery";
 import { AddressAutocomplete } from "./AddressAutocomplete";
-import { MapPreview } from "./MapPreview";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
 import { BARCELONA_NEIGHBORHOODS, BARCELONA_DISTRICTS_AND_NEIGHBORHOODS } from "@/utils/neighborhoods";
@@ -165,12 +164,6 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       title: "",
       description: "",
     },
-  });
-
-  // Watch address field for real-time map updates
-  const currentAddress = useWatch({
-    control: form.control,
-    name: "address",
   });
 
   // Create/update property mutation
@@ -642,12 +635,6 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   </FormItem>
                 )}
               />
-
-              {/* Map preview */}
-              <div>
-                <h3 className="text-sm font-medium mb-3">Vista previa de la ubicación</h3>
-                <MapPreview address={currentAddress || ""} height={200} />
-              </div>
             </div>
           )}
 
