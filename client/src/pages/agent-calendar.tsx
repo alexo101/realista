@@ -11,6 +11,7 @@ import { AgentEventForm } from "@/components/AgentEventForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { type AgentEvent } from "@shared/schema";
 
 interface AgentCalendarProps {
@@ -26,6 +27,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [eventToDelete, setEventToDelete] = useState<AgentEvent | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Calculate date range based on view mode
   const getDateRange = () => {
@@ -97,6 +99,17 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
       setShowEventForm(false);
+      toast({
+        title: "Éxito",
+        description: "El evento ha sido creado correctamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo crear el evento. Intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -110,6 +123,17 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
       setSelectedEvent(null);
       setShowEventForm(false);
+      toast({
+        title: "Éxito",
+        description: "El evento ha sido actualizado correctamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el evento. Intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -121,6 +145,18 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/agents", agentId, "events"] });
+      setEventToDelete(null);
+      toast({
+        title: "Éxito",
+        description: "El evento ha sido eliminado correctamente.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el evento. Intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   });
 
