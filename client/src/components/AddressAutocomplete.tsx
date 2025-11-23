@@ -98,6 +98,20 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
               if (className) {
                 internalInput.className = className;
               }
+              
+              // Sync typed values to form field in real-time
+              const handleInput = () => {
+                if (internalInput) {
+                  onChange(internalInput.value);
+                }
+              };
+              
+              internalInput.addEventListener('input', handleInput);
+              
+              // Store cleanup function
+              (placeAutocomplete as any)._inputCleanup = () => {
+                internalInput.removeEventListener('input', handleInput);
+              };
             }
             
             setIsInitialized(true);
@@ -112,6 +126,10 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
 
     return () => {
       mounted = false;
+      // Cleanup input event listener
+      if (autocompleteRef.current && (autocompleteRef.current as any)._inputCleanup) {
+        (autocompleteRef.current as any)._inputCleanup();
+      }
       // Cleanup autocomplete element
       if (autocompleteRef.current && containerRef.current) {
         try {
@@ -121,7 +139,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, className }:
         }
       }
     };
-  }, [placeholder, className]);
+  }, [placeholder, className, onChange]);
 
   // Update internal input value when value prop changes
   useEffect(() => {
