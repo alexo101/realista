@@ -294,6 +294,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
                     }}
                     disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                     initialFocus
+                    locale={es}
                   />
                 </PopoverContent>
               </Popover>
