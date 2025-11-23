@@ -995,10 +995,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
             <Button
               type="button"
               variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
+              onClick={currentStep === 1 ? onClose : handlePrevious}
               data-testid="button-previous"
-            >Salir</Button>
+            >
+              {currentStep === 1 ? "Salir" : "Anterior"}
+            </Button>
 
             {currentStep < 5 ? (
               <Button
