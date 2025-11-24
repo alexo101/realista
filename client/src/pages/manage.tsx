@@ -1366,7 +1366,15 @@ export default function ManagePage() {
               {(isAddingProperty || editingProperty) ? (
                 <>
                   {/* Use multi-step form for new properties and draft properties */}
-                  {(isAddingProperty && !editingProperty) || (editingProperty?.isDraft) ? (
+                  {(() => {
+                    console.log('🔍 DEBUG: Form decision point');
+                    console.log('🔍 DEBUG: isAddingProperty:', isAddingProperty);
+                    console.log('🔍 DEBUG: editingProperty:', editingProperty);
+                    console.log('🔍 DEBUG: editingProperty?.isDraft:', editingProperty?.isDraft);
+                    const shouldUseMultiStep = (isAddingProperty && !editingProperty) || (editingProperty?.isDraft);
+                    console.log('🔍 DEBUG: Using multi-step form?', shouldUseMultiStep);
+                    return shouldUseMultiStep;
+                  })() ? (
                     <PropertyFormMultiStep
                       onClose={() => {
                         if (isAddingProperty) {
@@ -1443,6 +1451,9 @@ export default function ManagePage() {
                           key={property.uuid} 
                           className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
                           onClick={() => {
+                            console.log('🔍 DEBUG: Property clicked for editing:', property);
+                            console.log('🔍 DEBUG: isDraft value:', property.isDraft);
+                            console.log('🔍 DEBUG: isActive value:', property.isActive);
                             setEditingProperty(property);
                             setIsAddingProperty(false);
                           }}
