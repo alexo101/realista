@@ -281,7 +281,7 @@ export default function ManagePage() {
   const updatePropertyMutation = useMutation({
     mutationFn: async (data: any) => {
       // apiRequest already returns parsed JSON data, not a Response object
-      return await apiRequest('PATCH', `/api/properties/${editingProperty?.id}`, {
+      return await apiRequest('PATCH', `/api/properties/${editingProperty?.uuid}`, {
         ...data,
         agentId: user!.id,
       });
@@ -1365,15 +1365,21 @@ export default function ManagePage() {
 
               {(isAddingProperty || editingProperty) ? (
                 <>
-                  {/* Use multi-step form for new properties */}
-                  {isAddingProperty && !editingProperty ? (
+                  {/* Use multi-step form for new properties and draft properties */}
+                  {(isAddingProperty && !editingProperty) || (editingProperty?.isDraft) ? (
                     <PropertyFormMultiStep
                       onClose={() => {
-                        setIsAddingProperty(false);
+                        if (isAddingProperty) {
+                          setIsAddingProperty(false);
+                        } else {
+                          setEditingProperty(null);
+                        }
                       }}
+                      initialData={editingProperty || undefined}
+                      isEditing={!!editingProperty}
                     />
                   ) : (
-                    /* Use regular form for editing existing properties */
+                    /* Use regular form for editing published properties */
                     <PropertyForm 
                       onSubmit={async (data) => {
                         await updatePropertyMutation.mutateAsync(data);
@@ -1382,7 +1388,7 @@ export default function ManagePage() {
                         setEditingProperty(null);
                       }}
                       initialData={editingProperty ? {
-                        id: editingProperty.id,
+                        uuid: editingProperty.uuid,
                         isActive: editingProperty.isActive,
                         title: editingProperty.title,
                         description: editingProperty.description,
