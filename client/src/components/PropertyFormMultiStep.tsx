@@ -1056,7 +1056,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
           )}
 
           {/* Navigation buttons */}
-          <div className="flex justify-between items-center pt-10 pb-10 border-t">
+          <div className="flex justify-between items-center pt-10 pb-10 border-t border-t-[#0284c5e6]">
             <Button
               type="button"
               variant="outline"
