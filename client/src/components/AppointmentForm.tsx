@@ -303,8 +303,8 @@ export function AppointmentForm({ clientId, appointment, onSave, onCancel }: App
                   <FormItem>
                     <FormLabel>Propiedad a visitar</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      defaultValue={field.value?.toString()}
+                      onValueChange={(value) => field.onChange(value)}
+                      defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -313,7 +313,7 @@ export function AppointmentForm({ clientId, appointment, onSave, onCancel }: App
                       </FormControl>
                       <SelectContent>
                         {properties.map((property) => (
-                          <SelectItem key={property.id} value={property.id.toString()}>
+                          <SelectItem key={property.uuid} value={property.uuid}>
                             {property.reference ? `Ref: ${property.reference} - ` : ""}
                             {property.title || property.address}
                           </SelectItem>

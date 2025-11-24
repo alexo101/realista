@@ -60,7 +60,7 @@ export default function NeighborhoodMap({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [geocodedCoords, setGeocodedCoords] = useState<Map<number, GeocodingResult>>(new Map());
+  const [geocodedCoords, setGeocodedCoords] = useState<Map<string, GeocodingResult>>(new Map());
 
   // Get coordinates for the neighborhood
   const getNeighborhoodCenter = (): [number, number] => {
@@ -78,7 +78,7 @@ export default function NeighborhoodMap({
       const addressesToGeocode = properties.map(property => ({
         address: property.address,
         neighborhood: property.neighborhood,
-        id: property.id
+        id: property.uuid
       }));
 
       try {
@@ -142,7 +142,7 @@ export default function NeighborhoodMap({
     // Add property markers
     properties.forEach((property) => {
       // Use geocoded coordinates if available, otherwise use neighborhood fallback
-      const geocodedCoord = geocodedCoords.get(property.id);
+      const geocodedCoord = geocodedCoords.get(property.uuid);
       let coords: [number, number];
       
       if (geocodedCoord) {
@@ -185,7 +185,7 @@ export default function NeighborhoodMap({
             ${property.bedrooms ? `<p class="text-xs"><strong>Habitaciones:</strong> ${property.bedrooms}</p>` : ''}
             ${property.bathrooms ? `<p class="text-xs"><strong>Baños:</strong> ${property.bathrooms}</p>` : ''}
             ${property.superficie ? `<p class="text-xs"><strong>Superficie:</strong> ${property.superficie}m²</p>` : ''}
-            <button onclick="window.location.href='/property/${property.id}'" class="property-details-btn">
+            <button onclick="window.location.href='/property/${property.uuid}'" class="property-details-btn">
               Ver detalles
             </button>
           </div>
@@ -216,7 +216,7 @@ export default function NeighborhoodMap({
 
     // Add markers for each property
     properties.forEach(property => {
-      const geocoded = geocodedCoords.get(property.id);
+      const geocoded = geocodedCoords.get(property.uuid);
       let coordinates: [number, number];
 
       if (geocoded) {
@@ -224,8 +224,8 @@ export default function NeighborhoodMap({
       } else {
         // Use fallback coordinates with slight randomization
         const fallback = getFallbackCoordinates(property.neighborhood);
-        const offsetLat = ((property.id * 7) % 100 - 50) * 0.002;
-        const offsetLng = ((property.id * 13) % 100 - 50) * 0.002;
+        const offsetLat = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 7) % 100 - 50) * 0.002;
+        const offsetLng = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 13) % 100 - 50) * 0.002;
         coordinates = [fallback[0] + offsetLat, fallback[1] + offsetLng];
       }
 
@@ -259,7 +259,7 @@ export default function NeighborhoodMap({
           <p><strong>Precio:</strong> ${property.price.toLocaleString()}€</p>
           ${property.bedrooms ? `<p><strong>Habitaciones:</strong> ${property.bedrooms}</p>` : ''}
           ${property.superficie ? `<p><strong>Superficie:</strong> ${property.superficie}m²</p>` : ''}
-          <button class="property-details-btn" onclick="window.location.href='/property/${property.id}'">
+          <button class="property-details-btn" onclick="window.location.href='/property/${property.uuid}'">
             Ver detalles
           </button>
         </div>

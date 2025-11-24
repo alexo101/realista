@@ -14,7 +14,7 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [geocodedCoords, setGeocodedCoords] = useState<Map<number, GeocodingResult>>(new Map());
+  const [geocodedCoords, setGeocodedCoords] = useState<Map<string, GeocodingResult>>(new Map());
 
   // Geocode property addresses when properties change
   useEffect(() => {
@@ -29,7 +29,7 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
       const addressesToGeocode = properties.map(property => ({
         address: property.address,
         neighborhood: property.neighborhood,
-        id: property.id
+        id: property.uuid
       }));
 
       try {
@@ -55,7 +55,7 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
   
   // Create properties with real or fallback coordinates
   const propertiesWithCoords = properties.map(property => {
-    const geocoded = geocodedCoords.get(property.id);
+    const geocoded = geocodedCoords.get(property.uuid);
     if (geocoded) {
       return {
         ...property,
@@ -65,8 +65,8 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
     
     // Use fallback coordinates with slight randomization for properties in same neighborhood
     const [baseLat, baseLng] = getFallbackCoordinates(property.neighborhood);
-    const offsetLat = ((property.id * 7) % 100 - 50) * 0.002; // ±0.1 degrees
-    const offsetLng = ((property.id * 13) % 100 - 50) * 0.002;
+    const offsetLat = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 7) % 100 - 50) * 0.002; // ±0.1 degrees
+    const offsetLng = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 13) % 100 - 50) * 0.002;
     
     return {
       ...property,
@@ -137,7 +137,7 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
           
           return (
             <div
-              key={property.id}
+              key={property.uuid}
               className="absolute transform -translate-x-1/2 -translate-y-full cursor-pointer group"
               style={{
                 left: `${clampedX}%`,
@@ -149,7 +149,7 @@ export function PropertyMap({ properties, neighborhood, className }: PropertyMap
               <div className="relative">
                 <MapPin 
                   className={`h-8 w-8 ${
-                    selectedProperty?.id === property.id 
+                    selectedProperty?.uuid === property.uuid 
                       ? 'text-red-600 drop-shadow-lg' 
                       : 'text-red-500 hover:text-red-600'
                   } transition-colors`}

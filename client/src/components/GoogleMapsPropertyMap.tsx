@@ -79,7 +79,7 @@ export function GoogleMapsPropertyMap({
       const addressesToGeocode = properties.map(property => ({
         address: property.address,
         neighborhood: property.neighborhood,
-        id: property.id
+        id: property.uuid
       }));
 
       try {
@@ -108,7 +108,7 @@ export function GoogleMapsPropertyMap({
 
     // Add markers for each property
     properties.forEach(property => {
-      const geocoded = geocodedCoords.get(property.id);
+      const geocoded = geocodedCoords.get(property.uuid);
       let position: { lat: number; lng: number };
 
       if (geocoded) {
@@ -116,8 +116,8 @@ export function GoogleMapsPropertyMap({
       } else {
         // Use fallback coordinates with small randomization for properties in same neighborhood
         const [baseLat, baseLng] = getFallbackCoordinates(property.neighborhood);
-        const offsetLat = ((property.id * 7) % 100 - 50) * 0.003; // ±0.15 degrees ≈ ±170m
-        const offsetLng = ((property.id * 13) % 100 - 50) * 0.003;
+        const offsetLat = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 7) % 100 - 50) * 0.003; // ±0.15 degrees ≈ ±170m
+        const offsetLng = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 13) % 100 - 50) * 0.003;
         position = { lat: baseLat + offsetLat, lng: baseLng + offsetLng };
       }
 
@@ -173,7 +173,7 @@ export function GoogleMapsPropertyMap({
             ${property.superficie ? `<p style="margin: 0; font-size: 12px; color: #6b7280;"><strong>Superficie:</strong> ${property.superficie}m²</p>` : ''}
           </div>
           <button 
-            onclick="window.location.href='/property/${property.id}'" 
+            onclick="window.location.href='/property/${property.uuid}'" 
             style="width: 100%; background: ${markerColor}; color: white; border: none; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 12px; transition: opacity 0.2s;"
             onmouseover="this.style.opacity='0.9'"
             onmouseout="this.style.opacity='1'"

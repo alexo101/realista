@@ -894,7 +894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/properties/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      await storage.deleteProperty(parseInt(id));
+      await storage.deleteProperty(id);
       res.status(200).json({ message: "Propiedad eliminada exitosamente" });
     } catch (error) {
       console.error('Error deleting property:', error);
@@ -907,7 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { isActive } = req.body;
 
-      const updatedProperty = await storage.togglePropertyStatus(parseInt(id), isActive);
+      const updatedProperty = await storage.togglePropertyStatus(id, isActive);
       res.status(200).json(updatedProperty);
     } catch (error) {
       console.error('Error toggling property status:', error);
@@ -956,7 +956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Attempting to update property:', req.params.id, req.body);
       const property = insertPropertySchema.parse(req.body);
-      const result = await storage.updateProperty(parseInt(req.params.id), property);
+      const result = await storage.updateProperty(req.params.id, property);
       console.log('Property updated successfully:', result);
       res.json(result);
     } catch (error) {
@@ -1046,17 +1046,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties/:identifier", async (req, res) => {
     try {
       const identifier = req.params.identifier;
-      const id = parseInt(identifier);
       
       let property;
       // Check if identifier is a UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(identifier)) {
         property = await storage.getPropertyByUuid(identifier);
-      } else if (isNaN(id)) {
-        property = await storage.getPropertyBySlug(identifier);
       } else {
-        property = await storage.getProperty(id);
+        property = await storage.getPropertyBySlug(identifier);
       }
 
       if (!property) {
@@ -1064,10 +1061,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Incrementar el contador de vistas
-      await storage.incrementPropertyViewCount(property.id);
+      await storage.incrementPropertyViewCount(property.uuid);
 
       // Retornar la propiedad con la vista ya incrementada
-      const updatedProperty = await storage.getProperty(property.id);
+      const updatedProperty = await storage.getProperty(property.uuid);
       res.json(updatedProperty);
     } catch (error) {
       console.error('Error fetching property:', error);
@@ -1274,7 +1271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Property favorites routes
   app.post("/api/clients/favorites/properties/:propertyId", async (req, res) => {
     try {
-      const propertyId = parseInt(req.params.propertyId);
+      const propertyId = req.params.propertyId;
       const { clientId } = req.body;
 
       console.log('Toggle property favorite request:', { propertyId, clientId, body: req.body });
@@ -1282,10 +1279,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!clientId) {
         console.log('Missing clientId in request body');
         return res.status(400).json({ message: "Client ID is required" });
-      }
-
-      if (isNaN(propertyId)) {
-        return res.status(400).json({ message: "Invalid property ID" });
       }
 
       const isFavorite = await storage.toggleFavoriteProperty(clientId, propertyId);
@@ -1313,7 +1306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clients/:clientId/favorites/properties/:propertyId/status", async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
-      const propertyId = parseInt(req.params.propertyId);
+      const propertyId = req.params.propertyId;
       const isFavorite = await storage.isFavoriteProperty(clientId, propertyId);
       res.status(200).json({ isFavorite });
     } catch (error) {
@@ -1332,7 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Property IDs are required" });
       }
 
-      const propertyIds = propertyIdsParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      const propertyIds = propertyIdsParam.split(',').map(id => id.trim()).filter(id => id.length > 0);
       const favoriteStatuses = await storage.getBatchFavoritePropertyStatus(clientId, propertyIds);
       res.status(200).json(favoriteStatuses);
     } catch (error) {
@@ -1413,11 +1406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fraud reporting endpoints
   app.post("/api/properties/:propertyId/report-fraud", async (req, res) => {
     try {
-      const propertyId = parseInt(req.params.propertyId);
-      
-      if (isNaN(propertyId)) {
-        return res.status(400).json({ message: "Invalid property ID" });
-      }
+      const propertyId = req.params.propertyId;
 
       // Get client IP and user agent for spam prevention
       const reporterIp = req.ip || req.connection.remoteAddress || '';
@@ -1431,7 +1420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create fraud report and increment property fraud count
       const fraudReport = await storage.createFraudReport({
-        propertyId,
+        propertyUuid: propertyId,
         reporterIp,
         reporterAgent
       });
@@ -1450,11 +1439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/:propertyId/fraud-count", async (req, res) => {
     try {
-      const propertyId = parseInt(req.params.propertyId);
-      
-      if (isNaN(propertyId)) {
-        return res.status(400).json({ message: "Invalid property ID" });
-      }
+      const propertyId = req.params.propertyId;
 
       const property = await storage.getPropertyById(propertyId);
       if (!property) {
@@ -3712,7 +3697,7 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
   // Update property with new image URL after upload
   app.put("/api/properties/:id/add-image", async (req, res) => {
     try {
-      const propertyId = parseInt(req.params.id);
+      const propertyId = req.params.id;
       const { imageURL } = req.body;
       
       if (!imageURL) {

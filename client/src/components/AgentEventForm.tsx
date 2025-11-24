@@ -343,8 +343,8 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
                   Propiedad {isPropertyMandatory && <span className="text-red-500">*</span>}
                 </FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
-                  defaultValue={field.value?.toString()}
+                  onValueChange={(value) => field.onChange(value || undefined)} 
+                  defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -353,7 +353,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
                   </FormControl>
                   <SelectContent>
                     {properties.map((property: any) => (
-                      <SelectItem key={property.id} value={property.id.toString()}>
+                      <SelectItem key={property.uuid} value={property.uuid}>
                         {property.reference} - {property.address}
                       </SelectItem>
                     ))}

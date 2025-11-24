@@ -207,8 +207,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: async ({ propertyId, isActive }: { propertyId: number; isActive: boolean }) => {
-      const response = await apiRequest("PATCH", `/api/properties/${propertyId}/toggle-status`, {
+    mutationFn: async ({ propertyUuid, isActive }: { propertyUuid: string; isActive: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/properties/${propertyUuid}/toggle-status`, {
         isActive,
       });
       if (!response.ok) {
@@ -221,13 +221,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       setIsActive(data.isActive);
       
       // Update React Query cache immediately to prevent stale data flashes
-      queryClient.setQueryData(["/api/properties", data.id], data);
+      queryClient.setQueryData(["/api/properties", data.uuid], data);
       
       // Update properties list cache
       queryClient.setQueryData(["/api/properties"], (oldData: any) => {
         if (!oldData) return oldData;
         return oldData.map((property: any) => 
-          property.id === data.id ? data : property
+          property.uuid === data.uuid ? data : property
         );
       });
       

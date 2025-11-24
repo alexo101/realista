@@ -119,9 +119,9 @@ interface PropertyFormMultiStepProps {
 export function PropertyFormMultiStep({ onClose, initialData, isEditing = false }: PropertyFormMultiStepProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useUser();
+  const { user} = useUser();
   const [currentStep, setCurrentStep] = useState(1);
-  const [propertyId, setPropertyId] = useState<number | null>(initialData?.id || null);
+  const [propertyId, setPropertyId] = useState<string | null>(initialData?.uuid || null);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(initialData?.neighborhood);
   const [isAddressValid, setIsAddressValid] = useState<boolean>(!!initialData?.address);
@@ -189,8 +189,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     },
     onSuccess: (data) => {
       if (!propertyId) {
-        // First time creating - save the ID
-        setPropertyId(data.id);
+        // First time creating - save the UUID
+        setPropertyId(data.uuid);
       }
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
     },

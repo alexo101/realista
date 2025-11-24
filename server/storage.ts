@@ -115,7 +115,7 @@ export interface IStorage {
 
   // Properties
   getProperties(): Promise<Property[]>;
-  getProperty(id: number): Promise<Property | undefined>;
+  getProperty(uuid: string): Promise<Property | undefined>;
   getPropertyByUuid(uuid: string): Promise<Property | undefined>;
   getPropertyBySlug(slug: string): Promise<Property | undefined>;
   getMostViewedProperties(limit?: number): Promise<Property[]>;
@@ -125,11 +125,11 @@ export interface IStorage {
   getActivePropertiesCount(agencyId: number): Promise<number>;
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
-  updateProperty(id: number, property: InsertProperty): Promise<Property>;
-  updatePropertyAddress(id: number, address: string, lat?: number, lng?: number): Promise<Property>;
-  deleteProperty(id: number): Promise<void>;
-  togglePropertyStatus(id: number, isActive: boolean): Promise<Property>;
-  incrementPropertyViewCount(id: number): Promise<void>;
+  updateProperty(uuid: string, property: InsertProperty): Promise<Property>;
+  updatePropertyAddress(uuid: string, address: string, lat?: number, lng?: number): Promise<Property>;
+  deleteProperty(uuid: string): Promise<void>;
+  togglePropertyStatus(uuid: string, isActive: boolean): Promise<Property>;
+  incrementPropertyViewCount(uuid: string): Promise<void>;
 
   // Clients
   getClients(): Promise<Client[]>;
@@ -192,9 +192,9 @@ export interface IStorage {
 
   // Client favorite properties
   getFavoritePropertiesByClient(clientId: number): Promise<Property[]>;
-  toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
-  isFavoriteProperty(clientId: number, propertyId: number): Promise<boolean>;
-  getBatchFavoritePropertyStatus(clientId: number, propertyIds: number[]): Promise<{ [key: number]: boolean }>;
+  toggleFavoriteProperty(clientId: number, propertyUuid: string): Promise<boolean>;
+  isFavoriteProperty(clientId: number, propertyUuid: string): Promise<boolean>;
+  getBatchFavoritePropertyStatus(clientId: number, propertyUuids: string[]): Promise<{ [key: string]: boolean }>;
 
   // Property visit requests
   createPropertyVisitRequest(visitRequest: InsertPropertyVisitRequest): Promise<PropertyVisitRequest>;
@@ -211,9 +211,9 @@ export interface IStorage {
 
   // Fraud Reporting
   createFraudReport(reportData: InsertFraudReport): Promise<FraudReport>;
-  checkRecentFraudReport(propertyId: number, reporterIp: string): Promise<boolean>;
-  incrementPropertyFraudCount(propertyId: number): Promise<Property | undefined>;
-  getPropertyById(propertyId: number): Promise<Property | undefined>;
+  checkRecentFraudReport(propertyUuid: string, reporterIp: string): Promise<boolean>;
+  incrementPropertyFraudCount(propertyUuid: string): Promise<Property | undefined>;
+  getPropertyById(propertyUuid: string): Promise<Property | undefined>;
 
   // Subscription Operations
   checkAgencySeatsAvailable(agencyId: number): Promise<{ available: boolean; current: number; limit: number }>;
@@ -1142,12 +1142,12 @@ export class DatabaseStorage implements IStorage {
 
       // Get all properties owned by this agency
       const agencyProperties = await db
-        .select({ id: properties.id })
+        .select({ uuid: properties.uuid })
         .from(properties)
         .where(eq(properties.agencyId, id));
 
-      const propertyIds = agencyProperties.map(p => p.id);
-      console.log(`Found ${propertyIds.length} properties to delete for agency ${id}`);
+      const propertyUuids = agencyProperties.map(p => p.uuid);
+      console.log(`Found ${propertyUuids.length} properties to delete for agency ${id}`);
 
       // Use a transaction to ensure all operations succeed or fail together
       await db.transaction(async (tx) => {
@@ -1201,33 +1201,33 @@ export class DatabaseStorage implements IStorage {
         }
 
         // 2. Delete agency properties and their related data
-        if (propertyIds.length > 0) {
+        if (propertyUuids.length > 0) {
           // Delete property visit requests
           await tx
             .delete(propertyVisitRequests)
-            .where(inArray(propertyVisitRequests.propertyId, propertyIds));
+            .where(inArray(propertyVisitRequests.propertyUuid, propertyUuids));
 
           // Delete property favorites
           await tx
             .delete(clientFavoriteProperties)
-            .where(inArray(clientFavoriteProperties.propertyId, propertyIds));
+            .where(inArray(clientFavoriteProperties.propertyUuid, propertyUuids));
 
           // Delete property fraud reports
           await tx
             .delete(fraudReports)
-            .where(inArray(fraudReports.propertyId, propertyIds));
+            .where(inArray(fraudReports.propertyUuid, propertyUuids));
 
           // Delete property inquiries
           await tx
             .delete(inquiries)
-            .where(inArray(inquiries.propertyId, propertyIds));
+            .where(inArray(inquiries.propertyUuid, propertyUuids));
 
           // Delete properties
           await tx
             .delete(properties)
-            .where(inArray(properties.id, propertyIds));
+            .where(inArray(properties.uuid, propertyUuids));
 
-          console.log(`Deleted ${propertyIds.length} properties and their related data`);
+          console.log(`Deleted ${propertyUuids.length} properties and their related data`);
         }
 
         // 3. Delete agency reviews
@@ -1384,11 +1384,11 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getProperty(id: number): Promise<Property | undefined> {
+  async getProperty(uuid: string): Promise<Property | undefined> {
     const [property] = await db
       .select()
       .from(properties)
-      .where(eq(properties.id, id));
+      .where(eq(properties.uuid, uuid));
     return property;
   }
 
@@ -1426,7 +1426,7 @@ export class DatabaseStorage implements IStorage {
       // Construir la consulta base con campos específicos para mejor rendimiento
       let query = db
         .select({
-          id: properties.id,
+          uuid: properties.uuid,
           reference: properties.reference,
           title: properties.title,
           address: properties.address,
@@ -1489,11 +1489,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async incrementPropertyViewCount(id: number): Promise<void> {
+  async incrementPropertyViewCount(uuid: string): Promise<void> {
     await db
       .update(properties)
       .set({ viewCount: sql`${properties.viewCount} + 1` })
-      .where(eq(properties.id, id));
+      .where(eq(properties.uuid, uuid));
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {
@@ -1513,7 +1513,7 @@ export class DatabaseStorage implements IStorage {
     
     // Lean projection with all required fields (never undefined)
     const baseFields = {
-      id: properties.id,
+      uuid: properties.uuid,
       reference: properties.reference,
       address: properties.address,
       escalera: properties.escalera,
@@ -1634,7 +1634,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       const result = await db
-        .select({ count: sql<number>`count(DISTINCT ${properties.id})::int` })
+        .select({ count: sql<number>`count(DISTINCT ${properties.uuid})::int` })
         .from(properties)
         .where(whereCondition);
 
@@ -1741,7 +1741,7 @@ export class DatabaseStorage implements IStorage {
 
     // Build query with all conditions using defined fields
     const searchFields = {
-      id: properties.id,
+      uuid: properties.uuid,
       reference: properties.reference,
       address: properties.address,
       escalera: properties.escalera,
@@ -1820,12 +1820,12 @@ export class DatabaseStorage implements IStorage {
         newProperty.title, 
         newProperty.neighborhood, 
         newProperty.reference, 
-        newProperty.id
+        newProperty.uuid
       );
       const [updatedProperty] = await db
         .update(properties)
         .set({ slug: finalSlug })
-        .where(eq(properties.id, newProperty.id))
+        .where(eq(properties.uuid, newProperty.uuid))
         .returning();
       return updatedProperty;
     }
@@ -1834,18 +1834,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProperty(
-    id: number,
+    uuid: string,
     property: InsertProperty,
   ): Promise<Property> {
     const [updatedProperty] = await db
       .update(properties)
       .set(property)
-      .where(eq(properties.id, id))
+      .where(eq(properties.uuid, uuid))
       .returning();
     return updatedProperty;
   }
 
-  async updatePropertyAddress(id: number, address: string, lat?: number, lng?: number): Promise<Property> {
+  async updatePropertyAddress(uuid: string, address: string, lat?: number, lng?: number): Promise<Property> {
     const updateData: any = { address };
     if (lat !== undefined && lng !== undefined) {
       updateData.lat = lat;
@@ -1855,20 +1855,20 @@ export class DatabaseStorage implements IStorage {
     const [updatedProperty] = await db
       .update(properties)
       .set(updateData)
-      .where(eq(properties.id, id))
+      .where(eq(properties.uuid, uuid))
       .returning();
     return updatedProperty;
   }
 
-  async deleteProperty(id: number): Promise<void> {
-    await db.delete(properties).where(eq(properties.id, id));
+  async deleteProperty(uuid: string): Promise<void> {
+    await db.delete(properties).where(eq(properties.uuid, uuid));
   }
 
-  async togglePropertyStatus(id: number, isActive: boolean): Promise<Property> {
+  async togglePropertyStatus(uuid: string, isActive: boolean): Promise<Property> {
     const [updatedProperty] = await db
       .update(properties)
       .set({ isActive })
-      .where(eq(properties.id, id))
+      .where(eq(properties.uuid, uuid))
       .returning();
     return updatedProperty;
   }
@@ -2089,7 +2089,7 @@ export class DatabaseStorage implements IStorage {
         email: inquiries.email,
         phone: inquiries.phone,
         message: inquiries.message,
-        propertyId: inquiries.propertyId,
+        propertyUuid: inquiries.propertyUuid,
         agentId: inquiries.agentId,
         status: inquiries.status,
         createdAt: inquiries.createdAt,
@@ -2100,7 +2100,7 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .from(inquiries)
-      .leftJoin(properties, eq(inquiries.propertyId, properties.id))
+      .leftJoin(properties, eq(inquiries.propertyUuid, properties.uuid))
       .where(eq(inquiries.agentId, agentId))
       .orderBy(sql`${inquiries.createdAt} DESC`);
     
@@ -2115,7 +2115,7 @@ export class DatabaseStorage implements IStorage {
         email: inquiries.email,
         phone: inquiries.phone,
         message: inquiries.message,
-        propertyId: inquiries.propertyId,
+        propertyUuid: inquiries.propertyUuid,
         agentId: inquiries.agentId,
         status: inquiries.status,
         createdAt: inquiries.createdAt,
@@ -2132,7 +2132,7 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .from(inquiries)
-      .leftJoin(properties, eq(inquiries.propertyId, properties.id))
+      .leftJoin(properties, eq(inquiries.propertyUuid, properties.uuid))
       .leftJoin(agents, eq(inquiries.agentId, agents.id))
       .where(eq(inquiries.email, clientEmail))
       .orderBy(sql`${inquiries.createdAt} DESC`);
@@ -2450,7 +2450,7 @@ export class DatabaseStorage implements IStorage {
   async getFavoritePropertiesByClient(clientId: number): Promise<Property[]> {
     const favorites = await db
       .select({
-        id: properties.id,
+        uuid: properties.uuid,
         title: properties.title,
         description: properties.description,
         price: properties.price,
@@ -2476,13 +2476,13 @@ export class DatabaseStorage implements IStorage {
         createdAt: properties.createdAt,
       })
       .from(clientFavoriteProperties)
-      .innerJoin(properties, eq(clientFavoriteProperties.propertyId, properties.id))
+      .innerJoin(properties, eq(clientFavoriteProperties.propertyUuid, properties.uuid))
       .where(eq(clientFavoriteProperties.clientId, clientId));
 
     return favorites;
   }
 
-  async toggleFavoriteProperty(clientId: number, propertyId: number): Promise<boolean> {
+  async toggleFavoriteProperty(clientId: number, propertyUuid: string): Promise<boolean> {
     // Check if already favorited
     const existing = await db
       .select()
@@ -2490,7 +2490,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(clientFavoriteProperties.clientId, clientId),
-          eq(clientFavoriteProperties.propertyId, propertyId)
+          eq(clientFavoriteProperties.propertyUuid, propertyUuid)
         )
       );
 
@@ -2501,7 +2501,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(clientFavoriteProperties.clientId, clientId),
-            eq(clientFavoriteProperties.propertyId, propertyId)
+            eq(clientFavoriteProperties.propertyUuid, propertyUuid)
           )
         );
       return false;
@@ -2509,41 +2509,41 @@ export class DatabaseStorage implements IStorage {
       // Add to favorites
       await db
         .insert(clientFavoriteProperties)
-        .values({ clientId, propertyId });
+        .values({ clientId, propertyUuid });
       return true;
     }
   }
 
-  async isFavoriteProperty(clientId: number, propertyId: number): Promise<boolean> {
+  async isFavoriteProperty(clientId: number, propertyUuid: string): Promise<boolean> {
     const favorite = await db
       .select()
       .from(clientFavoriteProperties)
       .where(
         and(
           eq(clientFavoriteProperties.clientId, clientId),
-          eq(clientFavoriteProperties.propertyId, propertyId)
+          eq(clientFavoriteProperties.propertyUuid, propertyUuid)
         )
       );
 
     return favorite.length > 0;
   }
 
-  async getBatchFavoritePropertyStatus(clientId: number, propertyIds: number[]): Promise<{ [key: number]: boolean }> {
-    if (propertyIds.length === 0) return {};
+  async getBatchFavoritePropertyStatus(clientId: number, propertyUuids: string[]): Promise<{ [key: string]: boolean }> {
+    if (propertyUuids.length === 0) return {};
     
     const favorites = await db
-      .select({ propertyId: clientFavoriteProperties.propertyId })
+      .select({ propertyUuid: clientFavoriteProperties.propertyUuid })
       .from(clientFavoriteProperties)
       .where(
         and(
           eq(clientFavoriteProperties.clientId, clientId),
-          inArray(clientFavoriteProperties.propertyId, propertyIds)
+          inArray(clientFavoriteProperties.propertyUuid, propertyUuids)
         )
       );
 
-    const result: { [key: number]: boolean } = {};
-    propertyIds.forEach(id => {
-      result[id] = favorites.some(fav => fav.propertyId === id);
+    const result: { [key: string]: boolean } = {};
+    propertyUuids.forEach(uuid => {
+      result[uuid] = favorites.some(fav => fav.propertyUuid === uuid);
     });
     
     return result;
@@ -2666,7 +2666,7 @@ export class DatabaseStorage implements IStorage {
     return newReport;
   }
 
-  async checkRecentFraudReport(propertyId: number, reporterIp: string): Promise<boolean> {
+  async checkRecentFraudReport(propertyUuid: string, reporterIp: string): Promise<boolean> {
     // Check for reports from the same IP within the last 24 hours
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
@@ -2675,7 +2675,7 @@ export class DatabaseStorage implements IStorage {
       .from(fraudReports)
       .where(
         and(
-          eq(fraudReports.propertyId, propertyId),
+          eq(fraudReports.propertyUuid, propertyUuid),
           eq(fraudReports.reporterIp, reporterIp),
           gte(fraudReports.createdAt, twentyFourHoursAgo)
         )
@@ -2685,23 +2685,23 @@ export class DatabaseStorage implements IStorage {
     return !!report;
   }
 
-  async incrementPropertyFraudCount(propertyId: number): Promise<Property | undefined> {
+  async incrementPropertyFraudCount(propertyUuid: string): Promise<Property | undefined> {
     const [updatedProperty] = await db
       .update(properties)
       .set({
         fraudCount: sql`COALESCE(${properties.fraudCount}, 0) + 1`
       })
-      .where(eq(properties.id, propertyId))
+      .where(eq(properties.uuid, propertyUuid))
       .returning();
     
     return updatedProperty;
   }
 
-  async getPropertyById(propertyId: number): Promise<Property | undefined> {
+  async getPropertyById(propertyUuid: string): Promise<Property | undefined> {
     const [property] = await db
       .select()
       .from(properties)
-      .where(eq(properties.id, propertyId));
+      .where(eq(properties.uuid, propertyUuid));
     
     return property;
   }

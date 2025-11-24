@@ -68,7 +68,7 @@ export default function Home() {
                 {mostViewedSaleProperties && mostViewedSaleProperties.length > 0 ? (
                   mostViewedSaleProperties.map((property) => (
                     <PropertyCard
-                      key={property.id}
+                      key={property.uuid}
                       property={{
                         ...property,
                         mainImageIndex: property.mainImageIndex ?? 0
@@ -104,7 +104,7 @@ export default function Home() {
                 {mostViewedRentProperties && mostViewedRentProperties.length > 0 ? (
                   mostViewedRentProperties.map((property) => (
                     <PropertyCard
-                      key={property.id}
+                      key={property.uuid}
                       property={{
                         ...property,
                         mainImageIndex: property.mainImageIndex ?? 0

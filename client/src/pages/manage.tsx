@@ -1434,7 +1434,7 @@ export default function ManagePage() {
                       
                       return (
                         <div 
-                          key={property.id} 
+                          key={property.uuid} 
                           className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
                           onClick={() => {
                             setEditingProperty(property);

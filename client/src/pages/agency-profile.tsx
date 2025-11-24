@@ -805,7 +805,7 @@ export default function AgencyProfile() {
                     {agencyProperties
                       .filter(p => p.operationType.toLowerCase() === 'venta')
                       .map(property => (
-                        <PropertyCard key={property.id} property={property} />
+                        <PropertyCard key={property.uuid} property={property} />
                       ))}
                   </div>
                 </div>
@@ -819,7 +819,7 @@ export default function AgencyProfile() {
                     {agencyProperties
                       .filter(p => p.operationType.toLowerCase() === 'alquiler')
                       .map(property => (
-                        <PropertyCard key={property.id} property={property} />
+                        <PropertyCard key={property.uuid} property={property} />
                       ))}
                   </div>
                 </div>

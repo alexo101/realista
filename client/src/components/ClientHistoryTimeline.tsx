@@ -98,7 +98,7 @@ export function ClientHistoryTimeline({ clientId, agentId }: ClientHistoryTimeli
   const timelineEvents: TimelineEvent[] = [
     // Agent events
     ...events.map(event => {
-      const property = properties.find(p => p.id === event.propertyId);
+      const property = properties.find(p => p.uuid === event.propertyId);
       return {
         id: `event-${event.id}`,
         type: 'event' as const,
@@ -109,7 +109,7 @@ export function ClientHistoryTimeline({ clientId, agentId }: ClientHistoryTimeli
         icon: getEventIcon(event.eventType),
         eventType: event.eventType,
         property: property ? {
-          id: property.id,
+          uuid: property.uuid,
           reference: property.reference,
           address: property.address
         } : undefined
@@ -118,7 +118,7 @@ export function ClientHistoryTimeline({ clientId, agentId }: ClientHistoryTimeli
 
     // Visit requests
     ...visitRequests.map(request => {
-      const property = properties.find(p => p.id === request.propertyId);
+      const property = properties.find(p => p.uuid === request.propertyId);
       return {
         id: `visit-${request.id}`,
         type: 'visit_request' as const,
@@ -128,7 +128,7 @@ export function ClientHistoryTimeline({ clientId, agentId }: ClientHistoryTimeli
         description: property ? `Propiedad: ${property.address}` : 'Solicitud de visita a propiedad',
         icon: <Calendar className="h-4 w-4" />,
         property: property ? {
-          id: property.id,
+          uuid: property.uuid,
           reference: property.reference,
           address: property.address
         } : undefined

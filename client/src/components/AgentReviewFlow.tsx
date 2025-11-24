@@ -360,10 +360,10 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
               <div className="space-y-2">
                 {filteredProperties.map(property => (
                   <div 
-                    key={property.id}
-                    onClick={() => handlePropertySelect(property.id)}
+                    key={property.uuid}
+                    onClick={() => handlePropertySelect(property.uuid)}
                     className={`p-3 rounded-md cursor-pointer transition-colors ${
-                      selectedPropertyId === property.id 
+                      selectedPropertyId === property.uuid 
                         ? 'bg-primary/10 border border-primary' 
                         : 'hover:bg-muted'
                     }`}

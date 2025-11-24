@@ -995,7 +995,7 @@ export default function ClientProfile() {
                         : [];
                       
                       return (
-                        <Card key={property.id} className="hover:shadow-md transition-shadow">
+                        <Card key={property.uuid} className="hover:shadow-md transition-shadow">
                           <CardContent className="p-0">
                             {propertyImages.length > 0 && (
                               <img
@@ -1034,7 +1034,7 @@ export default function ClientProfile() {
                             <Button 
                               size="sm" 
                               className="w-full"
-                              onClick={() => navigate(`/property/${property.id}`)}
+                              onClick={() => navigate(`/property/${property.uuid}`)}
                             >
                               Ver detalles
                             </Button>

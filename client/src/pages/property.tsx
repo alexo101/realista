@@ -596,7 +596,7 @@ export default function PropertyPage() {
                     
                     <h3 className="font-semibold text-lg mb-4">Aplicar por esta propiedad</h3>
                     <PropertyApplicationForm 
-                      propertyId={property.id} 
+                      propertyId={property.uuid} 
                       agentId={property.agentId}
                     />
                   </div>

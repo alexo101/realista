@@ -18,7 +18,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface Property {
-  id: number;
+  uuid: string;
   title: string;
   isActive?: boolean;
 }
@@ -39,8 +39,8 @@ export function PropertyActions({ property, onUpdate }: PropertyActionsProps) {
   }, [property.isActive]);
 
   const deleteMutation = useMutation({
-    mutationFn: async (propertyId: number) => {
-      const response = await apiRequest("DELETE", `/api/properties/${propertyId}`);
+    mutationFn: async (propertyUuid: string) => {
+      const response = await apiRequest("DELETE", `/api/properties/${propertyUuid}`);
       if (!response.ok) {
         throw new Error("Error al eliminar la propiedad");
       }
@@ -64,8 +64,8 @@ export function PropertyActions({ property, onUpdate }: PropertyActionsProps) {
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: async ({ propertyId, isActive }: { propertyId: number; isActive: boolean }) => {
-      const response = await apiRequest("PATCH", `/api/properties/${propertyId}/toggle-status`, {
+    mutationFn: async ({ propertyUuid, isActive }: { propertyUuid: string; isActive: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/properties/${propertyUuid}/toggle-status`, {
         isActive,
       });
       if (!response.ok) {
@@ -94,13 +94,13 @@ export function PropertyActions({ property, onUpdate }: PropertyActionsProps) {
   });
 
   const handleDeleteProperty = () => {
-    deleteMutation.mutate(property.id);
+    deleteMutation.mutate(property.uuid);
   };
 
   const handleToggleStatus = (checked: boolean) => {
     // Use setTimeout to prevent DOM coordinate calculation issues
     setTimeout(() => {
-      toggleStatusMutation.mutate({ propertyId: property.id, isActive: checked });
+      toggleStatusMutation.mutate({ propertyUuid: property.uuid, isActive: checked });
     }, 0);
   };
 

@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 interface PropertyResult {
-  id: number;
+  uuid: string;
   slug?: string; // SEO-friendly URL slug
   address: string;
   type: string;
@@ -35,7 +35,7 @@ interface PropertyResultsProps {
 }
 
 export function PropertyResults({ results, showSkeleton }: PropertyResultsProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: number]: number }>({});
+  const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: string]: number }>({});
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -46,8 +46,8 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
     queryFn: async () => {
       if (!user?.id || results.length === 0) return {};
 
-      // Batch request for all property IDs
-      const propertyIds = results.map(p => p.id).join(',');
+      // Batch request for all property UUIDs
+      const propertyIds = results.map(p => p.uuid).join(',');
       try {
         const response = await fetch(`/api/clients/${user.id}/favorites/properties/batch?propertyIds=${propertyIds}`);
         if (response.ok) {
@@ -66,7 +66,7 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
 
   // Mutation to toggle favorite status
   const toggleFavoriteMutation = useMutation({
-    mutationFn: async (propertyId: number): Promise<{ isFavorite: boolean; message: string }> => {
+    mutationFn: async (propertyUuid: string): Promise<{ isFavorite: boolean; message: string }> => {
       if (!user || !user.id) {
         throw new Error("Debes iniciar sesión para agregar favoritos");
       }
@@ -75,12 +75,12 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
         throw new Error("Debes ser un cliente para agregar favoritos");
       }
 
-      const response = await apiRequest("POST", `/api/clients/favorites/properties/${propertyId}`, {
+      const response = await apiRequest("POST", `/api/clients/favorites/properties/${propertyUuid}`, {
         clientId: user.id
       });
       return await response.json();
     },
-    onSuccess: (data, propertyId) => {
+    onSuccess: (data, propertyUuid) => {
       // Invalidate and refetch favorite status
       queryClient.invalidateQueries({ 
         queryKey: [`/api/clients/${user?.id}/favorites/properties/status`] 
@@ -105,23 +105,23 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
     },
   });
 
-  const handlePrevImage = (propertyId: number, images: string[], e: React.MouseEvent) => {
+  const handlePrevImage = (propertyUuid: string, images: string[], e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentImageIndex(prev => ({
       ...prev,
-      [propertyId]: ((prev[propertyId] || 0) - 1 + images.length) % images.length
+      [propertyUuid]: ((prev[propertyUuid] || 0) - 1 + images.length) % images.length
     }));
   };
 
-  const handleNextImage = (propertyId: number, images: string[], e: React.MouseEvent) => {
+  const handleNextImage = (propertyUuid: string, images: string[], e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentImageIndex(prev => ({
       ...prev,
-      [propertyId]: ((prev[propertyId] || 0) + 1) % images.length
+      [propertyUuid]: ((prev[propertyUuid] || 0) + 1) % images.length
     }));
   };
 
-  const handleToggleFavorite = (propertyId: number, e: React.MouseEvent) => {
+  const handleToggleFavorite = (propertyUuid: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
     if (!user) {
@@ -136,15 +136,15 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
       return;
     }
 
-    toggleFavoriteMutation.mutate(propertyId);
+    toggleFavoriteMutation.mutate(propertyUuid);
   };
 
   const handleShare = (property: PropertyResult, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Use slug if available, fallback to id (Spanish route)
+    // Use slug if available, fallback to uuid (Spanish route)
     const propertyUrl = property.slug 
       ? `${window.location.origin}/inmueble/${property.slug}`
-      : `${window.location.origin}/inmueble/${property.id}`;
+      : `${window.location.origin}/inmueble/${property.uuid}`;
     
     if (navigator.share) {
       navigator.share({
@@ -197,14 +197,14 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
         const hasMultipleImages = images.length > 1;
         // Use mainImageIndex as default starting point, or 0
         const defaultIndex = property.mainImageIndex ?? 0;
-        const currentIndex = currentImageIndex[property.id] ?? defaultIndex;
+        const currentIndex = currentImageIndex[property.uuid] ?? defaultIndex;
         const currentImage = images[currentIndex] || images[0] || "";
 
         return (
           <div 
-            key={property.id} 
+            key={property.uuid} 
             className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
-            onClick={() => window.location.href = property.slug ? `/inmueble/${property.slug}` : `/inmueble/${property.id}`}
+            onClick={() => window.location.href = property.slug ? `/inmueble/${property.slug}` : `/inmueble/${property.uuid}`}
           >
             <div className="aspect-video bg-gray-200 relative overflow-hidden">
               {images.length > 0 ? (
@@ -229,7 +229,7 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
                         variant="ghost"
                         size="sm"
                         className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handlePrevImage(property.id, images, e)}
+                        onClick={(e) => handlePrevImage(property.uuid, images, e)}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
@@ -237,7 +237,7 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
                         variant="ghost"
                         size="sm"
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handleNextImage(property.id, images, e)}
+                        onClick={(e) => handleNextImage(property.uuid, images, e)}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -277,11 +277,11 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
                     variant="ghost"
                     size="sm"
                     className="p-1 h-7 w-7 md:h-8 md:w-8 hover:bg-gray-100"
-                    onClick={(e) => handleToggleFavorite(property.id, e)}
+                    onClick={(e) => handleToggleFavorite(property.uuid, e)}
                   >
                     <Heart 
                       className={`h-3 w-3 md:h-4 md:w-4 ${
-                        favoriteStatuses[property.id] 
+                        favoriteStatuses[property.uuid] 
                           ? 'fill-red-500 text-red-500' 
                           : 'text-gray-400 hover:text-red-500'
                       }`} 

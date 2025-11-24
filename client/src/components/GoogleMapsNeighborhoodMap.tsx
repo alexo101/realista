@@ -93,7 +93,7 @@ export default function GoogleMapsNeighborhoodMap({
       const addressesToGeocode = properties.map(property => ({
         address: property.address,
         neighborhood: property.neighborhood,
-        id: property.id
+        id: property.uuid
       }));
 
       try {
@@ -122,7 +122,7 @@ export default function GoogleMapsNeighborhoodMap({
 
     // Add markers for each property
     properties.forEach(property => {
-      const geocoded = geocodedCoords.get(property.id);
+      const geocoded = geocodedCoords.get(property.uuid);
       let position: { lat: number; lng: number };
 
       if (geocoded) {
@@ -130,8 +130,8 @@ export default function GoogleMapsNeighborhoodMap({
       } else {
         // Use fallback coordinates with small randomization to avoid overlapping markers
         const fallback = getFallbackCoordinates(property.neighborhood);
-        const offsetLat = ((property.id * 7) % 100 - 50) * 0.003; // ±0.15 degrees ≈ ±170m
-        const offsetLng = ((property.id * 13) % 100 - 50) * 0.003;
+        const offsetLat = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 7) % 100 - 50) * 0.003; // ±0.15 degrees ≈ ±170m
+        const offsetLng = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 13) % 100 - 50) * 0.003;
         position = { lat: fallback[0] + offsetLat, lng: fallback[1] + offsetLng };
       }
 
@@ -174,7 +174,7 @@ export default function GoogleMapsNeighborhoodMap({
           ${property.bathrooms ? `<p style="margin: 2px 0; font-size: 12px;"><strong>Baños:</strong> ${property.bathrooms}</p>` : ''}
           ${property.superficie ? `<p style="margin: 2px 0; font-size: 12px;"><strong>Superficie:</strong> ${property.superficie}m²</p>` : ''}
           <button 
-            onclick="window.location.href='/property/${property.id}'" 
+            onclick="window.location.href='/property/${property.uuid}'" 
             style="width: 100%; background: #3b82f6; color: white; border: none; border-radius: 6px; padding: 8px 12px; font-size: 12px; cursor: pointer; margin-top: 8px;"
           >
             Ver detalles

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bed, Bath, Square, MapPin, Euro, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Property {
-  id: number;
+  uuid: string;
   slug?: string; // Slug for SEO-friendly URLs
   title: string | null; // Match the actual schema
   address: string;
@@ -65,10 +65,10 @@ export function PropertyCard({ property }: PropertyCardProps) {
     setCurrentImageIndex(index);
   }, []);
 
-  // Use slug if available, fall back to id
-  const propertyIdentifier = property.slug || property.id;
+  // Use slug if available, fall back to uuid
+  const propertyIdentifier = property.slug || property.uuid;
   if (!property.slug) {
-    console.warn(`Property ${property.id} has no slug, using ID instead`);
+    console.warn(`Property ${property.uuid} has no slug, using UUID instead`);
   }
 
   return (

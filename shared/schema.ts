@@ -80,8 +80,7 @@ export const agents = pgTable("agents", {
 });
 
 export const properties = pgTable("properties", {
-  id: serial("id").primaryKey(),
-  uuid: uuid("uuid").notNull().unique().defaultRandom(), // Public-facing UUID for security
+  uuid: uuid("uuid").primaryKey().defaultRandom(), // UUID as primary key
   slug: text("slug").unique(), // SEO-friendly URL slug (nullable initially, will be populated)
   reference: text("reference"), // Nuevo campo de referencia para identificación interna
   // Address fields
@@ -228,7 +227,7 @@ export const appointments = pgTable("appointments", {
   type: text("type").notNull(), // "Visita" o "Llamada"
   date: timestamp("date").notNull(),
   time: text("time").notNull(),
-  propertyId: integer("property_id"), // Solo se requiere para visitas
+  propertyUuid: uuid("property_uuid").references(() => properties.uuid), // Solo se requiere para visitas
   comments: text("comments"), // Ya no es obligatorio
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -239,7 +238,7 @@ export const inquiries = pgTable("inquiries", {
   email: text("email").notNull(),
   phone: text("phone").notNull(),
   message: text("message").notNull(),
-  propertyId: integer("property_id").notNull(),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
   agentId: integer("agent_id").notNull(), // ID del agente asociado a la propiedad
   status: text("status").notNull().default("pendiente"), // "pendiente", "contactado", "finalizado"
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -273,7 +272,7 @@ export const insertAgencySchema = createInsertSchema(agencies).omit({
   id: true,
 });
 export const insertPropertySchema = createInsertSchema(properties).omit({
-  id: true,
+  uuid: true,
   createdAt: true,
 });
 export const insertClientSchema = createInsertSchema(clients).omit({
@@ -405,7 +404,7 @@ export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   targetId: integer("target_id").notNull(), // Puede ser un id de agente o agencia
   targetType: text("target_type"), // Tipo de objetivo: 'agent' o 'agency'
-  propertyId: integer("property_id"),
+  propertyUuid: uuid("property_uuid").references(() => properties.uuid),
   verified: boolean("verified").notNull().default(false),
   pinned: boolean("pinned").notNull().default(false), // Nueva columna para marcar reseñas destacadas
   comment: text("comment"), // Campo para los comentarios
@@ -471,7 +470,7 @@ export type InsertClientFavoriteAgency = z.infer<typeof insertClientFavoriteAgen
 export const clientFavoriteProperties = pgTable("client_favorite_properties", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
-  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -485,7 +484,7 @@ export type InsertClientFavoriteProperty = z.infer<typeof insertClientFavoritePr
 // Property visit requests table
 export const propertyVisitRequests = pgTable("property_visit_requests", {
   id: serial("id").primaryKey(),
-  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
   clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   agentId: integer("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
   requestedDate: timestamp("requested_date").notNull(),
@@ -511,7 +510,7 @@ export const agentEvents = pgTable("agent_events", {
   id: serial("id").primaryKey(),
   agentId: integer("agent_id").notNull().references(() => agents.id),
   clientId: integer("client_id").references(() => clients.id),
-  propertyId: integer("property_id").references(() => properties.id),
+  propertyUuid: uuid("property_uuid").references(() => properties.uuid),
   eventType: text("event_type").notNull(), // 'Llamada', 'Visita', or 'Seguimiento'
   eventDate: text("event_date").notNull(), // YYYY-MM-DD format
   eventTime: text("event_time").notNull(), // HH:MM format
@@ -531,7 +530,7 @@ export type InsertAgentEvent = z.infer<typeof insertAgentEventSchema>;
 // Fraud reports table
 export const fraudReports = pgTable("fraud_reports", {
   id: serial("id").primaryKey(),
-  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
   reporterIp: text("reporter_ip"), // IP address to prevent spam
   reporterAgent: text("reporter_agent"), // User agent string for additional tracking
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -549,7 +548,7 @@ export type InsertFraudReport = z.infer<typeof insertFraudReportSchema>;
 export const agentFavoriteProperties = pgTable("agent_favorite_properties", {
   id: serial("id").primaryKey(),
   agentId: integer("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
-  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
