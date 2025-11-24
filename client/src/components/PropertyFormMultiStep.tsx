@@ -106,8 +106,16 @@ const step4Schema = step3Schema.extend({
 
 // Step 5 schema: Description (final)
 const step5Schema = step4Schema.extend({
-  title: z.string().min(1, "El título es obligatorio"),
-  description: z.string().min(1, "La descripción es obligatoria"),
+  title: z.string()
+    .min(1, "El título es obligatorio")
+    .refine(val => !val.includes("Borrador - Título pendiente"), {
+      message: "Por favor, escribe un título personalizado para tu propiedad"
+    }),
+  description: z.string()
+    .min(1, "La descripción es obligatoria")
+    .refine(val => !val.includes("Borrador - Información pendiente"), {
+      message: "Por favor, escribe una descripción personalizada para tu propiedad"
+    }),
 });
 
 interface PropertyFormMultiStepProps {
@@ -350,8 +358,34 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   };
 
   const handleFinalSubmit = async () => {
+    // Trigger validation for all fields
     const isValid = await form.trigger();
-    if (!isValid) return;
+    
+    if (!isValid) {
+      // Get form errors to show user what's missing
+      const errors = form.formState.errors;
+      console.log("Form validation errors:", errors);
+      
+      // Build a list of missing required fields
+      const missingFields: string[] = [];
+      if (errors.price) missingFields.push("precio");
+      if (errors.address) missingFields.push("dirección");
+      if (errors.neighborhood) missingFields.push("barrio");
+      if (errors.title) missingFields.push("título");
+      if (errors.description) missingFields.push("descripción");
+      
+      // Show toast with specific missing fields or generic message
+      const description = missingFields.length > 0
+        ? `Por favor, completa los siguientes campos: ${missingFields.join(", ")}.`
+        : "Por favor, completa todos los campos obligatorios antes de publicar.";
+      
+      toast({
+        title: "Campos incompletos",
+        description,
+        variant: "destructive",
+      });
+      return;
+    }
 
     const formData = form.getValues();
     const finalData = {
@@ -368,6 +402,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       });
       onClose();
     } catch (error) {
+      console.error("Error publishing property:", error);
       toast({
         title: "Error",
         description: "No se pudo publicar la propiedad. Inténtalo de nuevo.",
@@ -1001,11 +1036,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título del anuncio</FormLabel>
+                    <FormLabel>Título del anuncio *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Título del anuncio"
+                        placeholder="Ej: Piso luminoso en el corazón de Barcelona"
                         data-testid="input-title"
                       />
                     </FormControl>
@@ -1020,7 +1055,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between mb-2">
-                      <FormLabel>Descripción</FormLabel>
+                      <FormLabel>Descripción *</FormLabel>
                       {user?.subscriptionPlan === "basica" ? (
                         <TooltipProvider>
                           <Tooltip>
