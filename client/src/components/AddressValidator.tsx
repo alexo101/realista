@@ -15,10 +15,13 @@ interface AddressValidatorProps {
     streetName: string;
     streetNumber: string;
   }) => void;
+  onAddressInvalidated?: () => void;
   initialLocality?: string;
   initialStreetName?: string;
   initialStreetNumber?: string;
   initialFormattedAddress?: string;
+  initialLatitude?: number | null;
+  initialLongitude?: number | null;
 }
 
 interface GeocodeCandidate {
@@ -30,10 +33,13 @@ interface GeocodeCandidate {
 
 export function AddressValidator({
   onAddressValidated,
+  onAddressInvalidated,
   initialLocality = "",
   initialStreetName = "",
   initialStreetNumber = "",
   initialFormattedAddress = "",
+  initialLatitude = null,
+  initialLongitude = null,
 }: AddressValidatorProps) {
   const [locality, setLocality] = useState(initialLocality);
   const [streetName, setStreetName] = useState(initialStreetName);
@@ -42,8 +48,8 @@ export function AddressValidator({
   const [isValidating, setIsValidating] = useState(false);
   const [isValidated, setIsValidated] = useState(!!initialFormattedAddress);
   const [validatedAddress, setValidatedAddress] = useState(initialFormattedAddress);
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(initialLatitude);
+  const [longitude, setLongitude] = useState<number | null>(initialLongitude);
   
   const [error, setError] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<GeocodeCandidate[]>([]);
@@ -153,6 +159,11 @@ export function AddressValidator({
     setError(null);
     setCandidates([]);
     setShowCandidates(false);
+    
+    // Notify parent that address is now invalid
+    if (onAddressInvalidated) {
+      onAddressInvalidated();
+    }
   };
 
   return (

@@ -510,10 +510,18 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   form.setValue("longitude", data.longitude);
                   setIsAddressValid(true);
                 }}
+                onAddressInvalidated={() => {
+                  setIsAddressValid(false);
+                  form.setValue("address", "");
+                  form.setValue("latitude", null);
+                  form.setValue("longitude", null);
+                }}
                 initialLocality={form.getValues("locality")}
                 initialStreetName={form.getValues("streetName")}
                 initialStreetNumber={form.getValues("streetNumber")}
                 initialFormattedAddress={form.getValues("address")}
+                initialLatitude={form.getValues("latitude")}
+                initialLongitude={form.getValues("longitude")}
               />
 
               <div className="grid grid-cols-3 gap-4">
