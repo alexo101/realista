@@ -294,7 +294,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     }
 
     if (currentStep === 2) {
-      // After step 2, create the property
+      // After step 2, create the property (only if it doesn't exist yet)
+      const isFirstTimeCreating = !propertyId;
       const formData = form.getValues();
       const propertyData = {
         ...formData,
@@ -312,10 +313,15 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
       try {
         await savePropertyMutation.mutateAsync(propertyData);
-        toast({
-          title: "Propiedad creada",
-          description: "La propiedad ya está creada. Continúa llenando el resto de la información y el anuncio",
-        });
+        
+        // Only show toast when creating for the first time
+        if (isFirstTimeCreating) {
+          toast({
+            title: "Propiedad creada",
+            description: "La propiedad ya está creada. Continúa llenando el resto de la información y el anuncio",
+          });
+        }
+        
         setCurrentStep(currentStep + 1);
       } catch (error) {
         toast({
