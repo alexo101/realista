@@ -73,6 +73,14 @@ Preferred communication style: Simple, everyday language.
     - **Read Operations**: All queries use UUID-based JOINs (`getAgentById`, `getFavoriteAgentsByClient`) for agency relationship lookups.
     - **Write Operations**: Both `addAgentToAgencyAtomic` and `createAgencyAgent` populate UUID columns during insert to satisfy NOT NULL constraints.
     - **Indexes**: Created btree indexes on UUID columns (`agency_agents_agency_uuid_idx`, `agency_agents_agent_uuid_idx`) for query performance.
+- **UUID-Based Property Management** (November 2025):
+    - **Primary Key Migration**: Properties table migrated from serial ID to UUID primary key to eliminate sequence synchronization issues.
+    - **Database Schema**: `properties.uuid` is the sole primary key (UUID type, NOT NULL, DEFAULT gen_random_uuid()).
+    - **Foreign Key Updates**: All 8 dependent tables updated to use `propertyUuid` UUID foreign keys: `clientFavoriteProperties`, `propertyVisitRequests`, `agentEvents`, `fraudReports`, `agentFavoriteProperties`, `appointments`, `inquiries`, `reviews`.
+    - **Backend Integration**: All storage methods and API routes accept string UUIDs instead of numeric IDs.
+    - **Frontend Consistency**: All 28 components updated to use `property.uuid` for keys, navigation, API calls, and React Query cache keys.
+    - **Multi-Step Form**: PropertyFormMultiStep tracks `propertyUuid` (string) and stores `data.uuid` from API responses for draft/publish workflow.
+    - **Migration Approach**: Used manual SQL DROP/CREATE instead of drizzle-kit for cleaner migration (testing phase, data loss acceptable).
     - **Unique Constraints**: UUID-based partial unique indexes (`unique_active_agent_uuid`, `unique_active_admin_uuid`) enforce business rules.
     - **Data Integrity**: All 9 existing relationships backfilled with UUIDs, zero NULL values remain.
 - **Spanish SEO-Optimized URLs** (October 2025):
