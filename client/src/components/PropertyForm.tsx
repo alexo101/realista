@@ -200,11 +200,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   // Mutations for property management
   const deleteMutation = useMutation({
     mutationFn: async (propertyId: number) => {
-      const response = await apiRequest("DELETE", `/api/properties/${propertyId}`);
-      if (!response.ok) {
-        throw new Error("Error al eliminar la propiedad");
-      }
-      return response.json();
+      return await apiRequest("DELETE", `/api/properties/${propertyId}`);
     },
     onSuccess: () => {
       toast({
@@ -225,13 +221,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ propertyUuid, isActive }: { propertyUuid: string; isActive: boolean }) => {
-      const response = await apiRequest("PATCH", `/api/properties/${propertyUuid}/toggle-status`, {
+      return await apiRequest("PATCH", `/api/properties/${propertyUuid}/toggle-status`, {
         isActive,
       });
-      if (!response.ok) {
-        throw new Error("Error al cambiar el estado de la propiedad");
-      }
-      return response.json();
     },
     onSuccess: (data) => {
       // Update local state with server response
@@ -274,7 +266,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       // Get current form values
       const formValues = form.getValues();
       
-      const response = await apiRequest('POST', '/api/generate-description', {
+      const data = await apiRequest('POST', '/api/generate-description', {
         propertyType: formValues.type,
         operationType: formValues.operationType,
         neighborhood: formValues.neighborhood,
@@ -285,12 +277,14 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
         features: formValues.features || [],
       });
       
-      if (!response.ok) {
-        throw new Error('Error generating description');
-      }
+      console.log("Generated description:", data.description);
       
-      const data = await response.json();
-      form.setValue('description', data.description);
+      // Update form with proper options to trigger re-render
+      form.setValue('description', data.description, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
       
       toast({
         title: "Descripción generada",
@@ -311,47 +305,41 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
-      reference: "",
-      locality: "",
-      streetName: "",
-      streetNumber: "",
-      address: "",
-      latitude: null,
-      longitude: null,
-      escalera: undefined,
-      planta: undefined,
-      puerta: undefined,
-      neighborhood: undefined as any,
-      type: undefined as any,
-      housingType: undefined,
-      floor: undefined,
-      operationType: undefined as any,
-      price: "" as any,
-      bedrooms: undefined,
-      bathrooms: undefined,
-      superficie: "" as any,
-      features: [],
-      availability: "Inmediatamente",
-      availabilityDate: undefined,
-      propertyCondition: undefined,
-      housingStatus: undefined,
-      imageUrls: [],
-      mainImageIndex: -1,
-      title: "",
-      description: "",
+    defaultValues: {
+      reference: initialData?.reference || "",
+      locality: initialData?.locality || "",
+      streetName: initialData?.streetName || "",
+      streetNumber: initialData?.streetNumber || "",
+      address: initialData?.address || "",
+      latitude: initialData?.latitude || null,
+      longitude: initialData?.longitude || null,
+      escalera: initialData?.escalera || undefined,
+      planta: initialData?.planta || undefined,
+      puerta: initialData?.puerta || undefined,
+      neighborhood: initialData?.neighborhood || (undefined as any),
+      type: initialData?.type || (undefined as any),
+      housingType: initialData?.housingType || undefined,
+      floor: initialData?.floor || undefined,
+      operationType: initialData?.operationType || (undefined as any),
+      price: initialData?.price || ("" as any),
+      bedrooms: initialData?.bedrooms || undefined,
+      bathrooms: initialData?.bathrooms || undefined,
+      superficie: initialData?.superficie || ("" as any),
+      features: initialData?.features || [],
+      availability: initialData?.availability || "Inmediatamente",
+      availabilityDate: initialData?.availabilityDate || undefined,
+      propertyCondition: initialData?.propertyCondition || undefined,
+      housingStatus: initialData?.housingStatus || undefined,
+      imageUrls: initialData?.imageUrls || [],
+      mainImageIndex: initialData?.mainImageIndex ?? -1,
+      title: initialData?.title || "",
+      description: initialData?.description || "",
     },
   });
 
   // Handler for URL-based image changes with main image index
   const handleImageUrlChange = (newImageUrls: string[], mainImageIndex: number) => {
     form.setValue("imageUrls", newImageUrls);
-    form.setValue("mainImageIndex", mainImageIndex);
-  };
-
-  // Legacy handler for backwards compatibility (deprecated)
-  const handleImageChange = (newImages: string[], mainImageIndex: number) => {
-    form.setValue("images", newImages);
     form.setValue("mainImageIndex", mainImageIndex);
   };
 
@@ -630,7 +618,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Escalera</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-escalera">
                             <SelectValue placeholder="Seleccionar" />
@@ -655,7 +643,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Planta</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-planta">
                             <SelectValue placeholder="Seleccionar" />
@@ -680,7 +668,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Puerta</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-puerta">
                             <SelectValue placeholder="Seleccionar" />
