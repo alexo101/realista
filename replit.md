@@ -26,6 +26,7 @@ Preferred communication style: Simple, everyday language.
 - **Build Tool**: Vite for fast development and optimized production builds.
 - **Image Handling**: Scalable cloud storage for property images and other uploads.
 - **Email Service**: Nodemailer (with Ethereal for dev).
+- **AI Integration**: Replit AI Integrations with OpenAI GPT-5-nano for automated property description generation. Charges to Replit credits, no external API key required.
 
 ### Feature Specifications
 - **User Management**: Role-based authentication, dedicated registration flows, and profile management for agents and agencies.
