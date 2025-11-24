@@ -36,7 +36,7 @@ import { PROPERTY_FEATURES } from "@/utils/property-features";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, ChevronsUpDown, Sparkles } from "lucide-react";
+import { Check, ChevronsUpDown, Sparkles, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -1057,14 +1057,32 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
           {/* Navigation buttons */}
           <div className="flex justify-between items-center pt-10 pb-10 border-t" style={{ borderTopColor: "#0284c5e6" }}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={currentStep === 1 ? onClose : handlePrevious}
-              data-testid="button-previous"
-            >
-              {currentStep === 1 ? "Salir" : "Anterior"}
-            </Button>
+            <div className="flex gap-3">
+              {/* Salir button - always visible */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="border-red-500 text-red-500 hover:bg-red-50"
+                data-testid="button-exit"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Salir
+              </Button>
+
+              {/* Anterior button - always visible but disabled on step 1 */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={currentStep === 1}
+                style={{ borderColor: "#0284c5e6", color: "#0284c5e6" }}
+                className="hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="button-previous"
+              >
+                Anterior
+              </Button>
+            </div>
 
             {currentStep < 5 ? (
               <Button
