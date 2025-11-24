@@ -213,7 +213,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         features: formValues.features || [],
       });
 
-      form.setValue("description", data.description);
+      console.log("Generated description:", data.description);
+
+      // Update form with proper options to trigger re-render
+      form.setValue("description", data.description, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
 
       toast({
         title: "Descripción generada",
