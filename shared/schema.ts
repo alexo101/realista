@@ -12,6 +12,7 @@ import {
   uniqueIndex,
   uuid,
   index,
+  real,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -83,7 +84,13 @@ export const properties = pgTable("properties", {
   uuid: uuid("uuid").notNull().unique().defaultRandom(), // Public-facing UUID for security
   slug: text("slug").unique(), // SEO-friendly URL slug (nullable initially, will be populated)
   reference: text("reference"), // Nuevo campo de referencia para identificación interna
-  address: text("address").notNull(),
+  // Address fields
+  locality: text("locality"), // City/town input (Madrid, Barcelona, etc)
+  streetName: text("street_name"), // Street name input
+  streetNumber: text("street_number"), // Street number input
+  address: text("address").notNull(), // Formatted address from Google
+  latitude: real("latitude"), // Latitude coordinate
+  longitude: real("longitude"), // Longitude coordinate
   // Campos adicionales de dirección (privados, no se muestran públicamente)
   escalera: text("escalera"), // Escalera: A, B, C
   planta: text("planta"), // Planta: 1-20
