@@ -3546,12 +3546,15 @@ Gracias!
   // AI Description Generation
   app.post("/api/generate-description", async (req, res) => {
     try {
-      if (!process.env.OPENAI_API_KEY) {
+      if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
       const { OpenAI } = await import("openai");
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const openai = new OpenAI({ 
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
+      });
 
       const {
         propertyType,
@@ -3588,7 +3591,7 @@ La descripción debe:
 Responde solo con la descripción, sin introducción ni explicaciones adicionales.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Using gpt-4o-mini (nano) which is more widely available
+        model: "gpt-5-nano", // Using gpt-5-nano for cost-effective generation
         messages: [
           {
             role: "system",
