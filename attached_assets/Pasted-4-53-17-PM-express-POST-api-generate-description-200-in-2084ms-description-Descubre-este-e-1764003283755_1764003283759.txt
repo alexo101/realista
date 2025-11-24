@@ -1,0 +1,96 @@
+4:53:17 PM [express] POST /api/generate-description 200 in 2084ms :: {"description":"Descubre este e…
+Attempting to update property: 551fea68-2e2a-4575-812b-840b984b7a23 {
+  uuid: '551fea68-2e2a-4575-812b-840b984b7a23',
+  slug: null,
+  reference: 'LID002',
+  locality: 'barcelona',
+  streetName: 'arago',
+  streetNumber: '11',
+  address: "Carrer d'Aragó, 11, L'Eixample, 08015 Barcelona, Spain",
+  latitude: 41.378555,
+  longitude: 2.1465838,
+  escalera: null,
+  planta: '6',
+  puerta: '2',
+  type: 'Vivienda',
+  operationType: 'Alquiler',
+  housingType: null,
+  housingStatus: null,
+  floor: null,
+  features: [ 'bien-conectado', 'exterior', 'amueblado', 'terraza' ],
+  availability: 'Inmediatamente',
+  availabilityDate: '2025-11-24T16:53:27.991Z',
+  previousPrice: null,
+  price: 1200,
+  city: null,
+  district: null,
+  neighborhood: "La Nova Esquerra de l'Eixample",
+  bedrooms: 3,
+  bathrooms: 1,
+  superficie: 85,
+  mainImageIndex: -1,
+  viewCount: 0,
+  agentId: 8,
+  agencyId: null,
+  isActive: true,
+  isDraft: false,
+  fraudCount: 0,
+  createdAt: '2025-11-24T13:49:19.223Z',
+  title: 'Luminoso piso cerca de Sants estación',
+  imageUrls: [],
+  description: "Descubre este encantador piso en alquiler en La Nova Esquerra de l'Eixample, que ofrece 85 m² de comodidad. Consta de 3 luminosas habitaciones y un baño, ideal para disfrutar de la vida urbana. La vivienda se presenta completamente amueblada y cuenta con una acogedora terraza, perfecta para relajarse al aire libre. Su ubicación privilegiada garantiza excelentes conexiones con el transporte público. ¡No pierdas la oportunidad de vivir en una de las mejores zonas de Barcelona!"
+}
+Error updating property: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "date",
+    "received": "string",
+    "path": [
+      "availabilityDate"
+    ],
+    "message": "Expected date, received string"
+  }
+]
+    at get error [as error] (file:///home/runner/workspace/node_modules/zod/lib/index.mjs:587:31)
+    at ZodObject.parse (file:///home/runner/workspace/node_modules/zod/lib/index.mjs:692:22)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:958:45)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at param (/home/runner/workspace/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/runner/workspace/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:421:3)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/home/runner/workspace/server/index.ts:58:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express-session/index.js:514:7
+    at /home/runner/workspace/node_modules/connect-pg-simple/index.js:370:18
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  issues: [
+    {
+      code: 'invalid_type',
+      expected: 'date',
+      received: 'string',
+      path: [Array],
+      message: 'Expected date, received string'
+    }
+  ],
+  addIssue: [Function (anonymous)],
+  addIssues: [Function (anonymous)],
+  errors: [
+    {
+      code: 'invalid_type',
+      expected: 'date',
+      received: 'string',
+      path: [Array],
+      message: 'Expected date, received string'
+    }
+  ]
+}
+4:53:28 PM [express] PATCH /api/properties/551fea68-2e2a-4575-812b-840b984b7a23 400 in 86ms :: {"mes…

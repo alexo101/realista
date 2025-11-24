@@ -274,6 +274,12 @@ export const insertAgencySchema = createInsertSchema(agencies).omit({
 export const insertPropertySchema = createInsertSchema(properties).omit({
   uuid: true,
   createdAt: true,
+}).extend({
+  // Accept date strings from JSON and convert to Date objects
+  availabilityDate: z.union([
+    z.date(),
+    z.string().transform((val) => new Date(val)),
+  ]).optional().nullable(),
 });
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
