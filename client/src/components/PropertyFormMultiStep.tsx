@@ -231,10 +231,47 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     }
   };
 
+  // Auto-save draft data (steps 3, 4 only - step 2 creates/saves initially)
+  const autoSaveDraft = async () => {
+    if (!propertyId) return; // No property to save yet
+    
+    const formData = form.getValues();
+    const draftData = {
+      ...formData,
+      price: Number(formData.price),
+      bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
+      bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
+      superficie: formData.superficie ? Number(formData.superficie) : undefined,
+      agentId: user?.id,
+      agencyId: null,
+      isDraft: true,
+      isActive: false,
+    };
+
+    try {
+      await savePropertyMutation.mutateAsync(draftData);
+    } catch (error) {
+      console.error("Auto-save failed:", error);
+      // Don't show error toast for auto-save failures
+    }
+  };
+
   // Navigation handlers
   const handleNext = async () => {
-    const isValid = await form.trigger();
-    if (!isValid) return;
+    // Validate only fields relevant to current step
+    let fieldsToValidate: string[] = [];
+    
+    if (currentStep === 1) {
+      fieldsToValidate = ["type", "operationType", "price"];
+    } else if (currentStep === 2) {
+      fieldsToValidate = ["address", "neighborhood"];
+    }
+    // Step 3, 4 have no required fields - skip validation
+    
+    if (fieldsToValidate.length > 0) {
+      const isValid = await form.trigger(fieldsToValidate as any);
+      if (!isValid) return;
+    }
 
     // On Step 2, validate that a valid address was selected from suggestions
     if (currentStep === 2 && !isAddressValid) {
@@ -277,12 +314,20 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         });
       }
     } else if (currentStep < 5) {
+      // Auto-save before moving to next step (steps 3, 4)
+      if (currentStep >= 3) {
+        await autoSaveDraft();
+      }
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
     if (currentStep > 1) {
+      // Auto-save before going back (steps 3, 4, 5)
+      if (currentStep >= 3 && propertyId) {
+        await autoSaveDraft();
+      }
       setCurrentStep(currentStep - 1);
     }
   };
