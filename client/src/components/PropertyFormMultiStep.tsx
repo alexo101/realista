@@ -28,7 +28,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PropertyFormStepper } from "./PropertyFormStepper";
 import { ImageUploader } from "./ImageUploader";
 import { DraggableImageGallery } from "./DraggableImageGallery";
-import { AddressAutocomplete } from "./AddressAutocomplete";
+import { AddressValidator } from "./AddressValidator";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
 import { ALL_CITIES } from "@/utils/neighborhoods";
@@ -79,7 +79,12 @@ const step1Schema = z.object({
 
 // Step 2 schema: Location
 const step2Schema = step1Schema.extend({
+  locality: z.string().optional(),
+  streetName: z.string().optional(),
+  streetNumber: z.string().optional(),
   address: z.string().min(1, "La dirección es obligatoria"),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
   escalera: z.enum(escaleraOptions).optional(),
   planta: z.enum(plantaOptions).optional(),
   puerta: z.enum(puertaOptions).optional(),
@@ -151,7 +156,12 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       bedrooms: undefined,
       bathrooms: undefined,
       superficie: "" as any,
+      locality: "",
+      streetName: "",
+      streetNumber: "",
       address: "",
+      latitude: null,
+      longitude: null,
       escalera: undefined,
       planta: undefined,
       puerta: undefined,
@@ -490,27 +500,20 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
             <div className="space-y-6">
               <h2 className="text-2xl font-bold">Ubicación</h2>
 
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dirección</FormLabel>
-                    <FormControl>
-                      <AddressAutocomplete
-                        value={field.value}
-                        onChange={field.onChange}
-                        onValidationChange={setIsAddressValid}
-                        placeholder="Introduce la dirección completa"
-                        className="w-full"
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs text-muted-foreground">
-                      Debes seleccionar una dirección de las sugerencias
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <AddressValidator
+                onAddressValidated={(data) => {
+                  form.setValue("locality", data.locality);
+                  form.setValue("streetName", data.streetName);
+                  form.setValue("streetNumber", data.streetNumber);
+                  form.setValue("address", data.formattedAddress);
+                  form.setValue("latitude", data.latitude);
+                  form.setValue("longitude", data.longitude);
+                  setIsAddressValid(true);
+                }}
+                initialLocality={form.getValues("locality")}
+                initialStreetName={form.getValues("streetName")}
+                initialStreetNumber={form.getValues("streetNumber")}
+                initialFormattedAddress={form.getValues("address")}
               />
 
               <div className="grid grid-cols-3 gap-4">
