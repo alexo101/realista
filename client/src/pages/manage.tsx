@@ -292,6 +292,17 @@ export default function ManagePage() {
     },
   });
 
+  const fetchPropertyForEditMutation = useMutation({
+    mutationFn: async (uuid: string) => {
+      // Fetch full property data including description
+      return await apiRequest('GET', `/api/properties/${uuid}`, undefined);
+    },
+    onSuccess: (fullProperty) => {
+      setEditingProperty(fullProperty);
+      setIsAddingProperty(false);
+    },
+  });
+
   const createClientMutation = useMutation({
     mutationFn: async (data: any) => {
       // apiRequest already returns parsed JSON data, not a Response object
@@ -1363,10 +1374,16 @@ export default function ManagePage() {
                 </div>
               )}
 
-              {(isAddingProperty || editingProperty) ? (
+              {(isAddingProperty || editingProperty || fetchPropertyForEditMutation.isPending) ? (
                 <>
-                  {/* Use multi-step form for new properties and draft properties */}
-                  {(isAddingProperty && !editingProperty) || (editingProperty?.isDraft) ? (
+                  {fetchPropertyForEditMutation.isPending ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Cargando propiedad...</p>
+                      </div>
+                    </div>
+                  ) : (isAddingProperty && !editingProperty) || (editingProperty?.isDraft) ? (
                     <PropertyFormMultiStep
                       onClose={() => {
                         if (isAddingProperty) {
@@ -1388,12 +1405,16 @@ export default function ManagePage() {
                         setEditingProperty(null);
                       }}
                       initialData={editingProperty ? {
-                        uuid: editingProperty.uuid,
                         isActive: editingProperty.isActive,
                         title: editingProperty.title,
                         description: editingProperty.description,
                         price: editingProperty.price,
                         address: editingProperty.address,
+                        locality: editingProperty.locality || "",
+                        streetName: editingProperty.streetName || "",
+                        streetNumber: editingProperty.streetNumber || "",
+                        latitude: editingProperty.latitude,
+                        longitude: editingProperty.longitude,
                         escalera: editingProperty.escalera || undefined,
                         planta: editingProperty.planta || undefined,
                         puerta: editingProperty.puerta || undefined,
@@ -1404,6 +1425,7 @@ export default function ManagePage() {
                         type: editingProperty.type as any,
                         housingType: editingProperty.housingType || undefined,
                         housingStatus: editingProperty.housingStatus || undefined,
+                        propertyCondition: editingProperty.propertyCondition || undefined,
                         floor: editingProperty.floor || undefined,
                         neighborhood: editingProperty.neighborhood,
                         reference: editingProperty.reference,
@@ -1443,8 +1465,7 @@ export default function ManagePage() {
                           key={property.uuid} 
                           className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
                           onClick={() => {
-                            setEditingProperty(property);
-                            setIsAddingProperty(false);
+                            fetchPropertyForEditMutation.mutate(property.uuid);
                           }}
                         >
                           <div className="h-48 overflow-hidden relative">
