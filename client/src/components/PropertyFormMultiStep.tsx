@@ -65,6 +65,7 @@ const escaleraOptions = ["A", "B", "C"] as const;
 const plantaOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"] as const;
 const puertaOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
 const availabilityOptions = ["Inmediatamente", "A partir de"] as const;
+const housingStatusOptions = ["Obra nueva", "Buen estado", "A reformar", "Reformado"] as const;
 
 // Step 1 schema: Basic Information
 const step1Schema = z.object({
@@ -96,6 +97,7 @@ const step3Schema = step2Schema.extend({
   features: z.array(z.string()).default([]),
   availability: z.enum(availabilityOptions).default("Inmediatamente"),
   availabilityDate: z.date().optional(),
+  housingStatus: z.enum(housingStatusOptions).optional(),
 });
 
 // Step 4 schema: Images
@@ -177,6 +179,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       features: [],
       availability: "Inmediatamente",
       availabilityDate: undefined,
+      housingStatus: undefined,
       imageUrls: [],
       mainImageIndex: -1,
       title: "",
@@ -990,6 +993,36 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     )}
                   />
                 )}
+              </div>
+
+              {/* Situación de la vivienda */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Situación de la vivienda</h3>
+                <FormField
+                  control={form.control}
+                  name="housingStatus"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex flex-col space-y-2"
+                        >
+                          {housingStatusOptions.map((option) => (
+                            <FormItem key={option} className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value={option} data-testid={`radio-housing-status-${option.toLowerCase().replace(/\s+/g, '-')}`} />
+                              </FormControl>
+                              <FormLabel className="font-normal">{option}</FormLabel>
+                            </FormItem>
+                          ))}
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
           )}
