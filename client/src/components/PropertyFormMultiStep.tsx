@@ -997,7 +997,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
               {/* Situación de la vivienda */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Situación de la vivienda</h3>
+                <h3 className="text-lg font-semibold mb-4">Estado de la vivienda</h3>
                 <FormField
                   control={form.control}
                   name="housingStatus"
