@@ -246,6 +246,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       agencyId: null,
       isDraft: true,
       isActive: false,
+      // Ensure description is never empty (required by schema)
+      description: formData.description || "Borrador - Información pendiente",
     };
 
     try {
