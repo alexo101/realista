@@ -358,6 +358,12 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   };
 
   const handleFinalSubmit = async () => {
+    // If availability is "Inmediatamente", set availabilityDate to current date BEFORE validation
+    const currentAvailability = form.getValues("availability");
+    if (currentAvailability === "Inmediatamente" && !form.getValues("availabilityDate")) {
+      form.setValue("availabilityDate", new Date(), { shouldValidate: false });
+    }
+    
     // Trigger validation for all fields
     const isValid = await form.trigger();
     

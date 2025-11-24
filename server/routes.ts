@@ -3567,13 +3567,13 @@ Gracias!
         features
       } = req.body;
 
-      // Simplified prompt for better reliability with GPT-5-nano
+      // Improved prompt for GPT-4o-mini
       const prompt = `Escribe una descripción de máximo 400 caracteres para: ${propertyType} en ${operationType} en ${neighborhood}, ${bedrooms || 0} habitaciones, ${bathrooms || 0} baños, ${size || 0}m², ${price}€. Características: ${features && features.length > 0 ? features.join(', ') : 'ninguna'}. Usa español profesional y atractivo.`;
 
       console.log("Generating description with prompt:", prompt);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5-nano",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -3584,7 +3584,7 @@ Gracias!
             content: prompt
           }
         ],
-        max_completion_tokens: 200,
+        max_tokens: 200,
       });
 
       console.log("AI Response:", JSON.stringify(response, null, 2));
