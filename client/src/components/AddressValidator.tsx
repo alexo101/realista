@@ -259,7 +259,7 @@ export function AddressValidator({
         </div>
       )}
 
-      {/* Success Panel with Map */}
+      {/* Success Panel with Map (full validation) */}
       {isValidated && validatedAddress && latitude !== null && longitude !== null && (
         <div className="border border-green-500 bg-green-50 rounded-lg p-4 space-y-3">
           <div className="flex items-start gap-2">
@@ -291,6 +291,33 @@ export function AddressValidator({
             data-testid="button-relocalize"
           >
             Cambiar dirección
+          </Button>
+        </div>
+      )}
+
+      {/* Warning Panel (address exists but needs coordinates) */}
+      {isValidated && validatedAddress && (latitude === null || longitude === null) && (
+        <div className="border border-yellow-500 bg-yellow-50 rounded-lg p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-yellow-900 text-sm">Dirección guardada (sin coordenadas):</p>
+              <p className="text-sm text-yellow-800 mt-1">{validatedAddress}</p>
+              <p className="text-xs text-yellow-700 mt-2">
+                Esta dirección necesita ser revalidada para obtener coordenadas precisas del mapa.
+              </p>
+            </div>
+          </div>
+
+          {/* Re-validate Button */}
+          <Button
+            onClick={handleRelocalize}
+            variant="outline"
+            size="sm"
+            className="w-full border-yellow-600 text-yellow-900 hover:bg-yellow-100"
+            data-testid="button-revalidate"
+          >
+            Revalidar dirección
           </Button>
         </div>
       )}
