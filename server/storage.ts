@@ -635,14 +635,28 @@ export class DatabaseStorage implements IStorage {
     if (!agent) return undefined;
 
     // Get review statistics for this agent using a direct query
-    const reviewResults = await db.execute(
-      sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
-          FROM reviews 
-          WHERE target_id = ${id} AND target_type = 'agent'`
-    );
-
-    const reviewCount = reviewResults.rows[0]?.count || 0;
-    const reviewAverage = reviewResults.rows[0]?.average || 0;
+    // Gracefully degrade if reviews table doesn't exist yet
+    let reviewCount = 0;
+    let reviewAverage = 0;
+    try {
+      const reviewResults = await db.execute(
+        sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
+            FROM reviews 
+            WHERE target_id = ${id} AND target_type = 'agent'`
+      );
+      const row = reviewResults.rows[0] as any;
+      reviewCount = row?.count || 0;
+      reviewAverage = row?.average || 0;
+    } catch (error: any) {
+      // Only gracefully degrade if reviews table doesn't exist (42P01)
+      // Re-throw all other errors so they're visible
+      if (error?.code === '42P01') {
+        console.log('Reviews table not yet created - skipping review stats for agent');
+      } else {
+        console.error('Error fetching review stats for agent:', error);
+        throw error;
+      }
+    }
 
     // Get agency information by joining with agency_agents (UUID-based)
     let agencyName = null;
@@ -672,27 +686,39 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Get pinned review for this agent
+    // Gracefully degrade if reviews table doesn't exist yet
     let pinnedReview = null;
-    const [pinnedReviewData] = await db
-      .select({
-        id: reviews.id,
-        rating: reviews.rating,
-        comment: reviews.comment,
-        author: reviews.author,
-        date: reviews.date
-      })
-      .from(reviews)
-      .where(
-        and(
-          eq(reviews.targetId, id),
-          eq(reviews.targetType, 'agent'),
-          eq(reviews.pinned, true)
+    try {
+      const [pinnedReviewData] = await db
+        .select({
+          id: reviews.id,
+          rating: reviews.rating,
+          comment: reviews.comment,
+          author: reviews.author,
+          date: reviews.date
+        })
+        .from(reviews)
+        .where(
+          and(
+            eq(reviews.targetId, id),
+            eq(reviews.targetType, 'agent'),
+            eq(reviews.pinned, true)
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (pinnedReviewData) {
-      pinnedReview = pinnedReviewData;
+      if (pinnedReviewData) {
+        pinnedReview = pinnedReviewData;
+      }
+    } catch (error: any) {
+      // Only gracefully degrade if reviews table doesn't exist (42P01)
+      // Re-throw all other errors so they're visible
+      if (error?.code === '42P01') {
+        console.log('Reviews table not yet created - skipping pinned review for agent');
+      } else {
+        console.error('Error fetching pinned review for agent:', error);
+        throw error;
+      }
     }
 
     // Return agent with review statistics, agency information, and pinned review
