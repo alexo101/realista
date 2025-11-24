@@ -156,6 +156,13 @@ export function SearchBar() {
         params.append("bedrooms", roomsFilter.join(','));
       }
 
+      // Add operationType parameter for buy/rent searches
+      if (searchType === 'buy') {
+        params.append("operationType", "Venta");
+      } else if (searchType === 'rent') {
+        params.append("operationType", "Alquiler");
+      }
+
       // Add price filters
       if ((searchType === 'buy' || searchType === 'rent') && priceRange.min && priceRange.min !== "any") {
         params.append("minPrice", priceRange.min);

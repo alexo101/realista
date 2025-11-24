@@ -118,6 +118,7 @@ export default function NeighborhoodResultsPage() {
   const bedroomsFromUrl = urlParams.get('bedrooms');
   const minPriceFromUrl = urlParams.get('minPrice');
   const maxPriceFromUrl = urlParams.get('maxPrice');
+  const operationTypeFromUrl = urlParams.get('operationType');
   
   // Parse bedrooms - could be a single number or comma-separated list
   let defaultBedroomsList: number[] = [];
@@ -135,7 +136,7 @@ export default function NeighborhoodResultsPage() {
   
   // Filtros específicos para propiedades
   const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
-    operationType: "Venta",
+    operationType: operationTypeFromUrl === "Alquiler" ? "Alquiler" : "Venta",
     priceMin: minPriceFromUrl ? parseInt(minPriceFromUrl) : null,
     priceMax: maxPriceFromUrl ? parseInt(maxPriceFromUrl) : null,
     bedrooms: defaultBedrooms || 1,
@@ -603,7 +604,7 @@ export default function NeighborhoodResultsPage() {
               {/* Filtros de propiedades con toggle de vista integrado */}
               <PropertyFilters 
                 onFilterChange={setPropertyFilters}
-                defaultOperationType={activeTab.includes('rent') ? 'Alquiler' : 'Venta'}
+                defaultOperationType={propertyFilters.operationType}
                 defaultBedrooms={defaultBedrooms}
                 defaultBedroomsList={defaultBedroomsList}
                 viewMode={viewMode}
