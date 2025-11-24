@@ -85,9 +85,9 @@ const step2Schema = step1Schema.extend({
   address: z.string().min(1, "La dirección es obligatoria"),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
-  escalera: z.enum(escaleraOptions).optional(),
-  planta: z.enum(plantaOptions).optional(),
-  puerta: z.enum(puertaOptions).optional(),
+  escalera: z.enum(escaleraOptions).nullable().optional(),
+  planta: z.enum(plantaOptions).nullable().optional(),
+  puerta: z.enum(puertaOptions).nullable().optional(),
   neighborhood: z.string().min(1, "Selecciona un barrio"),
 });
 
