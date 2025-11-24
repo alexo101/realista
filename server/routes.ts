@@ -3602,7 +3602,7 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
             content: prompt
           }
         ],
-        max_tokens: 150, // Reduced to limit response length
+        max_completion_tokens: 150, // GPT-5-nano requires max_completion_tokens instead of max_tokens
         temperature: 0.7,
       });
 
