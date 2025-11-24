@@ -3567,51 +3567,50 @@ Gracias!
         features
       } = req.body;
 
-      // Create a descriptive prompt in Spanish
-      const prompt = `Genera una descripción atractiva y profesional para una propiedad inmobiliaria en Barcelona con las siguientes características:
+      // Simplified prompt for better reliability with GPT-5-nano
+      const prompt = `Escribe una descripción de máximo 400 caracteres para: ${propertyType} en ${operationType} en ${neighborhood}, ${bedrooms || 0} habitaciones, ${bathrooms || 0} baños, ${size || 0}m², ${price}€. Características: ${features && features.length > 0 ? features.join(', ') : 'ninguna'}. Usa español profesional y atractivo.`;
 
-Tipo de propiedad: ${propertyType}
-Operación: ${operationType}
-Barrio: ${neighborhood}
-Habitaciones: ${bedrooms || 'No especificado'}
-Baños: ${bathrooms || 'No especificado'}
-Superficie: ${size ? `${size} m²` : 'No especificada'}
-Precio: ${price ? `${price}€` : 'A consultar'}
-Características: ${features && features.length > 0 ? features.join(', ') : 'No especificadas'}
-
-La descripción debe:
-- Ser profesional y atractiva para potenciales compradores/inquilinos
-- Destacar las mejores características de la propiedad
-- Mencionar el barrio y sus ventajas
-- Tener MÁXIMO 500 caracteres (incluye espacios y puntuación)
-- Estar escrita en español
-- Usar un tono persuasivo pero honesto
-- Ser concisa y directa
-
-Responde solo con la descripción, sin introducción ni explicaciones adicionales.`;
+      console.log("Generating description with prompt:", prompt);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5-nano", // Using gpt-5-nano for cost-effective generation
+        model: "gpt-5-nano",
         messages: [
           {
             role: "system",
-            content: "Eres un experto en marketing inmobiliario especializado en Barcelona. Generas descripciones atractivas y profesionales para propiedades. SIEMPRE respeta el límite de 500 caracteres."
+            content: "Eres un agente inmobiliario. Escribe descripciones breves y atractivas en español."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        max_completion_tokens: 150, // GPT-5-nano requires max_completion_tokens instead of max_tokens
-        // GPT-5-nano only supports default temperature of 1, so no temperature parameter
+        max_completion_tokens: 200,
       });
 
-      let description = response.choices[0].message.content || "";
+      console.log("AI Response:", JSON.stringify(response, null, 2));
+
+      let description = response.choices[0].message.content?.trim() || "";
+
+      // If AI returns empty, create a fallback description
+      if (!description || description.length === 0) {
+        console.warn("AI returned empty description, using fallback");
+        
+        const featuresText = features && features.length > 0 
+          ? ` Cuenta con ${features.slice(0, 3).join(', ')}.` 
+          : '';
+        
+        description = `${propertyType} en ${operationType} ubicado en ${neighborhood}. ` +
+          `Dispone de ${bedrooms || 0} habitaciones y ${bathrooms || 0} baños, con ${size || 0}m² de superficie.` +
+          featuresText +
+          ` Precio: ${price}€. ¡Ideal para su nuevo hogar!`;
+      }
 
       // Ensure the description doesn't exceed 500 characters
       if (description.length > 500) {
         description = description.substring(0, 497) + "...";
       }
+
+      console.log("Final description:", description);
 
       res.json({ description });
     } catch (error) {

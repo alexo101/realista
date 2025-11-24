@@ -115,7 +115,7 @@ export const properties = pgTable("properties", {
   superficie: integer("superficie"), // Area in square meters
   imageUrls: text("image_urls").array(), // Cloud storage URLs for images
   mainImageIndex: integer("main_image_index").default(0),
-  title: text("title"),
+  title: text("title").notNull(), // Title is required
   viewCount: integer("view_count").default(0).notNull(), // Contador de visualizaciones
   agentId: integer("agent_id").notNull(), // ID del agente que publicó la propiedad
   agencyId: integer("agency_id"), // ID de la agencia a la que pertenece la propiedad (opcional)

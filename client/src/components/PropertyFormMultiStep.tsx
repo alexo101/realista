@@ -106,7 +106,7 @@ const step4Schema = step3Schema.extend({
 
 // Step 5 schema: Description (final)
 const step5Schema = step4Schema.extend({
-  title: z.string().optional(),
+  title: z.string().min(1, "El título es obligatorio"),
   description: z.string().min(1, "La descripción es obligatoria"),
 });
 
@@ -253,7 +253,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       agencyId: null,
       isDraft: true,
       isActive: false,
-      // Ensure description is never empty (required by schema)
+      // Ensure title and description are never empty (required by schema)
+      title: formData.title || "Borrador - Título pendiente",
       description: formData.description || "Borrador - Información pendiente",
     };
 
@@ -305,6 +306,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         agencyId: null, // Set to null since User type doesn't have agencyId
         isDraft: true,
         isActive: false, // Drafts are not active
+        title: "Borrador - Título pendiente", // Temporary title (required by schema)
         description: "Borrador - Información pendiente", // Temporary description
       };
 
