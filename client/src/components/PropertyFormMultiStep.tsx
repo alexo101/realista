@@ -251,6 +251,10 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       const formData = form.getValues();
       const propertyData = {
         ...formData,
+        price: Number(formData.price),
+        bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
+        bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
+        superficie: formData.superficie ? Number(formData.superficie) : undefined,
         agentId: user?.id,
         agencyId: null, // Set to null since User type doesn't have agencyId
         isDraft: true,
