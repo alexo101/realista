@@ -1538,6 +1538,7 @@ export class DatabaseStorage implements IStorage {
       agentId: properties.agentId,
       agencyId: properties.agencyId,
       isActive: properties.isActive,
+      isDraft: properties.isDraft, // Include isDraft for form routing decision
       createdAt: properties.createdAt,
       title: properties.title,
       imageUrls: properties.imageUrls, // Include URL-based images (lean performance)
