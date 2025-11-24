@@ -98,7 +98,8 @@ export const properties = pgTable("properties", {
   operationType: text("operation_type").notNull(), // "Venta" or "Alquiler"
   // Nuevos campos
   housingType: text("housing_type"), // Tipo de vivienda (piso, chalet, etc)
-  housingStatus: text("housing_status"), // Situación (obra nueva, a reformar, etc)
+  housingStatus: text("housing_status"), // Situación legal (disponible, ocupada, etc)
+  propertyCondition: text("property_condition"), // Estado de conservación (obra nueva, buen estado, a reformar, reformado)
   floor: text("floor"), // Planta (última planta, planta intermedia, etc)
   features: text("features").array(), // Array de características
   availability: text("availability"), // Disponibilidad
@@ -280,6 +281,9 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
     z.date(),
     z.string().transform((val) => new Date(val)),
   ]).optional().nullable(),
+  // Explicitly include new fields to ensure they're not stripped by Zod parsing
+  propertyCondition: z.string().optional(),
+  housingStatus: z.string().optional(),
 });
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,

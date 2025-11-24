@@ -65,7 +65,8 @@ const escaleraOptions = ["A", "B", "C"] as const;
 const plantaOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"] as const;
 const puertaOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
 const availabilityOptions = ["Inmediatamente", "A partir de"] as const;
-const housingStatusOptions = ["Obra nueva", "Buen estado", "A reformar", "Reformado"] as const;
+const propertyConditionOptions = ["Obra nueva", "Buen estado", "A reformar", "Reformado"] as const;
+const housingStatusOptions = ["Disponible sin limitación", "Sin cédula de habitabilidad", "Nuda propiedad", "Alquilada con inquilinos", "Ocupada ilegalmente", "De banco"] as const;
 
 // Step 1 schema: Basic Information
 const step1Schema = z.object({
@@ -97,6 +98,7 @@ const step3Schema = step2Schema.extend({
   features: z.array(z.string()).default([]),
   availability: z.enum(availabilityOptions).default("Inmediatamente"),
   availabilityDate: z.date().optional(),
+  propertyCondition: z.enum(propertyConditionOptions).optional(),
   housingStatus: z.enum(housingStatusOptions).optional(),
 });
 
@@ -179,6 +181,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       features: [],
       availability: "Inmediatamente",
       availabilityDate: undefined,
+      propertyCondition: undefined,
       housingStatus: undefined,
       imageUrls: [],
       mainImageIndex: -1,
@@ -995,30 +998,62 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 )}
               </div>
 
+              {/* Estado de conservación */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Estado de conservación</h3>
+                <FormField
+                  control={form.control}
+                  name="propertyCondition"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-property-condition">
+                            <SelectValue placeholder="Selecciona el estado" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {propertyConditionOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               {/* Situación de la vivienda */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Estado de la vivienda</h3>
+                <h3 className="text-lg font-semibold mb-4">Situación de la vivienda</h3>
                 <FormField
                   control={form.control}
                   name="housingStatus"
                   render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          className="flex flex-col space-y-2"
-                        >
+                    <FormItem>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-housing-status">
+                            <SelectValue placeholder="Selecciona la situación" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
                           {housingStatusOptions.map((option) => (
-                            <FormItem key={option} className="flex items-center space-x-3 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value={option} data-testid={`radio-housing-status-${option.toLowerCase().replace(/\s+/g, '-')}`} />
-                              </FormControl>
-                              <FormLabel className="font-normal">{option}</FormLabel>
-                            </FormItem>
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
                           ))}
-                        </RadioGroup>
-                      </FormControl>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
