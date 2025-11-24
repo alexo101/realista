@@ -3603,7 +3603,7 @@ Responde solo con la descripción, sin introducción ni explicaciones adicionale
           }
         ],
         max_completion_tokens: 150, // GPT-5-nano requires max_completion_tokens instead of max_tokens
-        temperature: 0.7,
+        // GPT-5-nano only supports default temperature of 1, so no temperature parameter
       });
 
       let description = response.choices[0].message.content || "";
