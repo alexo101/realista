@@ -1514,8 +1514,15 @@ export class DatabaseStorage implements IStorage {
     // Lean projection with all required fields (never undefined)
     const baseFields = {
       uuid: properties.uuid,
+      slug: properties.slug, // SEO-friendly URL slug
       reference: properties.reference,
+      // Address fields
+      locality: properties.locality, // City/town input for address editing
+      streetName: properties.streetName, // Street name input for address editing
+      streetNumber: properties.streetNumber, // Street number input for address editing
       address: properties.address,
+      latitude: properties.latitude, // For map display
+      longitude: properties.longitude, // For map display
       escalera: properties.escalera,
       planta: properties.planta,
       puerta: properties.puerta,
@@ -1529,6 +1536,8 @@ export class DatabaseStorage implements IStorage {
       availabilityDate: properties.availabilityDate,
       previousPrice: properties.previousPrice,
       price: properties.price,
+      city: properties.city, // For filtering/display
+      district: properties.district, // For filtering/display
       neighborhood: properties.neighborhood,
       bedrooms: properties.bedrooms,
       bathrooms: properties.bathrooms,
@@ -1538,10 +1547,11 @@ export class DatabaseStorage implements IStorage {
       agentId: properties.agentId,
       agencyId: properties.agencyId,
       isActive: properties.isActive,
-      isDraft: properties.isDraft, // Include isDraft for form routing decision
+      isDraft: properties.isDraft, // For form routing decision
+      fraudCount: properties.fraudCount, // For fraud reporting
       createdAt: properties.createdAt,
       title: properties.title,
-      imageUrls: properties.imageUrls, // Include URL-based images (lean performance)
+      imageUrls: properties.imageUrls, // Cloud storage URLs for images
       // Exclude only description field for performance
     };
 
