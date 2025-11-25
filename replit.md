@@ -23,7 +23,12 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Session-based with `connect-pg-simple`, supporting multi-role access (agent, agency admin, client).
 - **State Management**: React Query for server state, React Context for user authentication.
 - **Build Tool**: Vite for development and production.
-- **Image Handling**: Scalable cloud storage for uploads.
+- **Object Storage**: Replit App Storage powered by Google Cloud Storage (GCS) for scalable image uploads with CDN delivery.
+  - **Bucket**: `realista-property_images` stores all property images
+  - **Upload Flow**: Images uploaded via `/api/property-images/upload-direct` endpoint using multer memory storage, then saved to GCS
+  - **Serving Flow**: Images served via `/property-images/:imageId` endpoint with streaming from GCS and proper cache headers for CDN optimization
+  - **Environment Variables**: `PUBLIC_OBJECT_SEARCH_PATHS` (public bucket path) and `PRIVATE_OBJECT_DIR` (private object directory) configured as secrets
+  - **Implementation**: `ObjectStorageService` in `server/objectStorage.ts` handles all GCS interactions
 - **Email Service**: Nodemailer (Ethereal for development).
 - **AI Integration**: Replit AI Integrations with OpenAI GPT-5-nano for automated property description generation.
 
