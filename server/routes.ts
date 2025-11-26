@@ -3729,6 +3729,245 @@ Gracias!
     }
   });
 
+  // ===============================
+  // STRIPE SUBSCRIPTION ROUTES
+  // Reference: connection:conn_stripe_01KAYT26YTNSFF1S0A9Q4FE38R
+  // ===============================
+
+  // Get Stripe publishable key for frontend
+  app.get("/api/stripe/publishable-key", async (req, res) => {
+    try {
+      const { getStripePublishableKey } = await import("./stripeClient");
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (error) {
+      console.error("Error getting Stripe publishable key:", error);
+      res.status(500).json({ error: "Failed to get Stripe key" });
+    }
+  });
+
+  // Get subscription products for agencies
+  app.get("/api/stripe/products/agency", async (req, res) => {
+    try {
+      const { stripeService } = await import("./stripeService");
+      const products = await stripeService.listProductsWithPrices('agency');
+      res.json({ products });
+    } catch (error) {
+      console.error("Error getting agency products:", error);
+      res.status(500).json({ error: "Failed to get products" });
+    }
+  });
+
+  // Get subscription products for independent agents
+  app.get("/api/stripe/products/agent", async (req, res) => {
+    try {
+      const { stripeService } = await import("./stripeService");
+      const products = await stripeService.listProductsWithPrices('agent');
+      res.json({ products });
+    } catch (error) {
+      console.error("Error getting agent products:", error);
+      res.status(500).json({ error: "Failed to get products" });
+    }
+  });
+
+  // Create checkout session for subscription
+  app.post("/api/stripe/checkout", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { priceId, entityType, entityId } = req.body;
+      
+      if (!priceId || !entityType || !entityId) {
+        return res.status(400).json({ error: "priceId, entityType, and entityId are required" });
+      }
+
+      const { stripeService } = await import("./stripeService");
+
+      // Get the entity (agency or agent) to get email for customer
+      let email: string;
+      let name: string;
+      
+      if (entityType === 'agency') {
+        const agency = await storage.getAgencyById(entityId);
+        if (!agency) {
+          return res.status(404).json({ error: "Agency not found" });
+        }
+        email = agency.agencyEmailToDisplay || '';
+        name = agency.agencyName;
+      } else {
+        const agent = await storage.getAgentById(entityId);
+        if (!agent) {
+          return res.status(404).json({ error: "Agent not found" });
+        }
+        email = agent.email;
+        name = agent.name || agent.email;
+      }
+
+      // Check if customer already exists
+      let customerId = await stripeService.getCustomerByEntity(entityType, entityId);
+      
+      if (!customerId) {
+        // Create new customer in Stripe
+        const customer = await stripeService.createCustomer(email, name, entityType, entityId);
+        customerId = customer.id;
+        
+        // Save customer ID to our database
+        await stripeService.updateCustomerId(entityType, entityId, customerId);
+      }
+      
+      // Create checkout session
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const session = await stripeService.createCheckoutSession(
+        customerId,
+        priceId,
+        `${baseUrl}/realista-pro?success=true`,
+        `${baseUrl}/realista-pro?cancelled=true`,
+        entityType,
+        entityId
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  // Create customer portal session for managing subscription
+  app.post("/api/stripe/portal", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { customerId } = req.body;
+      
+      if (!customerId) {
+        return res.status(400).json({ error: "customerId is required" });
+      }
+
+      const { stripeService } = await import("./stripeService");
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      
+      const session = await stripeService.createCustomerPortalSession(
+        customerId,
+        `${baseUrl}/realista-pro`
+      );
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating portal session:", error);
+      res.status(500).json({ error: "Failed to create portal session" });
+    }
+  });
+
+  // Get subscription status for an agency or agent
+  app.get("/api/stripe/subscription/:entityType/:entityId", async (req, res) => {
+    try {
+      const { entityType, entityId } = req.params;
+      
+      // Query subscriptions from stripe schema by metadata
+      const result = await db.execute(
+        sql`SELECT * FROM stripe.subscriptions 
+            WHERE metadata->>'entityType' = ${entityType}
+            AND metadata->>'entityId' = ${entityId}
+            ORDER BY created DESC
+            LIMIT 1`
+      );
+      
+      if (result.rows.length === 0) {
+        return res.json({ subscription: null });
+      }
+      
+      res.json({ subscription: result.rows[0] });
+    } catch (error) {
+      console.error("Error getting subscription:", error);
+      res.status(500).json({ error: "Failed to get subscription" });
+    }
+  });
+
+  // Sync subscription status from Stripe to our database
+  app.post("/api/stripe/sync-subscription", async (req, res) => {
+    try {
+      const { subscriptionId } = req.body;
+      
+      if (!subscriptionId) {
+        return res.status(400).json({ error: "subscriptionId is required" });
+      }
+
+      const { stripeService } = await import("./stripeService");
+      await stripeService.syncSubscriptionStatus(subscriptionId);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error syncing subscription:", error);
+      res.status(500).json({ error: "Failed to sync subscription" });
+    }
+  });
+
+  // Activate free tier for agency or agent (no Stripe payment needed)
+  app.post("/api/stripe/activate-free-tier", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { entityType, entityId } = req.body;
+      
+      if (!entityType || !entityId) {
+        return res.status(400).json({ error: "entityType and entityId are required" });
+      }
+
+      const { stripeService } = await import("./stripeService");
+      await stripeService.activateFreeTier(entityType, entityId);
+      
+      res.json({ success: true, plan: entityType === 'agency' ? 'basica' : 'basico' });
+    } catch (error) {
+      console.error("Error activating free tier:", error);
+      res.status(500).json({ error: "Failed to activate free tier" });
+    }
+  });
+
+  // Get billing info (current plan, customer ID, subscription) for entity
+  app.get("/api/stripe/billing/:entityType/:entityId", async (req, res) => {
+    try {
+      const { entityType, entityId } = req.params;
+      
+      let entity: any;
+      if (entityType === 'agency') {
+        entity = await storage.getAgencyById(parseInt(entityId));
+      } else {
+        entity = await storage.getAgentById(parseInt(entityId));
+      }
+
+      if (!entity) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
+
+      // Get subscription from stripe schema if exists
+      let subscription = null;
+      if (entity.stripeSubscriptionId) {
+        const { stripeService } = await import("./stripeService");
+        subscription = await stripeService.getSubscription(entity.stripeSubscriptionId);
+      }
+
+      res.json({
+        currentPlan: entity.subscriptionPlan || (entityType === 'agency' ? 'basica' : 'basico'),
+        isYearlyBilling: entity.isYearlyBilling || false,
+        stripeCustomerId: entity.stripeCustomerId || null,
+        stripeSubscriptionId: entity.stripeSubscriptionId || null,
+        seatsLimit: entity.seatsLimit || (entityType === 'agency' ? 1 : undefined),
+        activePropertiesLimit: entity.activePropertiesLimit || 5,
+        subscription,
+      });
+    } catch (error) {
+      console.error("Error getting billing info:", error);
+      res.status(500).json({ error: "Failed to get billing info" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

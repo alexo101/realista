@@ -43,6 +43,9 @@ export const agencies = pgTable("agencies", {
   isYearlyBilling: boolean("is_yearly_billing").default(false),
   seatsLimit: integer("seats_limit"), // Max agents based on plan
   activePropertiesLimit: integer("active_properties_limit"), // Max active properties based on plan
+  // Stripe integration fields
+  stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID for billing
+  stripeSubscriptionId: text("stripe_subscription_id"), // Current active subscription ID
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -74,6 +77,9 @@ export const agents = pgTable("agents", {
   pausedSubscriptionPlan: text("paused_subscription_plan"),
   pausedIsYearlyBilling: boolean("paused_is_yearly_billing"),
   pausedAt: timestamp("paused_at"),
+  // Stripe integration fields (for independent agents only)
+  stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID for billing
+  stripeSubscriptionId: text("stripe_subscription_id"), // Current active subscription ID
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

@@ -2,11 +2,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Star, Users, Building, FileText, MessageSquare, Sparkles, User } from "lucide-react";
-import { useState } from "react";
+import { Check, Star, Users, Building, MessageSquare, Sparkles, User, Loader2, CreditCard, ArrowRight, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/language-context";
+import { useUser } from "@/contexts/user-context";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const agencyPlans = [
   {
@@ -28,7 +32,7 @@ const agencyPlans = [
     id: "pequeña",
     name: "Agencia Pequeña", 
     monthlyPrice: 29,
-    yearlyPrice: 290, // 2 months free
+    yearlyPrice: 290,
     description: "Para pequeños equipos",
     features: [
       "Hasta 2 perfiles públicos de agentes",
@@ -45,7 +49,7 @@ const agencyPlans = [
     id: "mediana",
     name: "Agencia Mediana",
     monthlyPrice: 79,
-    yearlyPrice: 790, // 2 months free
+    yearlyPrice: 790,
     description: "Para equipos en crecimiento",
     features: [
       "Hasta 6 agentes",
@@ -62,7 +66,7 @@ const agencyPlans = [
     id: "lider",
     name: "Agencia Líder",
     monthlyPrice: 249,
-    yearlyPrice: 2490, // 2 months free
+    yearlyPrice: 2490,
     description: "Para grandes agencias",
     features: [
       "Agentes ilimitados",
@@ -97,7 +101,7 @@ const agentPlans = [
     id: "lider",
     name: "Agente Líder",
     monthlyPrice: 20,
-    yearlyPrice: 200, // 2 months free
+    yearlyPrice: 200,
     description: "Para agentes profesionales",
     features: [
       "Perfil profesional de agente",
@@ -112,13 +116,137 @@ const agentPlans = [
   }
 ];
 
+interface BillingInfo {
+  currentPlan: string;
+  isYearlyBilling: boolean;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  seatsLimit?: number;
+  activePropertiesLimit?: number;
+  subscription?: any;
+}
+
+interface StripeProduct {
+  id: string;
+  name: string;
+  description?: string;
+  metadata?: any;
+  prices: {
+    id: string;
+    unit_amount: number;
+    currency: string;
+    recurring?: { interval: string };
+  }[];
+}
+
 export default function RealistaPro() {
   const [isYearly, setIsYearly] = useState(false);
   const [profileType, setProfileType] = useState<"agencies" | "agents">("agencies");
   const [, navigate] = useLocation();
   const { t } = useLanguage();
+  const { user, isLoading: authLoading } = useUser();
+  const { toast } = useToast();
+  
+  const searchParams = new URLSearchParams(window.location.search);
+  const isSuccess = searchParams.get('success') === 'true';
+  const isCancelled = searchParams.get('cancelled') === 'true';
+  
+  useEffect(() => {
+    if (isSuccess) {
+      toast({
+        title: "¡Suscripción activada!",
+        description: "Tu plan ha sido activado correctamente. Gracias por confiar en Realista.",
+      });
+      window.history.replaceState({}, '', '/realista-pro');
+    }
+    if (isCancelled) {
+      toast({
+        title: "Suscripción cancelada",
+        description: "El proceso de pago fue cancelado. Puedes intentarlo de nuevo cuando quieras.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, '', '/realista-pro');
+    }
+  }, [isSuccess, isCancelled, toast]);
+
+  const entityType = user?.isAdmin ? 'agency' : 
+                     (user?.isAgent ? 'agent' : null);
+  const entityId = user?.id || null;
+
+  const { data: billingData, isLoading: billingLoading, refetch: refetchBilling } = useQuery<BillingInfo>({
+    queryKey: ['/api/stripe/billing', entityType, entityId],
+    enabled: !!entityType && !!entityId,
+  });
+
+  const { data: agencyProducts } = useQuery<{ products: StripeProduct[] }>({
+    queryKey: ['/api/stripe/products/agency'],
+  });
+
+  const { data: agentProducts } = useQuery<{ products: StripeProduct[] }>({
+    queryKey: ['/api/stripe/products/agent'],
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: async ({ priceId, entityType, entityId }: { priceId: string; entityType: string; entityId: number }) => {
+      const response = await apiRequest('POST', '/api/stripe/checkout', { priceId, entityType, entityId });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo iniciar el proceso de pago",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const freeActivationMutation = useMutation({
+    mutationFn: async ({ entityType, entityId }: { entityType: string; entityId: number }) => {
+      const response = await apiRequest('POST', '/api/stripe/activate-free-tier', { entityType, entityId });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "¡Plan activado!",
+        description: "Tu plan gratuito ha sido activado correctamente.",
+      });
+      refetchBilling();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo activar el plan gratuito",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const portalMutation = useMutation({
+    mutationFn: async (customerId: string) => {
+      const response = await apiRequest('POST', '/api/stripe/portal', { customerId });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo abrir el portal de facturación",
+        variant: "destructive",
+      });
+    },
+  });
   
   const currentPlans = profileType === "agencies" ? agencyPlans : agentPlans;
+  const products = profileType === "agencies" ? agencyProducts?.products : agentProducts?.products;
   
   const getDisplayPrice = (plan: any) => {
     if (plan.monthlyPrice === 0) return "Gratis";
@@ -130,19 +258,71 @@ export default function RealistaPro() {
     return `${plan.monthlyPrice}€`;
   };
 
-  const handlePlanSelection = (plan: any) => {
-    // Redirect to the appropriate registration page with plan parameters
-    const params = new URLSearchParams({
-      plan: plan.id,
-      billing: isYearly ? "yearly" : "monthly"
+  const findPriceId = (planId: string): string | null => {
+    if (!products) return null;
+    
+    const product = products.find(p => {
+      const metadata = p.metadata as any;
+      return metadata?.planId === planId;
     });
     
-    const registrationPath = profileType === "agencies" 
-      ? `/agency-plan-register?${params.toString()}`
-      : `/agent-plan-register?${params.toString()}`;
+    if (!product) return null;
     
-    navigate(registrationPath);
+    const interval = isYearly ? 'year' : 'month';
+    const price = product.prices.find(p => p.recurring?.interval === interval);
+    
+    return price?.id || null;
   };
+
+  const handlePlanSelection = (plan: any) => {
+    if (!user) {
+      const params = new URLSearchParams({
+        plan: plan.id,
+        billing: isYearly ? "yearly" : "monthly"
+      });
+      
+      const registrationPath = profileType === "agencies" 
+        ? `/agency-plan-register?${params.toString()}`
+        : `/agent-plan-register?${params.toString()}`;
+      
+      navigate(registrationPath);
+      return;
+    }
+
+    if (!entityType || !entityId) {
+      toast({
+        title: "Error",
+        description: "No se pudo determinar tu perfil. Por favor, inicia sesión de nuevo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (plan.monthlyPrice === 0) {
+      freeActivationMutation.mutate({ entityType, entityId });
+      return;
+    }
+
+    const priceId = findPriceId(plan.id);
+    if (!priceId) {
+      toast({
+        title: "Error",
+        description: "No se encontró el precio para este plan. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    checkoutMutation.mutate({ priceId, entityType, entityId });
+  };
+
+  const handleManageSubscription = () => {
+    if (billingData?.stripeCustomerId) {
+      portalMutation.mutate(billingData.stripeCustomerId);
+    }
+  };
+
+  const billing = billingData;
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -175,6 +355,55 @@ export default function RealistaPro() {
         </div>
       </div>
 
+      {/* Current Subscription Info */}
+      {user && entityType && billing && (
+        <div className="container mx-auto px-4 py-8">
+          <Card className="max-w-2xl mx-auto bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Tu suscripción actual
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="default" className="text-lg px-3 py-1">
+                      {billing.currentPlan?.charAt(0).toUpperCase() + billing.currentPlan?.slice(1) || 'Básico'}
+                    </Badge>
+                    {billing.isYearlyBilling && (
+                      <Badge variant="outline">Anual</Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground">
+                    {entityType === 'agency' && billing.seatsLimit && (
+                      <span>Hasta {billing.seatsLimit === 999 ? 'ilimitados' : billing.seatsLimit} agentes • </span>
+                    )}
+                    Hasta {billing.activePropertiesLimit === 999 ? 'ilimitadas' : billing.activePropertiesLimit} propiedades
+                  </p>
+                </div>
+                {billing.stripeCustomerId && (
+                  <Button 
+                    variant="outline" 
+                    onClick={handleManageSubscription}
+                    disabled={portalMutation.isPending}
+                    data-testid="button-manage-subscription"
+                  >
+                    {portalMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                    )}
+                    Gestionar facturación
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Pricing Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
@@ -191,6 +420,7 @@ export default function RealistaPro() {
               variant={profileType === "agencies" ? "default" : "ghost"}
               onClick={() => setProfileType("agencies")}
               className="px-6 py-2"
+              data-testid="button-profile-agencies"
             >
               <Building className="h-4 w-4 mr-2" />
               {t('realista_pro.agencies')}
@@ -199,6 +429,7 @@ export default function RealistaPro() {
               variant={profileType === "agents" ? "default" : "ghost"}
               onClick={() => setProfileType("agents")}
               className="px-6 py-2"
+              data-testid="button-profile-agents"
             >
               <User className="h-4 w-4 mr-2" />
               {t('realista_pro.agents')}
@@ -215,11 +446,14 @@ export default function RealistaPro() {
             checked={isYearly}
             onCheckedChange={setIsYearly}
             className="scale-125"
+            data-testid="switch-billing-period"
           />
           <span className={`text-lg ${isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
             {t('realista_pro.yearly')}
           </span>
-          
+          {isYearly && (
+            <Badge variant="secondary" className="ml-2">2 meses gratis</Badge>
+          )}
         </div>
 
         <div className={`grid gap-8 max-w-7xl mx-auto ${
@@ -228,12 +462,20 @@ export default function RealistaPro() {
           {currentPlans.map((plan) => {
             const IconComponent = plan.icon;
             const displayPrice = getDisplayPrice(plan);
+            const isCurrentPlan = billing?.currentPlan === plan.id;
+            const isPending = checkoutMutation.isPending || freeActivationMutation.isPending;
             
             return (
               <Card 
                 key={plan.id} 
-                className={`relative transition-all duration-300 hover:scale-105 hover:shadow-xl flex flex-col h-full ${plan.color}`}
+                className={`relative transition-all duration-300 hover:scale-105 hover:shadow-xl flex flex-col h-full ${plan.color} ${isCurrentPlan ? 'ring-2 ring-primary' : ''}`}
+                data-testid={`card-plan-${plan.id}`}
               >
+                {isCurrentPlan && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
+                    Plan actual
+                  </Badge>
+                )}
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-4">
                     <div className={`p-3 rounded-full ${
@@ -279,8 +521,21 @@ export default function RealistaPro() {
                     className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
                     size="lg"
                     onClick={() => handlePlanSelection(plan)}
+                    disabled={isCurrentPlan || isPending}
+                    data-testid={`button-select-plan-${plan.id}`}
                   >
-                    {plan.monthlyPrice === 0 ? t('realista_pro.start_free') : t('realista_pro.start_now')}
+                    {isPending ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : isCurrentPlan ? (
+                      "Plan actual"
+                    ) : plan.monthlyPrice === 0 ? (
+                      t('realista_pro.start_free')
+                    ) : (
+                      <>
+                        {t('realista_pro.start_now')}
+                        <ArrowRight className="h-5 w-5 ml-2" />
+                      </>
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -317,8 +572,6 @@ export default function RealistaPro() {
             </Card>
           </div>
         </div>
-
-        
       </div>
     </div>
   );

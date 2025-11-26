@@ -30,7 +30,15 @@ Preferred communication style: Simple, everyday language.
   - **Environment Variables**: `PUBLIC_OBJECT_SEARCH_PATHS` (public bucket path) and `PRIVATE_OBJECT_DIR` (private object directory) configured as secrets
   - **Implementation**: `ObjectStorageService` in `server/objectStorage.ts` handles all GCS interactions
 - **Email Service**: Nodemailer (Ethereal for development).
-- **AI Integration**: Replit AI Integrations with OpenAI GPT-5-nano for automated property description generation.
+- **AI Integration**: Replit AI Integrations with OpenAI GPT-4o-mini for automated property description generation.
+- **Payment Processing**: Stripe integration for subscription billing.
+  - **Stripe Schema**: Managed by `stripe-replit-sync` package, automatically syncs products, prices, subscriptions, and customers from Stripe to a `stripe` schema in PostgreSQL
+  - **Webhook Handling**: UUID-secured webhook endpoint at `/api/stripe/webhook/:uuid`, processed by `stripe-replit-sync` before `express.json()` middleware
+  - **Products**: 4 subscription products (Agency Pequeña, Mediana, Líder; Agent Líder) with monthly and yearly pricing
+  - **Checkout Flow**: `/api/stripe/checkout` creates Stripe Checkout sessions with entity metadata
+  - **Customer Portal**: `/api/stripe/portal` enables self-service billing management
+  - **Subscription Sync**: `stripeService.syncSubscriptionStatus()` updates agency/agent `subscription_plan`, `seats_limit`, `active_properties_limit` from Stripe data
+  - **Free Tier Activation**: `/api/stripe/activate-free-tier` for Básica/Básico plans that don't require payment
 
 ### Feature Specifications
 - **User Management**: Role-based authentication, dedicated registration flows, and profile management for agents and agencies.
