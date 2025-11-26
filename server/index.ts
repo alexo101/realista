@@ -48,18 +48,36 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 // Session configuration with PostgreSQL store
 const PgSession = connectPgSimple(session);
+
+// Detect production environment
+const isProduction = process.env.NODE_ENV === 'production' || 
+                     (process.env.REPL_SLUG !== undefined && !process.env.REPLIT_DEV_DOMAIN);
+
+// Trust the reverse proxy in production (required for secure cookies behind HTTPS termination)
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
+// Session secret: required in production, has development-only fallback
+const sessionSecret = process.env.SESSION_SECRET || (isProduction ? '' : 'realista-dev-session-secret');
+if (!sessionSecret) {
+  throw new Error('FATAL: SESSION_SECRET environment variable is required in production. Please set it in your production secrets.');
+}
+
 app.use(session({
   store: new PgSession({
     pool: pool as any,
     tableName: 'session',
     createTableIfMissing: true,
   }),
-  secret: process.env.SESSION_SECRET || 'realista-session-secret-key',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
+  proxy: isProduction, // Trust the reverse proxy in production
   cookie: {
-    secure: false, // Set to true in production with HTTPS
+    secure: isProduction, // Require HTTPS in production
     httpOnly: true,
+    sameSite: isProduction ? 'strict' : 'lax', // Strict in production for CSRF protection
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -114,15 +132,22 @@ app.use((req, res, next) => {
         const stripeSync = await getStripeSync();
         
         console.log('Setting up managed webhook...');
-        const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
-        const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
-          `${webhookBaseUrl}/api/stripe/webhook`,
-          {
-            enabled_events: ['*'],
-            description: 'Realista subscription webhook',
-          }
-        );
-        console.log(`Stripe webhook configured: ${webhook.url} (UUID: ${uuid})`);
+        // Use PUBLIC_BASE_URL for production, fall back to REPLIT_DOMAINS for development
+        const baseUrl = process.env.PUBLIC_BASE_URL || 
+                       (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : null);
+        
+        if (!baseUrl) {
+          console.warn('WARNING: Neither PUBLIC_BASE_URL nor REPLIT_DOMAINS is set. Stripe webhooks will not work.');
+        } else {
+          const { webhook, uuid } = await stripeSync.findOrCreateManagedWebhook(
+            `${baseUrl}/api/stripe/webhook`,
+            {
+              enabled_events: ['*'],
+              description: 'Realista subscription webhook',
+            }
+          );
+          console.log(`Stripe webhook configured: ${webhook.url} (UUID: ${uuid})`);
+        }
 
         // Sync all existing Stripe data in the background
         stripeSync.syncBackfill()
