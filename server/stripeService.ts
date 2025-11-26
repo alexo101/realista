@@ -177,17 +177,20 @@ export class StripeService {
   // Map seat limits and properties limits based on plan
   private getPlanLimits(plan: string, entityType: 'agency' | 'agent') {
     if (entityType === 'agency') {
+      // Limits matching shared/schema.ts SUBSCRIPTION_LIMITS
+      // null = unlimited (stored as 999999 in database)
       const limits: Record<string, { seats: number; properties: number }> = {
-        'basica': { seats: 1, properties: 5 },
-        'pequeña': { seats: 3, properties: 15 },
-        'mediana': { seats: 10, properties: 50 },
-        'lider': { seats: 999, properties: 999 },
+        'basica': { seats: 1, properties: 2 },
+        'pequeña': { seats: 2, properties: 10 },
+        'mediana': { seats: 6, properties: 30 },
+        'lider': { seats: 999999, properties: 999999 }, // unlimited
       };
       return limits[plan] || limits['basica'];
     } else {
-      const limits: Record<string, { properties: number }> = {
-        'basico': { properties: 5 },
-        'lider': { properties: 50 },
+      // Agent limits - basico gets same as agency basica, lider is unlimited
+      const limits: Record<string, { seats: number; properties: number }> = {
+        'basico': { seats: 1, properties: 2 },
+        'lider': { seats: 1, properties: 999999 }, // unlimited properties
       };
       return limits[plan] || limits['basico'];
     }
@@ -260,14 +263,17 @@ export class StripeService {
 
       console.log(`Syncing subscription: planName=${planName}, isActive=${isActive}, isYearly=${isYearly}, limits=${JSON.stringify(limits)}`);
 
+      // Get default limits for free tier (basica/basico)
+      const freeTierLimits = this.getPlanLimits(entityType === 'agency' ? 'basica' : 'basico', entityType);
+
       if (entityType === 'agency') {
         await db.update(agencies)
           .set({
             stripeSubscriptionId: isActive ? subscriptionId : null,
             subscriptionPlan: isActive ? planName : 'basica',
             isYearlyBilling: isActive ? isYearly : false,
-            seatsLimit: isActive ? limits.seats : 1,
-            activePropertiesLimit: isActive ? limits.properties : 5,
+            seatsLimit: isActive ? limits.seats : freeTierLimits.seats,
+            activePropertiesLimit: isActive ? limits.properties : freeTierLimits.properties,
           })
           .where(eq(agencies.id, entityId));
         
