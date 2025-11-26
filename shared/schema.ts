@@ -282,8 +282,11 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
     z.string().transform((val) => new Date(val)),
   ]).optional().nullable(),
   // Explicitly include new fields to ensure they're not stripped by Zod parsing
-  propertyCondition: z.string().optional(),
-  housingStatus: z.string().optional(),
+  // These fields are optional AND nullable to support multi-step draft creation
+  propertyCondition: z.string().optional().nullable(),
+  housingStatus: z.string().optional().nullable(),
+  housingType: z.string().optional().nullable(),
+  floor: z.string().optional().nullable(),
 });
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
