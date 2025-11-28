@@ -76,14 +76,32 @@ export function PropertyFilters({
     ],
     Alquiler: [
       { value: "500", label: "500€" },
+      { value: "550", label: "550€" },
+      { value: "600", label: "600€" },
+      { value: "650", label: "650€" },
+      { value: "700", label: "700€" },
       { value: "750", label: "750€" },
+      { value: "800", label: "800€" },
+      { value: "850", label: "850€" },
+      { value: "900", label: "900€" },
+      { value: "950", label: "950€" },
       { value: "1000", label: "1.000€" },
-      { value: "1250", label: "1.250€" },
+      { value: "1100", label: "1.100€" },
+      { value: "1200", label: "1.200€" },
+      { value: "1300", label: "1.300€" },
+      { value: "1400", label: "1.400€" },
       { value: "1500", label: "1.500€" },
+      { value: "1600", label: "1.600€" },
+      { value: "1700", label: "1.700€" },
+      { value: "1800", label: "1.800€" },
+      { value: "1900", label: "1.900€" },
       { value: "2000", label: "2.000€" },
-      { value: "2500", label: "2.500€" },
+      { value: "2200", label: "2.200€" },
+      { value: "2400", label: "2.400€" },
+      { value: "2600", label: "2.600€" },
+      { value: "2800", label: "2.800€" },
       { value: "3000", label: "3.000€" },
-      { value: "4000", label: "4.000€" }
+      { value: "3000+", label: "+3.000€" }
     ]
   };
 
