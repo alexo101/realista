@@ -1698,6 +1698,9 @@ export class DatabaseStorage implements IStorage {
 
     // Collect all WHERE conditions
     const whereConditions = [];
+    
+    // Always filter by isActive = true for public-facing searches
+    whereConditions.push(eq(properties.isActive, true));
 
     // Aplicar filtros si están definidos
     if (filters) {
