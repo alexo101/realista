@@ -69,8 +69,8 @@ export async function geocodeAddress(address: string, neighborhood?: string): Pr
 }
 
 // Batch geocode multiple addresses
-export async function geocodeAddresses(addresses: Array<{ address: string; neighborhood?: string; id: number }>): Promise<Map<number, GeocodingResult>> {
-  const results = new Map<number, GeocodingResult>();
+export async function geocodeAddresses(addresses: Array<{ address: string; neighborhood?: string; id: string | number }>): Promise<Map<string | number, GeocodingResult>> {
+  const results = new Map<string | number, GeocodingResult>();
   
   // Process addresses sequentially to avoid rate limiting
   for (const item of addresses) {

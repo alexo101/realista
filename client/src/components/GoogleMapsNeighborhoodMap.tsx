@@ -46,7 +46,7 @@ export default function GoogleMapsNeighborhoodMap({
   const markersRef = useRef<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [geocodedCoords, setGeocodedCoords] = useState<Map<number, GeocodingResult>>(new Map());
+  const [geocodedCoords, setGeocodedCoords] = useState<Map<string | number, GeocodingResult>>(new Map());
   const [favoriteProperties, setFavoriteProperties] = useState<Set<string>>(new Set());
   
   const { user } = useUser();
@@ -345,15 +345,15 @@ export default function GoogleMapsNeighborhoodMap({
                 : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>'
               }
             </button>
-            
-            <!-- Operation Type Badge -->
-            <span style="position: absolute; top: 10px; left: 10px; background: ${markerColor}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-              ${property.operationType}
-            </span>
           </div>
           
           <!-- Property Details -->
           <div style="padding: 12px;">
+            <!-- Operation Type Badge -->
+            <span style="display: inline-block; background: ${markerColor}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+              ${property.operationType}
+            </span>
+            
             <!-- Title -->
             <h3 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #1f2937; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
               ${property.title || property.address}
