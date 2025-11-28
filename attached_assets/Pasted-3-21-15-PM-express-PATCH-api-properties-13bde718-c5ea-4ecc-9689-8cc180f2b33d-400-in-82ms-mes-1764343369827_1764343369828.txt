@@ -1,0 +1,118 @@
+3:21:15 PM [express] PATCH /api/properties/13bde718-c5ea-4ecc-9689-8cc180f2b33d 400 in 82ms :: {"mes…
+Attempting to update property: 13bde718-c5ea-4ecc-9689-8cc180f2b33d {
+  reference: 'MED001',
+  type: 'Vivienda',
+  operationType: 'Alquiler',
+  price: '1100',
+  bedrooms: 2,
+  bathrooms: 1,
+  superficie: 59,
+  locality: 'Barcelona',
+  streetName: 'entença',
+  streetNumber: '95',
+  address: "Carrer d'Entença, 95, L'Eixample, 08015 Barcelona, Spain",
+  latitude: 41.3800014,
+  longitude: 2.1499408,
+  escalera: 'B',
+  planta: '5',
+  puerta: '3',
+  neighborhood: "La Nova Esquerra de l'Eixample",
+  features: [
+    'aire-acondicionado',
+    'terraza',
+    'balcon',
+    'amueblado',
+    'accesible'
+  ],
+  availability: 'Inmediatamente',
+  availabilityDate: '2025-11-28T15:21:14.786Z',
+  propertyCondition: 'Buen estado',
+  housingStatus: 'Disponible sin limitación',
+  isActive: true,
+  imageUrls: [
+    '/property-images/3676b37d-7e84-496d-b127-e95f650904b8',
+    '/property-images/c91ed2ee-44a2-4c31-83de-cef3ddc41149',
+    '/property-images/0813cf38-bb05-473e-a1fa-d6be110a8568'
+  ],
+  mainImageIndex: 2,
+  title: 'Piso con encanto en el Eixample',
+  description: "Descubre esta magnífica vivienda en alquiler en La Nova Esquerra de l'Eixample. Con 59m², cuenta con 2 acogedoras habitaciones y 1 baño, perfecta para disfrutar de la comodidad en la ciudad. Equipado con aire acondicionado, este hogar amueblado ofrece una encantadora terraza y un balcón que invitan al relax. Accesible y bien ubicado, es ideal para quienes buscan calidad de vida. ¡No pierdas la oportunidad de vivir en un lugar excepcional por solo 1100€!",
+  isDraft: false
+}
+Error updating property: ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "string",
+    "path": [
+      "price"
+    ],
+    "message": "Expected number, received string"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "number",
+    "received": "undefined",
+    "path": [
+      "agentId"
+    ],
+    "message": "Required"
+  }
+]
+    at get error [as error] (file:///home/runner/workspace/node_modules/zod/lib/index.mjs:587:31)
+    at ZodObject.parse (file:///home/runner/workspace/node_modules/zod/lib/index.mjs:692:22)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:958:45)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at param (/home/runner/workspace/node_modules/express/lib/router/index.js:365:14)
+    at param (/home/runner/workspace/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:421:3)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/home/runner/workspace/server/index.ts:112:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at /home/runner/workspace/node_modules/express-session/index.js:514:7
+    at /home/runner/workspace/node_modules/connect-pg-simple/index.js:370:18
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  issues: [
+    {
+      code: 'invalid_type',
+      expected: 'number',
+      received: 'string',
+      path: [Array],
+      message: 'Expected number, received string'
+    },
+    {
+      code: 'invalid_type',
+      expected: 'number',
+      received: 'undefined',
+      path: [Array],
+      message: 'Required'
+    }
+  ],
+  addIssue: [Function (anonymous)],
+  addIssues: [Function (anonymous)],
+  errors: [
+    {
+      code: 'invalid_type',
+      expected: 'number',
+      received: 'string',
+      path: [Array],
+      message: 'Expected number, received string'
+    },
+    {
+      code: 'invalid_type',
+      expected: 'number',
+      received: 'undefined',
+      path: [Array],
+      message: 'Required'
+    }
+  ]
+}
+3:21:21 PM [express] PATCH /api/properties/13bde718-c5e
