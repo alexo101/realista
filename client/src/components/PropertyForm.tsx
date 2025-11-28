@@ -147,6 +147,7 @@ const formSchema = z.object({
   availabilityDate: z.date().optional(),
   propertyCondition: z.enum(propertyConditionOptions).optional(),
   housingStatus: z.enum(housingStatus).optional(),
+  isActive: z.boolean().default(true),
   imageUrls: z.array(z.string()).default([]),
   mainImageIndex: z.number().default(-1),
   title: z.string().min(1, "El título es obligatorio"),
@@ -330,6 +331,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       availabilityDate: initialData?.availabilityDate || undefined,
       propertyCondition: initialData?.propertyCondition || undefined,
       housingStatus: initialData?.housingStatus || undefined,
+      isActive: initialData?.isActive ?? true,
       imageUrls: initialData?.imageUrls || [],
       mainImageIndex: initialData?.mainImageIndex ?? -1,
       title: initialData?.title || "",
@@ -878,77 +880,114 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 />
               </div>
 
-              {/* Disponibilidad */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Disponibilidad</h3>
-                <FormField
-                  control={form.control}
-                  name="availability"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          className="flex flex-col space-y-2"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="Inmediatamente" data-testid="radio-inmediatamente" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Inmediatamente</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="A partir de" data-testid="radio-a-partir-de" />
-                            </FormControl>
-                            <FormLabel className="font-normal">A partir de</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch("availability") === "A partir de" && (
+              {/* Disponibilidad y Visibilidad */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Disponibilidad */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Disponibilidad</h3>
                   <FormField
                     control={form.control}
-                    name="availabilityDate"
+                    name="availability"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col mt-4">
-                        <FormLabel>Fecha de disponibilidad</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={`w-full pl-3 text-left font-normal ${
-                                  !field.value && "text-muted-foreground"
-                                }`}
-                                data-testid="button-availability-date"
-                              >
-                                {field.value ? format(field.value, "PPP", { locale: es }) : "Selecciona una fecha"}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                              locale={es}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                      <FormItem className="space-y-3">
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex flex-col space-y-2"
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="Inmediatamente" data-testid="radio-inmediatamente" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Inmediatamente</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="A partir de" data-testid="radio-a-partir-de" />
+                              </FormControl>
+                              <FormLabel className="font-normal">A partir de</FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                )}
+
+                  {form.watch("availability") === "A partir de" && (
+                    <FormField
+                      control={form.control}
+                      name="availabilityDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col mt-4">
+                          <FormLabel>Fecha de disponibilidad</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={`w-full pl-3 text-left font-normal ${
+                                    !field.value && "text-muted-foreground"
+                                  }`}
+                                  data-testid="button-availability-date"
+                                >
+                                  {field.value ? format(field.value, "PPP", { locale: es }) : "Selecciona una fecha"}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date()}
+                                initialFocus
+                                locale={es}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Visibilidad */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Visibilidad</h3>
+                  <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => field.onChange(value === "visible")}
+                            value={field.value ? "visible" : "hidden"}
+                            className="flex flex-col space-y-2"
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="visible" data-testid="radio-visible" />
+                              </FormControl>
+                              <FormLabel className="font-normal">Visible para clientes</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="hidden" data-testid="radio-hidden" />
+                              </FormControl>
+                              <FormLabel className="font-normal">No visible para clientes</FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
               {/* Estado de conservación */}
