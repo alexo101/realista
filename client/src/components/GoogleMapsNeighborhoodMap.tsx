@@ -1,6 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { geocodeAddresses, GeocodingResult, getFallbackCoordinates } from '../utils/geocoding';
 import { loadGoogleMaps } from '../utils/googleMaps';
+import { useUser } from '@/contexts/user-context';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
+import { queryClient } from '@/lib/queryClient';
+
+declare global {
+  interface Window {
+    __handlePropertyFavorite?: (propertyUuid: string, buttonId: string) => void;
+  }
+}
 
 interface Property {
   uuid: string;
@@ -37,6 +47,96 @@ export default function GoogleMapsNeighborhoodMap({
   const [isLoading, setIsLoading] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
   const [geocodedCoords, setGeocodedCoords] = useState<Map<number, GeocodingResult>>(new Map());
+  const [favoriteProperties, setFavoriteProperties] = useState<Set<string>>(new Set());
+  
+  const { user } = useUser();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  // Handle favorite toggle from map popup
+  const handleFavoriteToggle = useCallback(async (propertyUuid: string, buttonId: string) => {
+    if (!user) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para guardar propiedades como favoritas",
+        variant: "destructive",
+      });
+      navigate("/iniciar-sesion");
+      return;
+    }
+
+    if (!user.isClient) {
+      toast({
+        title: "Función solo para clientes",
+        description: "Solo los clientes pueden agregar propiedades a favoritos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/clients/favorites/properties/${propertyUuid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al actualizar favoritos");
+      }
+
+      const data = await response.json();
+      
+      // Update local state
+      setFavoriteProperties(prev => {
+        const newSet = new Set(prev);
+        if (data.isFavorite) {
+          newSet.add(propertyUuid);
+        } else {
+          newSet.delete(propertyUuid);
+        }
+        return newSet;
+      });
+
+      // Update button visual state
+      const btn = document.getElementById(buttonId);
+      if (btn) {
+        btn.dataset.fav = data.isFavorite ? 'true' : 'false';
+        btn.innerHTML = data.isFavorite 
+          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>'
+          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+      }
+
+      // Invalidate client favorites queries
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user.id}/favorites/properties`] 
+      });
+
+      toast({
+        title: data.isFavorite ? "Propiedad agregada a favoritos" : "Propiedad eliminada de favoritos",
+        description: data.isFavorite 
+          ? "La propiedad ha sido agregada a tu lista de favoritos" 
+          : "La propiedad ha sido eliminada de tu lista de favoritos",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "No se pudo actualizar favoritos",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast, navigate]);
+
+  // Set up global handler for map popup favorite buttons
+  useEffect(() => {
+    window.__handlePropertyFavorite = handleFavoriteToggle;
+    return () => {
+      delete window.__handlePropertyFavorite;
+    };
+  }, [handleFavoriteToggle]);
 
   // Get coordinates for the neighborhood
   const getNeighborhoodCenter = (): [number, number] => {
@@ -230,22 +330,20 @@ export default function GoogleMapsNeighborhoodMap({
             <button 
               id="fav-${propertyId}"
               onclick="(function() {
-                var btn = document.getElementById('fav-${propertyId}');
-                var isFav = btn.dataset.fav === 'true';
-                btn.dataset.fav = isFav ? 'false' : 'true';
-                btn.innerHTML = isFav 
-                  ? '<svg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'white\\' stroke-width=\\'2\\'><path d=\\'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z\\'></path></svg>'
-                  : '<svg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 24 24\\' fill=\\'#ef4444\\' stroke=\\'#ef4444\\' stroke-width=\\'2\\'><path d=\\'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z\\'></path></svg>';
                 event.stopPropagation();
+                if (window.__handlePropertyFavorite) {
+                  window.__handlePropertyFavorite('${property.uuid}', 'fav-${propertyId}');
+                }
               })()"
-              data-fav="false"
+              data-fav="${favoriteProperties.has(property.uuid) ? 'true' : 'false'}"
               style="position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.4); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: transform 0.2s;"
               onmouseover="this.style.transform='scale(1.1)'"
               onmouseout="this.style.transform='scale(1)'"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
+              ${favoriteProperties.has(property.uuid) 
+                ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>'
+                : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>'
+              }
             </button>
             
             <!-- Operation Type Badge -->
