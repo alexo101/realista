@@ -163,7 +163,7 @@ export default function GoogleMapsNeighborhoodMap({
       const infoContent = `
         <div style="width: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; border-radius: 12px;">
           <!-- Image Carousel -->
-          <div style="position: relative; width: 100%; height: 180px; background: #f3f4f6;">
+          <div style="position: relative; width: 100%; height: 240px; background: #f3f4f6;">
             <div id="carousel-${propertyId}" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
               ${images.map((img: string, idx: number) => `
                 <img 
@@ -255,7 +255,7 @@ export default function GoogleMapsNeighborhoodMap({
           </div>
           
           <!-- Property Details -->
-          <div style="padding: 14px;">
+          <div style="padding: 12px;">
             <!-- Title -->
             <h3 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #1f2937; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
               ${property.title || property.address}
