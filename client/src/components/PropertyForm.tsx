@@ -364,11 +364,20 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     }
   };
 
+  const handleFormError = (errors: any) => {
+    console.log('Form validation errors:', errors);
+    toast({
+      title: "Error de validación",
+      description: "Por favor revisa los campos marcados en rojo",
+      variant: "destructive",
+    });
+  };
+
   return (
     <Card>
       <CardContent className="pt-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(handleSubmit, handleFormError)} className="space-y-8">
             {/* SECTION 1: INFORMACIÓN BÁSICA */}
             <div className="space-y-4">
               <h2 className="text-2xl font-bold border-b pb-2">Información básica</h2>

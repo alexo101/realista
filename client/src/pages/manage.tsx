@@ -275,6 +275,18 @@ export default function ManagePage() {
       queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
       setIsAddingProperty(false);
       setEditingProperty(null);
+      toast({
+        title: "Propiedad creada",
+        description: "La propiedad se ha añadido correctamente",
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating property:', error);
+      toast({
+        title: "Error al crear propiedad",
+        description: (error as Error).message || "No se pudo crear la propiedad",
+        variant: "destructive",
+      });
     },
   });
 
@@ -289,6 +301,18 @@ export default function ManagePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
       setEditingProperty(null);
+      toast({
+        title: "Propiedad actualizada",
+        description: "Los cambios se han guardado correctamente",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating property:', error);
+      toast({
+        title: "Error al actualizar",
+        description: (error as Error).message || "No se pudieron guardar los cambios",
+        variant: "destructive",
+      });
     },
   });
 
