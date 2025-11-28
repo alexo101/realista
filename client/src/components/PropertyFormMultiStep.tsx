@@ -72,6 +72,7 @@ const housingStatusOptions = ["Disponible sin limitación", "Sin cédula de habi
 const step1Schema = z.object({
   reference: z.string().optional(),
   type: z.enum(propertyTypes, { required_error: "Selecciona el tipo de inmueble" }),
+  housingType: z.enum(housingTypes).optional().nullable(),
   operationType: z.enum(["Venta", "Alquiler"], { required_error: "Selecciona el tipo de operación" }),
   price: z.coerce.number().min(1, "El precio es obligatorio"),
   bedrooms: z.coerce.number().int("Debe ser un número entero").min(1, "Al menos 1").optional().nullable(),
@@ -164,6 +165,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     defaultValues: initialData || {
       reference: "",
       type: undefined as any,
+      housingType: undefined as any,
       operationType: undefined as any,
       price: "" as any,
       bedrooms: undefined,
@@ -379,6 +381,18 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       form.setValue("availabilityDate", new Date(), { shouldValidate: false });
     }
     
+    // Check if housingType is required (when type is "Vivienda")
+    const propertyType = form.getValues("type");
+    const housingType = form.getValues("housingType");
+    if (propertyType === "Vivienda" && !housingType) {
+      toast({
+        title: "Campos incompletos",
+        description: "Por favor, selecciona el tipo de vivienda en la sección de información básica.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Trigger validation for all fields
     const isValid = await form.trigger();
     
@@ -476,7 +490,12 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de inmueble</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      if (value !== "Vivienda") {
+                        form.setValue("housingType", undefined);
+                      }
+                    }} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-type">
                           <SelectValue placeholder="Selecciona el tipo" />
@@ -494,6 +513,33 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   </FormItem>
                 )}
               />
+
+              {form.watch("type") === "Vivienda" && (
+                <FormField
+                  control={form.control}
+                  name="housingType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de vivienda</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-housing-type">
+                            <SelectValue placeholder="Selecciona el tipo de vivienda" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {housingTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
