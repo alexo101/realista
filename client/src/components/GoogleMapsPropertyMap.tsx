@@ -150,36 +150,158 @@ export function GoogleMapsPropertyMap({
         title: `${property.title || property.address} - €${property.price.toLocaleString()}`
       });
 
-      // Create info window content
+      // Create info window content with image carousel
+      const propertyId = property.uuid.replace(/-/g, '');
+      const images = property.imageUrls && property.imageUrls.length > 0 
+        ? property.imageUrls 
+        : ['/placeholder-property.jpg'];
+      const hasMultipleImages = images.length > 1;
+      
       const infoContent = `
-        <div style="min-width: 250px; padding: 12px;">
-          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: #1f2937;">
-            ${property.title || property.address}
-          </h3>
-          <p style="margin: 4px 0; font-size: 13px; color: #6b7280;">
-            <strong>Dirección:</strong> ${property.address}
-          </p>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0;">
-            <span style="font-size: 18px; font-weight: bold; color: ${markerColor};">
-              €${property.price.toLocaleString()}
-            </span>
-            <span style="font-size: 12px; background: #f3f4f6; padding: 4px 8px; border-radius: 6px; color: #374151;">
+        <div style="width: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; border-radius: 12px;">
+          <!-- Image Carousel -->
+          <div style="position: relative; width: 100%; height: 180px; background: #f3f4f6;">
+            <div id="carousel-${propertyId}" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
+              ${images.map((img: string, idx: number) => `
+                <img 
+                  src="${img.startsWith('/property-images/') ? img : img}" 
+                  alt="Imagen ${idx + 1}"
+                  id="img-${propertyId}-${idx}"
+                  style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s ease; opacity: ${idx === 0 ? '1' : '0'};"
+                  onerror="this.src='/placeholder-property.jpg'"
+                />
+              `).join('')}
+            </div>
+            
+            ${hasMultipleImages ? `
+              <!-- Navigation Arrows -->
+              <button 
+                onclick="(function() {
+                  var total = ${images.length};
+                  var current = parseInt(document.getElementById('carousel-${propertyId}').dataset.current || '0');
+                  var next = (current - 1 + total) % total;
+                  for(var i = 0; i < total; i++) {
+                    document.getElementById('img-${propertyId}-' + i).style.opacity = i === next ? '1' : '0';
+                  }
+                  document.getElementById('carousel-${propertyId}').dataset.current = next;
+                  document.getElementById('counter-${propertyId}').textContent = (next + 1) + '/${images.length}';
+                  event.stopPropagation();
+                })()"
+                style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.95); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;"
+                onmouseover="this.style.background='white'"
+                onmouseout="this.style.background='rgba(255,255,255,0.95)'"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <button 
+                onclick="(function() {
+                  var total = ${images.length};
+                  var current = parseInt(document.getElementById('carousel-${propertyId}').dataset.current || '0');
+                  var next = (current + 1) % total;
+                  for(var i = 0; i < total; i++) {
+                    document.getElementById('img-${propertyId}-' + i).style.opacity = i === next ? '1' : '0';
+                  }
+                  document.getElementById('carousel-${propertyId}').dataset.current = next;
+                  document.getElementById('counter-${propertyId}').textContent = (next + 1) + '/${images.length}';
+                  event.stopPropagation();
+                })()"
+                style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.95); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10;"
+                onmouseover="this.style.background='white'"
+                onmouseout="this.style.background='rgba(255,255,255,0.95)'"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+              
+              <!-- Image Counter -->
+              <div 
+                id="counter-${propertyId}"
+                style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 500;"
+              >1/${images.length}</div>
+            ` : ''}
+            
+            <!-- Favorite Button -->
+            <button 
+              id="fav-${propertyId}"
+              onclick="(function() {
+                var btn = document.getElementById('fav-${propertyId}');
+                var isFav = btn.dataset.fav === 'true';
+                btn.dataset.fav = isFav ? 'false' : 'true';
+                btn.innerHTML = isFav 
+                  ? '<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"white\" stroke-width=\"2\"><path d=\"M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z\"></path></svg>'
+                  : '<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"#ef4444\" stroke=\"#ef4444\" stroke-width=\"2\"><path d=\"M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z\"></path></svg>';
+                event.stopPropagation();
+              })()"
+              data-fav="false"
+              style="position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.4); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: transform 0.2s;"
+              onmouseover="this.style.transform='scale(1.1)'"
+              onmouseout="this.style.transform='scale(1)'"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
+            
+            <!-- Operation Type Badge -->
+            <span style="position: absolute; top: 10px; left: 10px; background: ${markerColor}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
               ${property.operationType}
             </span>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0;">
-            ${property.bedrooms ? `<p style="margin: 0; font-size: 12px; color: #6b7280;"><strong>Habitaciones:</strong> ${property.bedrooms}</p>` : ''}
-            ${property.bathrooms ? `<p style="margin: 0; font-size: 12px; color: #6b7280;"><strong>Baños:</strong> ${property.bathrooms}</p>` : ''}
-            ${property.superficie ? `<p style="margin: 0; font-size: 12px; color: #6b7280;"><strong>Superficie:</strong> ${property.superficie}m²</p>` : ''}
+          
+          <!-- Property Details -->
+          <div style="padding: 14px;">
+            <!-- Title -->
+            <h3 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #1f2937; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+              ${property.title || property.address}
+            </h3>
+            
+            <!-- Price -->
+            <div style="font-size: 20px; font-weight: 700; color: ${markerColor}; margin-bottom: 10px;">
+              €${property.price.toLocaleString('es-ES')}${property.operationType === 'Alquiler' ? '<span style="font-size: 13px; font-weight: 400; color: #6b7280;">/mes</span>' : ''}
+            </div>
+            
+            <!-- Features Row -->
+            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-top: 1px solid #f3f4f6;">
+              ${property.bedrooms ? `
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                    <path d="M2 4v16m20-16v16M7 9h10M7 9v6h10V9M4 9h2m12 0h2"/>
+                  </svg>
+                  <span style="font-size: 14px; color: #374151; font-weight: 500;">${property.bedrooms} hab.</span>
+                </div>
+              ` : ''}
+              ${property.superficie ? `
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18M9 3v18"/>
+                  </svg>
+                  <span style="font-size: 14px; color: #374151; font-weight: 500;">${property.superficie} m²</span>
+                </div>
+              ` : ''}
+              ${property.bathrooms ? `
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                    <path d="M4 12h16a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a1 1 0 0 1 1-1zM6 12V5a2 2 0 0 1 2-2h3v2.25"/>
+                  </svg>
+                  <span style="font-size: 14px; color: #374151; font-weight: 500;">${property.bathrooms} baño${property.bathrooms > 1 ? 's' : ''}</span>
+                </div>
+              ` : ''}
+            </div>
+            
+            <!-- View Details Button -->
+            <button 
+              onclick="window.location.href='/inmueble/${property.uuid}'" 
+              style="width: 100%; background: ${markerColor}; color: white; border: none; border-radius: 8px; padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: all 0.2s;"
+              onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)'"
+              onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
+            >
+              Ver detalles
+            </button>
           </div>
-          <button 
-            onclick="window.location.href='/property/${property.uuid}'" 
-            style="width: 100%; background: ${markerColor}; color: white; border: none; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 12px; transition: opacity 0.2s;"
-            onmouseover="this.style.opacity='0.9'"
-            onmouseout="this.style.opacity='1'"
-          >
-            Ver detalles
-          </button>
         </div>
       `;
 
@@ -264,7 +386,7 @@ export function GoogleMapsPropertyMap({
             </button>
           </div>
           <button 
-            onClick={() => window.location.href = `/property/${selectedProperty.id}`}
+            onClick={() => window.location.href = `/inmueble/${selectedProperty.uuid}`}
             className="w-full bg-primary text-white py-2 rounded hover:bg-primary/90 transition-colors mt-3"
             data-testid="view-property-details"
           >
