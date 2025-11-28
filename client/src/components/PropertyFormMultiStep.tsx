@@ -195,12 +195,19 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   // Create/update property mutation
   const savePropertyMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Ensure price is a number and agentId is included
+      const payload = {
+        ...data,
+        price: typeof data.price === 'string' ? Number(data.price) : data.price,
+        agentId: user?.id,
+      };
+      
       if (propertyId) {
         // Update existing property
-        return await apiRequest("PATCH", `/api/properties/${propertyId}`, data);
+        return await apiRequest("PATCH", `/api/properties/${propertyId}`, payload);
       } else {
         // Create new property (happens after step 2)
-        return await apiRequest("POST", "/api/properties", data);
+        return await apiRequest("POST", "/api/properties", payload);
       }
     },
     onSuccess: (data) => {
