@@ -499,12 +499,6 @@ export default function AgencyProfile() {
                 linkedAgents.reduce((acc, agent) => acc + (agent.reviewCount || 0), 0) : 0)} reseñas)
             </span>
           </div>
-          {agency.agencyAddress && (
-            <div className="flex items-center text-sm text-gray-600 mb-4">
-              <MapPin className="h-4 w-4 mr-1" />
-              {agency.agencyAddress}
-            </div>
-          )}
           <div className="flex flex-wrap gap-3">
             {/* Botón de contacto telefónico con comportamiento específico por plataforma */}
             {agency.agencyPhone && (
