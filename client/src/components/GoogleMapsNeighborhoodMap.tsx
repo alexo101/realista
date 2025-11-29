@@ -262,6 +262,13 @@ export default function GoogleMapsNeighborhoodMap({
       
       const infoContent = `
         <div style="width: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; border-radius: 12px;">
+          <!-- Header with Operation Type Badge -->
+          <div style="display: flex; align-items: center; padding: 8px 12px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+            <span style="background: ${markerColor}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+              ${property.operationType}
+            </span>
+          </div>
+          
           <!-- Image Carousel -->
           <div style="position: relative; width: 100%; height: 240px; background: #f3f4f6;">
             <div id="carousel-${propertyId}" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
@@ -349,11 +356,6 @@ export default function GoogleMapsNeighborhoodMap({
           
           <!-- Property Details -->
           <div style="padding: 12px;">
-            <!-- Operation Type Badge -->
-            <span style="display: inline-block; background: ${markerColor}; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-              ${property.operationType}
-            </span>
-            
             <!-- Title -->
             <h3 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #1f2937; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
               ${property.title || property.address}
