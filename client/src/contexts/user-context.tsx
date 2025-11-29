@@ -11,6 +11,9 @@ interface User {
   agentUuid?: string;
   clientUuid?: string;
   
+  // Agency relationship (for agents belonging to an agency)
+  agencyId?: number | null;
+  
   // Campos para perfil de agente
   surname?: string;
   description?: string;
@@ -19,7 +22,7 @@ interface User {
   yearsOfExperience?: number;
   languagesSpoken?: string[];
   
-  // Campos para perfil de agencia
+  // Campos para perfil de agencia (when user IS an agency)
   agencyName?: string;
   agencyAddress?: string;
   agencyDescription?: string;

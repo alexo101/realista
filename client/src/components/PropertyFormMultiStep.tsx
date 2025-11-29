@@ -197,11 +197,12 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   // Create/update property mutation
   const savePropertyMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Ensure price is a number and agentId is included
+      // Ensure price is a number, agentId and agencyId are included
       const payload = {
         ...data,
         price: typeof data.price === 'string' ? Number(data.price) : data.price,
         agentId: user?.id,
+        agencyId: user?.agencyId || null,
       };
       
       if (propertyId) {
@@ -275,10 +276,9 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
       superficie: formData.superficie ? Number(formData.superficie) : undefined,
       agentId: user?.id,
-      agencyId: null,
+      agencyId: user?.agencyId || null,
       isDraft: true,
       isActive: false,
-      // Ensure title and description are never empty (required by schema)
       title: formData.title || "Borrador - Título pendiente",
       description: formData.description || "Borrador - Información pendiente",
     };
@@ -329,11 +329,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
         superficie: formData.superficie ? Number(formData.superficie) : undefined,
         agentId: user?.id,
-        agencyId: null, // Set to null since User type doesn't have agencyId
+        agencyId: user?.agencyId || null,
         isDraft: true,
-        isActive: false, // Drafts are not active
-        title: "Borrador - Título pendiente", // Temporary title (required by schema)
-        description: "Borrador - Información pendiente", // Temporary description
+        isActive: false,
+        title: "Borrador - Título pendiente",
+        description: "Borrador - Información pendiente",
       };
 
       try {
