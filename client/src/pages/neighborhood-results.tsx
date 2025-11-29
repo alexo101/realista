@@ -10,7 +10,7 @@ import { AgentResults } from "@/components/AgentResults";
 import GoogleMapsNeighborhoodMap from "@/components/GoogleMapsNeighborhoodMap";
 import { Footer } from "@/components/Footer";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
-import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map, Bookmark, Check } from "lucide-react";
+import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map, Bookmark, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -48,6 +48,17 @@ export default function NeighborhoodResultsPage() {
   // State for save search button
   const [isSaveConfirming, setIsSaveConfirming] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  
+  // State for inline neighborhood rating form
+  const [showInlineRatingForm, setShowInlineRatingForm] = useState(false);
+  const [inlineUserRatings, setInlineUserRatings] = useState<Record<string, number>>({
+    security: 0,
+    parking: 0,
+    familyFriendly: 0,
+    publicTransport: 0,
+    greenSpaces: 0,
+    services: 0,
+  });
   
   // Check for pending saved search after login
   useEffect(() => {
@@ -185,6 +196,63 @@ export default function NeighborhoodResultsPage() {
       });
     },
   });
+
+  // Mutation for inline neighborhood rating
+  const inlineRatingMutation = useMutation({
+    mutationFn: async (ratingData: Record<string, number | string | null>) => {
+      return await apiRequest('POST', '/api/neighborhoods/ratings', ratingData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "¡Valoración enviada!",
+        description: `Tu valoración para ${decodedNeighborhood} ha sido guardada con éxito.`,
+      });
+      // Reset form
+      setInlineUserRatings({
+        security: 0,
+        parking: 0,
+        familyFriendly: 0,
+        publicTransport: 0,
+        greenSpaces: 0,
+        services: 0,
+      });
+      setShowInlineRatingForm(false);
+      // Invalidate ratings cache to refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/neighborhoods/ratings/average'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo enviar la valoración",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler functions for inline rating
+  const handleInlineRatingChange = (key: string, value: number) => {
+    setInlineUserRatings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmitInlineRating = () => {
+    // Validate at least one rating is provided
+    const hasAnyRating = Object.values(inlineUserRatings).some(v => v > 0);
+    if (!hasAnyRating) {
+      toast({
+        title: "Valoración incompleta",
+        description: "Por favor, proporciona al menos una valoración.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    inlineRatingMutation.mutate({
+      neighborhood: currentNeighborhood || decodedNeighborhood,
+      district: currentDistrict || null,
+      city: currentCity,
+      ...inlineUserRatings,
+    });
+  };
 
   const handleSaveSearch = () => {
     // Check if user is logged in and is a client
@@ -976,19 +1044,98 @@ export default function NeighborhoodResultsPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="text-center py-6 bg-gray-50 rounded-lg">
-                            <p className="text-gray-500">No hay valoraciones para este barrio todavía.</p>
-                            <Button 
-                              variant="link" 
-                              className="mt-3 text-primary hover:underline cursor-pointer font-medium" 
-                              onClick={() => {
-                                // Almacenar el barrio en localStorage para seleccionarlo automáticamente en el formulario
-                                localStorage.setItem('barrio_a_valorar', decodedNeighborhood);
-                                window.location.href = '/#valorar-barrio';
-                              }}
-                            >
-                              Sé el primero en valorar este barrio
-                            </Button>
+                          <div className="py-4">
+                            {!showInlineRatingForm ? (
+                              <div className="text-center py-6 bg-gray-50 rounded-lg">
+                                <p className="text-gray-500">No hay valoraciones para este barrio todavía.</p>
+                                <Button 
+                                  variant="link" 
+                                  className="mt-3 text-primary hover:underline cursor-pointer font-medium" 
+                                  onClick={() => setShowInlineRatingForm(true)}
+                                  data-testid="btn-first-rating"
+                                >
+                                  Sé el primero en valorar este barrio
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                  <h4 className="text-lg font-semibold">
+                                    Califica: {decodedNeighborhood}
+                                  </h4>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => setShowInlineRatingForm(false)}
+                                    data-testid="btn-close-inline-rating"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                
+                                <div className="space-y-5">
+                                  {[
+                                    { key: 'security', label: 'Seguridad', icon: '🔒' },
+                                    { key: 'parking', label: 'Aparcamiento', icon: '🚗' },
+                                    { key: 'familyFriendly', label: 'Ambiente familiar', icon: '👨‍👩‍👧‍👦' },
+                                    { key: 'publicTransport', label: 'Conectividad', icon: '🚌' },
+                                    { key: 'greenSpaces', label: 'Zonas verdes', icon: '🌳' },
+                                    { key: 'services', label: 'Servicios', icon: '🛍️' },
+                                  ].map(({ key, label, icon }) => (
+                                    <div key={key} className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-lg">{icon}</span>
+                                        <label className="text-sm font-medium text-gray-700">
+                                          {label}
+                                        </label>
+                                      </div>
+                                      <div className="flex gap-1 mt-1">
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                                          <button
+                                            key={star}
+                                            type="button"
+                                            disabled={inlineRatingMutation.isPending}
+                                            className={`text-lg ${inlineRatingMutation.isPending ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                                            onClick={() => handleInlineRatingChange(key, star)}
+                                            data-testid={`star-${key}-${star}`}
+                                          >
+                                            <Star 
+                                              className={`h-5 w-5 ${
+                                                inlineUserRatings[key] >= star
+                                                  ? 'text-yellow-500 fill-yellow-500'
+                                                  : 'text-gray-300'
+                                              }`}
+                                            />
+                                          </button>
+                                        ))}
+                                        <span className="ml-2 text-sm text-gray-600 font-medium">
+                                          {inlineUserRatings[key] > 0 ? `${inlineUserRatings[key]}/10` : 'Sin calificar'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  
+                                  <div className="flex gap-3 pt-4">
+                                    <Button
+                                      onClick={handleSubmitInlineRating}
+                                      disabled={inlineRatingMutation.isPending}
+                                      className="bg-[#0284c5e6] text-white px-6 py-2"
+                                      data-testid="btn-submit-inline-rating"
+                                    >
+                                      {inlineRatingMutation.isPending ? "Enviando..." : "Enviar valoración"}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setShowInlineRatingForm(false)}
+                                      disabled={inlineRatingMutation.isPending}
+                                      data-testid="btn-cancel-inline-rating"
+                                    >
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
