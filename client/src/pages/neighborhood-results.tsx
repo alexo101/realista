@@ -972,59 +972,156 @@ export default function NeighborhoodResultsPage() {
                         )}
                         
                         {ratings.count > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                            <div className="space-y-3">
-                              <div>
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-sm font-medium">Sensación de seguridad</span>
-                                  <span className="text-sm font-semibold">{ratings.security}/10</span>
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                              <div className="space-y-3">
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-sm font-medium">Sensación de seguridad</span>
+                                    <span className="text-sm font-semibold">{ratings.security}/10</span>
+                                  </div>
+                                  <Progress value={ratings.security * 10} className="h-2" />
                                 </div>
-                                <Progress value={ratings.security * 10} className="h-2" />
+                                
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-sm font-medium">Facilidad de aparcar</span>
+                                    <span className="text-sm font-semibold">{ratings.parking}/10</span>
+                                  </div>
+                                  <Progress value={ratings.parking * 10} className="h-2" />
+                                </div>
+                                
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-sm font-medium">Amigable para peques</span>
+                                    <span className="text-sm font-semibold">{ratings.familyFriendly}/10</span>
+                                  </div>
+                                  <Progress value={ratings.familyFriendly * 10} className="h-2" />
+                                </div>
                               </div>
                               
-                              <div>
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-sm font-medium">Facilidad de aparcar</span>
-                                  <span className="text-sm font-semibold">{ratings.parking}/10</span>
+                              <div className="space-y-3">
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-sm font-medium">Conexión con transporte público</span>
+                                    <span className="text-sm font-semibold">{ratings.publicTransport}/10</span>
+                                  </div>
+                                  <Progress value={ratings.publicTransport * 10} className="h-2" />
                                 </div>
-                                <Progress value={ratings.parking * 10} className="h-2" />
-                              </div>
-                              
-                              <div>
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-sm font-medium">Amigable para peques</span>
-                                  <span className="text-sm font-semibold">{ratings.familyFriendly}/10</span>
+                                
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-sm font-medium">Parques y espacios verdes</span>
+                                    <span className="text-sm font-semibold">{ratings.greenSpaces}/10</span>
+                                  </div>
+                                  <Progress value={ratings.greenSpaces * 10} className="h-2" />
                                 </div>
-                                <Progress value={ratings.familyFriendly * 10} className="h-2" />
+                                
+                                <div>
+                                  <div className="flex justify-between mb-1">
+                                    <span className="text-sm font-medium">Disponibilidad de servicios</span>
+                                    <span className="text-sm font-semibold">{ratings.services}/10</span>
+                                  </div>
+                                  <Progress value={ratings.services * 10} className="h-2" />
+                                </div>
                               </div>
                             </div>
                             
-                            <div className="space-y-3">
-                              <div>
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-sm font-medium">Conexión con transporte público</span>
-                                  <span className="text-sm font-semibold">{ratings.publicTransport}/10</span>
-                                </div>
-                                <Progress value={ratings.publicTransport * 10} className="h-2" />
+                            {/* Button to add new rating or inline form */}
+                            {!showInlineRatingForm ? (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <Button 
+                                  variant="outline" 
+                                  className="text-primary border-primary hover:bg-primary/10" 
+                                  onClick={() => setShowInlineRatingForm(true)}
+                                  data-testid="btn-add-rating"
+                                >
+                                  <Star className="h-4 w-4 mr-2" />
+                                  Califica este barrio
+                                </Button>
                               </div>
-                              
-                              <div>
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-sm font-medium">Parques y espacios verdes</span>
-                                  <span className="text-sm font-semibold">{ratings.greenSpaces}/10</span>
+                            ) : (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                                  <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-lg font-semibold">
+                                      Califica: {decodedNeighborhood}
+                                    </h4>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => setShowInlineRatingForm(false)}
+                                      data-testid="btn-close-inline-rating-existing"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  
+                                  <div className="space-y-5">
+                                    {[
+                                      { key: 'security', label: 'Seguridad', icon: '🔒' },
+                                      { key: 'parking', label: 'Aparcamiento', icon: '🚗' },
+                                      { key: 'familyFriendly', label: 'Ambiente familiar', icon: '👨‍👩‍👧‍👦' },
+                                      { key: 'publicTransport', label: 'Conectividad', icon: '🚌' },
+                                      { key: 'greenSpaces', label: 'Zonas verdes', icon: '🌳' },
+                                      { key: 'services', label: 'Servicios', icon: '🛍️' },
+                                    ].map(({ key, label, icon }) => (
+                                      <div key={key} className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-lg">{icon}</span>
+                                          <label className="text-sm font-medium text-gray-700">
+                                            {label}
+                                          </label>
+                                        </div>
+                                        <div className="flex gap-1 mt-1">
+                                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                                            <button
+                                              key={star}
+                                              type="button"
+                                              disabled={inlineRatingMutation.isPending}
+                                              className={`text-lg ${inlineRatingMutation.isPending ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                                              onClick={() => handleInlineRatingChange(key, star)}
+                                              data-testid={`star-existing-${key}-${star}`}
+                                            >
+                                              <Star 
+                                                className={`h-5 w-5 ${
+                                                  inlineUserRatings[key] >= star
+                                                    ? 'text-yellow-500 fill-yellow-500'
+                                                    : 'text-gray-300'
+                                                }`}
+                                              />
+                                            </button>
+                                          ))}
+                                          <span className="ml-2 text-sm text-gray-600 font-medium">
+                                            {inlineUserRatings[key] > 0 ? `${inlineUserRatings[key]}/10` : 'Sin calificar'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    
+                                    <div className="flex gap-3 pt-4">
+                                      <Button
+                                        onClick={handleSubmitInlineRating}
+                                        disabled={inlineRatingMutation.isPending}
+                                        className="bg-[#0284c5e6] text-white px-6 py-2"
+                                        data-testid="btn-submit-inline-rating-existing"
+                                      >
+                                        {inlineRatingMutation.isPending ? "Enviando..." : "Enviar valoración"}
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => setShowInlineRatingForm(false)}
+                                        disabled={inlineRatingMutation.isPending}
+                                        data-testid="btn-cancel-inline-rating-existing"
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </div>
+                                  </div>
                                 </div>
-                                <Progress value={ratings.greenSpaces * 10} className="h-2" />
                               </div>
-                              
-                              <div>
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-sm font-medium">Disponibilidad de servicios</span>
-                                  <span className="text-sm font-semibold">{ratings.services}/10</span>
-                                </div>
-                                <Progress value={ratings.services * 10} className="h-2" />
-                              </div>
-                            </div>
-                          </div>
+                            )}
+                          </>
                         ) : (
                           <div className="py-4">
                             {!showInlineRatingForm ? (
