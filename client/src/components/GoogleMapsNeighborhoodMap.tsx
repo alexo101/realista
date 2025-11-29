@@ -350,58 +350,6 @@ export default function GoogleMapsNeighborhoodMap({
               }
             </button>
           </div>
-          
-          <!-- Property Details -->
-          <div style="padding: 12px;">
-            <!-- Title -->
-            <h3 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 600; color: #1f2937; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-              ${property.title || property.address}
-            </h3>
-            
-            <!-- Price -->
-            <div style="font-size: 20px; font-weight: 700; color: ${markerColor}; margin-bottom: 10px;">
-              €${property.price.toLocaleString('es-ES')}${property.operationType === 'Alquiler' ? '<span style="font-size: 13px; font-weight: 400; color: #6b7280;">/mes</span>' : ''}
-            </div>
-            
-            <!-- Features Row -->
-            <div style="display: flex; align-items: center; gap: 16px; padding: 10px 0; border-top: 1px solid #f3f4f6;">
-              ${property.bedrooms ? `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
-                    <path d="M2 4v16m20-16v16M7 9h10M7 9v6h10V9M4 9h2m12 0h2"/>
-                  </svg>
-                  <span style="font-size: 14px; color: #374151; font-weight: 500;">${property.bedrooms} hab.</span>
-                </div>
-              ` : ''}
-              ${property.superficie ? `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <path d="M3 9h18M9 3v18"/>
-                  </svg>
-                  <span style="font-size: 14px; color: #374151; font-weight: 500;">${property.superficie} m²</span>
-                </div>
-              ` : ''}
-              ${property.bathrooms ? `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
-                    <path d="M4 12h16a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a1 1 0 0 1 1-1zM6 12V5a2 2 0 0 1 2-2h3v2.25"/>
-                  </svg>
-                  <span style="font-size: 14px; color: #374151; font-weight: 500;">${property.bathrooms} baño${property.bathrooms > 1 ? 's' : ''}</span>
-                </div>
-              ` : ''}
-            </div>
-            
-            <!-- View Details Button -->
-            <button 
-              onclick="window.location.href='/inmueble/${property.uuid}'" 
-              style="width: 100%; background: ${markerColor}; color: white; border: none; border-radius: 8px; padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: all 0.2s;"
-              onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)'"
-              onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
-            >
-              Ver detalles
-            </button>
-          </div>
         </div>
       `;
 
