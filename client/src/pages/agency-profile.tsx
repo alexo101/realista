@@ -1070,6 +1070,18 @@ export default function AgencyProfile() {
                             ))}
                           </div>
                         </div>
+                        <div className="flex gap-2 mb-2 flex-wrap">
+                          {review.verified && (
+                            <Badge variant="outline" className="text-xs h-5 bg-blue-50 border-blue-200 text-blue-600">
+                              Verificado
+                            </Badge>
+                          )}
+                          {review.reviewerProfile && (
+                            <Badge variant="outline" className="text-xs h-5 bg-gray-50 border-gray-200 text-gray-600 capitalize">
+                              {review.reviewerProfile}
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-gray-700 mt-2">{review.comment}</p>
                       </CardContent>
                     </Card>

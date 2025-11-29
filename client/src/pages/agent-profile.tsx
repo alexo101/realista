@@ -34,6 +34,7 @@ interface Review {
   date: string;
   comment?: string;
   verified?: boolean;
+  reviewerProfile?: string | null;
   // Campos directos para las puntuaciones en la BD
   areaKnowledge: number;
   priceNegotiation: number;
@@ -827,11 +828,16 @@ export default function AgentProfile() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="mb-3 flex items-center gap-2">
+                              <div className="mb-3 flex items-center gap-2 flex-wrap">
                                 <StarRating rating={review.rating} />
                                 {review.verified && (
                                   <Badge variant="outline" className="text-xs h-5 bg-blue-50 border-blue-200 text-blue-600">
                                     Verificado
+                                  </Badge>
+                                )}
+                                {review.reviewerProfile && (
+                                  <Badge variant="outline" className="text-xs h-5 bg-gray-50 border-gray-200 text-gray-600 capitalize">
+                                    {review.reviewerProfile}
                                   </Badge>
                                 )}
                               </div>

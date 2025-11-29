@@ -86,6 +86,7 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
   const [step, setStep] = useState('verification');
   const [hasWorkedWithAgency, setHasWorkedWithAgency] = useState<boolean | null>(null);
   const [selectedPropertyUuid, setSelectedPropertyUuid] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentReviewStep, setCurrentReviewStep] = useState(0);
   const [commentText, setCommentText] = useState("");
@@ -196,7 +197,7 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
       setCurrentReviewStep(currentReviewStep - 1);
     } else {
       if (hasWorkedWithAgency) {
-        setStep('propertySelection');
+        setStep('profileSelection');
       } else {
         setStep('verification');
       }
@@ -230,6 +231,7 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
       agencyId: agencyId,
       propertyUuid: selectedPropertyUuid,
       verified: hasWorkedWithAgency === true,
+      reviewerProfile: selectedProfile,
       areaKnowledge: Number(ratings.areaKnowledge) || 0,
       priceNegotiation: Number(ratings.priceNegotiation) || 0,
       treatment: Number(ratings.treatment) || 0,
@@ -254,6 +256,7 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
     setStep('verification');
     setHasWorkedWithAgency(null);
     setSelectedPropertyUuid(null);
+    setSelectedProfile(null);
     setSearchTerm("");
     setCurrentReviewStep(0);
     setCommentText("");
@@ -389,6 +392,63 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
             <Button 
               data-testid="button-continue-property"
               disabled={selectedPropertyUuid === null}
+              onClick={() => setStep('profileSelection')}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      );
+    } else if (step === 'profileSelection') {
+      return (
+        <div className="flex flex-col p-4">
+          <h2 className="text-xl font-semibold mb-6">Selecciona el perfil que mejor te describe</h2>
+          
+          <div className="space-y-3">
+            {[
+              { value: 'vendedor', label: 'Vendedor' },
+              { value: 'comprador', label: 'Comprador' },
+              { value: 'arrendador', label: 'Arrendador' },
+              { value: 'arrendatario', label: 'Arrendatario' },
+            ].map(({ value, label }) => (
+              <div
+                key={value}
+                onClick={() => setSelectedProfile(value)}
+                className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                  selectedProfile === value
+                    ? 'border-primary bg-primary/10'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+                data-testid={`profile-option-${value}`}
+              >
+                <div className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                    selectedProfile === value
+                      ? 'border-primary'
+                      : 'border-gray-300'
+                  }`}>
+                    {selectedProfile === value && (
+                      <div className="w-3 h-3 rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <span className="font-medium">{label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-between mt-6">
+            <Button 
+              data-testid="button-profile-previous"
+              variant="outline" 
+              onClick={() => setStep('propertySelection')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Anterior
+            </Button>
+            <Button 
+              data-testid="button-profile-continue"
+              disabled={selectedProfile === null}
               onClick={() => setStep('reviewFlow')}
             >
               Siguiente
@@ -579,13 +639,15 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
     }
   };
 
+  // Función para obtener el paso actual (número) - 10 steps total
   const getCurrentStepNumber = (): number => {
     if (step === 'verification') return 1;
     if (step === 'verificationNotice') return 2;
     if (step === 'propertySelection') return 2;
-    if (step === 'reviewFlow') return 3 + currentReviewStep;
-    if (step === 'commentStep') return 8;
-    if (step === 'userIdentification') return 9;
+    if (step === 'profileSelection') return 3;
+    if (step === 'reviewFlow') return 4 + currentReviewStep;
+    if (step === 'commentStep') return 9;
+    if (step === 'userIdentification') return 10;
     return 1;
   };
 
@@ -603,7 +665,7 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
           </DialogTitle>
           <div className="flex justify-center mt-4">
             <div className="flex items-center space-x-1">
-              {Array.from({ length: 9 }).map((_, i) => {
+              {Array.from({ length: 10 }).map((_, i) => {
                 const isCurrent = getCurrentStepNumber() === i + 1;
                 const isCompleted = getCurrentStepNumber() > i + 1;
                 return (
