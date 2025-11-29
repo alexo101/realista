@@ -15,7 +15,7 @@ import { ImageGallery } from "@/components/ImageGallery";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AgencyReview } from "@/components/AgencyReview";
+import { AgencyReviewFlow } from "@/components/AgencyReviewFlow";
 import { AgencyContactModal } from "@/components/AgencyContactModal";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
@@ -1092,8 +1092,11 @@ export default function AgencyProfile() {
       </Tabs>
       
       {/* Modal para escribir reseña */}
-      {isReviewModalOpen && (
-        <AgencyReview 
+      {agency && (
+        <AgencyReviewFlow 
+          agencyId={agency.id}
+          agencyName={agency.agencyName}
+          isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
         />
       )}
