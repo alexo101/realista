@@ -49,7 +49,7 @@ const StarRatingInput = ({ value, onChange, disabled = false }: StarRatingProps)
 };
 
 interface Property {
-  id: number;
+  uuid: string;
   title: string | null;
   address: string;
   reference: string | null;
@@ -60,7 +60,6 @@ interface AgentProfile {
   name: string | null;
   surname: string | null;
   email: string;
-  properties?: Property[];
 }
 
 interface ReviewStep {
@@ -93,7 +92,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
   // Estados para el flujo
   const [step, setStep] = useState('verification');
   const [hasWorkedWithAgent, setHasWorkedWithAgent] = useState<boolean | null>(null);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentReviewStep, setCurrentReviewStep] = useState(0);
   const [commentText, setCommentText] = useState("");
@@ -153,6 +152,19 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
       return response.json();
     },
     enabled: isOpen
+  });
+
+  // Consulta para obtener las propiedades del agente (solo del agente, no de la agencia)
+  const { data: properties, isLoading: isLoadingProperties } = useQuery<Property[]>({
+    queryKey: ['/api/agents', agentId, 'properties'],
+    queryFn: async () => {
+      const response = await fetch(`/api/agents/${agentId}/properties`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch properties");
+      }
+      return response.json();
+    },
+    enabled: isOpen && step === 'propertySelection'
   });
 
   // Mutación para enviar la reseña
@@ -219,8 +231,8 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
   };
 
   // Función para manejar la selección de propiedad
-  const handlePropertySelect = (propertyId: number) => {
-    setSelectedPropertyId(propertyId);
+  const handlePropertySelect = (propertyUuid: string) => {
+    setSelectedPropertyId(propertyUuid);
   };
 
   // Manejador para el formulario de usuario
@@ -248,7 +260,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
 
     const reviewData = {
       agentId: agentId,
-      propertyId: selectedPropertyId,
+      propertyUuid: selectedPropertyId,
       verified: hasWorkedWithAgent === true,
       areaKnowledge: Number(ratings.areaKnowledge) || 0,
       priceNegotiation: Number(ratings.priceNegotiation) || 0,
@@ -293,7 +305,7 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
   };
 
   // Función para filtrar propiedades basadas en el término de búsqueda
-  const filteredProperties = agent?.properties?.filter(
+  const filteredProperties = properties?.filter(
     property => 
       property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (property.title && property.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -356,7 +368,11 @@ export function AgentReviewFlow({ agentId, isOpen, onClose }: AgentReviewFlowPro
           </div>
 
           <ScrollArea className="h-[200px]">
-            {filteredProperties.length > 0 ? (
+            {isLoadingProperties ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Cargando propiedades...
+              </div>
+            ) : filteredProperties.length > 0 ? (
               <div className="space-y-2">
                 {filteredProperties.map(property => (
                   <div 
