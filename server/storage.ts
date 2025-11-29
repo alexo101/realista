@@ -2080,6 +2080,13 @@ export class DatabaseStorage implements IStorage {
       .insert(neighborhoodRatings)
       .values(convertedRating)
       .returning();
+    
+    // Invalidate the cache for this neighborhood so new ratings appear immediately
+    const city = rating.city || 'Barcelona';
+    const cacheKey = `neighborhood_ratings_${city}_${rating.district || 'all'}_${rating.neighborhood}`;
+    cache.delete(cacheKey);
+    console.log(`Cache invalidated for neighborhood ratings: ${rating.neighborhood}`);
+    
     return newRating;
   }
 
