@@ -880,20 +880,6 @@ export default function NeighborhoodResultsPage() {
                 <h2 className="text-2xl font-bold mb-4">Barrio de {currentNeighborhood}</h2>
               )}
                 
-                {/* District information for neighborhoods */}
-                {isNeighborhoodPage && currentDistrict && (
-                  <div className="flex items-center mb-4">
-                    <MapPin className="h-5 w-5 mr-2 text-primary" />
-                    <span>Distrito: <strong>{currentDistrict}</strong></span>
-                  </div>
-                )}
-                {isNeighborhoodPage && currentCity === 'Barcelona' && legacyDistrict && !currentDistrict && (
-                  <div className="flex items-center mb-4">
-                    <MapPin className="h-5 w-5 mr-2 text-primary" />
-                    <span>Distrito: <strong>{legacyDistrict}</strong></span>
-                  </div>
-                )}
-                
                 {/* District information when viewing a district */}
                 {isDistrictPage && currentDistrict && (
                   <div className="mb-6">
