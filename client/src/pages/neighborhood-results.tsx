@@ -943,10 +943,6 @@ export default function NeighborhoodResultsPage() {
                 {/* Información genérica del barrio */}
                 {isNeighborhoodPage && (
                   <>
-                    <p className="text-gray-600 mb-6">
-                      Información general sobre el barrio de {decodedNeighborhood}.
-                    </p>
-                    
                     {/* Valoraciones del barrio */}
                     {!ratingsFetching && ratings && (
                       <div className="mb-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
