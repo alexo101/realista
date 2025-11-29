@@ -699,7 +699,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Escalera</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-escalera">
                             <SelectValue placeholder="Seleccionar" />
@@ -724,7 +724,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Planta</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-planta">
                             <SelectValue placeholder="Seleccionar" />
@@ -749,7 +749,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Puerta</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-puerta">
                             <SelectValue placeholder="Seleccionar" />
