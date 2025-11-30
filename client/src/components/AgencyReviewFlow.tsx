@@ -165,8 +165,8 @@ export function AgencyReviewFlow({ agencyId, agencyName, isOpen, onClose }: Agen
       queryClient.invalidateQueries({ queryKey: [`/api/agencies/${agencyId}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/agencies/${agencyId}/reviews`] });
       toast({
-        title: "Reseña enviada correctamente",
-        description: "Gracias por compartir tu experiencia",
+        title: "¡Casi listo! Revisa tu correo",
+        description: "Te hemos enviado un email para confirmar tu reseña. Una vez confirmada, será publicada.",
       });
       resetFlow();
       onClose();

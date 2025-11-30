@@ -27,9 +27,12 @@ export default function ConfirmReview() {
           if (data.alreadyConfirmed) {
             setStatus("already_confirmed");
             setMessage(data.message);
-          } else {
+          } else if (data.confirmed) {
             setStatus("success");
             setMessage(data.message);
+          } else {
+            setStatus("error");
+            setMessage(data.message || "Respuesta inesperada del servidor");
           }
         } else if (response.status === 404) {
           setStatus("not_found");
