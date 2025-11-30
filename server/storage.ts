@@ -850,7 +850,11 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(reviews)
         .where(
-          and(eq(reviews.targetId, agentId), eq(reviews.targetType, "agent")),
+          and(
+            eq(reviews.targetId, agentId), 
+            eq(reviews.targetType, "agent"),
+            eq(reviews.confirmed, true)
+          ),
         )
         .orderBy(sql`${reviews.date} DESC`);
       return result;
@@ -862,7 +866,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAgencyReviews(agencyId: number): Promise<Review[]> {
     try {
-      // Only count reviews where a property was selected (propertyUuid IS NOT NULL)
+      // Only count confirmed reviews where a property was selected (propertyUuid IS NOT NULL)
       // Reviews without a property are general feedback and don't count toward the agency average
       const result = await db
         .select()
@@ -871,6 +875,7 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(reviews.targetId, agencyId), 
             eq(reviews.targetType, "agency"),
+            eq(reviews.confirmed, true),
             isNotNull(reviews.propertyUuid)
           ),
         )
