@@ -1051,11 +1051,11 @@ export default function AgencyProfile() {
                           <div className="flex items-center">
                             <Avatar className="h-10 w-10 mr-3">
                               <AvatarFallback>
-                                {review.authorName?.charAt(0) || "U"}
+                                {review.author?.charAt(0) || "U"}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{review.authorName || "Usuario"}</div>
+                              <div className="font-medium">{review.author || "Usuario"}</div>
                               <div className="text-sm text-gray-500">
                                 {new Date(review.date).toLocaleDateString()}
                               </div>
