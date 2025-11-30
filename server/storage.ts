@@ -10,6 +10,7 @@ import {
   arrayOverlaps,
   not,
   isNull,
+  isNotNull,
   desc,
   inArray,
   count,
