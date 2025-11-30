@@ -418,3 +418,76 @@ export async function sendAgencyContactEmail(
     return false;
   }
 }
+
+// Función para enviar confirmación de reseña
+export async function sendReviewConfirmationEmail(
+  reviewerEmail: string,
+  reviewerName: string,
+  targetName: string,
+  targetType: 'agent' | 'agency',
+  confirmationToken: string
+) {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    const frontendUrl = getFrontendUrl();
+    
+    const targetTypeLabel = targetType === 'agent' ? 'el agente' : 'la agencia';
+    const subject = `Confirma tu reseña para ${targetName} - Realista`;
+    const confirmationUrl = `${frontendUrl}/confirmar-resena/${confirmationToken}`;
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Confirma tu reseña</h1>
+        <p>Hola${reviewerName ? ` ${reviewerName}` : ''},</p>
+        <p>Gracias por dejar una reseña sobre ${targetTypeLabel} <strong>${targetName}</strong> en Realista.</p>
+        <p>Para publicar tu reseña, por favor confirma tu dirección de correo electrónico haciendo clic en el siguiente botón:</p>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${confirmationUrl}" 
+             style="background-color: #2563eb; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
+            Confirmar mi reseña
+          </a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+          Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+          <a href="${confirmationUrl}" style="color: #2563eb; word-break: break-all;">${confirmationUrl}</a>
+        </p>
+        
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 30px;">
+          <p style="margin: 0; font-size: 14px; color: #666;">
+            <strong>¿No has dejado ninguna reseña?</strong><br>
+            Si no has sido tú quien ha dejado esta reseña, puedes ignorar este correo.
+          </p>
+        </div>
+        
+        <p style="margin-top: 30px; color: #666;">El equipo de Realista</p>
+      </body>
+      </html>
+    `;
+
+    const { data, error } = await client.emails.send({
+      from: `Realista <${fromEmail}>`,
+      to: [reviewerEmail],
+      subject,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('Error de Resend al enviar email de confirmación de reseña:', error);
+      return false;
+    }
+
+    console.log('Email de confirmación de reseña enviado:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('Error al enviar email de confirmación de reseña:', error);
+    return false;
+  }
+}
