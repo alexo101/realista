@@ -23,6 +23,7 @@ import RealistaPro from "@/pages/RealistaPro";
 import AgencyPlanRegister from "@/pages/agency-plan-register";
 import AgentPlanRegister from "@/pages/agent-plan-register";
 import UpgradePlan from "@/pages/upgrade-plan";
+import ConfirmReview from "@/pages/confirm-review";
 
 function Router() {
   return (
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/gestionar/:agentUuid/:section" component={Manage} />
       <Route path="/gestionar" component={Manage} />
       <Route path="/app/mejora-tu-plan" component={UpgradePlan} />
+      <Route path="/confirmar-resena/:token" component={ConfirmReview} />
       
       {/* Backwards compatibility routes - redirect to Spanish */}
       <Route path="/login" component={LoginPage} />
