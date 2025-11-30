@@ -33,7 +33,8 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInTiming: true,
   moveInDate: true,
 }).partial();
-import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail } from "./emailService";
+import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail } from "./emailService";
+import { randomUUID } from 'crypto';
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
@@ -2771,25 +2772,43 @@ Gracias!
       const identifier = req.params.identifier;
       const id = parseInt(identifier);
 
-      let agentId;
+      let agent;
       if (isNaN(id)) {
-        // It's a slug, lookup the agent first to get the ID
-        const agent = await storage.getAgentBySlug(identifier);
+        agent = await storage.getAgentBySlug(identifier);
         if (!agent) {
           return res.status(404).json({ message: "Agent not found" });
         }
-        agentId = agent.id;
       } else {
-        agentId = id;
+        agent = await storage.getAgentById(id);
+        if (!agent) {
+          return res.status(404).json({ message: "Agent not found" });
+        }
       }
+
+      const confirmationToken = randomUUID();
+      const reviewerEmail = req.body.email;
+      const reviewerName = req.body.author || '';
 
       const review = await storage.createAgentReview({
         ...req.body,
-        targetId: agentId,
+        targetId: agent.id,
         targetType: "agent",
+        confirmed: false,
+        confirmationToken,
+        reviewerEmail,
         date: new Date()
       });
-      res.status(201).json(review);
+
+      const agentName = `${agent.name || ''} ${agent.surname || ''}`.trim() || 'Agente';
+      await sendReviewConfirmationEmail(
+        reviewerEmail,
+        reviewerName,
+        agentName,
+        'agent',
+        confirmationToken
+      );
+
+      res.status(201).json({ ...review, emailSent: true });
     } catch (error) {
       console.error('Error creating agent review:', error);
       res.status(500).json({ message: "Failed to create review" });
@@ -2801,25 +2820,42 @@ Gracias!
       const identifier = req.params.identifier;
       const id = parseInt(identifier);
 
-      let agencyId;
+      let agency;
       if (isNaN(id)) {
-        // It's a slug, lookup the agency first to get the ID
-        const agency = await storage.getAgencyBySlug(identifier);
+        agency = await storage.getAgencyBySlug(identifier);
         if (!agency) {
           return res.status(404).json({ message: "Agency not found" });
         }
-        agencyId = agency.id;
       } else {
-        agencyId = id;
+        agency = await storage.getAgencyById(id);
+        if (!agency) {
+          return res.status(404).json({ message: "Agency not found" });
+        }
       }
+
+      const confirmationToken = randomUUID();
+      const reviewerEmail = req.body.email;
+      const reviewerName = req.body.author || '';
 
       const review = await storage.createAgentReview({
         ...req.body,
-        targetId: agencyId,
+        targetId: agency.id,
         targetType: "agency",
+        confirmed: false,
+        confirmationToken,
+        reviewerEmail,
         date: new Date()
       });
-      res.status(201).json(review);
+
+      await sendReviewConfirmationEmail(
+        reviewerEmail,
+        reviewerName,
+        agency.agencyName,
+        'agency',
+        confirmationToken
+      );
+
+      res.status(201).json({ ...review, emailSent: true });
     } catch (error) {
       console.error('Error creating agency review:', error);
       res.status(500).json({ message: "Failed to create agency review" });
