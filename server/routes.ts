@@ -2862,6 +2862,47 @@ Gracias!
     }
   });
 
+  // Endpoint para confirmar reseñas vía token de email
+  app.get("/api/reviews/confirm/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Token de confirmación requerido" });
+      }
+
+      const existingReview = await storage.getReviewByToken(token);
+      
+      if (!existingReview) {
+        return res.status(404).json({ message: "Enlace de confirmación no válido o expirado" });
+      }
+
+      if (existingReview.confirmed) {
+        return res.status(200).json({ 
+          message: "Esta reseña ya ha sido confirmada", 
+          alreadyConfirmed: true,
+          review: existingReview 
+        });
+      }
+
+      const confirmedReview = await storage.confirmReviewByToken(token);
+      
+      if (!confirmedReview) {
+        return res.status(500).json({ message: "Error al confirmar la reseña" });
+      }
+
+      console.log(`Reseña ${confirmedReview.id} confirmada exitosamente`);
+      res.status(200).json({ 
+        message: "¡Tu reseña ha sido publicada exitosamente!", 
+        confirmed: true,
+        review: confirmedReview 
+      });
+    } catch (error) {
+      console.error('Error confirming review:', error);
+      res.status(500).json({ message: "Error al confirmar la reseña" });
+    }
+  });
+
   // Ruta para obtener las reseñas que un usuario debe gestionar (tanto como agente como sus agencias)
   app.get("/api/reviews/manage", async (req, res) => {
     try {

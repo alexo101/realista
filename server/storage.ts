@@ -99,6 +99,8 @@ export interface IStorage {
   createAgentReview(review: InsertReview): Promise<Review>;
   getAgentReviews(agentId: number): Promise<Review[]>; // Obtener las reseñas de un agente
   getAgencyReviews(agencyId: number): Promise<Review[]>; // Obtener las reseñas de una agencia
+  confirmReviewByToken(token: string): Promise<Review | null>; // Confirmar una reseña por token
+  getReviewByToken(token: string): Promise<Review | null>; // Obtener una reseña por token
   respondToReview(reviewId: number, response: string): Promise<Review>; // Responder a una reseña
   pinReview(reviewId: number, pinned: boolean): Promise<Review>; // Destacar/quitar destaque de una reseña
 
@@ -877,6 +879,38 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error obteniendo reseñas de la agencia:", error);
       return [];
+    }
+  }
+
+  async getReviewByToken(token: string): Promise<Review | null> {
+    try {
+      const [review] = await db
+        .select()
+        .from(reviews)
+        .where(eq(reviews.confirmationToken, token));
+      return review || null;
+    } catch (error) {
+      console.error("Error obteniendo reseña por token:", error);
+      return null;
+    }
+  }
+
+  async confirmReviewByToken(token: string): Promise<Review | null> {
+    try {
+      const [updatedReview] = await db
+        .update(reviews)
+        .set({ confirmed: true })
+        .where(
+          and(
+            eq(reviews.confirmationToken, token),
+            eq(reviews.confirmed, false)
+          )
+        )
+        .returning();
+      return updatedReview || null;
+    } catch (error) {
+      console.error("Error confirmando reseña:", error);
+      return null;
     }
   }
 
