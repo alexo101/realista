@@ -426,6 +426,9 @@ export const reviews = pgTable("reviews", {
   propertyUuid: uuid("property_uuid").references(() => properties.uuid),
   verified: boolean("verified").notNull().default(false),
   pinned: boolean("pinned").notNull().default(false), // Nueva columna para marcar reseñas destacadas
+  confirmed: boolean("confirmed").notNull().default(false), // Email confirmado
+  confirmationToken: text("confirmation_token"), // Token único para confirmar email
+  reviewerEmail: text("reviewer_email"), // Email del autor para confirmación
   reviewerProfile: text("reviewer_profile"), // Perfil del autor: 'vendedor', 'comprador', 'arrendador', 'arrendatario'
   comment: text("comment"), // Campo para los comentarios
   agentResponse: text("agent_response"), // Respuesta del agente a la reseña
