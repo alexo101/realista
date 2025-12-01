@@ -58,12 +58,12 @@ const applicationSchema = z.object({
 type ApplicationFormValues = z.infer<typeof applicationSchema>;
 
 interface PropertyApplicationFormProps {
-  propertyId: number | string;
+  propertyUuid: string;
   agentId?: number;
   onSuccess?: () => void;
 }
 
-export function PropertyApplicationForm({ propertyId, agentId, onSuccess }: PropertyApplicationFormProps) {
+export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: PropertyApplicationFormProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -118,7 +118,7 @@ export function PropertyApplicationForm({ propertyId, agentId, onSuccess }: Prop
       let targetAgentId = agentId;
       
       if (!targetAgentId) {
-        const propertyResponse = await fetch(`/api/properties/${propertyId}`);
+        const propertyResponse = await fetch(`/api/properties/${propertyUuid}`);
         if (!propertyResponse.ok) {
           throw new Error("No se pudo obtener la información de la propiedad");
         }
@@ -136,7 +136,7 @@ export function PropertyApplicationForm({ propertyId, agentId, onSuccess }: Prop
         email: data.email,
         phone: data.phone,
         message: data.message || "",
-        propertyId,
+        propertyUuid,
         agentId: targetAgentId,
         status: "pendiente"
       };
@@ -179,7 +179,7 @@ export function PropertyApplicationForm({ propertyId, agentId, onSuccess }: Prop
           // For logged in clients, create separate visit requests for each time slot
           for (const timeSlot of data.visitTimeSlots) {
             const visitRequestData = {
-              propertyId,
+              propertyUuid,
               clientId: user.id,
               agentId: targetAgentId,
               requestedDate: data.visitDate.toISOString(),
