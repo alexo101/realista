@@ -562,13 +562,11 @@ export default function AgentProfile() {
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Sobre {fullName}</h2>
                 <div className="space-y-4">
-                  <p className="text-gray-700">
-                    {agent.description || 
-                     `${fullName} es un agente inmobiliario con amplia experiencia en el mercado de Barcelona. 
-                     Se especializa en propiedades residenciales y ayuda a sus clientes a encontrar el hogar perfecto.
-                     Con un profundo conocimiento del mercado local, ${agent.name} ofrece un servicio personalizado
-                     y dedicado a cada cliente.`}
-                  </p>
+                  {agent.description ? (
+                    <p className="text-gray-700">{agent.description}</p>
+                  ) : (
+                    <p className="text-gray-500 italic">Sin descripción disponible</p>
+                  )}
                 </div>
 
                 {/* Estadísticas del agente */}
