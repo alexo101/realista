@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -68,6 +68,7 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clientData, setClientData] = useState<any>(null);
 
   const form = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicationSchema),
@@ -79,6 +80,37 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
       message: "",
     },
   });
+
+  // Fetch client data and auto-populate form when user is logged in
+  useEffect(() => {
+    const fetchClientData = async () => {
+      if (user && user.isClient && user.id) {
+        try {
+          const response = await fetch(`/api/clients/${user.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            setClientData(data);
+            
+            // Auto-populate form with client data
+            const fullName = [data.name, data.surname].filter(Boolean).join(' ').trim();
+            if (fullName) {
+              form.setValue("name", fullName);
+            }
+            if (data.phone && data.phone !== "000000000") {
+              form.setValue("phone", data.phone);
+            }
+            if (data.email) {
+              form.setValue("email", data.email);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching client data:", error);
+        }
+      }
+    };
+    
+    fetchClientData();
+  }, [user, form]);
 
   const selectedTimeSlots = form.watch("visitTimeSlots") || [];
   const visitDate = form.watch("visitDate");
@@ -188,6 +220,42 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
           if (!visitResponse.ok) {
             console.warn("Error creating visit request for time slot:", timeSlot);
             // Continue with other time slots even if one fails
+          }
+        }
+      }
+
+      // Update client profile with any new information if logged in
+      if (user && user.isClient && user.id && clientData) {
+        const updateData: Record<string, any> = {};
+        
+        // Check if phone was empty or placeholder and now has a real value
+        if ((!clientData.phone || clientData.phone === "000000000" || clientData.phone === "") && data.phone) {
+          updateData.phone = data.phone;
+        }
+        
+        // Check if name has changed (split into name/surname if space exists)
+        const currentFullName = [clientData.name, clientData.surname].filter(Boolean).join(' ').trim();
+        if (data.name && data.name !== currentFullName) {
+          const nameParts = data.name.trim().split(' ');
+          if (nameParts.length > 1) {
+            updateData.name = nameParts[0];
+            updateData.surname = nameParts.slice(1).join(' ');
+          } else {
+            updateData.name = data.name.trim();
+          }
+        }
+        
+        // Only send update if there are changes
+        if (Object.keys(updateData).length > 0) {
+          try {
+            await fetch(`/api/clients/${user.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(updateData),
+            });
+            queryClient.invalidateQueries({ queryKey: ['/api/clients', user.id] });
+          } catch (error) {
+            console.warn("Could not update client profile:", error);
           }
         }
       }
