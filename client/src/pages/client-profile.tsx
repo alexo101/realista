@@ -60,6 +60,7 @@ interface FavoriteAgent {
 
 interface FavoriteProperty {
   id: number;
+  uuid: string;
   title: string;
   price: number;
   address: string;

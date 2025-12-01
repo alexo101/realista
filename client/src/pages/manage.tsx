@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { PropertyFormMultiStep } from "@/components/PropertyFormMultiStep";
@@ -193,10 +193,21 @@ export default function ManagePage() {
     return (saved === 'kanban' || saved === 'list') ? saved : 'list';
   });
 
+  // Properties view mode (grid or table)
+  const [propertiesView, setPropertiesView] = useState<'grid' | 'table'>(() => {
+    const saved = localStorage.getItem('propertiesView');
+    return (saved === 'grid' || saved === 'table') ? saved : 'grid';
+  });
+
   // Persist clients view preference
   useEffect(() => {
     localStorage.setItem('clientsView', clientsView);
   }, [clientsView]);
+
+  // Persist properties view preference
+  useEffect(() => {
+    localStorage.setItem('propertiesView', propertiesView);
+  }, [propertiesView]);
 
 
   // Cargar valores iniciales cuando el usuario cambia
@@ -1386,15 +1397,38 @@ export default function ManagePage() {
               {!(isAddingProperty || editingProperty) && (
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Gestión de Propiedades</h2>
-                  <Button 
-                    onClick={() => {
-                      setIsAddingProperty(true);
-                      setEditingProperty(null);
-                    }} 
-                    size="lg"
-                  >
-                    Añadir propiedad
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* View Toggle Buttons */}
+                    <div className="flex border rounded-md">
+                      <Button
+                        variant={propertiesView === 'grid' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setPropertiesView('grid')}
+                        className="rounded-r-none"
+                        data-testid="button-view-grid"
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={propertiesView === 'table' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setPropertiesView('table')}
+                        className="rounded-l-none"
+                        data-testid="button-view-table"
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setIsAddingProperty(true);
+                        setEditingProperty(null);
+                      }} 
+                      size="lg"
+                    >
+                      Añadir propiedad
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -1464,123 +1498,174 @@ export default function ManagePage() {
                   )}
                 </>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                <>
                   {isLoadingProperties ? (
-                    <div className="col-span-full text-center py-8">
+                    <div className="text-center py-8">
                       <p>Cargando propiedades...</p>
                     </div>
                   ) : !properties?.length ? (
-                    <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg">
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
                       <Building2 className="mx-auto h-12 w-12 text-gray-400" />
                       <h3 className="mt-2 text-lg font-medium text-gray-900">Sin propiedades</h3>
                       <p className="mt-1 text-gray-500">
                         Empieza añadiendo tu primera propiedad
                       </p>
                     </div>
+                  ) : propertiesView === 'table' ? (
+                    /* Table View */
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[120px]">Referencia</TableHead>
+                            <TableHead>Dirección</TableHead>
+                            <TableHead className="w-[120px]">Precio</TableHead>
+                            <TableHead className="w-[100px] text-center">Acciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {properties.map((property) => (
+                            <TableRow key={property.uuid} className="hover:bg-gray-50">
+                              <TableCell className="font-medium">
+                                {property.reference || '-'}
+                              </TableCell>
+                              <TableCell>
+                                <div className="line-clamp-1">{property.address}</div>
+                              </TableCell>
+                              <TableCell className="font-semibold text-primary">
+                                €{property.price?.toLocaleString()}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => fetchPropertyForEditMutation.mutate(property.uuid)}
+                                    data-testid={`button-edit-property-${property.uuid}`}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(`/propiedad/${property.slug || property.uuid}`, '_blank')}
+                                    data-testid={`button-view-property-${property.uuid}`}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   ) : (
-                    properties.map((property) => {
-                      // Use imageUrls or empty array if none available
-                      const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
-                        ? property.imageUrls
-                        : [];
-                      
-                      return (
-                        <div 
-                          key={property.uuid} 
-                          className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
-                          onClick={() => {
-                            fetchPropertyForEditMutation.mutate(property.uuid);
-                          }}
-                        >
-                          <div className="h-48 overflow-hidden relative">
-                            {propertyImages.length > 0 ? (
-                              <img 
-                                src={propertyImages[0]} 
-                                alt={property.title || property.address}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Building2 className="h-12 w-12 text-gray-400" />
-                              </div>
-                            )}
+                    /* Grid View */
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                      {properties.map((property) => {
+                        const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
+                          ? property.imageUrls
+                          : [];
+                        
+                        return (
+                          <div 
+                            key={property.uuid} 
+                            className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
+                            onClick={() => {
+                              fetchPropertyForEditMutation.mutate(property.uuid);
+                            }}
+                          >
+                            <div className="h-48 overflow-hidden relative">
+                              {propertyImages.length > 0 ? (
+                                <img 
+                                  src={propertyImages[0]} 
+                                  alt={property.title || property.address}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                  <Building2 className="h-12 w-12 text-gray-400" />
+                                </div>
+                              )}
 
-                          {property.operationType && (
-                            <div className="absolute top-0 left-0 bg-primary text-white px-2 py-1 text-xs m-2 rounded-sm">
-                              {property.operationType === 'Venta' || property.operationType === 'venta' ? 'Venta' : 'Alquiler'}
-                            </div>
-                          )}
+                              {property.operationType && (
+                                <div className="absolute top-0 left-0 bg-primary text-white px-2 py-1 text-xs m-2 rounded-sm">
+                                  {property.operationType === 'Venta' || property.operationType === 'venta' ? 'Venta' : 'Alquiler'}
+                                </div>
+                              )}
 
-                          {property.reference && (
-                            <div className="absolute bottom-0 right-0 bg-black/70 text-white px-2 py-1 text-xs m-2 rounded-sm">
-                              Ref: {property.reference}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="p-3 md:p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold text-base line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
-                          </div>
-
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className="text-xl md:text-2xl font-bold text-primary">€{property.price?.toLocaleString()}</p>
-                            {property.previousPrice && property.previousPrice > property.price && (
-                              <span className="text-sm font-medium text-red-600">
-                                {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓
-                              </span>
-                            )}
-                          </div>
-                          
-                          {property.superficie && (
-                            <p className="text-sm font-medium text-gray-800 mb-2">
-                              {Math.round(property.price / property.superficie)}€/m²
-                            </p>
-                          )}
-                          
-                          <div className="flex items-center gap-2 md:gap-4 text-sm text-gray-600 mb-2 flex-wrap">
-                            <span className="truncate">{property.type}</span>
-                            {property.housingType && <span className="truncate">{property.housingType}</span>}
-                            <span className="truncate">{property.neighborhood}</span>
-                          </div>
-                          
-                          <p className="text-sm text-gray-600 line-clamp-1 mb-3">{property.address}</p>
-
-                          <div className="flex gap-2 md:gap-4 text-sm text-gray-500 mb-3 flex-wrap">
-                            {property.superficie && (
-                              <div className="whitespace-nowrap">{property.superficie}m²</div>
-                            )}
-                            {property.bedrooms && (
-                              <div className="whitespace-nowrap">{property.bedrooms} hab.</div>
-                            )}
-                            {property.bathrooms && (
-                              <div className="whitespace-nowrap">{property.bathrooms} baños</div>
-                            )}
-                            {property.reference && (
-                              <div className="text-gray-400 whitespace-nowrap">Ref: {property.reference}</div>
-                            )}
-                          </div>
-
-                          {property.features && property.features.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {property.features.slice(0, 3).map(feature => (
-                                <span key={feature} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                                  {feature}
-                                </span>
-                              ))}
-                              {property.features.length > 3 && (
-                                <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                                  +{property.features.length - 3}
-                                </span>
+                              {property.reference && (
+                                <div className="absolute bottom-0 right-0 bg-black/70 text-white px-2 py-1 text-xs m-2 rounded-sm">
+                                  Ref: {property.reference}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
+
+                            <div className="p-3 md:p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <h3 className="font-semibold text-base line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
+                              </div>
+
+                              <div className="flex items-center gap-2 mb-2">
+                                <p className="text-xl md:text-2xl font-bold text-primary">€{property.price?.toLocaleString()}</p>
+                                {property.previousPrice && property.previousPrice > property.price && (
+                                  <span className="text-sm font-medium text-red-600">
+                                    {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {property.superficie && (
+                                <p className="text-sm font-medium text-gray-800 mb-2">
+                                  {Math.round(property.price / property.superficie)}€/m²
+                                </p>
+                              )}
+                              
+                              <div className="flex items-center gap-2 md:gap-4 text-sm text-gray-600 mb-2 flex-wrap">
+                                <span className="truncate">{property.type}</span>
+                                {property.housingType && <span className="truncate">{property.housingType}</span>}
+                                <span className="truncate">{property.neighborhood}</span>
+                              </div>
+                              
+                              <p className="text-sm text-gray-600 line-clamp-1 mb-3">{property.address}</p>
+
+                              <div className="flex gap-2 md:gap-4 text-sm text-gray-500 mb-3 flex-wrap">
+                                {property.superficie && (
+                                  <div className="whitespace-nowrap">{property.superficie}m²</div>
+                                )}
+                                {property.bedrooms && (
+                                  <div className="whitespace-nowrap">{property.bedrooms} hab.</div>
+                                )}
+                                {property.bathrooms && (
+                                  <div className="whitespace-nowrap">{property.bathrooms} baños</div>
+                                )}
+                                {property.reference && (
+                                  <div className="text-gray-400 whitespace-nowrap">Ref: {property.reference}</div>
+                                )}
+                              </div>
+
+                              {property.features && property.features.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {property.features.slice(0, 3).map(feature => (
+                                    <span key={feature} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                      {feature}
+                                    </span>
+                                  ))}
+                                  {property.features.length > 3 && (
+                                    <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                      +{property.features.length - 3}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                </div>
+                </>
               )}
             </div>
           )}
