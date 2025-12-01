@@ -58,11 +58,12 @@ const applicationSchema = z.object({
 type ApplicationFormValues = z.infer<typeof applicationSchema>;
 
 interface PropertyApplicationFormProps {
-  propertyId: number;
+  propertyId: number | string;
   agentId?: number;
+  onSuccess?: () => void;
 }
 
-export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplicationFormProps) {
+export function PropertyApplicationForm({ propertyId, agentId, onSuccess }: PropertyApplicationFormProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -211,6 +212,10 @@ export function PropertyApplicationForm({ propertyId, agentId }: PropertyApplica
       form.reset();
       queryClient.invalidateQueries({ queryKey: ['/api/inquiries'] });
       queryClient.invalidateQueries({ queryKey: ['/api/property-visit-requests'] });
+      
+      if (onSuccess) {
+        onSuccess();
+      }
       
     } catch (error) {
       console.error("Error al enviar solicitud:", error);

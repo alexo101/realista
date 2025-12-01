@@ -16,10 +16,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
-import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag, ChevronDown, ChevronUp } from "lucide-react";
+import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag, ChevronDown } from "lucide-react";
 
 // Extended Property type with additional fields for features
-interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms' | 'features'> {
+interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms' | 'features' | 'agencyId'> {
   bedrooms: number | null;
   bathrooms: number | null;
   viewCount: number;
@@ -70,7 +70,7 @@ export default function PropertyPage() {
   const [showFraudDialog, setShowFraudDialog] = useState(false);
   const [fraudCount, setFraudCount] = useState(0);
   const [agentCardExpanded, setAgentCardExpanded] = useState(false);
-  const [applicationFormExpanded, setApplicationFormExpanded] = useState(false);
+  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
 
   const { user } = useUser();
   const { toast } = useToast();
@@ -575,34 +575,15 @@ export default function PropertyPage() {
 
             <Card>
               <CardContent className="pt-6">
-                {!applicationFormExpanded ? (
-                  // Collapsed view - CTA button only
-                  <div className="text-center">
-                    <Button 
-                      className="w-full"
-                      onClick={() => setApplicationFormExpanded(true)}
-                    >
-                      Aplicar por esta propiedad
-                    </Button>
-                  </div>
-                ) : (
-                  // Expanded view - full application form
-                  <div>
-                    {/* Collapse button */}
-                    <div 
-                      className="flex justify-end cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors mb-4"
-                      onClick={() => setApplicationFormExpanded(false)}
-                    >
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    </div>
-                    
-                    <h3 className="font-semibold text-lg mb-4">Aplicar por esta propiedad</h3>
-                    <PropertyApplicationForm 
-                      propertyId={property.uuid} 
-                      agentId={property.agentId}
-                    />
-                  </div>
-                )}
+                <div className="text-center">
+                  <Button 
+                    className="w-full"
+                    onClick={() => setApplicationModalOpen(true)}
+                    data-testid="button-apply-property"
+                  >
+                    Aplicar por esta propiedad
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -634,6 +615,23 @@ export default function PropertyPage() {
               {reportFraudMutation.isPending ? "Enviando..." : "Reportar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Property application modal */}
+      <Dialog open={applicationModalOpen} onOpenChange={setApplicationModalOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Aplicar por esta propiedad</DialogTitle>
+            <DialogDescription>
+              Completa el formulario para solicitar información o una visita.
+            </DialogDescription>
+          </DialogHeader>
+          <PropertyApplicationForm 
+            propertyId={property?.uuid || ''} 
+            agentId={property?.agentId}
+            onSuccess={() => setApplicationModalOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>
