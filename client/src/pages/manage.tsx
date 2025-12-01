@@ -1536,7 +1536,7 @@ export default function ManagePage() {
                                 €{property.price?.toLocaleString()}
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center justify-center gap-2">
+                                <div className="flex items-center justify-center">
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -1544,14 +1544,6 @@ export default function ManagePage() {
                                     data-testid={`button-edit-property-${property.uuid}`}
                                   >
                                     <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => window.open(`/propiedad/${property.slug || property.uuid}`, '_blank')}
-                                    data-testid={`button-view-property-${property.uuid}`}
-                                  >
-                                    <Eye className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </TableCell>
