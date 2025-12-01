@@ -75,10 +75,10 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
         throw new Error("Debes ser un cliente para agregar favoritos");
       }
 
-      const response = await apiRequest("POST", `/api/clients/favorites/properties/${propertyUuid}`, {
+      // apiRequest already returns parsed JSON, no need to call .json() again
+      return await apiRequest("POST", `/api/clients/favorites/properties/${propertyUuid}`, {
         clientId: user.id
       });
-      return await response.json();
     },
     onSuccess: (data, propertyUuid) => {
       // Invalidate and refetch favorite status

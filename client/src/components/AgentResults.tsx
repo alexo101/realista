@@ -58,10 +58,10 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
         throw new Error("Debes ser un cliente para agregar favoritos");
       }
 
-      const response = await apiRequest("POST", `/api/clients/favorites/agents/${agentId}`, {
+      // apiRequest already returns parsed JSON, no need to call .json() again
+      return await apiRequest("POST", `/api/clients/favorites/agents/${agentId}`, {
         clientId: user.id
       });
-      return await response.json();
     },
     onSuccess: (data, agentId) => {
       // Invalidate and refetch favorite status
