@@ -514,7 +514,7 @@ export default function PropertyPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => navigate(`/agente/${agent.slug || agent.id}`)}
+                            onClick={() => navigate(`/agentes/${agent.slug || agent.id}`)}
                           >
                             Ver perfil
                           </Button>
@@ -561,7 +561,7 @@ export default function PropertyPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => navigate(`/agencia/${agency.slug || agency.id}`)}
+                            onClick={() => navigate(`/agencias/${agency.slug || agency.id}`)}
                           >
                             Ver perfil
                           </Button>

@@ -809,7 +809,34 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(agencies)
       .where(eq(agencies.id, id));
-    return agency;
+    
+    if (!agency) return undefined;
+
+    // Get review statistics for this agency
+    let reviewCount = 0;
+    let reviewAverage = 0;
+    try {
+      const reviewResults = await db.execute(
+        sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
+            FROM reviews 
+            WHERE target_id = ${id} AND target_type = 'agency' AND confirmed = true`
+      );
+      const row = reviewResults.rows[0] as any;
+      reviewCount = row?.count || 0;
+      reviewAverage = row?.average || 0;
+    } catch (error: any) {
+      if (error?.code === '42P01') {
+        console.log('Reviews table not yet created - skipping review stats for agency');
+      } else {
+        console.error('Error fetching review stats for agency:', error);
+      }
+    }
+
+    return {
+      ...agency,
+      reviewCount: Number(reviewCount),
+      reviewAverage: Number(reviewAverage),
+    } as any;
   }
 
   async getAgentByUuid(uuid: string): Promise<User | undefined> {
