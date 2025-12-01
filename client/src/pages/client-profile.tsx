@@ -457,7 +457,7 @@ export default function ClientProfile() {
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-12">
                 {/* Photo Upload Section */}
                 <Card>
                   <CardContent className="pt-6">
