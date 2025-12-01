@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -168,6 +169,11 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
           <DialogTitle className="text-xl">
             {isLoginMode ? "Iniciar sesión" : "Crear cuenta"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {isLoginMode 
+              ? "Introduce tu email y contraseña para iniciar sesión" 
+              : "Crea una cuenta para aplicar a propiedades"}
+          </DialogDescription>
         </DialogHeader>
 
         {isLoginMode ? (
@@ -183,6 +189,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                       <Input 
                         placeholder="tu@email.com" 
                         type="email"
+                        autoComplete="email"
                         data-testid="input-login-email"
                         {...field}
                       />
@@ -202,6 +209,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                       <div className="relative">
                         <Input 
                           type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
                           data-testid="input-login-password"
                           {...field}
                         />
@@ -243,6 +251,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                       <Input 
                         placeholder="tu@email.com" 
                         type="email"
+                        autoComplete="email"
                         data-testid="input-register-email"
                         {...field}
                       />
@@ -262,6 +271,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                       <Input 
                         placeholder="tu@email.com" 
                         type="email"
+                        autoComplete="off"
                         data-testid="input-register-email-confirm"
                         {...field}
                       />
@@ -281,6 +291,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                       <div className="relative">
                         <Input 
                           type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
                           data-testid="input-register-password"
                           {...field}
                         />
