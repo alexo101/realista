@@ -7,6 +7,7 @@ import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
 import { PropertyApplicationForm } from "@/components/PropertyApplicationForm";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms' | 'fe
   bathrooms: number | null;
   viewCount: number;
   features?: string[];
+  agencyId?: number | null;
 }
 
 // Agent interface
@@ -30,6 +32,7 @@ interface Agent {
   id: number;
   name: string;
   surname?: string;
+  slug?: string;
   email: string;
   phone?: string;
   photo?: string;
@@ -38,6 +41,7 @@ interface Agent {
   influenceNeighborhoods?: string[];
   reviewCount?: number;
   reviewAverage?: number;
+  agencyId?: number;
   pinnedReview?: {
     id: number;
     rating: number;
@@ -45,6 +49,16 @@ interface Agent {
     author: string;
     date: string;
   };
+}
+
+// Agency interface
+interface Agency {
+  id: number;
+  agencyName: string;
+  agencyLogo?: string;
+  slug?: string;
+  reviewCount?: number;
+  reviewAverage?: number;
 }
 
 export default function PropertyPage() {
@@ -73,6 +87,17 @@ export default function PropertyPage() {
     queryKey: [`/api/agents/${property?.agentId}`],
     enabled: !!property?.agentId,
   });
+
+  // Get agency ID from property or agent
+  const agencyId = property?.agencyId || agent?.agencyId;
+
+  const { data: agency, isFetching: agencyFetching } = useQuery<Agency>({
+    queryKey: [`/api/agencies/${agencyId}`],
+    enabled: !!agencyId,
+  });
+
+  // State for the contact card tab (agent or agency)
+  const [contactTab, setContactTab] = useState<'agent' | 'agency'>('agent');
 
   // Check if property is favorited
   const { data: favoriteStatus } = useQuery<{ isFavorite: boolean }>({
@@ -441,124 +466,109 @@ export default function PropertyPage() {
           </div>
 
           <div className="space-y-6">
-            {agent && !agentFetching && (
+            {(agent || agency) && !agentFetching && !agencyFetching && (
               <Card>
-                <CardContent className="pt-6">
-                  {!agentCardExpanded ? (
-                    // Collapsed view - horizontal layout
-                    <div 
-                      className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-                      onClick={() => setAgentCardExpanded(true)}
-                    >
-                      {/* Agent avatar */}
-                      <div className="relative w-12 h-12 flex-shrink-0">
-                        {agent.avatar || agent.photo ? (
-                          <img
-                            src={agent.avatar || agent.photo}
-                            alt={`${agent.name || ''} ${agent.surname || ''}`}
-                            className="rounded-full object-cover w-full h-full border-2 border-primary/20"
-                          />
-                        ) : (
-                          <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-primary text-sm font-semibold">
-                              {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Agent name and reviews */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base truncate">
-                          {agent.name || ''} {agent.surname || ''}
-                        </h3>
-                        
-                        {/* Review score display */}
-                        {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                            <span className="text-sm font-medium">{agent.reviewAverage.toFixed(1)}</span>
-                            <span className="text-xs text-gray-500">({agent.reviewCount})</span>
-                          </div>
-                        ) : (
-                          <p className="text-gray-600 text-xs mt-1">Sin reseñas</p>
-                        )}
-                      </div>
-                      
-                      {/* Expand arrow */}
-                      <ChevronDown className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                    </div>
-                  ) : (
-                    // Expanded view - full detailed view
-                    <div>
-                      {/* Detailed content */}
-                      <div className="text-center">
-                        <div className="relative w-20 h-20 mx-auto mb-4">
-                          {agent.avatar || agent.photo ? (
-                            <img
-                              src={agent.avatar || agent.photo}
-                              alt={`${agent.name || ''} ${agent.surname || ''}`}
-                              className="rounded-full object-cover w-full h-full border-2 border-primary/20"
-                            />
-                          ) : (
-                            <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
-                              <span className="text-primary text-xl font-semibold">
-                                {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <h3 className="font-semibold text-lg mb-2">
-                          {agent.name || ''} {agent.surname || ''}
-                        </h3>
-                        
-                        {/* Review score display */}
-                        {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
-                          <div className="flex items-center justify-center gap-1 mb-3">
-                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                            <span className="text-sm font-medium">{agent.reviewAverage.toFixed(1)}</span>
-                            <span className="text-xs text-gray-500">({agent.reviewCount})</span>
-                          </div>
-                        ) : (
-                          <p className="text-gray-600 text-sm mb-3">Sin reseñas</p>
-                        )}
-                        
-                        {/* Pinned Review */}
-                        {agent.pinnedReview && (
-                          <div className="mb-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                <span className="font-semibold text-sm">{agent.pinnedReview.rating}</span>
-                              </div>
-                              <span className="text-xs text-gray-500">Reseña destacada</span>
-                            </div>
-                            {agent.pinnedReview.comment && (
-                              <div className="text-sm text-gray-700">
-                                <p className="line-clamp-3">
-                                  {agent.pinnedReview.comment.length > 150 
-                                    ? `${agent.pinnedReview.comment.substring(0, 150)}...` 
-                                    : agent.pinnedReview.comment
-                                  }
-                                </p>
+                <CardContent className="pt-4">
+                  <Tabs value={contactTab} onValueChange={(v) => setContactTab(v as 'agent' | 'agency')}>
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="agent" disabled={!agent}>Agente</TabsTrigger>
+                      <TabsTrigger value="agency" disabled={!agency}>Agencia</TabsTrigger>
+                    </TabsList>
+                    
+                    {/* Agent Tab */}
+                    <TabsContent value="agent" className="mt-0">
+                      {agent && (
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 flex-shrink-0">
+                            {agent.avatar || agent.photo ? (
+                              <img
+                                src={agent.avatar || agent.photo}
+                                alt={`${agent.name || ''} ${agent.surname || ''}`}
+                                className="rounded-full object-cover w-full h-full border-2 border-primary/20"
+                              />
+                            ) : (
+                              <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center">
+                                <span className="text-primary text-sm font-semibold">
+                                  {(agent.name?.[0] || '') + (agent.surname?.[0] || '')}
+                                </span>
                               </div>
                             )}
                           </div>
-                        )}
-                        
-                        {/* Ver perfil button */}
-                        <Button 
-                          variant="outline" 
-                          className="w-full mt-4"
-                          onClick={() => navigate(`/agent/${agent.id}`)}
-                        >
-                          Ver perfil
-                          <ExternalLink className="w-4 h-4 ml-2" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                          
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm truncate">
+                              {agent.name || ''} {agent.surname || ''}
+                            </h3>
+                            
+                            {agent.reviewCount && agent.reviewCount > 0 && agent.reviewAverage ? (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                <span className="text-xs font-medium">{agent.reviewAverage.toFixed(1)}</span>
+                                <span className="text-xs text-gray-500">({agent.reviewCount})</span>
+                              </div>
+                            ) : (
+                              <p className="text-gray-500 text-xs mt-0.5">Sin reseñas</p>
+                            )}
+                          </div>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/agente/${agent.slug || agent.id}`)}
+                          >
+                            Ver perfil
+                          </Button>
+                        </div>
+                      )}
+                    </TabsContent>
+                    
+                    {/* Agency Tab */}
+                    <TabsContent value="agency" className="mt-0">
+                      {agency && (
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 flex-shrink-0">
+                            {agency.agencyLogo ? (
+                              <img
+                                src={agency.agencyLogo}
+                                alt={agency.agencyName}
+                                className="rounded-md object-cover w-full h-full border border-gray-200"
+                              />
+                            ) : (
+                              <div className="w-full h-full rounded-md bg-primary/10 flex items-center justify-center">
+                                <span className="text-primary text-sm font-semibold">
+                                  {agency.agencyName?.[0] || 'A'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm truncate">
+                              {agency.agencyName}
+                            </h3>
+                            
+                            {agency.reviewCount && agency.reviewCount > 0 && agency.reviewAverage ? (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                <span className="text-xs font-medium">{agency.reviewAverage.toFixed(1)}</span>
+                                <span className="text-xs text-gray-500">({agency.reviewCount})</span>
+                              </div>
+                            ) : (
+                              <p className="text-gray-500 text-xs mt-0.5">Sin reseñas</p>
+                            )}
+                          </div>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => navigate(`/agencia/${agency.slug || agency.id}`)}
+                          >
+                            Ver perfil
+                          </Button>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             )}
