@@ -491,14 +491,6 @@ export default function PropertyPage() {
                   ) : (
                     // Expanded view - full detailed view
                     <div>
-                      {/* Collapse button */}
-                      <div 
-                        className="flex justify-end cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors mb-4"
-                        onClick={() => setAgentCardExpanded(false)}
-                      >
-                        <ChevronUp className="h-5 w-5 text-gray-400" />
-                      </div>
-                      
                       {/* Detailed content */}
                       <div className="text-center">
                         <div className="relative w-20 h-20 mx-auto mb-4">
