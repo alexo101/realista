@@ -6,6 +6,7 @@ import { useSkeletonVisibility } from "@/hooks/useSkeletonVisibility";
 import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
 import { PropertyApplicationForm } from "@/components/PropertyApplicationForm";
+import { ClientAuthModal } from "@/components/ClientAuthModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -71,6 +72,7 @@ export default function PropertyPage() {
   const [fraudCount, setFraudCount] = useState(0);
   const [agentCardExpanded, setAgentCardExpanded] = useState(false);
   const [applicationModalOpen, setApplicationModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const { user } = useUser();
   const { toast } = useToast();
@@ -578,7 +580,13 @@ export default function PropertyPage() {
                 <div className="text-center">
                   <Button 
                     className="w-full"
-                    onClick={() => setApplicationModalOpen(true)}
+                    onClick={() => {
+                      if (user && user.isClient) {
+                        setApplicationModalOpen(true);
+                      } else {
+                        setAuthModalOpen(true);
+                      }
+                    }}
                     data-testid="button-apply-property"
                   >
                     Aplicar por esta propiedad
@@ -617,6 +625,16 @@ export default function PropertyPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Client auth modal */}
+      <ClientAuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => {
+          setAuthModalOpen(false);
+          setApplicationModalOpen(true);
+        }}
+      />
 
       {/* Property application modal */}
       <Dialog open={applicationModalOpen} onOpenChange={setApplicationModalOpen}>
