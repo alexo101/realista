@@ -719,10 +719,6 @@ export default function NeighborhoodResultsPage() {
                     switch (propertyFilters.sortBy) {
                       case 'price-asc':
                         return sortedProperties.sort((a, b) => a.price - b.price);
-                      case 'newest':
-                        return sortedProperties.sort((a, b) => 
-                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                        );
                       case 'price-m2':
                         return sortedProperties.sort((a, b) => {
                           const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
@@ -735,8 +731,12 @@ export default function NeighborhoodResultsPage() {
                           const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
                           return dropB - dropA; // Mayor a menor
                         });
+                      case 'newest':
                       default:
-                        return sortedProperties;
+                        // Default: sort by newest (created_at desc)
+                        return sortedProperties.sort((a, b) => 
+                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        );
                     }
                   }, [properties, propertyFilters.sortBy]) || []} 
                   showSkeleton={showPropertiesSkeleton} 
@@ -752,10 +752,6 @@ export default function NeighborhoodResultsPage() {
                     switch (propertyFilters.sortBy) {
                       case 'price-asc':
                         return sortedProperties.sort((a, b) => a.price - b.price);
-                      case 'newest':
-                        return sortedProperties.sort((a, b) => 
-                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                        );
                       case 'price-m2':
                         return sortedProperties.sort((a, b) => {
                           const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
@@ -768,8 +764,12 @@ export default function NeighborhoodResultsPage() {
                           const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
                           return dropB - dropA; // Mayor a menor
                         });
+                      case 'newest':
                       default:
-                        return sortedProperties;
+                        // Default: sort by newest (created_at desc)
+                        return sortedProperties.sort((a, b) => 
+                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        );
                     }
                   }, [properties, propertyFilters.sortBy]) || []}
                   neighborhood={decodedNeighborhood}
