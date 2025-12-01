@@ -468,7 +468,7 @@ export default function AgencyProfile() {
                 // Calcular puntuación promedio de la agencia
                 const agencyScore = (() => {
                   if (!agencyReviews || agencyReviews.length === 0) return 0;
-                  const sum = agencyReviews.reduce((acc, review) => acc + review.rating, 0);
+                  const sum = agencyReviews.reduce((acc, review) => acc + parseFloat(review.rating), 0);
                   return sum / agencyReviews.length;
                 })();
                 
@@ -938,7 +938,7 @@ export default function AgencyProfile() {
                     // Calcular puntuación promedio de la agencia
                     const agencyScore = (() => {
                       if (!agencyReviews || agencyReviews.length === 0) return 0;
-                      const sum = agencyReviews.reduce((acc, review) => acc + review.rating, 0);
+                      const sum = agencyReviews.reduce((acc, review) => acc + parseFloat(review.rating), 0);
                       return sum / agencyReviews.length;
                     })();
                     
