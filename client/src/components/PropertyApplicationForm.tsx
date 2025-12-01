@@ -130,18 +130,30 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
         }
       }
 
-      // Prepare inquiry data
+      // Build the complete message, including visit info for guest users
+      let fullMessage = data.message || "";
+      const hasVisitRequest = data.visitDate && data.visitTimeSlots && data.visitTimeSlots.length > 0;
+      
+      // For guest users (not logged in or not a client), append visit info to the message
+      if (hasVisitRequest && (!user || !user.isClient)) {
+        const visitInfo = `\n\nSolicitud de visita:\nFecha: ${format(data.visitDate!, "PPP", { locale: es })}\nHorarios preferidos: ${data.visitTimeSlots!.map(slot => 
+          TIME_INTERVALS.find(t => t.id === slot)?.label
+        ).join(", ")}`;
+        fullMessage += visitInfo;
+      }
+
+      // Prepare inquiry data with complete message
       const inquiryData = {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        message: data.message || "",
+        message: fullMessage,
         propertyUuid,
         agentId: targetAgentId,
         status: "pendiente"
       };
 
-      // Send inquiry
+      // Send ONE inquiry (with visit info already included for guests)
       const inquiryResponse = await fetch("/api/inquiries", {
         method: "POST",
         headers: {
@@ -155,48 +167,27 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
         throw new Error(errorData.message || "Error al enviar la consulta");
       }
 
-      // If visit date and time slots are provided, also create a visit request
-      if (data.visitDate && data.visitTimeSlots && data.visitTimeSlots.length > 0) {
-        if (!user || !user.isClient) {
-          // For non-logged in users, we can't create visit requests
-          // But we still send the inquiry with visit information in the message
-          const visitInfo = `\n\nSolicitud de visita:\nFecha: ${format(data.visitDate, "PPP", { locale: es })}\nHorarios preferidos: ${data.visitTimeSlots.map(slot => 
-            TIME_INTERVALS.find(t => t.id === slot)?.label
-          ).join(", ")}`;
-          
-          // Update the inquiry with visit information
-          await fetch("/api/inquiries", {
+      // For logged-in clients with visit requests, create separate visit request entries
+      if (hasVisitRequest && user && user.isClient) {
+        for (const timeSlot of data.visitTimeSlots!) {
+          const visitRequestData = {
+            propertyUuid,
+            clientId: user.id,
+            agentId: targetAgentId,
+            requestedDate: data.visitDate!.toISOString(),
+            requestedTime: timeSlot,
+            clientNotes: data.message || "",
+          };
+
+          const visitResponse = await fetch("/api/property-visit-requests", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              ...inquiryData,
-              message: (data.message || "") + visitInfo
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(visitRequestData),
           });
-        } else {
-          // For logged in clients, create separate visit requests for each time slot
-          for (const timeSlot of data.visitTimeSlots) {
-            const visitRequestData = {
-              propertyUuid,
-              clientId: user.id,
-              agentId: targetAgentId,
-              requestedDate: data.visitDate.toISOString(),
-              requestedTime: timeSlot,
-              clientNotes: data.message || "",
-            };
 
-            const visitResponse = await fetch("/api/property-visit-requests", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(visitRequestData),
-            });
-
-            if (!visitResponse.ok) {
-              console.warn("Error creating visit request for time slot:", timeSlot);
-              // Continue with other time slots even if one fails
-            }
+          if (!visitResponse.ok) {
+            console.warn("Error creating visit request for time slot:", timeSlot);
+            // Continue with other time slots even if one fails
           }
         }
       }
