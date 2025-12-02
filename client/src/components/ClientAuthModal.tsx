@@ -194,7 +194,6 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                         autoComplete="email"
                         data-testid="input-login-email"
                         {...field}
-                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -215,7 +214,6 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                           autoComplete="current-password"
                           data-testid="input-login-password"
                           {...field}
-                          value={field.value ?? ""}
                         />
                         <button
                           type="button"
@@ -258,7 +256,6 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                         autoComplete="email"
                         data-testid="input-register-email"
                         {...field}
-                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -279,7 +276,6 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                         autoComplete="off"
                         data-testid="input-register-email-confirm"
                         {...field}
-                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -300,7 +296,6 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                           autoComplete="new-password"
                           data-testid="input-register-password"
                           {...field}
-                          value={field.value ?? ""}
                         />
                         <button
                           type="button"
