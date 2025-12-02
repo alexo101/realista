@@ -163,10 +163,8 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(newOpen) => {
-      if (!newOpen) handleClose();
-    }}>
-      <DialogContent className="sm:max-w-[400px]" onClick={(e) => e.stopPropagation()}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {isLoginMode ? "Iniciar sesión" : "Crear cuenta"}
