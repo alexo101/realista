@@ -24,7 +24,6 @@ interface ClientConversation {
   id: number;
   agentId: number;
   agentName: string;
-  agencyName?: string | null;
   agentAvatar?: string;
   propertyId: number;
   propertyTitle: string;
@@ -397,12 +396,7 @@ export function ClientConversationalMessages() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="font-medium">
-                          {selectedConversation.agentName}
-                          {selectedConversation.agencyName && (
-                            <span className="text-gray-500 font-normal"> ({selectedConversation.agencyName})</span>
-                          )}
-                        </h3>
+                        <h3 className="font-medium">{selectedConversation.agentName}</h3>
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Home className="h-3 w-3" />
                           <span>{selectedConversation.propertyAddress}</span>

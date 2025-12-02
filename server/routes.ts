@@ -3411,7 +3411,7 @@ Gracias!
       const inquiries = await storage.getInquiriesByClient(clientEmail);
       
       // Transform inquiries into conversations format from client perspective with actual message history
-      const conversations = await Promise.all(inquiries.map(async (inquiry: any) => {
+      const conversations = await Promise.all(inquiries.map(async inquiry => {
         // Get the full message history for this conversation
         const messageHistory = await storage.getConversationMessages(inquiry.id);
         
@@ -3435,7 +3435,7 @@ Gracias!
             senderId: inquiry.id,
             senderName: inquiry.name,
             senderType: 'client',
-            content: inquiry.message || `Consulta sobre la propiedad en ${inquiry.propertyAddress || 'esta dirección'}.`,
+            content: inquiry.message || `Consulta sobre la propiedad en ${inquiry.property?.address || 'esta dirección'}.`,
             timestamp: inquiry.createdAt,
             isRead: true
           }];
@@ -3447,14 +3447,13 @@ Gracias!
         return {
           id: inquiry.id,
           agentId: inquiry.agentId,
-          agentName: inquiry.agentName && inquiry.agentSurname 
-            ? `${inquiry.agentName} ${inquiry.agentSurname}` 
+          agentName: inquiry.agent?.name && inquiry.agent?.surname 
+            ? `${inquiry.agent.name} ${inquiry.agent.surname}` 
             : "Agente",
-          agencyName: inquiry.agencyName || null,
-          agentAvatar: inquiry.agentAvatar,
+          agentAvatar: inquiry.agent?.avatar,
           propertyId: inquiry.propertyId,
-          propertyTitle: inquiry.propertyTitle || "Sin título",
-          propertyAddress: inquiry.propertyAddress || "Dirección no disponible",
+          propertyTitle: inquiry.property?.title || "Sin título",
+          propertyAddress: inquiry.property?.address || "Dirección no disponible",
           lastMessage: lastMessage ? lastMessage.content : inquiry.message,
           lastMessageTime: lastMessage ? lastMessage.timestamp : inquiry.createdAt,
           status: inquiry.status,

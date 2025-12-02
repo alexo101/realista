@@ -2227,7 +2227,7 @@ export class DatabaseStorage implements IStorage {
     return results as Inquiry[];
   }
 
-  async getInquiriesByClient(clientEmail: string): Promise<any[]> {
+  async getInquiriesByClient(clientEmail: string): Promise<Inquiry[]> {
     const results = await db
       .select({
         id: inquiries.id,
@@ -2239,22 +2239,25 @@ export class DatabaseStorage implements IStorage {
         agentId: inquiries.agentId,
         status: inquiries.status,
         createdAt: inquiries.createdAt,
-        propertyTitle: properties.title,
-        propertyAddress: properties.address,
-        propertyReference: properties.reference,
-        agentName: agents.name,
-        agentSurname: agents.surname,
-        agentAvatar: agents.avatar,
-        agencyName: agencies.name,
+        property: {
+          title: properties.title,
+          address: properties.address,
+          reference: properties.reference,
+        },
+        agent: {
+          id: agents.id,
+          name: agents.name,
+          surname: agents.surname,
+          avatar: agents.avatar,
+        },
       })
       .from(inquiries)
       .leftJoin(properties, eq(inquiries.propertyUuid, properties.uuid))
       .leftJoin(agents, eq(inquiries.agentId, agents.id))
-      .leftJoin(agencies, eq(agents.agencyId, agencies.id))
       .where(eq(inquiries.email, clientEmail))
       .orderBy(sql`${inquiries.createdAt} DESC`);
     
-    return results;
+    return results as Inquiry[];
   }
 
   async getInquiryById(id: number): Promise<Inquiry | undefined> {
