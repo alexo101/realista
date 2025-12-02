@@ -193,12 +193,8 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                         type="email"
                         autoComplete="email"
                         data-testid="input-login-email"
-                        className="pointer-events-auto"
+                        {...field}
                         value={field.value ?? ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        disabled={false}
                       />
                     </FormControl>
                     <FormMessage />
@@ -218,12 +214,8 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                           type={showPassword ? "text" : "password"}
                           autoComplete="current-password"
                           data-testid="input-login-password"
-                          className="pointer-events-auto"
+                          {...field}
                           value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          disabled={false}
                         />
                         <button
                           type="button"
@@ -265,12 +257,8 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                         type="email"
                         autoComplete="email"
                         data-testid="input-register-email"
-                        className="pointer-events-auto"
+                        {...field}
                         value={field.value ?? ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        disabled={false}
                       />
                     </FormControl>
                     <FormMessage />
@@ -290,12 +278,8 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                         type="email"
                         autoComplete="off"
                         data-testid="input-register-email-confirm"
-                        className="pointer-events-auto"
+                        {...field}
                         value={field.value ?? ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        disabled={false}
                       />
                     </FormControl>
                     <FormMessage />
@@ -315,12 +299,8 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                           type={showPassword ? "text" : "password"}
                           autoComplete="new-password"
                           data-testid="input-register-password"
-                          className="pointer-events-auto"
+                          {...field}
                           value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          disabled={false}
                         />
                         <button
                           type="button"
