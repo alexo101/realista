@@ -2249,11 +2249,17 @@ export class DatabaseStorage implements IStorage {
           name: agents.name,
           surname: agents.surname,
           avatar: agents.avatar,
+          agencyId: agents.agencyId,
+        },
+        agency: {
+          id: agencies.id,
+          name: agencies.name,
         },
       })
       .from(inquiries)
       .leftJoin(properties, eq(inquiries.propertyUuid, properties.uuid))
       .leftJoin(agents, eq(inquiries.agentId, agents.id))
+      .leftJoin(agencies, eq(agents.agencyId, agencies.id))
       .where(eq(inquiries.email, clientEmail))
       .orderBy(sql`${inquiries.createdAt} DESC`);
     

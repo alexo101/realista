@@ -3450,6 +3450,7 @@ Gracias!
           agentName: inquiry.agent?.name && inquiry.agent?.surname 
             ? `${inquiry.agent.name} ${inquiry.agent.surname}` 
             : "Agente",
+          agencyName: (inquiry as any).agency?.name || null,
           agentAvatar: inquiry.agent?.avatar,
           propertyId: inquiry.propertyId,
           propertyTitle: inquiry.property?.title || "Sin título",
