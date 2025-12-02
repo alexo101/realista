@@ -2251,10 +2251,7 @@ export class DatabaseStorage implements IStorage {
           avatar: agents.avatar,
           agencyId: agents.agencyId,
         },
-        agency: {
-          id: agencies.id,
-          name: agencies.name,
-        },
+        agencyName: agencies.name,
       })
       .from(inquiries)
       .leftJoin(properties, eq(inquiries.propertyUuid, properties.uuid))
