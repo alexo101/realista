@@ -26,6 +26,14 @@ Preferred communication style: Simple, everyday language.
 - **Object Storage**: Replit App Storage powered by Google Cloud Storage (GCS) for scalable image uploads with CDN delivery.
   - **Bucket**: `realista-property_images` stores all property images
   - **Upload Flow**: Images uploaded via `/api/property-images/upload-direct` endpoint using multer memory storage, then saved to GCS
+  - **Automatic Image Compression**: Two-tier compression system ensures all images are under 1MB:
+    - **Client-side**: `browser-image-compression` library compresses images before upload (max 2048px, 85% quality)
+    - **Server-side**: Sharp library provides backup compression with format-aware handling:
+      - GIFs preserved without compression (animations intact)
+      - PNGs/WebPs with transparency converted to WebP format
+      - Non-transparent images converted to JPEG (best compression)
+      - Progressive quality reduction (85→75→65→55→45) until under 1MB
+  - **Upload Limits**: 20 images per batch, 100 images total per property
   - **Serving Flow**: Images served via `/property-images/:imageId` endpoint with streaming from GCS and proper cache headers for CDN optimization
   - **Environment Variables**: `PUBLIC_OBJECT_SEARCH_PATHS` (public bucket path) and `PRIVATE_OBJECT_DIR` (private object directory) configured as secrets
   - **Implementation**: `ObjectStorageService` in `server/objectStorage.ts` handles all GCS interactions
