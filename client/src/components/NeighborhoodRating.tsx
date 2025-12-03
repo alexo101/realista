@@ -10,10 +10,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { searchNeighborhoods, getNeighborhoodDisplayName, parseNeighborhoodDisplayName } from "@/utils/neighborhoods";
 
 const POPULAR_NEIGHBORHOODS = [
-  { neighborhood: "Gracia", district: null, city: "Barcelona", display: "Gracia, Barcelona" },
-  { neighborhood: "Eixample", district: null, city: "Barcelona", display: "Eixample, Barcelona" }, 
-  { neighborhood: "El Born", district: "Ciutat Vella", city: "Barcelona", display: "El Born, Ciutat Vella, Barcelona" },
-  { neighborhood: "Rosas", district: "San Blas-Canillejas", city: "Madrid", display: "Rosas, San Blas-Canillejas, Madrid" }
+  { neighborhood: "Vila de Gràcia", district: "Gràcia", city: "Barcelona", display: "Vila de Gràcia, Gràcia, Barcelona" },
+  { neighborhood: "La Dreta de l'Eixample", district: "Eixample", city: "Barcelona", display: "La Dreta de l'Eixample, Eixample, Barcelona" }, 
+  { neighborhood: "Sant Pere, Santa Caterina i la Ribera", district: "Ciutat Vella", city: "Barcelona", display: "Sant Pere, Santa Caterina i la Ribera, Ciutat Vella, Barcelona" },
+  { neighborhood: "El Poblenou", district: "Sant Martí", city: "Barcelona", display: "El Poblenou, Sant Martí, Barcelona" }
 ];
 
 interface NeighborhoodAverages {
@@ -64,7 +64,7 @@ const StarRatingInput = ({ value, onChange, disabled = false }: StarRatingProps)
 };
 
 export function NeighborhoodRating() {
-  const [selectedLocation, setSelectedLocation] = useState<{neighborhood: string, district: string | null, city: string}>({neighborhood: "Gracia", district: null, city: "Barcelona"});
+  const [selectedLocation, setSelectedLocation] = useState<{neighborhood: string, district: string | null, city: string}>({neighborhood: "Vila de Gràcia", district: "Gràcia", city: "Barcelona"});
   const [searchValue, setSearchValue] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
