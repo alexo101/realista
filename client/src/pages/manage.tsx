@@ -197,6 +197,13 @@ export default function ManagePage() {
   // Selected clients for bulk actions
   const [selectedClientIds, setSelectedClientIds] = useState<Set<number>>(new Set());
 
+  // Send properties modal state
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
+  const [propertySearch, setPropertySearch] = useState("");
+  const [selectedPropertyIds, setSelectedPropertyIds] = useState<Set<string>>(new Set());
+  const [emailMessage, setEmailMessage] = useState("");
+
   // Properties view mode (grid or table)
   const [propertiesView, setPropertiesView] = useState<'grid' | 'table'>(() => {
     const saved = localStorage.getItem('propertiesView');
@@ -276,6 +283,20 @@ export default function ManagePage() {
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: [`/api/clients?agentId=${user?.id}`],
     enabled: (currentSection === 'clientes' || currentSection === 'resenas') && Boolean(user?.id),
+  });
+
+  // Fetch agency properties for sending to clients (includes all active agency properties)
+  const { data: agencyProperties, isLoading: isLoadingAgencyProperties } = useQuery<Property[]>({
+    queryKey: ['/api/properties', { agencyId: currentAgency?.id, forSending: true }],
+    queryFn: async () => {
+      const url = currentAgency?.id 
+        ? `/api/properties?agencyId=${currentAgency.id}`
+        : `/api/properties?agentId=${user?.id}`;
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch properties');
+      return response.json();
+    },
+    enabled: isSendModalOpen && Boolean(user?.id),
   });
 
   const createPropertyMutation = useMutation({
@@ -386,6 +407,32 @@ export default function ManagePage() {
       toast({
         title: "Error",
         description: "No se pudo eliminar el cliente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Send properties to clients via email
+  const sendPropertiesMutation = useMutation({
+    mutationFn: async (data: { clientIds: number[]; propertyUuids: string[]; message: string }) => {
+      return await apiRequest('POST', '/api/clients/send-properties', data);
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: "Correos enviados",
+        description: `Se han enviado ${result.sentCount || selectedClientIds.size} correos correctamente`,
+      });
+      // Reset modal state
+      setIsSendModalOpen(false);
+      setSendModalStep(1);
+      setSelectedPropertyIds(new Set());
+      setEmailMessage("");
+      setSelectedClientIds(new Set());
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al enviar correos",
+        description: (error as Error).message || "No se pudieron enviar los correos",
         variant: "destructive",
       });
     },
@@ -1709,10 +1756,11 @@ export default function ManagePage() {
                         variant="outline"
                         className="border-primary text-primary hover:bg-primary hover:text-white whitespace-nowrap"
                         onClick={() => {
-                          toast({
-                            title: "Enviar mensaje",
-                            description: `Se enviará un mensaje a ${selectedClientIds.size} cliente(s) seleccionado(s)`,
-                          });
+                          setIsSendModalOpen(true);
+                          setSendModalStep(1);
+                          setPropertySearch("");
+                          setSelectedPropertyIds(new Set());
+                          setEmailMessage("");
                         }}
                         data-testid="button-send-to-clients"
                       >
@@ -1915,6 +1963,275 @@ export default function ManagePage() {
                       {deleteClientMutation.isPending ? "Eliminando..." : "Eliminar"}
                     </Button>
                   </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Send Properties Modal - 2 Step Flow */}
+              <Dialog 
+                open={isSendModalOpen} 
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setIsSendModalOpen(false);
+                    setSendModalStep(1);
+                    setPropertySearch("");
+                    setSelectedPropertyIds(new Set());
+                    setEmailMessage("");
+                  }
+                }}
+              >
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                  {sendModalStep === 1 ? (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>Seleccionar Propiedades</DialogTitle>
+                      </DialogHeader>
+                      
+                      <div className="flex-1 overflow-hidden flex flex-col">
+                        {/* Search input */}
+                        <div className="mb-4">
+                          <div className="relative">
+                            <Input
+                              placeholder="Buscar propiedades..."
+                              value={propertySearch}
+                              onChange={(e) => setPropertySearch(e.target.value)}
+                              className="pl-10"
+                              data-testid="input-search-properties"
+                            />
+                            <svg
+                              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle cx="11" cy="11" r="8" />
+                              <path d="m21 21-4.35-4.35" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Properties table */}
+                        <div className="flex-1 overflow-auto border rounded-lg">
+                          {isLoadingAgencyProperties ? (
+                            <div className="flex items-center justify-center h-48">
+                              <p className="text-muted-foreground">Cargando propiedades...</p>
+                            </div>
+                          ) : !agencyProperties?.length ? (
+                            <div className="flex items-center justify-center h-48">
+                              <p className="text-muted-foreground">No hay propiedades disponibles</p>
+                            </div>
+                          ) : (
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[50px]">
+                                    <Checkbox
+                                      checked={agencyProperties.filter(p => 
+                                        !propertySearch || 
+                                        p.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                        p.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                        p.type?.toLowerCase().includes(propertySearch.toLowerCase())
+                                      ).length > 0 && 
+                                      agencyProperties.filter(p => 
+                                        !propertySearch || 
+                                        p.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                        p.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                        p.type?.toLowerCase().includes(propertySearch.toLowerCase())
+                                      ).every(p => selectedPropertyIds.has(p.uuid))}
+                                      onCheckedChange={(checked) => {
+                                        const filteredProps = agencyProperties.filter(p => 
+                                          !propertySearch || 
+                                          p.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                          p.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                          p.type?.toLowerCase().includes(propertySearch.toLowerCase())
+                                        );
+                                        if (checked) {
+                                          setSelectedPropertyIds(new Set([...Array.from(selectedPropertyIds), ...filteredProps.map(p => p.uuid)]));
+                                        } else {
+                                          const newSet = new Set(selectedPropertyIds);
+                                          filteredProps.forEach(p => newSet.delete(p.uuid));
+                                          setSelectedPropertyIds(newSet);
+                                        }
+                                      }}
+                                      data-testid="checkbox-select-all-properties"
+                                    />
+                                  </TableHead>
+                                  <TableHead>Referencia</TableHead>
+                                  <TableHead>Dirección</TableHead>
+                                  <TableHead className="text-right">Precio</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {agencyProperties
+                                  .filter(property => 
+                                    !propertySearch || 
+                                    property.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                    property.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+                                    property.type?.toLowerCase().includes(propertySearch.toLowerCase())
+                                  )
+                                  .map((property) => {
+                                    const isSelected = selectedPropertyIds.has(property.uuid);
+                                    return (
+                                      <TableRow 
+                                        key={property.uuid}
+                                        className={isSelected ? 'bg-primary/5' : ''}
+                                        data-testid={`row-property-${property.uuid}`}
+                                      >
+                                        <TableCell>
+                                          <Checkbox
+                                            checked={isSelected}
+                                            onCheckedChange={(checked) => {
+                                              const newSet = new Set(selectedPropertyIds);
+                                              if (checked) {
+                                                newSet.add(property.uuid);
+                                              } else {
+                                                newSet.delete(property.uuid);
+                                              }
+                                              setSelectedPropertyIds(newSet);
+                                            }}
+                                            data-testid={`checkbox-property-${property.uuid}`}
+                                          />
+                                        </TableCell>
+                                        <TableCell>
+                                          <div>
+                                            <p className="font-medium">{property.title || 'Sin título'}</p>
+                                            <p className="text-sm text-muted-foreground">{property.type || 'Vivienda'}</p>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                          {property.address || 'Sin dirección'}
+                                        </TableCell>
+                                        <TableCell className="text-right font-medium">
+                                          {property.price ? `$${property.price.toLocaleString()}` : '-'}
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                              </TableBody>
+                            </Table>
+                          )}
+                        </div>
+                      </div>
+
+                      <DialogFooter className="mt-4">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setIsSendModalOpen(false);
+                            setSendModalStep(1);
+                            setSelectedPropertyIds(new Set());
+                          }}
+                          data-testid="button-cancel-send"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={() => setSendModalStep(2)}
+                          disabled={selectedPropertyIds.size === 0}
+                          data-testid="button-continue-send"
+                        >
+                          Continuar
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  ) : (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>Confirmar Envío</DialogTitle>
+                      </DialogHeader>
+                      
+                      <div className="flex-1 overflow-auto space-y-4">
+                        {/* Selected Clients */}
+                        <div>
+                          <h4 className="font-medium mb-2">Clientes ({selectedClientIds.size})</h4>
+                          <div className="space-y-2 max-h-32 overflow-auto">
+                            {clients?.filter(c => selectedClientIds.has(c.id)).map((client) => (
+                              <div 
+                                key={client.id} 
+                                className="p-3 border rounded-lg"
+                                data-testid={`selected-client-${client.id}`}
+                              >
+                                <p className="font-medium">{client.name} {client.surname || ''}</p>
+                                <p className="text-sm text-muted-foreground">{client.email}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Selected Properties */}
+                        <div>
+                          <h4 className="font-medium mb-2">Propiedades ({selectedPropertyIds.size})</h4>
+                          <div className="space-y-2 max-h-32 overflow-auto">
+                            {agencyProperties?.filter(p => selectedPropertyIds.has(p.uuid)).map((property) => (
+                              <div 
+                                key={property.uuid} 
+                                className="p-3 border rounded-lg"
+                                data-testid={`selected-property-${property.uuid}`}
+                              >
+                                <p className="font-medium">{property.title || 'Sin título'}</p>
+                                <p className="text-sm text-muted-foreground">{property.address || 'Sin dirección'}</p>
+                                <p className="text-sm font-medium text-primary">
+                                  {property.price ? `$${property.price.toLocaleString()}` : '-'}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Email Message */}
+                        <div>
+                          <Label htmlFor="emailMessage" className="font-medium">Mensaje del correo</Label>
+                          <Textarea
+                            id="emailMessage"
+                            placeholder="Escribe el mensaje que se enviará a los clientes junto con las propiedades seleccionadas..."
+                            value={emailMessage}
+                            onChange={(e) => setEmailMessage(e.target.value)}
+                            className="mt-2 min-h-[100px]"
+                            data-testid="textarea-email-message"
+                          />
+                        </div>
+                      </div>
+
+                      <DialogFooter className="mt-4 flex justify-between">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setSendModalStep(1)}
+                          className="mr-auto"
+                          data-testid="button-back-send"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Volver
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setIsSendModalOpen(false);
+                              setSendModalStep(1);
+                              setSelectedPropertyIds(new Set());
+                              setEmailMessage("");
+                            }}
+                            data-testid="button-cancel-confirm"
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              sendPropertiesMutation.mutate({
+                                clientIds: Array.from(selectedClientIds),
+                                propertyUuids: Array.from(selectedPropertyIds),
+                                message: emailMessage,
+                              });
+                            }}
+                            disabled={sendPropertiesMutation.isPending}
+                            data-testid="button-confirm-send"
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            {sendPropertiesMutation.isPending ? "Enviando..." : "Confirmar Envío"}
+                          </Button>
+                        </div>
+                      </DialogFooter>
+                    </>
+                  )}
                 </DialogContent>
               </Dialog>
 

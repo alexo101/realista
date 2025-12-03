@@ -491,3 +491,150 @@ export async function sendReviewConfirmationEmail(
     return false;
   }
 }
+
+// Interface for property info in email
+interface PropertyForEmail {
+  uuid: string;
+  title: string;
+  address: string;
+  price: number | null;
+  type: string;
+  slug?: string | null;
+}
+
+// Interface for client info in email
+interface ClientForEmail {
+  id: number;
+  email: string;
+  name: string;
+  surname?: string | null;
+}
+
+// Interface for agent info in email
+interface AgentForEmail {
+  name: string;
+  surname?: string | null;
+  email: string;
+  phone?: string | null;
+  agencyName?: string | null;
+}
+
+// Send properties to multiple clients via email
+export async function sendPropertiesToClients(
+  clients: ClientForEmail[],
+  properties: PropertyForEmail[],
+  message: string,
+  agent: AgentForEmail
+): Promise<{ success: boolean; sentCount: number; errors: string[] }> {
+  const errors: string[] = [];
+  let sentCount = 0;
+  
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    const frontendUrl = getFrontendUrl();
+    
+    // Send individual emails to each client
+    for (const clientData of clients) {
+      try {
+        const clientName = clientData.surname 
+          ? `${clientData.name} ${clientData.surname}` 
+          : clientData.name;
+        
+        const agentName = agent.surname 
+          ? `${agent.name} ${agent.surname}` 
+          : agent.name;
+        
+        // Build properties HTML
+        const propertiesHtml = properties.map(property => {
+          const propertyUrl = property.slug 
+            ? `${frontendUrl}/propiedades/${property.slug}` 
+            : `${frontendUrl}/propiedades/${property.uuid}`;
+          
+          const formattedPrice = property.price 
+            ? `€${property.price.toLocaleString('es-ES')}` 
+            : 'Consultar';
+          
+          return `
+            <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+              <h3 style="margin: 0 0 8px 0; color: #333; font-size: 16px;">${property.title || 'Propiedad'}</h3>
+              <p style="margin: 0 0 4px 0; color: #666; font-size: 14px;">${property.address || 'Sin dirección'}</p>
+              <p style="margin: 0 0 12px 0; color: #0d9488; font-size: 18px; font-weight: bold;">${formattedPrice}</p>
+              <a href="${propertyUrl}" style="display: inline-block; background-color: #0d9488; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-size: 14px;">Ver Propiedad</a>
+            </div>
+          `;
+        }).join('');
+        
+        // Build custom message HTML if provided
+        const messageHtml = message.trim() 
+          ? `<div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+              <p style="margin: 0; color: #333; white-space: pre-wrap;">${message}</p>
+            </div>`
+          : '';
+        
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #0d9488; margin-bottom: 8px;">Nuevas propiedades para ti</h1>
+            <p style="color: #666; margin-bottom: 24px;">Hola ${clientName},</p>
+            
+            ${messageHtml}
+            
+            <p style="margin-bottom: 16px;">${agentName} te ha enviado ${properties.length} propiedad${properties.length > 1 ? 'es' : ''} que podrían interesarte:</p>
+            
+            ${propertiesHtml}
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            
+            <div style="color: #666; font-size: 14px;">
+              <p style="margin: 0;"><strong>${agentName}</strong></p>
+              ${agent.agencyName ? `<p style="margin: 0;">${agent.agencyName}</p>` : ''}
+              ${agent.phone ? `<p style="margin: 4px 0;"><a href="tel:${agent.phone}" style="color: #0d9488;">${agent.phone}</a></p>` : ''}
+              <p style="margin: 4px 0;"><a href="mailto:${agent.email}" style="color: #0d9488;">${agent.email}</a></p>
+            </div>
+            
+            <p style="margin-top: 30px; color: #666; font-size: 12px;">
+              Este correo ha sido enviado a través de <a href="${frontendUrl}" style="color: #0d9488;">Realista</a>
+            </p>
+          </body>
+          </html>
+        `;
+        
+        const { error } = await client.emails.send({
+          from: `${agentName} via Realista <${fromEmail}>`,
+          to: [clientData.email],
+          subject: `${agentName} te ha enviado ${properties.length} propiedad${properties.length > 1 ? 'es' : ''}`,
+          html: htmlContent,
+        });
+        
+        if (error) {
+          console.error(`Error sending to ${clientData.email}:`, error);
+          errors.push(`Error enviando a ${clientData.email}: ${error.message}`);
+        } else {
+          sentCount++;
+          console.log(`Email sent to ${clientData.email}`);
+        }
+      } catch (err) {
+        console.error(`Error processing email for ${clientData.email}:`, err);
+        errors.push(`Error procesando ${clientData.email}`);
+      }
+    }
+    
+    return {
+      success: sentCount > 0,
+      sentCount,
+      errors,
+    };
+  } catch (error) {
+    console.error('Error in sendPropertiesToClients:', error);
+    return {
+      success: false,
+      sentCount: 0,
+      errors: ['Error general al enviar correos'],
+    };
+  }
+}

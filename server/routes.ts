@@ -1197,6 +1197,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send properties to multiple clients via email
+  app.post("/api/clients/send-properties", requireAuth, async (req, res) => {
+    try {
+      const { clientIds, propertyUuids, message } = req.body;
+      const userId = (req.user as any).id;
+      
+      // Validate input
+      if (!Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ message: "Se requiere al menos un cliente" });
+      }
+      if (!Array.isArray(propertyUuids) || propertyUuids.length === 0) {
+        return res.status(400).json({ message: "Se requiere al menos una propiedad" });
+      }
+      
+      // Get agent info
+      const agent = await storage.getUser(userId);
+      if (!agent) {
+        return res.status(404).json({ message: "Agente no encontrado" });
+      }
+      
+      // Get agency info if agent belongs to one
+      let agencyName: string | null = null;
+      const agentRole = await storage.getAgentRole(userId);
+      if (agentRole.agencyId) {
+        const agency = await storage.getAgencyById(agentRole.agencyId);
+        agencyName = agency?.agencyName || null;
+      }
+      
+      // Get clients (verify they belong to this agent)
+      const allClients = await storage.getClientsByAgent(userId);
+      const validClients = allClients.filter(c => clientIds.includes(c.id));
+      
+      if (validClients.length === 0) {
+        return res.status(400).json({ message: "No se encontraron clientes válidos" });
+      }
+      
+      // Get properties
+      const propertiesPromises = propertyUuids.map(uuid => storage.getPropertyByUuid(uuid));
+      const propertiesResults = await Promise.all(propertiesPromises);
+      const validProperties = propertiesResults.filter((p): p is NonNullable<typeof p> => p !== null && p !== undefined);
+      
+      if (validProperties.length === 0) {
+        return res.status(400).json({ message: "No se encontraron propiedades válidas" });
+      }
+      
+      // Send emails
+      const { sendPropertiesToClients } = await import('./emailService');
+      const result = await sendPropertiesToClients(
+        validClients.map(c => ({
+          id: c.id,
+          email: c.email,
+          name: c.name,
+          surname: c.surname,
+        })),
+        validProperties.map(p => ({
+          uuid: p.uuid,
+          title: p.title,
+          address: p.address,
+          price: p.price,
+          type: p.type,
+          slug: p.slug,
+        })),
+        message || '',
+        {
+          name: agent.name || 'Agente',
+          surname: agent.surname || undefined,
+          email: agent.email,
+          phone: agent.phone || undefined,
+          agencyName,
+        }
+      );
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          sentCount: result.sentCount,
+          message: `Se enviaron ${result.sentCount} correo${result.sentCount > 1 ? 's' : ''} correctamente`,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          sentCount: result.sentCount,
+          errors: result.errors,
+          message: "Error al enviar algunos correos",
+        });
+      }
+    } catch (error) {
+      console.error('Error sending properties to clients:', error);
+      res.status(500).json({ message: "Error al enviar correos" });
+    }
+  });
+
   app.get("/api/clients", async (req, res) => {
     try {
       const agentId = parseInt(req.query.agentId as string);
