@@ -341,9 +341,7 @@ export function PropertyFilters({
             </Label>
             <Select>
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Cualquiera">
-                  {roomsFilter.length > 0 ? `+${Math.min(...roomsFilter)}` : "Cualquiera"}
-                </SelectValue>
+                <SelectValue placeholder="Cualquiera" />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
@@ -479,9 +477,7 @@ export function PropertyFilters({
             </Label>
             <Select>
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Baños">
-                  {bathroomsFilter.length > 0 ? `+${Math.min(...bathroomsFilter)}` : "Baños"}
-                </SelectValue>
+                <SelectValue placeholder="Baños" />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[200px]">
                 <div className="space-y-2 px-1 py-2">
@@ -536,13 +532,7 @@ export function PropertyFilters({
             </Label>
             <Select>
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Seleccionar">
-                  {selectedFeatures.length > 0 ? (
-                    selectedFeatures.length === 1 
-                      ? PROPERTY_FEATURES.find(f => f.id === selectedFeatures[0])?.label || "Seleccionar"
-                      : "Varias"
-                  ) : "Seleccionar"}
-                </SelectValue>
+                <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
