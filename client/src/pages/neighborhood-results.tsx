@@ -148,6 +148,7 @@ export default function NeighborhoodResultsPage() {
   // Filtros específicos para propiedades
   const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
     operationType: operationTypeFromUrl === "Alquiler" ? "Alquiler" : "Venta",
+    propertyType: "Vivienda",
     priceMin: minPriceFromUrl ? parseInt(minPriceFromUrl) : null,
     priceMax: maxPriceFromUrl ? parseInt(maxPriceFromUrl) : null,
     bedrooms: defaultBedrooms || 1,
@@ -163,6 +164,7 @@ export default function NeighborhoodResultsPage() {
         district: currentDistrict || null,
         neighborhood: currentNeighborhood || null,
         operationType: propertyFilters.operationType,
+        propertyType: propertyFilters.propertyType,
         priceMin: propertyFilters.priceMin,
         priceMax: propertyFilters.priceMax,
         bedrooms: propertyFilters.bedrooms,
@@ -263,6 +265,7 @@ export default function NeighborhoodResultsPage() {
         district: currentDistrict || null,
         neighborhood: currentNeighborhood || null,
         operationType: propertyFilters.operationType,
+        propertyType: propertyFilters.propertyType,
         priceMin: propertyFilters.priceMin,
         priceMax: propertyFilters.priceMax,
         bedrooms: propertyFilters.bedrooms,
@@ -335,6 +338,7 @@ export default function NeighborhoodResultsPage() {
         queryKey: ['/api/properties', { 
           neighborhoods: effectiveNeighborhood,
           operationType: propertyFilters.operationType,
+          propertyType: propertyFilters.propertyType,
           priceMin: propertyFilters.priceMin,
           priceMax: propertyFilters.priceMax,
           bedrooms: propertyFilters.bedrooms,
@@ -346,6 +350,7 @@ export default function NeighborhoodResultsPage() {
           const params = new URLSearchParams();
           params.append('neighborhoods', effectiveNeighborhood);
           params.append('operationType', propertyFilters.operationType);
+          params.append('propertyType', propertyFilters.propertyType);
           params.append('mostViewed', 'false');
           
           if (propertyFilters.priceMin !== null) {
@@ -427,6 +432,7 @@ export default function NeighborhoodResultsPage() {
     queryKey: ['/api/properties', { 
       neighborhoods: effectiveNeighborhood,
       operationType: propertyFilters.operationType,
+      propertyType: propertyFilters.propertyType,
       priceMin: propertyFilters.priceMin,
       priceMax: propertyFilters.priceMax,
       bedrooms: propertyFilters.bedrooms,
@@ -438,6 +444,7 @@ export default function NeighborhoodResultsPage() {
       const params = new URLSearchParams();
       params.append('neighborhoods', effectiveNeighborhood);
       params.append('operationType', propertyFilters.operationType);
+      params.append('propertyType', propertyFilters.propertyType);
       params.append('mostViewed', 'false');
       
       if (propertyFilters.priceMin !== null) {
@@ -461,7 +468,7 @@ export default function NeighborhoodResultsPage() {
         params.append('features', propertyFilters.features.join(','));
       }
       
-      console.log(`Fetching properties with operationType: ${propertyFilters.operationType}`);
+      console.log(`Fetching properties with operationType: ${propertyFilters.operationType}, propertyType: ${propertyFilters.propertyType}`);
       const response = await fetch(`/api/properties?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
       return response.json();

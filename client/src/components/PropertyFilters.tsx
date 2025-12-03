@@ -16,9 +16,22 @@ import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 
+const PROPERTY_TYPES = [
+  "Vivienda",
+  "Oficinas",
+  "Locales",
+  "Parking",
+  "Terrenos",
+  "Trasteros",
+  "Edificios"
+] as const;
+
+type PropertyType = typeof PROPERTY_TYPES[number];
+
 interface PropertyFiltersProps {
   onFilterChange: (filters: PropertyFilters) => void;
   defaultOperationType?: "Venta" | "Alquiler";
+  defaultPropertyType?: PropertyType;
   defaultBedrooms?: number | null;
   defaultBedroomsList?: number[];
   viewMode?: 'list' | 'map';
@@ -29,6 +42,7 @@ interface PropertyFiltersProps {
 
 export interface PropertyFilters {
   operationType: "Venta" | "Alquiler";
+  propertyType: PropertyType;
   priceMin: number | null;
   priceMax: number | null;
   bedrooms: number | null;
@@ -40,6 +54,7 @@ export interface PropertyFilters {
 export function PropertyFilters({ 
   onFilterChange, 
   defaultOperationType = "Venta",
+  defaultPropertyType = "Vivienda",
   defaultBedrooms = null,
   defaultBedroomsList = [],
   viewMode = 'list',
@@ -48,6 +63,7 @@ export function PropertyFilters({
   saveSearchButton
 }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
+  const [propertyType, setPropertyType] = useState<PropertyType>(defaultPropertyType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [roomsFilter, setRoomsFilter] = useState<number[]>(
@@ -164,6 +180,7 @@ export function PropertyFilters({
   useEffect(() => {
     const filters: PropertyFilters = {
       operationType,
+      propertyType,
       priceMin,
       priceMax,
       bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : null,
@@ -173,7 +190,7 @@ export function PropertyFilters({
     };
     
     debouncedFilterChange(filters);
-  }, [operationType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy]);
+  }, [operationType, propertyType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy]);
 
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
@@ -205,6 +222,7 @@ export function PropertyFilters({
                   setPriceMax(null);
                   onFilterChange({
                     operationType: "Venta",
+                    propertyType,
                     priceMin: null,
                     priceMax: null,
                     bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
@@ -231,6 +249,7 @@ export function PropertyFilters({
                   setPriceMax(null);
                   onFilterChange({
                     operationType: "Alquiler",
+                    propertyType,
                     priceMin: null,
                     priceMax: null,
                     bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
@@ -243,6 +262,35 @@ export function PropertyFilters({
                 Alquilar
               </Button>
             </div>
+
+            {/* Tipo de inmueble dropdown */}
+            <Select
+              value={propertyType}
+              onValueChange={(value: PropertyType) => {
+                setPropertyType(value);
+                onFilterChange({
+                  operationType,
+                  propertyType: value,
+                  priceMin,
+                  priceMax,
+                  bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : 1,
+                  bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
+                  features: selectedFeatures,
+                  sortBy: sortBy !== "newest" ? sortBy : undefined
+                });
+              }}
+            >
+              <SelectTrigger className="w-[140px] h-9 text-sm border-gray-200 rounded-lg" data-testid="select-property-type">
+                <SelectValue placeholder="Tipo de inmueble" />
+              </SelectTrigger>
+              <SelectContent>
+                {PROPERTY_TYPES.map((type) => (
+                  <SelectItem key={type} value={type} data-testid={`option-property-type-${type.toLowerCase()}`}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
             {/* Save search button if provided */}
             {saveSearchButton && saveSearchButton}

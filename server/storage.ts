@@ -1785,6 +1785,14 @@ export class DatabaseStorage implements IStorage {
         whereConditions.push(eq(properties.operationType, filters.operationType));
       }
 
+      // Filtrar por tipo de inmueble (Vivienda, Oficinas, etc.)
+      if (filters.propertyType) {
+        console.log(
+          `Filtrando por tipo de inmueble: ${filters.propertyType}`,
+        );
+        whereConditions.push(eq(properties.type, filters.propertyType));
+      }
+
       // Filtrar por barrio(s)
       if (filters.neighborhoods) {
         let neighborhoods;
