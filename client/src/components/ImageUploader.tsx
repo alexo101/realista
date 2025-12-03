@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, X, Image, FileImage } from "lucide-react";
+import { Upload, X, Image, FileImage, AlertCircle } from "lucide-react";
 
 interface ImageUploaderProps {
   onImageUploaded: (imageUrl: string) => void;
@@ -10,19 +10,27 @@ interface ImageUploaderProps {
   maxFiles?: number;
   multiple?: boolean;
   className?: string;
+  currentImageCount?: number;
+  totalLimit?: number;
 }
 
 export function ImageUploader({ 
   onImageUploaded, 
   onMultipleImagesUploaded, 
-  maxFiles = 5, 
+  maxFiles = 20, 
   multiple = false, 
-  className 
+  className,
+  currentImageCount = 0,
+  totalLimit = 100
 }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const remainingSlots = totalLimit - currentImageCount;
+  const isAtLimit = remainingSlots <= 0;
+  const effectiveMaxFiles = Math.min(maxFiles, remainingSlots);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -30,12 +38,33 @@ export function ImageUploader({
 
     const fileArray = Array.from(files);
     
-    // Validate all files
+    if (isAtLimit) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Has alcanzado el límite máximo de ${totalLimit} imágenes para esta propiedad. Elimina algunas imágenes existentes para poder subir nuevas.`,
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
+    if (fileArray.length > effectiveMaxFiles) {
+      toast({
+        title: "Demasiados archivos",
+        description: remainingSlots < maxFiles 
+          ? `Solo puedes subir ${remainingSlots} imagen(es) más. Has seleccionado ${fileArray.length}.`
+          : `Puedes subir un máximo de ${maxFiles} imágenes a la vez. Has seleccionado ${fileArray.length}.`,
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
     for (const file of fileArray) {
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Archivo inválido",
-          description: `${file.name} no es una imagen válida.`,
+          description: `${file.name} no es una imagen válida. Solo se permiten archivos PNG, JPG, GIF y WebP.`,
           variant: "destructive",
         });
         return;
@@ -44,7 +73,7 @@ export function ImageUploader({
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "Archivo muy grande",
-          description: `${file.name} debe ser menor a 10MB.`,
+          description: `${file.name} supera el límite de 10MB. Por favor, reduce el tamaño de la imagen.`,
           variant: "destructive",
         });
         return;
@@ -55,17 +84,14 @@ export function ImageUploader({
     const uploadedUrls: string[] = [];
 
     try {
-      // Upload each file
       for (const file of fileArray) {
-        // Upload to our backend instead of direct object storage to avoid CORS
         const formData = new FormData();
         formData.append('image', file);
         
-        // Use fetch directly for file uploads (apiRequest doesn't handle FormData properly)
         const uploadResponse = await fetch("/api/property-images/upload-direct", {
           method: "POST",
           body: formData,
-          credentials: "include", // Include session cookies
+          credentials: "include",
         });
 
         if (!uploadResponse.ok) {
@@ -75,13 +101,11 @@ export function ImageUploader({
         const { imageUrl } = await uploadResponse.json() as { imageUrl: string };
         uploadedUrls.push(imageUrl);
         
-        // For single file mode, call the single callback immediately
         if (!multiple) {
           onImageUploaded(imageUrl);
         }
       }
 
-      // For multiple file mode, call the multiple callback
       if (multiple && onMultipleImagesUploaded) {
         onMultipleImagesUploaded(uploadedUrls);
       }
@@ -91,7 +115,6 @@ export function ImageUploader({
         description: `${uploadedUrls.length} imagen(es) subida(s) correctamente.`,
       });
 
-      // Reset the input
       event.target.value = '';
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -108,7 +131,9 @@ export function ImageUploader({
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragActive(true);
+    if (!isAtLimit) {
+      setIsDragActive(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -127,9 +152,17 @@ export function ImageUploader({
     e.stopPropagation();
     setIsDragActive(false);
 
+    if (isAtLimit) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Has alcanzado el límite máximo de ${totalLimit} imágenes para esta propiedad.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      // Create a fake event to reuse our existing upload logic
       const fakeEvent = {
         target: { files, value: '' }
       } as React.ChangeEvent<HTMLInputElement>;
@@ -138,7 +171,9 @@ export function ImageUploader({
   };
 
   const handleClick = () => {
-    fileInputRef.current?.click();
+    if (!isAtLimit) {
+      fileInputRef.current?.click();
+    }
   };
 
   return (
@@ -149,11 +184,10 @@ export function ImageUploader({
         accept="image/*"
         multiple={multiple}
         onChange={handleFileUpload}
-        disabled={isUploading}
+        disabled={isUploading || isAtLimit}
         className="hidden"
       />
       
-      {/* Enhanced drag and drop zone */}
       <div
         onClick={handleClick}
         onDragEnter={handleDragEnter}
@@ -161,20 +195,39 @@ export function ImageUploader({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         className={`
-          relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-200 hover:bg-gray-50/50
-          ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-gray-300'}
-          ${isUploading ? 'cursor-not-allowed opacity-60' : 'hover:border-primary'}
+          relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
+          ${isAtLimit 
+            ? 'border-red-300 bg-red-50/50 cursor-not-allowed' 
+            : isDragActive 
+              ? 'border-primary bg-primary/5 scale-[1.02] cursor-pointer' 
+              : 'border-gray-300 cursor-pointer hover:bg-gray-50/50 hover:border-primary'
+          }
+          ${isUploading ? 'cursor-not-allowed opacity-60' : ''}
         `}
         data-testid={multiple ? "drag-drop-multiple-images" : "drag-drop-single-image"}
       >
-        {isUploading ? (
+        {isAtLimit ? (
+          <div className="flex flex-col items-center space-y-3">
+            <AlertCircle className="h-12 w-12 text-red-400" />
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium text-red-600">
+                Límite de imágenes alcanzado
+              </h3>
+              <p className="text-sm text-red-500">
+                Has llegado al máximo de {totalLimit} imágenes permitidas.
+              </p>
+              <p className="text-xs text-gray-500">
+                Elimina algunas imágenes existentes para poder subir nuevas.
+              </p>
+            </div>
+          </div>
+        ) : isUploading ? (
           <div className="flex flex-col items-center space-y-3">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             <p className="text-sm text-gray-600">Subiendo imágenes...</p>
           </div>
         ) : (
           <>
-            {/* Icon */}
             <div className="mx-auto mb-4">
               {multiple ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -186,7 +239,6 @@ export function ImageUploader({
               )}
             </div>
             
-            {/* Text content */}
             <div className="space-y-2">
               <h3 className={`text-lg font-medium ${isDragActive ? 'text-primary' : 'text-gray-900'}`}>
                 {isDragActive 
@@ -198,11 +250,18 @@ export function ImageUploader({
                 o haz clic para seleccionar {multiple ? 'archivos' : 'un archivo'}
               </p>
               <p className="text-xs text-gray-400">
-                {multiple ? `Máximo ${maxFiles} archivos` : 'Máximo 1 archivo'} • PNG, JPG hasta 10MB
+                {multiple 
+                  ? `Máximo ${effectiveMaxFiles} archivos por lote • PNG, JPG hasta 10MB` 
+                  : 'Máximo 1 archivo • PNG, JPG hasta 10MB'
+                }
               </p>
+              {multiple && currentImageCount > 0 && (
+                <p className="text-xs text-blue-600 font-medium">
+                  {currentImageCount} de {totalLimit} imágenes usadas ({remainingSlots} disponibles)
+                </p>
+              )}
             </div>
             
-            {/* Action button */}
             <div className="mt-6">
               <Button
                 type="button"
@@ -246,14 +305,12 @@ export function ImageGallery({
             }`}
           />
           
-          {/* Main image indicator */}
           {index === mainImageIndex && (
             <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs">
               Principal
             </div>
           )}
           
-          {/* Controls */}
           <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {onSetMainImage && index !== mainImageIndex && (
               <Button

@@ -1172,7 +1172,9 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   form.setValue("imageUrls", [...currentImages, ...urls]);
                 }}
                 multiple={true}
-                maxFiles={10}
+                maxFiles={20}
+                totalLimit={100}
+                currentImageCount={(form.watch("imageUrls") || []).length}
                 className="mb-6"
               />
 
