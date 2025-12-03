@@ -16,7 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
 import { PropertyFormMultiStep } from "@/components/PropertyFormMultiStep";
@@ -192,6 +193,9 @@ export default function ManagePage() {
     const saved = localStorage.getItem('clientsView');
     return (saved === 'kanban' || saved === 'list') ? saved : 'list';
   });
+
+  // Selected clients for bulk actions
+  const [selectedClientIds, setSelectedClientIds] = useState<Set<number>>(new Set());
 
   // Properties view mode (grid or table)
   const [propertiesView, setPropertiesView] = useState<'grid' | 'table'>(() => {
@@ -1690,16 +1694,44 @@ export default function ManagePage() {
                       Panel
                     </Button>
                   </div>
-                  <Button 
-                    onClick={() => {
-                      setIsAddingClient(true);
-                      setEditingClient(null);
-                    }}
-                    data-testid="button-add-client"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Añadir cliente
-                  </Button>
+                  
+                  {/* Container for Enviar button sliding animation */}
+                  <div className="relative flex items-center">
+                    {/* Enviar button - slides out from behind Añadir cliente */}
+                    <div 
+                      className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
+                        selectedClientIds.size > 0 
+                          ? 'max-w-[150px] opacity-100 mr-2 pointer-events-auto' 
+                          : 'max-w-0 opacity-0 mr-0 pointer-events-none'
+                      }`}
+                    >
+                      <Button 
+                        variant="outline"
+                        className="border-primary text-primary hover:bg-primary hover:text-white whitespace-nowrap"
+                        onClick={() => {
+                          toast({
+                            title: "Enviar mensaje",
+                            description: `Se enviará un mensaje a ${selectedClientIds.size} cliente(s) seleccionado(s)`,
+                          });
+                        }}
+                        data-testid="button-send-to-clients"
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        Enviar a {selectedClientIds.size}
+                      </Button>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => {
+                        setIsAddingClient(true);
+                        setEditingClient(null);
+                      }}
+                      data-testid="button-add-client"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Añadir cliente
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -1765,6 +1797,19 @@ export default function ManagePage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[50px]">
+                          <Checkbox
+                            checked={clients.length > 0 && selectedClientIds.size === clients.length}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedClientIds(new Set(clients.map(c => c.id)));
+                              } else {
+                                setSelectedClientIds(new Set());
+                              }
+                            }}
+                            data-testid="checkbox-select-all-clients"
+                          />
+                        </TableHead>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Apellido</TableHead>
                         <TableHead>Email</TableHead>
@@ -1776,8 +1821,28 @@ export default function ManagePage() {
                     <TableBody>
                       {clients.map((client) => {
                         const statusConfig = CLIENT_STATUSES.find(s => s.value === client.status);
+                        const isSelected = selectedClientIds.has(client.id);
                         return (
-                          <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
+                          <TableRow 
+                            key={client.id} 
+                            data-testid={`row-client-${client.id}`}
+                            className={isSelected ? 'bg-primary/5' : ''}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  const newSelected = new Set(selectedClientIds);
+                                  if (checked) {
+                                    newSelected.add(client.id);
+                                  } else {
+                                    newSelected.delete(client.id);
+                                  }
+                                  setSelectedClientIds(newSelected);
+                                }}
+                                data-testid={`checkbox-client-${client.id}`}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">{client.name}</TableCell>
                             <TableCell>{client.surname || '-'}</TableCell>
                             <TableCell>{client.email}</TableCell>
