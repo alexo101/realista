@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Upload, X, Image, FileImage, AlertCircle } from "lucide-react";
+import { Upload, X, Image, FileImage, AlertCircle, Sparkles } from "lucide-react";
+import imageCompression from "browser-image-compression";
 
 interface ImageUploaderProps {
   onImageUploaded: (imageUrl: string) => void;
@@ -28,9 +29,42 @@ export function ImageUploader({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [compressionStatus, setCompressionStatus] = useState<string | null>(null);
   const remainingSlots = totalLimit - currentImageCount;
   const isAtLimit = remainingSlots <= 0;
   const effectiveMaxFiles = Math.min(maxFiles, remainingSlots);
+
+  const compressImage = async (file: File): Promise<{ compressedFile: File; wasCompressed: boolean; savings: number }> => {
+    const originalSize = file.size;
+    const maxSizeMB = 1;
+    const maxWidthOrHeight = 2048;
+    
+    if (originalSize <= maxSizeMB * 1024 * 1024) {
+      return { compressedFile: file, wasCompressed: false, savings: 0 };
+    }
+
+    try {
+      const options = {
+        maxSizeMB,
+        maxWidthOrHeight,
+        useWebWorker: true,
+        fileType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+        initialQuality: 0.85,
+      };
+
+      const compressedFile = await imageCompression(file, options);
+      const savings = Math.round(((originalSize - compressedFile.size) / originalSize) * 100);
+      
+      return { 
+        compressedFile, 
+        wasCompressed: true, 
+        savings 
+      };
+    } catch (error) {
+      console.error("Compression failed, using original:", error);
+      return { compressedFile: file, wasCompressed: false, savings: 0 };
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -70,10 +104,10 @@ export function ImageUploader({
         return;
       }
 
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 50 * 1024 * 1024) {
         toast({
           title: "Archivo muy grande",
-          description: `${file.name} supera el límite de 10MB. Por favor, reduce el tamaño de la imagen.`,
+          description: `${file.name} supera el límite de 50MB. Por favor, usa una imagen más pequeña.`,
           variant: "destructive",
         });
         return;
@@ -81,12 +115,27 @@ export function ImageUploader({
     }
 
     setIsUploading(true);
+    setCompressionStatus(null);
     const uploadedUrls: string[] = [];
+    let totalSavings = 0;
+    let compressedCount = 0;
 
     try {
-      for (const file of fileArray) {
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        
+        setCompressionStatus(`Optimizando imagen ${i + 1} de ${fileArray.length}...`);
+        const { compressedFile, wasCompressed, savings } = await compressImage(file);
+        
+        if (wasCompressed) {
+          compressedCount++;
+          totalSavings += savings;
+        }
+
+        setCompressionStatus(`Subiendo imagen ${i + 1} de ${fileArray.length}...`);
+        
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', compressedFile);
         
         const uploadResponse = await fetch("/api/property-images/upload-direct", {
           method: "POST",
@@ -110,9 +159,13 @@ export function ImageUploader({
         onMultipleImagesUploaded(uploadedUrls);
       }
 
+      const avgSavings = compressedCount > 0 ? Math.round(totalSavings / compressedCount) : 0;
+      
       toast({
-        title: "Imagen(es) subida(s)",
-        description: `${uploadedUrls.length} imagen(es) subida(s) correctamente.`,
+        title: compressedCount > 0 ? "Imágenes optimizadas y subidas" : "Imagen(es) subida(s)",
+        description: compressedCount > 0 
+          ? `${uploadedUrls.length} imagen(es) subida(s). ${compressedCount} optimizada(s) automáticamente (${avgSavings}% menos tamaño).`
+          : `${uploadedUrls.length} imagen(es) subida(s) correctamente.`,
       });
 
       event.target.value = '';
@@ -125,6 +178,7 @@ export function ImageUploader({
       });
     } finally {
       setIsUploading(false);
+      setCompressionStatus(null);
     }
   };
 
@@ -224,7 +278,15 @@ export function ImageUploader({
         ) : isUploading ? (
           <div className="flex flex-col items-center space-y-3">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="text-sm text-gray-600">Subiendo imágenes...</p>
+            <p className="text-sm text-gray-600">
+              {compressionStatus || "Subiendo imágenes..."}
+            </p>
+            {compressionStatus?.includes("Optimizando") && (
+              <p className="text-xs text-blue-600 flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                Comprimiendo para mejor rendimiento
+              </p>
+            )}
           </div>
         ) : (
           <>
@@ -251,8 +313,8 @@ export function ImageUploader({
               </p>
               <p className="text-xs text-gray-400">
                 {multiple 
-                  ? `Máximo ${effectiveMaxFiles} archivos por lote • PNG, JPG hasta 10MB` 
-                  : 'Máximo 1 archivo • PNG, JPG hasta 10MB'
+                  ? `Máximo ${effectiveMaxFiles} archivos por lote • PNG, JPG, WebP • Optimización automática` 
+                  : 'Máximo 1 archivo • PNG, JPG, WebP • Optimización automática'
                 }
               </p>
               {multiple && currentImageCount > 0 && (

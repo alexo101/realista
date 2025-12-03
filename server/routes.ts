@@ -39,12 +39,13 @@ import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getD
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 import multer from 'multer';
+import sharp from 'sharp';
 
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(), // Store files in memory as Buffer
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit (we'll compress after)
   },
   fileFilter: (req, file, cb) => {
     // Check if the uploaded file is an image
@@ -55,6 +56,102 @@ const upload = multer({
     }
   },
 });
+
+// Server-side image compression utility
+async function compressImageToTarget(
+  buffer: Buffer, 
+  mimeType: string,
+  targetSizeBytes: number = 1024 * 1024, // 1MB default
+  maxDimension: number = 2048
+): Promise<{ buffer: Buffer; wasCompressed: boolean; format: string; mimeType: string }> {
+  const originalSize = buffer.length;
+  
+  // If already under target, return as-is
+  if (originalSize <= targetSizeBytes) {
+    return { buffer, wasCompressed: false, format: 'original', mimeType };
+  }
+
+  // Skip compression for GIFs (preserve animation) - just return original if too large
+  if (mimeType === 'image/gif') {
+    console.log(`GIF image too large (${originalSize} bytes), but preserving animation - returning original`);
+    return { buffer, wasCompressed: false, format: 'gif', mimeType: 'image/gif' };
+  }
+
+  try {
+    // Get image metadata
+    const metadata = await sharp(buffer).metadata();
+    const width = metadata.width || 0;
+    const height = metadata.height || 0;
+    const hasAlpha = metadata.hasAlpha || false;
+    
+    // Calculate resize dimensions if needed
+    let resizeWidth = width;
+    let resizeHeight = height;
+    if (width > maxDimension || height > maxDimension) {
+      if (width > height) {
+        resizeWidth = maxDimension;
+        resizeHeight = Math.round((height / width) * maxDimension);
+      } else {
+        resizeHeight = maxDimension;
+        resizeWidth = Math.round((width / height) * maxDimension);
+      }
+    }
+
+    // For PNG with transparency, try WebP first (maintains transparency with better compression)
+    if (hasAlpha && (mimeType === 'image/png' || mimeType === 'image/webp')) {
+      const qualities = [85, 75, 65, 55, 45];
+      
+      for (const quality of qualities) {
+        const compressed = await sharp(buffer)
+          .resize(resizeWidth, resizeHeight, { fit: 'inside', withoutEnlargement: true })
+          .webp({ quality, alphaQuality: quality })
+          .toBuffer();
+        
+        if (compressed.length <= targetSizeBytes) {
+          console.log(`Image compressed to WebP (preserving transparency): ${originalSize} -> ${compressed.length} bytes (${Math.round((1 - compressed.length / originalSize) * 100)}% reduction, quality=${quality})`);
+          return { buffer: compressed, wasCompressed: true, format: 'webp', mimeType: 'image/webp' };
+        }
+      }
+      
+      // If still too large, reduce dimensions further
+      const furtherReduced = await sharp(buffer)
+        .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 50, alphaQuality: 50 })
+        .toBuffer();
+      
+      console.log(`Image heavily compressed to WebP: ${originalSize} -> ${furtherReduced.length} bytes`);
+      return { buffer: furtherReduced, wasCompressed: true, format: 'webp', mimeType: 'image/webp' };
+    }
+
+    // For non-transparent images, use JPEG (best compression)
+    const qualities = [85, 75, 65, 55, 45];
+    
+    for (const quality of qualities) {
+      const compressed = await sharp(buffer)
+        .resize(resizeWidth, resizeHeight, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality, mozjpeg: true })
+        .toBuffer();
+      
+      if (compressed.length <= targetSizeBytes) {
+        console.log(`Image compressed to JPEG: ${originalSize} -> ${compressed.length} bytes (${Math.round((1 - compressed.length / originalSize) * 100)}% reduction, quality=${quality})`);
+        return { buffer: compressed, wasCompressed: true, format: 'jpeg', mimeType: 'image/jpeg' };
+      }
+    }
+
+    // If still too large, further reduce dimensions
+    const furtherReduced = await sharp(buffer)
+      .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 50, mozjpeg: true })
+      .toBuffer();
+    
+    console.log(`Image heavily compressed to JPEG: ${originalSize} -> ${furtherReduced.length} bytes`);
+    return { buffer: furtherReduced, wasCompressed: true, format: 'jpeg', mimeType: 'image/jpeg' };
+  } catch (error) {
+    console.error("Server-side compression failed:", error);
+    // Return original if compression fails
+    return { buffer, wasCompressed: false, format: 'original', mimeType };
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
@@ -3755,9 +3852,32 @@ Gracias!
       const objectStorageService = new ObjectStorageService();
       
       // Use multer parsed file data
-      const fileBuffer = req.file.buffer;
-      const fileName = req.file.originalname || `image_${Date.now()}.jpg`;
-      const mimeType = req.file.mimetype;
+      let fileBuffer = req.file.buffer;
+      const originalFileName = req.file.originalname || `image_${Date.now()}.jpg`;
+      let mimeType = req.file.mimetype;
+
+      console.log(`Received image: ${originalFileName}, type: ${mimeType}, size: ${fileBuffer.length} bytes`);
+
+      // Server-side compression as backup (ensures images are always under 1MB)
+      const compressionResult = await compressImageToTarget(fileBuffer, mimeType);
+      
+      if (compressionResult.wasCompressed) {
+        fileBuffer = compressionResult.buffer;
+        mimeType = compressionResult.mimeType;
+        console.log(`Image compressed server-side: ${originalFileName} -> ${fileBuffer.length} bytes (format: ${compressionResult.format})`);
+      }
+
+      // Generate new filename with correct extension based on final format
+      const extensionMap: Record<string, string> = {
+        'jpeg': '.jpg',
+        'webp': '.webp',
+        'gif': '.gif',
+        'png': '.png',
+        'original': originalFileName.substring(originalFileName.lastIndexOf('.'))
+      };
+      const extension = extensionMap[compressionResult.format] || originalFileName.substring(originalFileName.lastIndexOf('.'));
+      const baseName = originalFileName.substring(0, originalFileName.lastIndexOf('.')) || 'image';
+      const fileName = `${baseName}_${Date.now()}${extension}`;
 
       console.log(`Uploading image: ${fileName}, type: ${mimeType}, size: ${fileBuffer.length} bytes`);
 
