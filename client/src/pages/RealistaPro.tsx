@@ -128,7 +128,7 @@ const networkPlans = [
     pricingDetails: [
       { plan: "Pequeña", price: 29 },
       { plan: "Mediana", price: 79 },
-      { plan: "Líder", price: 199 }
+      { plan: "Líder", price: 249 }
     ],
     features: [
       "Agencias ilimitadas bajo tu marca",

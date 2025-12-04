@@ -51,7 +51,7 @@ const AGENCY_PLAN_PRICES: Record<string, { name: string; price: number }> = {
   'basica': { name: 'Básica', price: 0 },
   'pequeña': { name: 'Pequeña', price: 29 },
   'mediana': { name: 'Mediana', price: 79 },
-  'lider': { name: 'Líder', price: 199 },
+  'lider': { name: 'Líder', price: 249 },
 };
 
 interface Props {
