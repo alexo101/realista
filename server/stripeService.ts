@@ -4,7 +4,9 @@
 import { db } from './db';
 import { getUncachableStripeClient } from './stripeClient';
 import { sql, eq } from 'drizzle-orm';
-import { agencies, agents } from '@shared/schema';
+import { agencies, agents, networks } from '@shared/schema';
+
+type EntityType = 'agency' | 'agent' | 'network';
 
 /**
  * StripeService: Handles direct Stripe API operations for Realista subscriptions
@@ -14,8 +16,8 @@ import { agencies, agents } from '@shared/schema';
  * - Independent Agents: Básico (free), Líder (20€/month or 200€/year)
  */
 export class StripeService {
-  // Create customer in Stripe for agency or agent
-  async createCustomer(email: string, name: string, entityType: 'agency' | 'agent', entityId: number) {
+  // Create customer in Stripe for agency, agent, or network
+  async createCustomer(email: string, name: string, entityType: EntityType, entityId: number) {
     const stripe = await getUncachableStripeClient();
     return await stripe.customers.create({
       email,
@@ -33,7 +35,7 @@ export class StripeService {
     priceId: string, 
     successUrl: string, 
     cancelUrl: string,
-    entityType: 'agency' | 'agent',
+    entityType: EntityType,
     entityId: number
   ) {
     const stripe = await getUncachableStripeClient();
@@ -112,7 +114,7 @@ export class StripeService {
   }
 
   // Get products with their prices (for displaying subscription options)
-  async listProductsWithPrices(entityType: 'agency' | 'agent') {
+  async listProductsWithPrices(entityType: EntityType) {
     const result = await db.execute(
       sql`
         SELECT 
@@ -170,12 +172,15 @@ export class StripeService {
       'Agency Mediana': 'mediana',
       'Agency Líder': 'lider',
       'Agent Líder': 'lider',
+      'Network Básica': 'basica',
+      'Network Pro': 'pro',
+      'Network Enterprise': 'enterprise',
     };
     return nameMap[productName] || 'basico';
   }
 
   // Map seat limits and properties limits based on plan
-  private getPlanLimits(plan: string, entityType: 'agency' | 'agent') {
+  private getPlanLimits(plan: string, entityType: EntityType) {
     if (entityType === 'agency') {
       // Limits matching shared/schema.ts SUBSCRIPTION_LIMITS
       // null = unlimited (stored as 999999 in database)
@@ -184,6 +189,14 @@ export class StripeService {
         'pequeña': { seats: 2, properties: 10 },
         'mediana': { seats: 6, properties: 30 },
         'lider': { seats: 999999, properties: 999999 }, // unlimited
+      };
+      return limits[plan] || limits['basica'];
+    } else if (entityType === 'network') {
+      // Network limits - agencies, agents, and properties limits
+      const limits: Record<string, { agencies: number; agents: number; properties: number }> = {
+        'basica': { agencies: 5, agents: 25, properties: 100 },
+        'pro': { agencies: 20, agents: 100, properties: 500 },
+        'enterprise': { agencies: 999999, agents: 999999, properties: 999999 }, // unlimited
       };
       return limits[plan] || limits['basica'];
     } else {
@@ -212,7 +225,7 @@ export class StripeService {
 
       const subscription = subResult.rows[0] as any;
       const metadata = subscription.metadata || {};
-      const entityType = metadata.entityType as 'agency' | 'agent';
+      const entityType = metadata.entityType as EntityType;
       const entityId = parseInt(metadata.entityId, 10);
 
       if (!entityType || !entityId) {
@@ -263,8 +276,13 @@ export class StripeService {
 
       console.log(`Syncing subscription: planName=${planName}, isActive=${isActive}, isYearly=${isYearly}, limits=${JSON.stringify(limits)}`);
 
-      // Get default limits for free tier (basica/basico)
-      const freeTierLimits = this.getPlanLimits(entityType === 'agency' ? 'basica' : 'basico', entityType);
+      // Get default limits for free tier
+      const getDefaultPlan = () => {
+        if (entityType === 'agency') return 'basica';
+        if (entityType === 'network') return 'basica';
+        return 'basico';
+      };
+      const freeTierLimits = this.getPlanLimits(getDefaultPlan(), entityType);
 
       if (entityType === 'agency') {
         await db.update(agencies)
@@ -272,12 +290,25 @@ export class StripeService {
             stripeSubscriptionId: isActive ? subscriptionId : null,
             subscriptionPlan: isActive ? planName : 'basica',
             isYearlyBilling: isActive ? isYearly : false,
-            seatsLimit: isActive ? limits.seats : freeTierLimits.seats,
-            activePropertiesLimit: isActive ? limits.properties : freeTierLimits.properties,
+            seatsLimit: isActive ? (limits as any).seats : (freeTierLimits as any).seats,
+            activePropertiesLimit: isActive ? (limits as any).properties : (freeTierLimits as any).properties,
           })
           .where(eq(agencies.id, entityId));
         
         console.log(`Updated agency ${entityId} subscription: ${planName}, active: ${isActive}`);
+      } else if (entityType === 'network') {
+        await db.update(networks)
+          .set({
+            stripeSubscriptionId: isActive ? subscriptionId : null,
+            subscriptionPlan: isActive ? planName : 'basica',
+            isYearlyBilling: isActive ? isYearly : false,
+            agenciesLimit: isActive ? (limits as any).agencies : (freeTierLimits as any).agencies,
+            agentsLimit: isActive ? (limits as any).agents : (freeTierLimits as any).agents,
+            propertiesLimit: isActive ? (limits as any).properties : (freeTierLimits as any).properties,
+          })
+          .where(eq(networks.id, entityId));
+        
+        console.log(`Updated network ${entityId} subscription: ${planName}, active: ${isActive}`);
       } else {
         await db.update(agents)
           .set({
@@ -295,11 +326,15 @@ export class StripeService {
   }
 
   // Update customer ID in our tables after creating a Stripe customer
-  async updateCustomerId(entityType: 'agency' | 'agent', entityId: number, customerId: string): Promise<void> {
+  async updateCustomerId(entityType: EntityType, entityId: number, customerId: string): Promise<void> {
     if (entityType === 'agency') {
       await db.update(agencies)
         .set({ stripeCustomerId: customerId })
         .where(eq(agencies.id, entityId));
+    } else if (entityType === 'network') {
+      await db.update(networks)
+        .set({ stripeCustomerId: customerId })
+        .where(eq(networks.id, entityId));
     } else {
       await db.update(agents)
         .set({ stripeCustomerId: customerId })
@@ -308,11 +343,16 @@ export class StripeService {
   }
 
   // Get customer by entity type and ID
-  async getCustomerByEntity(entityType: 'agency' | 'agent', entityId: number): Promise<string | null> {
+  async getCustomerByEntity(entityType: EntityType, entityId: number): Promise<string | null> {
     if (entityType === 'agency') {
       const result = await db.select({ stripeCustomerId: agencies.stripeCustomerId })
         .from(agencies)
         .where(eq(agencies.id, entityId));
+      return result[0]?.stripeCustomerId || null;
+    } else if (entityType === 'network') {
+      const result = await db.select({ stripeCustomerId: networks.stripeCustomerId })
+        .from(networks)
+        .where(eq(networks.id, entityId));
       return result[0]?.stripeCustomerId || null;
     } else {
       const result = await db.select({ stripeCustomerId: agents.stripeCustomerId })
@@ -322,20 +362,36 @@ export class StripeService {
     }
   }
 
-  // Activate free tier (Básica for agencies, Básico for agents)
-  async activateFreeTier(entityType: 'agency' | 'agent', entityId: number): Promise<void> {
-    const limits = this.getPlanLimits(entityType === 'agency' ? 'basica' : 'basico', entityType);
+  // Activate free tier (Básica for agencies/networks, Básico for agents)
+  async activateFreeTier(entityType: EntityType, entityId: number): Promise<void> {
+    const getDefaultPlan = () => {
+      if (entityType === 'agency') return 'basica';
+      if (entityType === 'network') return 'basica';
+      return 'basico';
+    };
+    const limits = this.getPlanLimits(getDefaultPlan(), entityType);
     
     if (entityType === 'agency') {
       await db.update(agencies)
         .set({
           subscriptionPlan: 'basica',
           isYearlyBilling: false,
-          seatsLimit: limits.seats,
-          activePropertiesLimit: limits.properties,
+          seatsLimit: (limits as any).seats,
+          activePropertiesLimit: (limits as any).properties,
         })
         .where(eq(agencies.id, entityId));
       console.log(`Activated free tier for agency ${entityId}`);
+    } else if (entityType === 'network') {
+      await db.update(networks)
+        .set({
+          subscriptionPlan: 'basica',
+          isYearlyBilling: false,
+          agenciesLimit: (limits as any).agencies,
+          agentsLimit: (limits as any).agents,
+          propertiesLimit: (limits as any).properties,
+        })
+        .where(eq(networks.id, entityId));
+      console.log(`Activated free tier for network ${entityId}`);
     } else {
       await db.update(agents)
         .set({

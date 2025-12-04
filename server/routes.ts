@@ -4173,6 +4173,18 @@ Gracias!
     }
   });
 
+  // Get subscription products for networks
+  app.get("/api/stripe/products/network", async (req, res) => {
+    try {
+      const { stripeService } = await import("./stripeService");
+      const products = await stripeService.listProductsWithPrices('network');
+      res.json({ products });
+    } catch (error) {
+      console.error("Error getting network products:", error);
+      res.status(500).json({ error: "Failed to get products" });
+    }
+  });
+
   // Create checkout session for subscription
   app.post("/api/stripe/checkout", async (req, res) => {
     try {
@@ -4188,7 +4200,7 @@ Gracias!
 
       const { stripeService } = await import("./stripeService");
 
-      // Get the entity (agency or agent) to get email for customer
+      // Get the entity (agency, agent, or network) to get email for customer
       let email: string;
       let name: string;
       
@@ -4199,6 +4211,13 @@ Gracias!
         }
         email = agency.agencyEmailToDisplay || '';
         name = agency.agencyName;
+      } else if (entityType === 'network') {
+        const network = await storage.getNetworkById(entityId);
+        if (!network) {
+          return res.status(404).json({ error: "Network not found" });
+        }
+        email = network.email || '';
+        name = network.name;
       } else {
         const agent = await storage.getAgentById(entityId);
         if (!agent) {

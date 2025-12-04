@@ -72,6 +72,10 @@ interface Agency {
   agencyInfluenceNeighborhoods?: string[];
   agents?: AgencyAgent[];
   properties?: Property[];
+  networkId?: number;
+  networkName?: string;
+  networkSlug?: string;
+  networkLogo?: string | null;
 }
 
 // Componente para mostrar una tarjeta de agente
@@ -450,8 +454,24 @@ export default function AgencyProfile() {
         </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">{agency.agencyName}</h1>
-          <div className="flex items-center text-sm text-gray-500 mb-2">
-            <Badge variant="outline" className="mr-2">Agencia inmobiliaria</Badge>
+          <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 mb-2">
+            <Badge variant="outline">Agencia inmobiliaria</Badge>
+            {agency.networkId && agency.networkName && (
+              <Link href={`/redes/${agency.networkSlug || agency.networkId}`}>
+                <Badge variant="secondary" className="hover:bg-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1">
+                  {agency.networkLogo ? (
+                    <img 
+                      src={agency.networkLogo} 
+                      alt={agency.networkName}
+                      className="h-4 w-4 object-contain rounded-sm"
+                    />
+                  ) : (
+                    <Building2 className="h-3 w-3" />
+                  )}
+                  {agency.networkName}
+                </Badge>
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center mb-4">

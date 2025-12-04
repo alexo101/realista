@@ -74,6 +74,10 @@ interface Agent {
     instagram?: string;
     linkedin?: string;
   };
+  networkId?: number;
+  networkName?: string;
+  networkSlug?: string;
+  networkLogo?: string | null;
 }
 
 interface Property {
@@ -429,13 +433,29 @@ export default function AgentProfile() {
         </div>
         <div className="flex-1">
           <h1 className="text-3xl font-bold mb-2">{fullName}</h1>
-          <div className="flex items-center text-sm text-gray-500 mb-2">
-            <Badge variant="outline" className="mr-2">Agente inmobiliario</Badge>
+          <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 mb-2">
+            <Badge variant="outline">Agente inmobiliario</Badge>
             {agent.agencyName && agent.agencyId && (
               <Link href={`/agencias/${agent.agencySlug || agent.agencyId}`}>
-                <Badge variant="outline" className="hover:bg-primary hover:text-white transition-colors cursor-pointer">
-                  <Building2 className="h-3 w-3 mr-1" />
+                <Badge variant="outline" className="hover:bg-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
                   {agent.agencyName}
+                </Badge>
+              </Link>
+            )}
+            {agent.networkId && agent.networkName && (
+              <Link href={`/redes/${agent.networkSlug || agent.networkId}`}>
+                <Badge variant="secondary" className="hover:bg-primary hover:text-white transition-colors cursor-pointer flex items-center gap-1">
+                  {agent.networkLogo ? (
+                    <img 
+                      src={agent.networkLogo} 
+                      alt={agent.networkName}
+                      className="h-4 w-4 object-contain rounded-sm"
+                    />
+                  ) : (
+                    <Building2 className="h-3 w-3" />
+                  )}
+                  {agent.networkName}
                 </Badge>
               </Link>
             )}

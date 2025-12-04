@@ -684,12 +684,14 @@ export class DatabaseStorage implements IStorage {
     let agencyName = null;
     let agencyId = null;
     let agencySlug = null;
+    let networkInfo: { networkId: number; networkName: string; networkSlug: string; networkLogo: string | null } | null = null;
     
     const [agencyRelationship] = await db
       .select({
         agencyId: agencies.id,
         agencyName: agencies.agencyName,
-        agencySlug: agencies.slug
+        agencySlug: agencies.slug,
+        networkId: agencies.networkId
       })
       .from(agencyAgents)
       .leftJoin(agencies, eq(agencyAgents.agencyUuid, agencies.uuid))
@@ -705,6 +707,28 @@ export class DatabaseStorage implements IStorage {
       agencyName = agencyRelationship.agencyName;
       agencyId = agencyRelationship.agencyId;
       agencySlug = agencyRelationship.agencySlug;
+      
+      // Get network information if agency belongs to a network
+      if (agencyRelationship.networkId) {
+        const [network] = await db
+          .select({
+            id: networks.id,
+            name: networks.name,
+            slug: networks.slug,
+            logo: networks.logo,
+          })
+          .from(networks)
+          .where(eq(networks.id, agencyRelationship.networkId));
+        
+        if (network) {
+          networkInfo = {
+            networkId: network.id,
+            networkName: network.name,
+            networkSlug: network.slug,
+            networkLogo: network.logo,
+          };
+        }
+      }
     }
 
     // Get pinned review for this agent
@@ -743,7 +767,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Return agent with review statistics, agency information, and pinned review
+    // Return agent with review statistics, agency information, network info, and pinned review
     return {
       ...agent,
       isAgent: true,
@@ -754,6 +778,7 @@ export class DatabaseStorage implements IStorage {
       agencyId: agencyId,
       agencySlug: agencySlug,
       pinnedReview: pinnedReview,
+      ...(networkInfo || {}),
     } as any;
   }
 
@@ -851,10 +876,34 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Get network information if agency belongs to a network
+    let networkInfo: { networkId: number; networkName: string; networkSlug: string; networkLogo: string | null } | null = null;
+    if (agency.networkId) {
+      const [network] = await db
+        .select({
+          id: networks.id,
+          name: networks.name,
+          slug: networks.slug,
+          logo: networks.logo,
+        })
+        .from(networks)
+        .where(eq(networks.id, agency.networkId));
+      
+      if (network) {
+        networkInfo = {
+          networkId: network.id,
+          networkName: network.name,
+          networkSlug: network.slug,
+          networkLogo: network.logo,
+        };
+      }
+    }
+
     return {
       ...agency,
       reviewCount: Number(reviewCount),
       reviewAverage: Number(reviewAverage),
+      ...(networkInfo || {}),
     } as any;
   }
 
