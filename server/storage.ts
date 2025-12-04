@@ -254,6 +254,7 @@ export interface IStorage {
   getAgentsByNetwork(networkId: number): Promise<User[]>;
   attachAgencyToNetwork(agencyId: number, networkId: number): Promise<Agency>;
   detachAgencyFromNetwork(agencyId: number): Promise<Agency>;
+  updateAgencyPlan(agencyId: number, plan: string): Promise<Agency>;
   getNetworkStats(networkId: number): Promise<{ agencies: number; agents: number; properties: number; totalClients: number }>;
   getAgencyAgentCount(agencyId: number): Promise<number>;
   getAgencyPropertyCount(agencyId: number): Promise<number>;
@@ -3369,6 +3370,37 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(agencies)
       .set({ networkId: null })
+      .where(eq(agencies.id, agencyId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Agency not found');
+    }
+    
+    return updated;
+  }
+
+  async updateAgencyPlan(agencyId: number, plan: string): Promise<Agency> {
+    // Define plan limits
+    const planLimits: Record<string, { seatsLimit: number; activePropertiesLimit: number }> = {
+      'basica': { seatsLimit: 1, activePropertiesLimit: 2 },
+      'pequeña': { seatsLimit: 2, activePropertiesLimit: 10 },
+      'mediana': { seatsLimit: 6, activePropertiesLimit: 30 },
+      'lider': { seatsLimit: 9999, activePropertiesLimit: 9999 }
+    };
+    
+    const limits = planLimits[plan.toLowerCase()];
+    if (!limits) {
+      throw new Error('Invalid plan');
+    }
+    
+    const [updated] = await db
+      .update(agencies)
+      .set({
+        subscriptionPlan: plan.toLowerCase(),
+        seatsLimit: limits.seatsLimit,
+        activePropertiesLimit: limits.activePropertiesLimit
+      })
       .where(eq(agencies.id, agencyId))
       .returning();
     

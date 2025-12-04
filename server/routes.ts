@@ -4566,6 +4566,41 @@ Gracias!
     }
   });
 
+  // Update agency plan (network admin only)
+  app.patch("/api/networks/:id/agencies/:agencyId/plan", requireAuth, async (req, res) => {
+    try {
+      const networkId = parseInt(req.params.id);
+      const agencyId = parseInt(req.params.agencyId);
+      const { plan } = req.body;
+      const userId = req.session.userId;
+      
+      // Validate plan
+      const validPlans = ['basica', 'pequeña', 'mediana', 'lider'];
+      if (!plan || !validPlans.includes(plan.toLowerCase())) {
+        return res.status(400).json({ error: "Plan inválido" });
+      }
+      
+      // Get user and verify they are network admin
+      const user = await storage.getUser(userId!);
+      if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
+        return res.status(403).json({ error: "Acceso denegado" });
+      }
+      
+      // Verify agency belongs to this network
+      const agency = await storage.getAgencyById(agencyId);
+      if (!agency || agency.networkId !== networkId) {
+        return res.status(404).json({ error: "Agencia no encontrada en esta red" });
+      }
+      
+      // Update agency plan
+      const updatedAgency = await storage.updateAgencyPlan(agencyId, plan);
+      res.json(updatedAgency);
+    } catch (error) {
+      console.error("Error updating agency plan:", error);
+      res.status(500).json({ error: "Error al actualizar el plan de la agencia" });
+    }
+  });
+
   // Get network admin's network data (for dashboard)
   app.get("/api/network-admin/network", requireAuth, async (req, res) => {
     try {
