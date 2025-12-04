@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Network, Building, Users, Home, Plus, Search, UserMinus, UserPlus, ExternalLink, BarChart3, CreditCard, Euro, Loader2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -155,6 +156,26 @@ export function NetworkManagement({ networkId }: Props) {
       toast({
         title: "Error",
         description: error.message || "No se pudo abrir el portal de facturación",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateAgencyPlanMutation = useMutation({
+    mutationFn: async ({ agencyId, plan }: { agencyId: number; plan: string }) => {
+      return await apiRequest('PATCH', `/api/networks/${networkId}/agencies/${agencyId}/plan`, { plan });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['/api/networks', networkId, 'management'] });
+      toast({
+        title: "Plan actualizado",
+        description: "El plan de la agencia se ha actualizado correctamente."
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar el plan de la agencia",
         variant: "destructive"
       });
     }
@@ -443,9 +464,21 @@ export function NetworkManagement({ networkId }: Props) {
                     </TableCell>
                     <TableCell>{agency.city || "Sin especificar"}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {agency.subscriptionPlan || "Sin plan"}
-                      </Badge>
+                      <Select
+                        value={agency.subscriptionPlan?.toLowerCase() || 'basica'}
+                        onValueChange={(value) => updateAgencyPlanMutation.mutate({ agencyId: agency.id, plan: value })}
+                        disabled={updateAgencyPlanMutation.isPending}
+                      >
+                        <SelectTrigger className="w-32" data-testid={`select-plan-${agency.id}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="basica">Básica</SelectItem>
+                          <SelectItem value="pequeña">Pequeña</SelectItem>
+                          <SelectItem value="mediana">Mediana</SelectItem>
+                          <SelectItem value="lider">Líder</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-center">{agency.agentCount || 0}</TableCell>
                     <TableCell className="text-center">{agency.propertyCount || 0}</TableCell>

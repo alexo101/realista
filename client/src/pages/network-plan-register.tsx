@@ -19,9 +19,10 @@ const networkPlan = {
   features: [
     "Agencias ilimitadas bajo tu marca",
     "Panel de control centralizado de toda la red",
+    "Asigna planes individuales a cada agencia",
     "Estadísticas consolidadas de rendimiento",
     "Branding corporativo en todos los perfiles",
-    "Gestión centralizada o facturación individual por agencia",
+    "Facturación centralizada según planes de agencias",
     "Soporte prioritario dedicado",
     "API de integración disponible"
   ],
@@ -176,38 +177,6 @@ export default function NetworkPlanRegister() {
                     required
                     data-testid="input-network-name"
                   />
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Modo de facturación</Label>
-                  <RadioGroup
-                    value={formData.billingMode}
-                    onValueChange={(value) => setFormData({ ...formData, billingMode: value })}
-                    className="space-y-3"
-                  >
-                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="network" id="billing-network" data-testid="radio-billing-network" />
-                      <div className="flex-1">
-                        <Label htmlFor="billing-network" className="font-medium cursor-pointer">
-                          Facturación centralizada (Recomendado)
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          La red paga por todas las agencias. Un único pago, control total.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                      <RadioGroupItem value="agency" id="billing-agency" data-testid="radio-billing-agency" />
-                      <div className="flex-1">
-                        <Label htmlFor="billing-agency" className="font-medium cursor-pointer">
-                          Facturación individual por agencia
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                          Cada agencia gestiona su propia suscripción de forma independiente.
-                        </p>
-                      </div>
-                    </div>
-                  </RadioGroup>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -369,8 +338,8 @@ export default function NetworkPlanRegister() {
                       <CreditCard className="h-5 w-5 text-orange-600" />
                     </div>
                     <div>
-                      <span className="font-medium">Facturación flexible</span>
-                      <p className="text-muted-foreground">Elige entre pago centralizado o que cada agencia pague por separado</p>
+                      <span className="font-medium">Facturación centralizada</span>
+                      <p className="text-muted-foreground">La red paga por todas las agencias según el plan asignado a cada una</p>
                     </div>
                   </li>
                 </ul>
