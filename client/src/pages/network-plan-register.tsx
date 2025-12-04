@@ -149,20 +149,7 @@ export default function NetworkPlanRegister() {
             </CardHeader>
             <CardContent>
               <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">{networkPlan.name}</h3>
-                    <p className="text-sm text-muted-foreground">{billingText}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-orange-600">{displayPrice}</p>
-                    {billing === 'yearly' && (
-                      <p className="text-xs text-muted-foreground">
-                        Facturado anualmente: {networkPlan.yearlyPrice}€
-                      </p>
-                    )}
-                  </div>
-                </div>
+                <h3 className="font-semibold text-lg">{networkPlan.name}</h3>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
