@@ -59,9 +59,11 @@ Preferred communication style: Simple, everyday language.
   - **Entity Hierarchy**: Networks → Agencies → Agents → Properties/Clients
   - **Network Admin Role**: `agentType: 'network_admin'` with dashboard for managing all affiliated agencies
   - **Billing Modes**: Networks can pay for all agencies (`billingMode: 'network'`) or agencies bill individually (`billingMode: 'agency'`)
-  - **Network Plans**: Básica (5 agencies/25 agents/100 properties), Pro (20/100/500), Enterprise (unlimited)
+  - **Usage-Based Pricing**: Networks pay per-agency based on each agency's plan tier (Pequeña 29€, Mediana 79€, Líder 199€ monthly)
+  - **Monthly-Only Billing**: Networks only support monthly billing cycles due to variable agency counts
+  - **Billing Dashboard**: NetworkManagement shows breakdown by plan tier with subtotals and total monthly cost
   - **Network Branding**: Agencies and agents in a network display network badge with logo on public profiles
-  - **Management Dashboard**: Network admins can add/remove agencies, view all agents and properties
+  - **Management Dashboard**: Network admins can add/remove agencies, view all agents and properties, access Stripe portal
   - **Registration Flow**: `/registrar/red/:plan` with network name, admin info, and plan selection
 
 ### System Design Choices
