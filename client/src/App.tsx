@@ -22,6 +22,7 @@ import ClientProfile from "@/pages/client-profile";
 import RealistaPro from "@/pages/RealistaPro";
 import AgencyPlanRegister from "@/pages/agency-plan-register";
 import AgentPlanRegister from "@/pages/agent-plan-register";
+import NetworkPlanRegister from "@/pages/network-plan-register";
 import UpgradePlan from "@/pages/upgrade-plan";
 import ConfirmReview from "@/pages/confirm-review";
 
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/registrarse" component={RegisterPage} />
       <Route path="/registro-plan-agencia" component={AgencyPlanRegister} />
       <Route path="/registro-plan-agente" component={AgentPlanRegister} />
+      <Route path="/registro-plan-red" component={NetworkPlanRegister} />
       <Route path="/registro-cliente" component={ClientRegisterPage} />
       <Route path="/perfil-cliente/:clientUuid/:section" component={ClientProfile} />
       <Route path="/perfil-cliente" component={ClientProfile} />
@@ -60,6 +62,7 @@ function Router() {
       <Route path="/register" component={RegisterPage} />
       <Route path="/agency-plan-register" component={AgencyPlanRegister} />
       <Route path="/agent-plan-register" component={AgentPlanRegister} />
+      <Route path="/network-plan-register" component={NetworkPlanRegister} />
       <Route path="/client-register" component={ClientRegisterPage} />
       <Route path="/client-profile" component={ClientProfile} />
       <Route path="/search/buy" component={Search} />
