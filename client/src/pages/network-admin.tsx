@@ -343,12 +343,7 @@ export default function NetworkAdminPage() {
               <p className="text-muted-foreground">Panel de administración de red</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar sesión
-            </Button>
-          </div>
+          
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
