@@ -967,7 +967,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: isAdmin,
         isClient: isClient,
         agencyId: agencyId,
-        subscriptionPlan: subscriptionPlan
+        subscriptionPlan: subscriptionPlan,
+        agentType: user.agentType,
+        networkId: user.networkId
       });
 
       // Store user data in session
@@ -982,6 +984,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: agencyId,
         agencyName: agencyName,
         subscriptionPlan: subscriptionPlan,
+        agentType: user.agentType || null,
+        networkId: user.networkId || null,
         ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
         ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       };
@@ -1008,6 +1012,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId,
         agencyName,
         subscriptionPlan,
+        agentType: user.agentType || null,
+        networkId: user.networkId || null,
         ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
         ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
       });
@@ -4491,10 +4497,9 @@ Gracias!
   app.patch("/api/networks/:id", requireAuth, async (req, res) => {
     try {
       const networkId = parseInt(req.params.id);
-      const userId = req.session.userId;
+      const user = req.user;
       
-      // Get user and verify they are network admin
-      const user = await storage.getUser(userId!);
+      // Verify user is network admin with access to this network
       if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
         return res.status(403).json({ error: "Acceso denegado" });
       }
@@ -4512,10 +4517,9 @@ Gracias!
     try {
       const networkId = parseInt(req.params.id);
       const agencyId = parseInt(req.params.agencyId);
-      const userId = req.session.userId;
+      const user = req.user;
       
-      // Get user and verify they are network admin
-      const user = await storage.getUser(userId!);
+      // Verify user is network admin with access to this network
       if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
         return res.status(403).json({ error: "Acceso denegado" });
       }
@@ -4544,10 +4548,9 @@ Gracias!
     try {
       const networkId = parseInt(req.params.id);
       const agencyId = parseInt(req.params.agencyId);
-      const userId = req.session.userId;
+      const user = req.user;
       
-      // Get user and verify they are network admin
-      const user = await storage.getUser(userId!);
+      // Verify user is network admin with access to this network
       if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
         return res.status(403).json({ error: "Acceso denegado" });
       }
@@ -4572,7 +4575,7 @@ Gracias!
       const networkId = parseInt(req.params.id);
       const agencyId = parseInt(req.params.agencyId);
       const { plan } = req.body;
-      const userId = req.session.userId;
+      const user = req.user;
       
       // Validate plan
       const validPlans = ['basica', 'pequeña', 'mediana', 'lider'];
@@ -4580,8 +4583,7 @@ Gracias!
         return res.status(400).json({ error: "Plan inválido" });
       }
       
-      // Get user and verify they are network admin
-      const user = await storage.getUser(userId!);
+      // Verify user is network admin with access to this network
       if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
         return res.status(403).json({ error: "Acceso denegado" });
       }
@@ -4604,12 +4606,14 @@ Gracias!
   // Create new agency under network (network admin only)
   app.post("/api/network-admin/agencies", requireAuth, async (req, res) => {
     try {
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId!);
+      const sessionUser = req.user;
       
-      if (!user || user.agentType !== 'network_admin' || !user.networkId) {
+      if (!sessionUser || sessionUser.agentType !== 'network_admin' || !sessionUser.networkId) {
         return res.status(403).json({ error: "No eres administrador de red" });
       }
+      
+      // Fetch full user for networkId (session has it now)
+      const networkId = sessionUser.networkId;
       
       const { name, city, plan } = req.body;
       
@@ -4652,7 +4656,7 @@ Gracias!
         agencyName: name.trim(),
         city: city?.trim() || null,
         slug,
-        networkId: user.networkId,
+        networkId: networkId,
         subscriptionPlan: normalizedPlan,
         seatsLimit: limits.seats,
         activePropertiesLimit: limits.properties,
@@ -4668,14 +4672,13 @@ Gracias!
   // Get network admin's network data (for dashboard)
   app.get("/api/network-admin/network", requireAuth, async (req, res) => {
     try {
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId!);
+      const sessionUser = req.user;
       
-      if (!user || user.agentType !== 'network_admin' || !user.networkId) {
+      if (!sessionUser || sessionUser.agentType !== 'network_admin' || !sessionUser.networkId) {
         return res.status(403).json({ error: "No eres administrador de red" });
       }
       
-      const network = await storage.getNetworkById(user.networkId);
+      const network = await storage.getNetworkById(sessionUser.networkId);
       if (!network) {
         return res.status(404).json({ error: "Red no encontrada" });
       }
@@ -4698,11 +4701,16 @@ Gracias!
   app.get("/api/networks/:networkId/management", requireAuth, async (req, res) => {
     try {
       const networkId = parseInt(req.params.networkId);
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId!);
+      const user = req.user;
       
       // Verify user has access to this network
       if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
+        console.log('Network management access denied:', { 
+          userId: user?.id, 
+          agentType: user?.agentType, 
+          networkId: user?.networkId, 
+          requestedNetworkId: networkId 
+        });
         return res.status(403).json({ error: "Acceso denegado" });
       }
       
@@ -4748,8 +4756,7 @@ Gracias!
   app.get("/api/networks/available-agencies/:query", requireAuth, async (req, res) => {
     try {
       const { query } = req.params;
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId!);
+      const user = req.user;
       
       // Only network admins can search for available agencies
       if (!user || user.agentType !== 'network_admin') {

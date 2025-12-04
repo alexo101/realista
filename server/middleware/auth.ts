@@ -11,6 +11,8 @@ export interface SessionUser {
   agencyId: number | null;
   agencyName: string | null;
   subscriptionPlan: string | null;
+  agentType: string | null;
+  networkId: number | null;
   agentUuid?: string;
   clientUuid?: string;
 }
