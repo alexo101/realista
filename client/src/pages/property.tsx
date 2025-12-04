@@ -336,9 +336,24 @@ export default function PropertyPage() {
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-gray-900">{property.title}</h1>
-                  <p className="text-xl font-semibold text-primary mt-2">
-                    €{property.price.toLocaleString()}
-                  </p>
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                    {property.previousPrice && property.previousPrice > property.price && (
+                      <span className="text-lg text-gray-400 line-through">
+                        €{property.previousPrice.toLocaleString()}
+                      </span>
+                    )}
+                    <p className="text-xl font-semibold text-primary">
+                      €{property.price.toLocaleString()}
+                    </p>
+                    {property.previousPrice && property.previousPrice > property.price && (() => {
+                      const dropPercentage = Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100);
+                      return dropPercentage >= 10 ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          -{dropPercentage}%
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
                   <div className="flex items-center gap-2 mt-2 text-gray-600">
                     <MapPin className="h-4 w-4" />
                     <span>{property.address} - {property.neighborhood}</span>

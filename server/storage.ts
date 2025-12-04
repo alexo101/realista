@@ -1958,9 +1958,35 @@ export class DatabaseStorage implements IStorage {
     uuid: string,
     property: InsertProperty,
   ): Promise<Property> {
+    // Get current property to track price changes
+    const currentProperty = await this.getPropertyByUuid(uuid);
+    
+    // Build update object, only including defined fields
+    const propertyToUpdate: Record<string, any> = {};
+    for (const [key, value] of Object.entries(property)) {
+      if (value !== undefined) {
+        propertyToUpdate[key] = value;
+      }
+    }
+    
+    // Handle price change tracking: only when price is explicitly provided
+    if (currentProperty && propertyToUpdate.price !== undefined) {
+      const newPrice = propertyToUpdate.price as number;
+      const currentPrice = currentProperty.price;
+      
+      if (newPrice < currentPrice) {
+        // Price decreased - save old price as previousPrice
+        propertyToUpdate.previousPrice = currentPrice;
+      } else if (newPrice > currentPrice) {
+        // Price increased - clear previousPrice (no longer a price drop)
+        propertyToUpdate.previousPrice = null;
+      }
+      // If price unchanged, don't modify previousPrice (preserve existing value)
+    }
+    
     const [updatedProperty] = await db
       .update(properties)
-      .set(property)
+      .set(propertyToUpdate)
       .where(eq(properties.uuid, uuid))
       .returning();
     return updatedProperty;
