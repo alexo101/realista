@@ -585,7 +585,7 @@ export default function RealistaPro() {
                     <Button 
                       className="w-full text-lg py-6 bg-orange-600 hover:bg-orange-700"
                       size="lg"
-                      onClick={() => navigate('/registrar/red/basica')}
+                      onClick={() => navigate('/registro-plan-red')}
                       data-testid={`button-select-plan-${plan.id}`}
                     >
                       Registrar mi red
