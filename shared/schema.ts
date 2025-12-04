@@ -21,6 +21,52 @@ import { z } from "zod";
 // Sentinel value for "all zones" selection
 export const ALL_ZONES = "Todas las zonas";
 
+// Networks table - franchise networks like Remax, Century 21, etc.
+export const networks = pgTable("networks", {
+  id: serial("id").primaryKey(),
+  uuid: uuid("uuid").notNull().unique().defaultRandom(),
+  slug: text("slug").unique(), // SEO-friendly URL slug
+  name: text("name").notNull(), // Network name (e.g., "Remax", "Century 21")
+  logo: text("logo"), // Logo URL
+  description: text("description"), // Network description
+  // Branding
+  primaryColor: text("primary_color"), // Primary brand color (hex)
+  secondaryColor: text("secondary_color"), // Secondary brand color (hex)
+  // Contact info
+  email: text("email"),
+  phone: text("phone"),
+  website: text("website"),
+  address: text("address"), // Headquarters address
+  city: text("city"),
+  country: text("country"),
+  socialMedia: jsonb("social_media"), // Social media links
+  // Billing mode: "network" = network pays for all agencies, "agency" = each agency pays individually
+  billingMode: text("billing_mode").notNull().default("agency"), // "network" or "agency"
+  // Network-level subscription (when billingMode = "network")
+  subscriptionPlan: text("subscription_plan"), // "red_agencias"
+  isYearlyBilling: boolean("is_yearly_billing").default(false),
+  // Limits (apply when billingMode = "network")
+  agenciesLimit: integer("agencies_limit"), // Max agencies in network
+  totalSeatsLimit: integer("total_seats_limit"), // Total agents across all agencies
+  totalActivePropertiesLimit: integer("total_active_properties_limit"), // Total properties across all agencies
+  // Stripe integration fields
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  // Soft delete support
+  deletedAt: timestamp("deleted_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertNetworkSchema = createInsertSchema(networks).omit({
+  id: true,
+  uuid: true,
+  createdAt: true,
+  deletedAt: true,
+});
+
+export type Network = typeof networks.$inferSelect;
+export type InsertNetwork = z.infer<typeof insertNetworkSchema>;
+
 // Agency table with agency-level subscription
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
@@ -38,20 +84,29 @@ export const agencies = pgTable("agencies", {
   agencySupportedLanguages: text("agency_supported_languages").array(),
   agencyWebsite: text("agency_website"),
   agencySocialMedia: jsonb("agency_social_media"),
+  // Network affiliation (nullable - agencies can be independent or part of a network)
+  networkId: integer("network_id").references(() => networks.id, { onDelete: "set null" }),
   // Agency-level subscription (NOT tied to individual agent)
+  // Note: When agency belongs to a network with billingMode="network", this is inherited from network
   subscriptionPlan: text("subscription_plan"), // "basica", "pequeña", "mediana", "lider"
   isYearlyBilling: boolean("is_yearly_billing").default(false),
   seatsLimit: integer("seats_limit"), // Max agents based on plan
   activePropertiesLimit: integer("active_properties_limit"), // Max active properties based on plan
+  // Paused subscription tracking (when joining a network-billed franchise)
+  pausedSubscriptionPlan: text("paused_subscription_plan"),
+  pausedIsYearlyBilling: boolean("paused_is_yearly_billing"),
+  pausedAt: timestamp("paused_at"),
   // Stripe integration fields
   stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID for billing
   stripeSubscriptionId: text("stripe_subscription_id"), // Current active subscription ID
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  networkIdIdx: index("agencies_network_id_idx").on(table.networkId),
+}));
 
-// Agents table - supports both independent and agency-member agents
+// Agents table - supports independent agents, agency members, and network admins
 export const agents = pgTable("agents", {
   id: serial("id").primaryKey(),
   uuid: uuid("uuid").notNull().unique().defaultRandom(), // Public-facing UUID for security
@@ -68,8 +123,10 @@ export const agents = pgTable("agents", {
   yearsOfExperience: integer("years_of_experience"),
   languagesSpoken: text("languages_spoken").array(),
   socialMedia: jsonb("social_media"),
-  // Agent type: "independent" or "agency_member"
+  // Agent type: "independent", "agency_member", or "network_admin"
   agentType: text("agent_type").notNull().default("independent"),
+  // Network admin affiliation (only for network_admin type)
+  networkId: integer("network_id").references(() => networks.id, { onDelete: "set null" }),
   // Personal subscription (ONLY active for independent agents)
   subscriptionPlan: text("subscription_plan"), // "basica", "pequeña", "mediana", "lider"
   isYearlyBilling: boolean("is_yearly_billing").default(false),
@@ -83,7 +140,9 @@ export const agents = pgTable("agents", {
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  networkIdIdx: index("agents_network_id_idx").on(table.networkId),
+}));
 
 export const properties = pgTable("properties", {
   uuid: uuid("uuid").primaryKey().defaultRandom(), // UUID as primary key
@@ -673,4 +732,15 @@ export const SUBSCRIPTION_LIMITS = {
   },
 } as const;
 
+// Network subscription plan limits
+export const NETWORK_SUBSCRIPTION_LIMITS = {
+  red_agencias: {
+    agencies: null, // null = unlimited agencies
+    totalSeats: null, // null = unlimited total agents across all agencies
+    totalActiveProperties: null, // null = unlimited total properties
+    reviewRequests: null, // null = unlimited
+  },
+} as const;
+
 export type SubscriptionPlan = keyof typeof SUBSCRIPTION_LIMITS;
+export type NetworkSubscriptionPlan = keyof typeof NETWORK_SUBSCRIPTION_LIMITS;
