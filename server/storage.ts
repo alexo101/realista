@@ -19,6 +19,7 @@ import { generateAgentSlug, generateAgencySlug, generatePropertySlug } from "@sh
 import {
   agents,
   agencies,
+  networks,
   properties,
   clients,
   neighborhoodRatings,
@@ -33,6 +34,7 @@ import {
   type UserWithReviews,
   type Agent,
   type Agency,
+  type Network,
   type Property,
   type Client,
   type NeighborhoodRating,
@@ -45,6 +47,7 @@ import {
   type SubscriptionEvent,
   type InsertAgent,
   type InsertAgency,
+  type InsertNetwork,
   type InsertProperty,
   type InsertClient,
   type InsertNeighborhoodRating,
@@ -239,6 +242,19 @@ export interface IStorage {
   getInvitationByToken(token: string): Promise<AgentInvitation | undefined>;
   consumeInvitation(token: string): Promise<AgentInvitation | undefined>;
   cleanupExpiredInvitations(): Promise<void>;
+
+  // Networks (Franchises)
+  getNetworkById(id: number): Promise<Network | undefined>;
+  getNetworkByUuid(uuid: string): Promise<Network | undefined>;
+  getNetworkBySlug(slug: string): Promise<Network | undefined>;
+  createNetwork(network: InsertNetwork): Promise<Network>;
+  updateNetwork(id: number, network: Partial<InsertNetwork>): Promise<Network>;
+  deleteNetwork(id: number): Promise<void>;
+  getAgenciesByNetwork(networkId: number): Promise<Agency[]>;
+  getAgentsByNetwork(networkId: number): Promise<User[]>;
+  attachAgencyToNetwork(agencyId: number, networkId: number): Promise<Agency>;
+  detachAgencyFromNetwork(agencyId: number): Promise<Agency>;
+  getNetworkStats(networkId: number): Promise<{ agencies: number; agents: number; properties: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3163,6 +3179,181 @@ export class DatabaseStorage implements IStorage {
         isNull(agentInvitations.consumedAt),
         lte(agentInvitations.expiresAt, thirtyDaysAgo)
       ));
+  }
+
+  // Network (Franchise) methods
+  async getNetworkById(id: number): Promise<Network | undefined> {
+    const [network] = await db.select().from(networks).where(eq(networks.id, id));
+    return network;
+  }
+
+  async getNetworkByUuid(uuid: string): Promise<Network | undefined> {
+    const [network] = await db.select().from(networks).where(eq(networks.uuid, uuid));
+    return network;
+  }
+
+  async getNetworkBySlug(slug: string): Promise<Network | undefined> {
+    const [network] = await db.select().from(networks).where(eq(networks.slug, slug));
+    return network;
+  }
+
+  async createNetwork(networkData: InsertNetwork): Promise<Network> {
+    // Generate slug from network name
+    const baseSlug = networkData.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    
+    // Check for existing slugs and add suffix if needed
+    let finalSlug = baseSlug;
+    let suffix = 1;
+    while (true) {
+      const existingNetwork = await this.getNetworkBySlug(finalSlug);
+      if (!existingNetwork) break;
+      finalSlug = `${baseSlug}-${suffix}`;
+      suffix++;
+    }
+    
+    const [network] = await db
+      .insert(networks)
+      .values({ ...networkData, slug: finalSlug })
+      .returning();
+    return network;
+  }
+
+  async updateNetwork(id: number, networkData: Partial<InsertNetwork>): Promise<Network> {
+    const [updated] = await db
+      .update(networks)
+      .set(networkData)
+      .where(eq(networks.id, id))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Network not found');
+    }
+    
+    return updated;
+  }
+
+  async deleteNetwork(id: number): Promise<void> {
+    // Soft delete by setting deletedAt timestamp
+    await db
+      .update(networks)
+      .set({ deletedAt: new Date() })
+      .where(eq(networks.id, id));
+  }
+
+  async getAgenciesByNetwork(networkId: number): Promise<Agency[]> {
+    const networkAgencies = await db
+      .select()
+      .from(agencies)
+      .where(and(
+        eq(agencies.networkId, networkId),
+        isNull(agencies.deletedAt)
+      ))
+      .orderBy(desc(agencies.createdAt));
+    return networkAgencies;
+  }
+
+  async getAgentsByNetwork(networkId: number): Promise<User[]> {
+    // Get all agents that are either:
+    // 1. Network admins directly associated with the network
+    // 2. Agents in agencies that belong to this network
+    const networkAgencies = await this.getAgenciesByNetwork(networkId);
+    const agencyIds = networkAgencies.map(a => a.id);
+    
+    // Get network admins
+    const networkAdmins = await db
+      .select()
+      .from(agents)
+      .where(and(
+        eq(agents.networkId, networkId),
+        eq(agents.agentType, 'network_admin')
+      ));
+    
+    // Get all agents in network agencies
+    let agencyMembers: User[] = [];
+    if (agencyIds.length > 0) {
+      const agencyAgentRows = await db
+        .select()
+        .from(agencyAgents)
+        .where(inArray(agencyAgents.agencyId, agencyIds));
+      
+      const memberIds = agencyAgentRows.map(aa => aa.agentId);
+      if (memberIds.length > 0) {
+        agencyMembers = await db
+          .select()
+          .from(agents)
+          .where(inArray(agents.id, memberIds));
+      }
+    }
+    
+    // Combine and deduplicate
+    const allAgents = [...networkAdmins, ...agencyMembers];
+    const uniqueAgents = allAgents.filter((agent, index, self) =>
+      index === self.findIndex(a => a.id === agent.id)
+    );
+    
+    return uniqueAgents;
+  }
+
+  async attachAgencyToNetwork(agencyId: number, networkId: number): Promise<Agency> {
+    const [updated] = await db
+      .update(agencies)
+      .set({ networkId })
+      .where(eq(agencies.id, agencyId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Agency not found');
+    }
+    
+    return updated;
+  }
+
+  async detachAgencyFromNetwork(agencyId: number): Promise<Agency> {
+    const [updated] = await db
+      .update(agencies)
+      .set({ networkId: null })
+      .where(eq(agencies.id, agencyId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Agency not found');
+    }
+    
+    return updated;
+  }
+
+  async getNetworkStats(networkId: number): Promise<{ agencies: number; agents: number; properties: number }> {
+    // Count agencies in network
+    const networkAgencies = await this.getAgenciesByNetwork(networkId);
+    const agencyIds = networkAgencies.map(a => a.id);
+    
+    // Count agents in network
+    const networkAgentsList = await this.getAgentsByNetwork(networkId);
+    
+    // Count properties across all network agencies
+    let propertiesCount = 0;
+    if (agencyIds.length > 0) {
+      const [result] = await db
+        .select({ count: count() })
+        .from(properties)
+        .where(and(
+          inArray(properties.agencyId, agencyIds),
+          eq(properties.status, 'published'),
+          isNull(properties.deletedAt)
+        ));
+      propertiesCount = result?.count || 0;
+    }
+    
+    return {
+      agencies: networkAgencies.length,
+      agents: networkAgentsList.length,
+      properties: propertiesCount
+    };
   }
 }
 
