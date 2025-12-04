@@ -114,11 +114,8 @@ export default function NetworkPlanRegister() {
         description: "Tu red de agencias ha sido registrada. Ya puedes empezar a añadir agencias."
       });
 
-      if (userData.agentUuid) {
-        navigate(`/gestionar/${userData.agentUuid}/red`);
-      } else {
-        navigate('/gestionar');
-      }
+      // Network admins go to their dedicated admin panel
+      navigate('/admin-red');
     } catch (error: any) {
       console.error('Error al registrar red:', error);
       

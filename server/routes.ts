@@ -4601,6 +4601,70 @@ Gracias!
     }
   });
 
+  // Create new agency under network (network admin only)
+  app.post("/api/network-admin/agencies", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId!);
+      
+      if (!user || user.agentType !== 'network_admin' || !user.networkId) {
+        return res.status(403).json({ error: "No eres administrador de red" });
+      }
+      
+      const { name, city, plan } = req.body;
+      
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ error: "El nombre de la agencia es obligatorio" });
+      }
+      
+      // Validate plan
+      const validPlans = ['basica', 'pequeña', 'mediana', 'lider'];
+      const normalizedPlan = (plan || 'basica').toLowerCase();
+      if (!validPlans.includes(normalizedPlan)) {
+        return res.status(400).json({ error: "Plan inválido" });
+      }
+      
+      // Determine limits based on plan
+      const planLimits: Record<string, { seats: number | null; properties: number | null }> = {
+        'basica': { seats: 1, properties: 2 },
+        'pequeña': { seats: 2, properties: 10 },
+        'mediana': { seats: 6, properties: 30 },
+        'lider': { seats: null, properties: null },
+      };
+      
+      const limits = planLimits[normalizedPlan];
+      
+      // Generate a unique slug
+      const baseSlug = name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      
+      let slug = baseSlug;
+      let counter = 1;
+      while (await storage.getAgencyBySlug(slug)) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+      
+      // Create the agency
+      const newAgency = await storage.createAgency({
+        agencyName: name.trim(),
+        city: city?.trim() || null,
+        slug,
+        networkId: user.networkId,
+        subscriptionPlan: normalizedPlan,
+        seatsLimit: limits.seats,
+        activePropertiesLimit: limits.properties,
+      });
+      
+      res.status(201).json(newAgency);
+    } catch (error) {
+      console.error("Error creating agency:", error);
+      res.status(500).json({ error: "Error al crear la agencia" });
+    }
+  });
+
   // Get network admin's network data (for dashboard)
   app.get("/api/network-admin/network", requireAuth, async (req, res) => {
     try {

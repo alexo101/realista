@@ -104,6 +104,12 @@ export default function ManagePage() {
       return;
     }
 
+    // Network admins have their own dedicated panel
+    if (user.agentType === 'network_admin') {
+      navigate("/admin-red");
+      return;
+    }
+
     if (!user.agentUuid) {
       // Agent without UUID - something is wrong
       toast({
