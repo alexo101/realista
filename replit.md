@@ -42,10 +42,10 @@ Preferred communication style: Simple, everyday language.
 - **Payment Processing**: Stripe integration for subscription billing.
   - **Stripe Schema**: Managed by `stripe-replit-sync` package, automatically syncs products, prices, subscriptions, and customers from Stripe to a `stripe` schema in PostgreSQL
   - **Webhook Handling**: UUID-secured webhook endpoint at `/api/stripe/webhook/:uuid`, processed by `stripe-replit-sync` before `express.json()` middleware
-  - **Products**: 4 subscription products (Agency Pequeña, Mediana, Líder; Agent Líder) with monthly and yearly pricing
-  - **Checkout Flow**: `/api/stripe/checkout` creates Stripe Checkout sessions with entity metadata
+  - **Products**: 4 subscription products (Agency Pequeña, Mediana, Líder; Agent Líder) with monthly and yearly pricing + 3 network products (Network Básica, Pro, Enterprise)
+  - **Checkout Flow**: `/api/stripe/checkout` creates Stripe Checkout sessions with entity metadata (supports agency, agent, and network entity types)
   - **Customer Portal**: `/api/stripe/portal` enables self-service billing management
-  - **Subscription Sync**: `stripeService.syncSubscriptionStatus()` updates agency/agent `subscription_plan`, `seats_limit`, `active_properties_limit` from Stripe data
+  - **Subscription Sync**: `stripeService.syncSubscriptionStatus()` updates agency/agent/network `subscription_plan`, `seats_limit`, `active_properties_limit` from Stripe data
   - **Free Tier Activation**: `/api/stripe/activate-free-tier` for Básica/Básico plans that don't require payment
 
 ### Feature Specifications
@@ -55,6 +55,14 @@ Preferred communication style: Simple, everyday language.
 - **Client Relationship Management (CRM)**: Client profiles with 6-tier status tracking (Nuevo, Seguimiento, En visitas, Cerrando, Ganado, Perdido), appointment scheduling, real-time messaging, lead/inquiry tracking, and a contact history timeline.
 - **Review & Rating System**: Multi-criteria agent reviews and a property verification workflow.
 - **RealistaPro Subscription System**: Three-tier model (Agency, Independent Agent, Inherited Agency Access) with seat limits, enforced by database rules, atomic operations, and an audit trail.
+- **Network/Franchise System**: Hierarchical organization supporting real estate networks (like Remax, Century 21) with:
+  - **Entity Hierarchy**: Networks → Agencies → Agents → Properties/Clients
+  - **Network Admin Role**: `agentType: 'network_admin'` with dashboard for managing all affiliated agencies
+  - **Billing Modes**: Networks can pay for all agencies (`billingMode: 'network'`) or agencies bill individually (`billingMode: 'agency'`)
+  - **Network Plans**: Básica (5 agencies/25 agents/100 properties), Pro (20/100/500), Enterprise (unlimited)
+  - **Network Branding**: Agencies and agents in a network display network badge with logo on public profiles
+  - **Management Dashboard**: Network admins can add/remove agencies, view all agents and properties
+  - **Registration Flow**: `/registrar/red/:plan` with network name, admin info, and plan selection
 
 ### System Design Choices
 - **Full Type Safety**: Achieved with TypeScript across the stack.
