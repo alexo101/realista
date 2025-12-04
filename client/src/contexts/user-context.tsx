@@ -11,6 +11,12 @@ interface User {
   agentUuid?: string;
   clientUuid?: string;
   
+  // Agent type (standard, agency_admin, network_admin)
+  agentType?: 'standard' | 'agency_admin' | 'network_admin';
+  
+  // Network relationship (for network admins)
+  networkId?: number | null;
+  
   // Agency relationship (for agents belonging to an agency)
   agencyId?: number | null;
   

@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -35,6 +35,7 @@ import { ConversationalMessages } from "@/components/ConversationalMessages";
 import { ReviewManagement } from "@/components/ReviewManagement";
 import { AgentCalendar } from "@/pages/agent-calendar";
 import { TeamManagement } from "@/components/TeamManagement";
+import { NetworkManagement } from "@/components/NetworkManagement";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,7 +58,8 @@ const VALID_SECTIONS = [
   'clientes', 
   'mensajes', 
   'resenas', 
-  'equipo'
+  'equipo',
+  'red'
 ] as const;
 
 type DashboardSection = typeof VALID_SECTIONS[number];
@@ -716,6 +718,26 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
+
+              {/* Only show network management for network admins */}
+              {user?.agentType === "network_admin" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={currentSection === "red"}
+                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/red`)}
+                    className="relative group"
+                    title={sidebarCollapsed ? "Gestionar mi red" : ""}
+                  >
+                    <Network className="h-4 w-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>Gestionar mi red</span>}
+                    {sidebarCollapsed && (
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Gestionar mi red
+                    </div>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
           </SidebarMenu>
           </SidebarContent>
         </Sidebar>
@@ -798,6 +820,17 @@ export default function ManagePage() {
                   Equipo
                 </Button>
               </>
+            )}
+            {user?.agentType === "network_admin" && (
+              <Button
+                variant={currentSection === "red" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => navigate(`/gestionar/${user?.agentUuid}/red`)}
+                className="whitespace-nowrap"
+              >
+                <Network className="h-4 w-4 mr-1" />
+                Red
+              </Button>
             )}
           </div>
         </div>
@@ -2336,6 +2369,10 @@ export default function ManagePage() {
             <div className="max-w-6xl mx-auto">
               <TeamManagement agencyId={user.agencyId ? parseInt(user.agencyId) : undefined} />
             </div>
+          )}
+
+          {currentSection === "red" && user?.agentType === "network_admin" && (
+            <NetworkManagement networkId={user.networkId} />
           )}
 
           

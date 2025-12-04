@@ -254,7 +254,10 @@ export interface IStorage {
   getAgentsByNetwork(networkId: number): Promise<User[]>;
   attachAgencyToNetwork(agencyId: number, networkId: number): Promise<Agency>;
   detachAgencyFromNetwork(agencyId: number): Promise<Agency>;
-  getNetworkStats(networkId: number): Promise<{ agencies: number; agents: number; properties: number }>;
+  getNetworkStats(networkId: number): Promise<{ agencies: number; agents: number; properties: number; totalClients: number }>;
+  getAgencyAgentCount(agencyId: number): Promise<number>;
+  getAgencyPropertyCount(agencyId: number): Promise<number>;
+  searchAgenciesWithoutNetwork(query: string): Promise<Agency[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3327,7 +3330,7 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getNetworkStats(networkId: number): Promise<{ agencies: number; agents: number; properties: number }> {
+  async getNetworkStats(networkId: number): Promise<{ agencies: number; agents: number; properties: number; totalClients: number }> {
     // Count agencies in network
     const networkAgencies = await this.getAgenciesByNetwork(networkId);
     const agencyIds = networkAgencies.map(a => a.id);
@@ -3349,11 +3352,58 @@ export class DatabaseStorage implements IStorage {
       propertiesCount = result?.count || 0;
     }
     
+    // Count clients across all network agents
+    const agentIds = networkAgentsList.map(a => a.id);
+    let clientsCount = 0;
+    if (agentIds.length > 0) {
+      const [result] = await db
+        .select({ count: count() })
+        .from(clients)
+        .where(inArray(clients.agentId, agentIds));
+      clientsCount = result?.count || 0;
+    }
+    
     return {
       agencies: networkAgencies.length,
       agents: networkAgentsList.length,
-      properties: propertiesCount
+      properties: propertiesCount,
+      totalClients: clientsCount
     };
+  }
+
+  async getAgencyAgentCount(agencyId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(agents)
+      .where(eq(agents.agencyId, agencyId));
+    return result?.count || 0;
+  }
+
+  async getAgencyPropertyCount(agencyId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(properties)
+      .where(and(
+        eq(properties.agencyId, agencyId),
+        eq(properties.status, 'published'),
+        isNull(properties.deletedAt)
+      ));
+    return result?.count || 0;
+  }
+
+  async searchAgenciesWithoutNetwork(query: string): Promise<Agency[]> {
+    const searchQuery = `%${query.toLowerCase()}%`;
+    const result = await db
+      .select()
+      .from(agencies)
+      .where(and(
+        isNull(agencies.networkId),
+        isNull(agencies.deletedAt),
+        sql`LOWER(${agencies.name}) LIKE ${searchQuery}`
+      ))
+      .orderBy(agencies.name)
+      .limit(10);
+    return result;
   }
 }
 

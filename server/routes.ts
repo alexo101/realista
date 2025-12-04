@@ -4576,6 +4576,77 @@ Gracias!
     }
   });
 
+  // Get network management data by networkId (combines network info, agencies, stats)
+  app.get("/api/networks/:networkId/management", requireAuth, async (req, res) => {
+    try {
+      const networkId = parseInt(req.params.networkId);
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId!);
+      
+      // Verify user has access to this network
+      if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
+        return res.status(403).json({ error: "Acceso denegado" });
+      }
+      
+      const network = await storage.getNetworkById(networkId);
+      if (!network) {
+        return res.status(404).json({ error: "Red no encontrada" });
+      }
+      
+      const stats = await storage.getNetworkStats(network.id);
+      const agencies = await storage.getAgenciesByNetwork(network.id);
+      
+      // Add agent and property counts to each agency
+      const agenciesWithCounts = await Promise.all(
+        agencies.map(async (agency) => {
+          const agentCount = await storage.getAgencyAgentCount(agency.id);
+          const propertyCount = await storage.getAgencyPropertyCount(agency.id);
+          return {
+            ...agency,
+            agentCount,
+            propertyCount
+          };
+        })
+      );
+      
+      // Transform stats to match frontend expectations
+      res.json({
+        ...network,
+        agencies: agenciesWithCounts,
+        stats: {
+          totalAgencies: stats.agencies,
+          totalAgents: stats.agents,
+          totalProperties: stats.properties,
+          totalClients: stats.totalClients
+        }
+      });
+    } catch (error) {
+      console.error("Error getting network management data:", error);
+      res.status(500).json({ error: "Error al obtener datos de gestión de la red" });
+    }
+  });
+
+  // Search for agencies not in any network (for adding to network)
+  app.get("/api/networks/available-agencies/:query", requireAuth, async (req, res) => {
+    try {
+      const { query } = req.params;
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId!);
+      
+      // Only network admins can search for available agencies
+      if (!user || user.agentType !== 'network_admin') {
+        return res.status(403).json({ error: "Acceso denegado" });
+      }
+      
+      // Search for agencies without a network
+      const agencies = await storage.searchAgenciesWithoutNetwork(query);
+      res.json(agencies);
+    } catch (error) {
+      console.error("Error searching available agencies:", error);
+      res.status(500).json({ error: "Error al buscar agencias disponibles" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
