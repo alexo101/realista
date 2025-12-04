@@ -488,6 +488,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Network (Franchise) registration
+  app.post("/api/auth/register-network", async (req, res) => {
+    try {
+      console.log('Network Registration - Datos recibidos:', req.body);
+      const { networkName, email, password, name, surname, billingMode, subscriptionPlan } = req.body;
+
+      // Validate network name
+      if (!networkName || networkName.trim().length < 2) {
+        return res.status(400).json({
+          message: "El nombre de la red es requerido (mínimo 2 caracteres)"
+        });
+      }
+
+      // Validate admin name and surname
+      if (!name || name.trim().length < 2) {
+        return res.status(400).json({
+          message: "El nombre del administrador es requerido (mínimo 2 caracteres)"
+        });
+      }
+      if (!surname || surname.trim().length < 2) {
+        return res.status(400).json({
+          message: "El apellido del administrador es requerido (mínimo 2 caracteres)"
+        });
+      }
+
+      // Validate billing mode
+      if (!billingMode || !['network', 'agency'].includes(billingMode)) {
+        return res.status(400).json({
+          message: "Modo de facturación inválido"
+        });
+      }
+
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "Ya existe una cuenta con este correo electrónico" 
+        });
+      }
+
+      // Create network with subscription
+      const networkData = {
+        name: networkName.trim(),
+        billingMode,
+        subscriptionPlan: 'red_agencias',
+        isYearlyBilling: false, // Default to monthly, will be set during Stripe checkout
+      };
+
+      const network = await storage.createNetwork(networkData);
+      console.log('Network created:', network.id);
+
+      // Create network admin agent
+      const adminAgentData = {
+        email,
+        password,
+        name: name.trim(),
+        surname: surname.trim(),
+        agentType: 'network_admin' as const,
+        networkId: network.id,
+      };
+
+      const adminAgent = await storage.createUser(adminAgentData);
+      console.log('Network admin agent created:', adminAgent.id);
+
+      // Create session with proper user object
+      (req as any).session.user = {
+        id: adminAgent.id,
+        email: adminAgent.email,
+        name: adminAgent.name,
+        surname: adminAgent.surname,
+        isAdmin: true,
+        isClient: false,
+        isNetworkAdmin: true,
+        networkId: network.id,
+        networkName: network.name,
+        phone: null,
+        agentUuid: adminAgent.uuid
+      };
+      
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(adminAgent.email, networkData.name, true);
+        console.log('Email de bienvenida enviado a:', adminAgent.email);
+      } catch (emailError) {
+        console.error('Error al enviar email de bienvenida:', emailError);
+      }
+
+      // Return user data without password
+      const { password: _, ...userResponse } = adminAgent;
+      res.status(201).json({ 
+        ...userResponse, 
+        isAdmin: true,
+        isClient: false,
+        isNetworkAdmin: true,
+        networkId: network.id,
+        networkName: network.name,
+        networkUuid: network.uuid,
+        networkSlug: network.slug,
+        subscriptionPlan: 'red_agencias',
+        agentUuid: adminAgent.uuid
+      });
+    } catch (error) {
+      console.error('Error registering network:', error);
+      res.status(500).json({ message: "Error al registrar la red de agencias" });
+    }
+  });
+
   // Validate invitation token and get details
   app.get("/api/auth/validate-invitation/:token", async (req, res) => {
     try {
@@ -4254,6 +4368,211 @@ Gracias!
     } catch (error) {
       console.error("Error getting billing info:", error);
       res.status(500).json({ error: "Failed to get billing info" });
+    }
+  });
+
+  // =============================================================================
+  // NETWORK (FRANCHISE) MANAGEMENT ROUTES
+  // =============================================================================
+
+  // Get network by identifier (UUID or slug)
+  app.get("/api/networks/:identifier", async (req, res) => {
+    try {
+      const { identifier } = req.params;
+      
+      // Try UUID first, then slug
+      let network = await storage.getNetworkByUuid(identifier);
+      if (!network) {
+        network = await storage.getNetworkBySlug(identifier);
+      }
+      
+      if (!network) {
+        return res.status(404).json({ error: "Red no encontrada" });
+      }
+      
+      // Remove sensitive data
+      const { stripeCustomerId, stripeSubscriptionId, ...publicNetwork } = network;
+      res.json(publicNetwork);
+    } catch (error) {
+      console.error("Error getting network:", error);
+      res.status(500).json({ error: "Error al obtener la red" });
+    }
+  });
+
+  // Get network stats
+  app.get("/api/networks/:identifier/stats", async (req, res) => {
+    try {
+      const { identifier } = req.params;
+      
+      let network = await storage.getNetworkByUuid(identifier);
+      if (!network) {
+        network = await storage.getNetworkBySlug(identifier);
+      }
+      
+      if (!network) {
+        return res.status(404).json({ error: "Red no encontrada" });
+      }
+      
+      const stats = await storage.getNetworkStats(network.id);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting network stats:", error);
+      res.status(500).json({ error: "Error al obtener estadísticas" });
+    }
+  });
+
+  // Get agencies in network
+  app.get("/api/networks/:identifier/agencies", async (req, res) => {
+    try {
+      const { identifier } = req.params;
+      
+      let network = await storage.getNetworkByUuid(identifier);
+      if (!network) {
+        network = await storage.getNetworkBySlug(identifier);
+      }
+      
+      if (!network) {
+        return res.status(404).json({ error: "Red no encontrada" });
+      }
+      
+      const networkAgencies = await storage.getAgenciesByNetwork(network.id);
+      res.json(networkAgencies);
+    } catch (error) {
+      console.error("Error getting network agencies:", error);
+      res.status(500).json({ error: "Error al obtener agencias" });
+    }
+  });
+
+  // Get agents in network
+  app.get("/api/networks/:identifier/agents", async (req, res) => {
+    try {
+      const { identifier } = req.params;
+      
+      let network = await storage.getNetworkByUuid(identifier);
+      if (!network) {
+        network = await storage.getNetworkBySlug(identifier);
+      }
+      
+      if (!network) {
+        return res.status(404).json({ error: "Red no encontrada" });
+      }
+      
+      const networkAgents = await storage.getAgentsByNetwork(network.id);
+      
+      // Remove sensitive data from agents
+      const safeAgents = networkAgents.map(({ password, ...agent }) => agent);
+      res.json(safeAgents);
+    } catch (error) {
+      console.error("Error getting network agents:", error);
+      res.status(500).json({ error: "Error al obtener agentes" });
+    }
+  });
+
+  // Update network (network admin only)
+  app.patch("/api/networks/:id", requireAuth, async (req, res) => {
+    try {
+      const networkId = parseInt(req.params.id);
+      const userId = req.session.userId;
+      
+      // Get user and verify they are network admin
+      const user = await storage.getUser(userId!);
+      if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
+        return res.status(403).json({ error: "Acceso denegado" });
+      }
+      
+      const updatedNetwork = await storage.updateNetwork(networkId, req.body);
+      res.json(updatedNetwork);
+    } catch (error) {
+      console.error("Error updating network:", error);
+      res.status(500).json({ error: "Error al actualizar la red" });
+    }
+  });
+
+  // Attach agency to network (network admin only)
+  app.post("/api/networks/:id/agencies/:agencyId", requireAuth, async (req, res) => {
+    try {
+      const networkId = parseInt(req.params.id);
+      const agencyId = parseInt(req.params.agencyId);
+      const userId = req.session.userId;
+      
+      // Get user and verify they are network admin
+      const user = await storage.getUser(userId!);
+      if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
+        return res.status(403).json({ error: "Acceso denegado" });
+      }
+      
+      // Verify agency exists
+      const agency = await storage.getAgencyById(agencyId);
+      if (!agency) {
+        return res.status(404).json({ error: "Agencia no encontrada" });
+      }
+      
+      // Check if agency already belongs to a network
+      if (agency.networkId) {
+        return res.status(400).json({ error: "Esta agencia ya pertenece a una red" });
+      }
+      
+      const updatedAgency = await storage.attachAgencyToNetwork(agencyId, networkId);
+      res.json(updatedAgency);
+    } catch (error) {
+      console.error("Error attaching agency to network:", error);
+      res.status(500).json({ error: "Error al vincular la agencia" });
+    }
+  });
+
+  // Detach agency from network (network admin only)
+  app.delete("/api/networks/:id/agencies/:agencyId", requireAuth, async (req, res) => {
+    try {
+      const networkId = parseInt(req.params.id);
+      const agencyId = parseInt(req.params.agencyId);
+      const userId = req.session.userId;
+      
+      // Get user and verify they are network admin
+      const user = await storage.getUser(userId!);
+      if (!user || user.agentType !== 'network_admin' || user.networkId !== networkId) {
+        return res.status(403).json({ error: "Acceso denegado" });
+      }
+      
+      // Verify agency belongs to this network
+      const agency = await storage.getAgencyById(agencyId);
+      if (!agency || agency.networkId !== networkId) {
+        return res.status(404).json({ error: "Agencia no encontrada en esta red" });
+      }
+      
+      const updatedAgency = await storage.detachAgencyFromNetwork(agencyId);
+      res.json(updatedAgency);
+    } catch (error) {
+      console.error("Error detaching agency from network:", error);
+      res.status(500).json({ error: "Error al desvincular la agencia" });
+    }
+  });
+
+  // Get network admin's network data (for dashboard)
+  app.get("/api/network-admin/network", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId!);
+      
+      if (!user || user.agentType !== 'network_admin' || !user.networkId) {
+        return res.status(403).json({ error: "No eres administrador de red" });
+      }
+      
+      const network = await storage.getNetworkById(user.networkId);
+      if (!network) {
+        return res.status(404).json({ error: "Red no encontrada" });
+      }
+      
+      const stats = await storage.getNetworkStats(network.id);
+      const networkAgencies = await storage.getAgenciesByNetwork(network.id);
+      
+      res.json({
+        network,
+        stats,
+        agencies: networkAgencies
+      });
+    } catch (error) {
+      console.error("Error getting network admin data:", error);
+      res.status(500).json({ error: "Error al obtener datos de la red" });
     }
   });
 
