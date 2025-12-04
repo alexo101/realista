@@ -58,13 +58,16 @@ Preferred communication style: Simple, everyday language.
 - **Network/Franchise System**: Hierarchical organization supporting real estate networks (like Remax, Century 21) with:
   - **Entity Hierarchy**: Networks → Agencies → Agents → Properties/Clients
   - **Network Admin Role**: `agentType: 'network_admin'` with dashboard for managing all affiliated agencies
-  - **Billing Modes**: Networks can pay for all agencies (`billingMode: 'network'`) or agencies bill individually (`billingMode: 'agency'`)
-  - **Usage-Based Pricing**: Networks pay per-agency based on each agency's plan tier (Pequeña 29€, Mediana 79€, Líder 199€ monthly)
+  - **Centralized Billing**: Networks always use centralized billing mode (`billingMode: 'network'`)
+  - **Per-Agency Plan Assignment**: Network admins assign individual plans (Básica, Pequeña, Mediana, Líder) to each agency via dropdown selector
+  - **Usage-Based Pricing**: Networks pay per-agency based on each agency's assigned plan tier (Básica 0€, Pequeña 29€, Mediana 79€, Líder 249€ monthly)
+  - **Dynamic Plan Management**: Network admins can change agency plans at any time; limits update automatically
   - **Monthly-Only Billing**: Networks only support monthly billing cycles due to variable agency counts
-  - **Billing Dashboard**: NetworkManagement shows breakdown by plan tier with subtotals and total monthly cost
+  - **Billing Dashboard**: NetworkManagement shows real-time breakdown by plan tier with agency counts, subtotals, and total monthly cost
   - **Network Branding**: Agencies and agents in a network display network badge with logo on public profiles
-  - **Management Dashboard**: Network admins can add/remove agencies, view all agents and properties, access Stripe portal
-  - **Registration Flow**: `/registrar/red/:plan` with network name, admin info, and plan selection
+  - **Management Dashboard**: Network admins can add/remove agencies, assign/change plans, view all agents and properties, access Stripe portal
+  - **Registration Flow**: `/registro-plan-red` with network name, admin info (billing mode pre-set to centralized)
+  - **Plan Update Endpoint**: PATCH `/api/networks/:id/agencies/:agencyId/plan` updates agency subscription plan and limits
 
 ### System Design Choices
 - **Full Type Safety**: Achieved with TypeScript across the stack.
