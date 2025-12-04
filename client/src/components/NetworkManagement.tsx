@@ -61,11 +61,29 @@ export function NetworkManagement({ networkId }: Props) {
 
   const { data: networkData, isLoading } = useQuery<NetworkData>({
     queryKey: ['/api/networks', networkId, 'management'],
+    queryFn: async () => {
+      const response = await fetch(`/api/networks/${networkId}/management`, {
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch network data');
+      }
+      return response.json();
+    },
     enabled: !!networkId
   });
 
   const { data: availableAgencies, isLoading: isLoadingAvailable } = useQuery<Agency[]>({
     queryKey: ['/api/networks/available-agencies', agencySearchQuery],
+    queryFn: async () => {
+      const response = await fetch(`/api/networks/available-agencies/${encodeURIComponent(agencySearchQuery)}`, {
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch available agencies');
+      }
+      return response.json();
+    },
     enabled: isAddAgencyOpen && agencySearchQuery.length >= 2
   });
 
