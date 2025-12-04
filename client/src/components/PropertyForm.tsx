@@ -208,7 +208,16 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
         title: "Propiedad eliminada",
         description: "La propiedad ha sido eliminada permanentemente.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      // Invalidate ALL property-related queries using predicate to match complex query keys
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && (
+            key.startsWith('/api/properties') ||
+            key.includes('/properties')
+          );
+        }
+      });
       onClose();
     },
     onError: () => {
@@ -230,17 +239,6 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       // Update local state with server response
       setIsActive(data.isActive);
       
-      // Update React Query cache immediately to prevent stale data flashes
-      queryClient.setQueryData(["/api/properties", data.uuid], data);
-      
-      // Update properties list cache
-      queryClient.setQueryData(["/api/properties"], (oldData: any) => {
-        if (!oldData) return oldData;
-        return oldData.map((property: any) => 
-          property.uuid === data.uuid ? data : property
-        );
-      });
-      
       toast({
         title: data.isActive ? "Propiedad activada" : "Propiedad desactivada",
         description: data.isActive 
@@ -248,8 +246,17 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
           : "La propiedad está oculta para los clientes.",
       });
       
-      // Background refresh to verify (optional)
-      queryClient.invalidateQueries({ queryKey: ["/api/search"] });
+      // Invalidate ALL property-related queries to refresh all lists
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && (
+            key.startsWith('/api/properties') ||
+            key.includes('/properties') ||
+            key.startsWith('/api/search')
+          );
+        }
+      });
     },
     onError: (error) => {
       toast({

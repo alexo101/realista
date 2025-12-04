@@ -218,7 +218,16 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         // First time creating - save the UUID
         setPropertyId(data.uuid);
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      // Invalidate ALL property-related queries using predicate to match complex query keys
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && (
+            key.startsWith('/api/properties') ||
+            key.includes('/properties')
+          );
+        }
+      });
     },
   });
 
