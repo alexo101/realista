@@ -298,13 +298,21 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 mt-2">
-                <p className="text-lg md:text-2xl font-bold text-primary">€{property.price.toLocaleString()}</p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
                 {property.previousPrice && property.previousPrice > property.price && (
-                  <span className="text-sm font-medium text-red-600">
-                    {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓
+                  <span className="text-sm md:text-base text-gray-400 line-through">
+                    €{property.previousPrice.toLocaleString()}
                   </span>
                 )}
+                <p className="text-lg md:text-2xl font-bold text-primary">€{property.price.toLocaleString()}</p>
+                {property.previousPrice && property.previousPrice > property.price && (() => {
+                  const dropPercentage = Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100);
+                  return dropPercentage >= 10 ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      -{dropPercentage}%
+                    </span>
+                  ) : null;
+                })()}
               </div>
               {property.superficie && (
                 <p className="text-sm font-medium text-gray-800">
