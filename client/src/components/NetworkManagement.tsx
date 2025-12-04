@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Network, Building, Users, Home, Plus, Search, UserMinus, UserPlus, ExternalLink, BarChart3 } from "lucide-react";
+import { Network, Building, Users, Home, Plus, Search, UserMinus, UserPlus, ExternalLink, BarChart3, CreditCard, Euro, Loader2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -37,6 +37,7 @@ interface NetworkData {
   agenciesLimit: number | null;
   agentsLimit: number | null;
   propertiesLimit: number | null;
+  stripeCustomerId: string | null;
   agencies: Agency[];
   stats: {
     totalAgencies: number;
@@ -45,6 +46,13 @@ interface NetworkData {
     totalClients: number;
   };
 }
+
+const AGENCY_PLAN_PRICES: Record<string, { name: string; price: number }> = {
+  'basica': { name: 'Básica', price: 0 },
+  'pequeña': { name: 'Pequeña', price: 29 },
+  'mediana': { name: 'Mediana', price: 79 },
+  'lider': { name: 'Líder', price: 199 },
+};
 
 interface Props {
   networkId?: number | null;
@@ -132,6 +140,50 @@ export function NetworkManagement({ networkId }: Props) {
       });
     }
   });
+
+  const stripePortalMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/stripe/portal', {
+        customerId: networkData?.stripeCustomerId
+      });
+      return response.json();
+    },
+    onSuccess: (data: { url: string }) => {
+      window.location.href = data.url;
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo abrir el portal de facturación",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const calculateBilling = () => {
+    if (!networkData?.agencies) return { breakdown: [], total: 0 };
+    
+    const planCounts: Record<string, number> = {};
+    networkData.agencies.forEach(agency => {
+      const plan = agency.subscriptionPlan?.toLowerCase() || 'basica';
+      planCounts[plan] = (planCounts[plan] || 0) + 1;
+    });
+
+    const breakdown = Object.entries(planCounts).map(([plan, count]) => {
+      const planInfo = AGENCY_PLAN_PRICES[plan] || AGENCY_PLAN_PRICES['basica'];
+      return {
+        plan: planInfo.name,
+        count,
+        unitPrice: planInfo.price,
+        subtotal: count * planInfo.price
+      };
+    }).filter(item => item.count > 0);
+
+    const total = breakdown.reduce((sum, item) => sum + item.subtotal, 0);
+    return { breakdown, total };
+  };
+
+  const billingInfo = calculateBilling();
 
   const filteredAgencies = networkData?.agencies?.filter(agency => 
     agency.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -237,6 +289,87 @@ export function NetworkManagement({ networkId }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {networkData.billingMode === 'network' && (
+        <Card className="border-orange-200 bg-orange-50/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <CreditCard className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <CardTitle>Facturación mensual</CardTitle>
+                  <CardDescription>Resumen de costes según los planes de tus agencias</CardDescription>
+                </div>
+              </div>
+              {networkData.stripeCustomerId && (
+                <Button
+                  variant="outline"
+                  onClick={() => stripePortalMutation.mutate()}
+                  disabled={stripePortalMutation.isPending}
+                  data-testid="button-stripe-portal"
+                >
+                  {stripePortalMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <CreditCard className="h-4 w-4 mr-2" />
+                  )}
+                  Gestionar facturación
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {billingInfo.breakdown.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">
+                No hay agencias en tu red todavía
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Plan de agencia</TableHead>
+                      <TableHead className="text-center">Cantidad</TableHead>
+                      <TableHead className="text-right">Precio/agencia</TableHead>
+                      <TableHead className="text-right">Subtotal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {billingInfo.breakdown.map((item, index) => (
+                      <TableRow key={index} data-testid={`billing-row-${item.plan.toLowerCase()}`}>
+                        <TableCell>
+                          <Badge variant="secondary">{item.plan}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">{item.count}</TableCell>
+                        <TableCell className="text-right">
+                          {item.unitPrice === 0 ? 'Gratis' : `${item.unitPrice}€`}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {item.subtotal === 0 ? 'Gratis' : `${item.subtotal}€`}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <Euro className="h-5 w-5 text-orange-600" />
+                    <span className="text-lg font-semibold">Total mensual estimado:</span>
+                  </div>
+                  <span className="text-2xl font-bold text-orange-600" data-testid="billing-total">
+                    {billingInfo.total === 0 ? 'Gratis' : `${billingInfo.total}€/mes`}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  * El importe final se calculará en función de las agencias activas en cada ciclo de facturación.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

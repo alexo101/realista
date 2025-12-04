@@ -120,9 +120,16 @@ const networkPlans = [
   {
     id: "red_agencias",
     name: "Red de Agencias",
-    monthlyPrice: 499,
-    yearlyPrice: 4990,
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    isUsageBased: true,
     description: "Para franquicias y redes inmobiliarias",
+    pricingModel: "Facturación según agencias y sus planes",
+    pricingDetails: [
+      { plan: "Pequeña", price: 29 },
+      { plan: "Mediana", price: 79 },
+      { plan: "Líder", price: 199 }
+    ],
     features: [
       "Agencias ilimitadas bajo tu marca",
       "Panel de control centralizado de toda la red",
@@ -471,24 +478,26 @@ export default function RealistaPro() {
           </div>
         </div>
 
-        {/* Billing Toggle */}
-        <div className="flex justify-center items-center gap-4 mb-12">
-          <span className={`text-lg ${!isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-            {t('realista_pro.monthly')}
-          </span>
-          <Switch
-            checked={isYearly}
-            onCheckedChange={setIsYearly}
-            className="scale-125"
-            data-testid="switch-billing-period"
-          />
-          <span className={`text-lg ${isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-            {t('realista_pro.yearly')}
-          </span>
-          {isYearly && (
-            <Badge variant="secondary" className="ml-2">2 meses gratis</Badge>
-          )}
-        </div>
+        {/* Billing Toggle - Hidden for Networks (monthly only) */}
+        {profileType !== "networks" && (
+          <div className="flex justify-center items-center gap-4 mb-12">
+            <span className={`text-lg ${!isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+              {t('realista_pro.monthly')}
+            </span>
+            <Switch
+              checked={isYearly}
+              onCheckedChange={setIsYearly}
+              className="scale-125"
+              data-testid="switch-billing-period"
+            />
+            <span className={`text-lg ${isYearly ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+              {t('realista_pro.yearly')}
+            </span>
+            {isYearly && (
+              <Badge variant="secondary" className="ml-2">2 meses gratis</Badge>
+            )}
+          </div>
+        )}
 
         <div className={`grid gap-8 max-w-7xl mx-auto ${
           profileType === "agents" ? "grid-cols-1 md:grid-cols-2 max-w-4xl" : 
@@ -533,12 +542,29 @@ export default function RealistaPro() {
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
                   <CardDescription className="text-lg">{plan.description}</CardDescription>
                   <div className="text-center mt-4">
-                    <span className="text-4xl font-bold">{displayPrice}</span>
-                    <span className="text-muted-foreground">{t('realista_pro.per_month')}</span>
-                    {isYearly && plan.monthlyPrice > 0 && (
-                      <div className="text-sm text-muted-foreground mt-1">
-                        Facturado anualmente: {plan.yearlyPrice}€
-                      </div>
+                    {'isUsageBased' in plan && plan.isUsageBased ? (
+                      <>
+                        <span className="text-xl font-bold text-orange-600">{'pricingModel' in plan ? String(plan.pricingModel) : ''}</span>
+                        <div className="mt-3 space-y-1 text-sm">
+                          {'pricingDetails' in plan && (plan.pricingDetails as { plan: string; price: number }[]).map((detail, idx) => (
+                            <div key={idx} className="flex justify-between px-4">
+                              <span className="text-muted-foreground">Agencia {detail.plan}:</span>
+                              <span className="font-semibold">{detail.price}€/mes</span>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">Solo facturación mensual</p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold">{displayPrice}</span>
+                        <span className="text-muted-foreground">{t('realista_pro.per_month')}</span>
+                        {isYearly && plan.monthlyPrice > 0 && (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            Facturado anualmente: {plan.yearlyPrice}€
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </CardHeader>
@@ -555,26 +581,38 @@ export default function RealistaPro() {
                 </CardContent>
 
                 <CardFooter className="mt-auto">
-                  <Button 
-                    className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
-                    size="lg"
-                    onClick={() => handlePlanSelection(plan)}
-                    disabled={isCurrentPlan || isPending}
-                    data-testid={`button-select-plan-${plan.id}`}
-                  >
-                    {isPending ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : isCurrentPlan ? (
-                      "Plan actual"
-                    ) : plan.monthlyPrice === 0 ? (
-                      t('realista_pro.start_free')
-                    ) : (
-                      <>
-                        {t('realista_pro.start_now')}
-                        <ArrowRight className="h-5 w-5 ml-2" />
-                      </>
-                    )}
-                  </Button>
+                  {'isUsageBased' in plan && plan.isUsageBased ? (
+                    <Button 
+                      className="w-full text-lg py-6 bg-orange-600 hover:bg-orange-700"
+                      size="lg"
+                      onClick={() => navigate('/registrar/red/basica')}
+                      data-testid={`button-select-plan-${plan.id}`}
+                    >
+                      Registrar mi red
+                      <ArrowRight className="h-5 w-5 ml-2" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
+                      size="lg"
+                      onClick={() => handlePlanSelection(plan)}
+                      disabled={isCurrentPlan || isPending}
+                      data-testid={`button-select-plan-${plan.id}`}
+                    >
+                      {isPending ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : isCurrentPlan ? (
+                        "Plan actual"
+                      ) : plan.monthlyPrice === 0 ? (
+                        t('realista_pro.start_free')
+                      ) : (
+                        <>
+                          {t('realista_pro.start_now')}
+                          <ArrowRight className="h-5 w-5 ml-2" />
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             );
