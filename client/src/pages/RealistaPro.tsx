@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, Star, Users, Building, MessageSquare, Sparkles, User, Loader2, CreditCard, ArrowRight, ExternalLink } from "lucide-react";
+import { Check, Star, Users, Building, MessageSquare, Sparkles, User, Loader2, CreditCard, ArrowRight, ExternalLink, Network } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/language-context";
@@ -116,6 +116,27 @@ const agentPlans = [
   }
 ];
 
+const networkPlans = [
+  {
+    id: "red_agencias",
+    name: "Red de Agencias",
+    monthlyPrice: 499,
+    yearlyPrice: 4990,
+    description: "Para franquicias y redes inmobiliarias",
+    features: [
+      "Agencias ilimitadas bajo tu marca",
+      "Panel de control centralizado de toda la red",
+      "Estadísticas consolidadas de rendimiento",
+      "Branding corporativo en todos los perfiles",
+      "Gestión centralizada o facturación individual por agencia",
+      "Soporte prioritario dedicado",
+      "API de integración disponible"
+    ],
+    icon: Network,
+    color: "bg-orange-50 border-orange-300"
+  }
+];
+
 interface BillingInfo {
   currentPlan: string;
   isYearlyBilling: boolean;
@@ -141,7 +162,7 @@ interface StripeProduct {
 
 export default function RealistaPro() {
   const [isYearly, setIsYearly] = useState(false);
-  const [profileType, setProfileType] = useState<"agencies" | "agents">("agencies");
+  const [profileType, setProfileType] = useState<"agencies" | "agents" | "networks">("agencies");
   const [, navigate] = useLocation();
   const { t } = useLanguage();
   const { user, isLoading: authLoading } = useUser();
@@ -245,8 +266,10 @@ export default function RealistaPro() {
     },
   });
   
-  const currentPlans = profileType === "agencies" ? agencyPlans : agentPlans;
-  const products = profileType === "agencies" ? agencyProducts?.products : agentProducts?.products;
+  const currentPlans = profileType === "agencies" ? agencyPlans : 
+                       profileType === "agents" ? agentPlans : networkPlans;
+  const products = profileType === "agencies" ? agencyProducts?.products : 
+                   profileType === "agents" ? agentProducts?.products : null;
   
   const getDisplayPrice = (plan: any) => {
     if (plan.monthlyPrice === 0) return "Gratis";
@@ -283,7 +306,9 @@ export default function RealistaPro() {
       
       const registrationPath = profileType === "agencies" 
         ? `/agency-plan-register?${params.toString()}`
-        : `/agent-plan-register?${params.toString()}`;
+        : profileType === "agents"
+        ? `/agent-plan-register?${params.toString()}`
+        : `/network-plan-register?${params.toString()}`;
       
       navigate(registrationPath);
       return;
@@ -415,7 +440,7 @@ export default function RealistaPro() {
 
         {/* Profile Type Toggle */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white p-1 rounded-lg border shadow-sm">
+          <div className="bg-white p-1 rounded-lg border shadow-sm flex flex-wrap justify-center">
             <Button
               variant={profileType === "agencies" ? "default" : "ghost"}
               onClick={() => setProfileType("agencies")}
@@ -433,6 +458,15 @@ export default function RealistaPro() {
             >
               <User className="h-4 w-4 mr-2" />
               {t('realista_pro.agents')}
+            </Button>
+            <Button
+              variant={profileType === "networks" ? "default" : "ghost"}
+              onClick={() => setProfileType("networks")}
+              className="px-6 py-2"
+              data-testid="button-profile-networks"
+            >
+              <Network className="h-4 w-4 mr-2" />
+              Redes
             </Button>
           </div>
         </div>
@@ -457,7 +491,9 @@ export default function RealistaPro() {
         </div>
 
         <div className={`grid gap-8 max-w-7xl mx-auto ${
-          profileType === "agents" ? "grid-cols-1 md:grid-cols-2 max-w-4xl" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+          profileType === "agents" ? "grid-cols-1 md:grid-cols-2 max-w-4xl" : 
+          profileType === "networks" ? "grid-cols-1 max-w-xl" :
+          "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
         }`}>
           {currentPlans.map((plan) => {
             const IconComponent = plan.icon;
@@ -482,13 +518,15 @@ export default function RealistaPro() {
                       plan.id === 'basica' || plan.id === 'basico' ? 'bg-gray-200' :
                       plan.id === 'pequeña' ? 'bg-blue-200' :
                       plan.id === 'mediana' ? 'bg-green-200' : 
-                      plan.id === 'lider' ? 'bg-purple-200' : 'bg-blue-200'
+                      plan.id === 'lider' ? 'bg-purple-200' :
+                      plan.id === 'red_agencias' ? 'bg-orange-200' : 'bg-blue-200'
                     }`}>
                       <IconComponent className={`h-8 w-8 ${
                         plan.id === 'basica' || plan.id === 'basico' ? 'text-gray-600' :
                         plan.id === 'pequeña' ? 'text-blue-600' :
                         plan.id === 'mediana' ? 'text-green-600' : 
-                        plan.id === 'lider' ? 'text-purple-600' : 'text-blue-600'
+                        plan.id === 'lider' ? 'text-purple-600' :
+                        plan.id === 'red_agencias' ? 'text-orange-600' : 'text-blue-600'
                       }`} />
                     </div>
                   </div>
