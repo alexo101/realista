@@ -1,0 +1,47 @@
+2:14:31 PM [express] GET /api/auth/me 304 in 67ms :: {"id":17,"email":"m.fresnaeda@gmail.com","name"…
+No ratings found for neighborhood: Vila de Gràcia
+Promedios para Vila de Gràcia en Barcelona obtenidos: { count: 0 }
+12:14:31 PM [express] GET /api/neighborhoods/ratings/average 200 in 153ms :: {"count":0}
+GET /api/properties - Params: mostViewed=true, operationType=Venta, agentId=undefined, agencyId=undefined, includeInactive=false
+Database query for most viewed properties: Venta
+Filtrando propiedades más vistas por tipo de operación: Venta
+GET /api/properties - Params: mostViewed=true, operationType=Alquiler, agentId=undefined, agencyId=undefined, includeInactive=false
+Database query for most viewed properties: Alquiler
+Filtrando propiedades más vistas por tipo de operación: Alquiler
+Returning 4 most viewed properties with operationType=Alquiler
+Returning 0 most viewed properties with operationType=Venta
+12:14:32 PM [express] GET /api/properties 200 in 183ms :: [{"uuid":"551fea68-2e2a-4575-812b-840b984b7…
+12:14:32 PM [express] GET /api/properties 200 in 195ms :: []
+GET /api/properties - Params: mostViewed=false, operationType=undefined, agentId=undefined, agencyId=undefined, includeInactive=false
+Database query for property search filters: {}
+Aplicando 1 condiciones WHERE con AND
+Ejecutando consulta de propiedades con filtros
+Consulta completada. Encontradas 4 propiedades que coinciden con los filtros.
+12:14:33 PM [express] GET /api/properties 304 in 131ms :: [{"uuid":"551fea68-2e2a-4575-812b-840b984b7…
+12:14:33 PM [express] GET /api/agents/17/events 304 in 141ms :: []
+12:14:33 PM [express] GET /api/agents/17/clients 304 in 144ms :: []
+Error getting network management data: error: syntax error at or near "="
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-serverless/session.ts:102:18)
+    at async DatabaseStorageWithConnection.getNetworkStats (/home/runner/workspace/server/storage.ts:3425:24)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:4722:21) {
+  length: 90,
+  severity: 'ERROR',
+  code: '42601',
+  detail: undefined,
+  hint: undefined,
+  position: '80',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'scan.l',
+  line: '1244',
+  routine: 'scanner_yyerror'
+}
+12:14:33 PM [express] GET /api/networks/1/management 500 in 579ms :: {"error":"Error al obtener datos…

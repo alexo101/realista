@@ -3427,8 +3427,8 @@ export class DatabaseStorage implements IStorage {
         .from(properties)
         .where(and(
           inArray(properties.agencyId, agencyIds),
-          eq(properties.status, 'published'),
-          isNull(properties.deletedAt)
+          eq(properties.isDraft, false),
+          eq(properties.isActive, true)
         ));
       propertiesCount = result?.count || 0;
     }
@@ -3466,8 +3466,8 @@ export class DatabaseStorage implements IStorage {
       .from(properties)
       .where(and(
         eq(properties.agencyId, agencyId),
-        eq(properties.status, 'published'),
-        isNull(properties.deletedAt)
+        eq(properties.isDraft, false),
+        eq(properties.isActive, true)
       ));
     return result?.count || 0;
   }
