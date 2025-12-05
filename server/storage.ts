@@ -1192,6 +1192,9 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Missing required agencyName field");
       }
 
+      // Import ALL_ZONES constant for default influence neighborhoods
+      const { ALL_ZONES } = await import('../shared/schema.js');
+
       // Insertamos la agencia (admin relationship handled via agency_agents table)
       const [newAgency] = await db
         .insert(agencies)
@@ -1202,7 +1205,9 @@ export class DatabaseStorage implements IStorage {
           agencyDescription: agencyData.agencyDescription || null,
           agencyLogo: agencyData.agencyLogo || null,
           agencyInfluenceNeighborhoods:
-            agencyData.agencyInfluenceNeighborhoods || [],
+            agencyData.agencyInfluenceNeighborhoods && agencyData.agencyInfluenceNeighborhoods.length > 0
+              ? agencyData.agencyInfluenceNeighborhoods
+              : [ALL_ZONES],
           agencySupportedLanguages: agencyData.agencySupportedLanguages || [],
           agencyWebsite: agencyData.agencyWebsite || null,
           agencySocialMedia: agencyData.agencySocialMedia || null,
