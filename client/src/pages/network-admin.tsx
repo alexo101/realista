@@ -340,7 +340,7 @@ export default function NetworkAdminPage() {
             )}
             <div>
               <h1 className="text-2xl font-bold">{networkData.name}</h1>
-              <p className="text-muted-foreground">Panel de administración de red</p>
+              <p className="text-muted-foreground">Panel de administración</p>
             </div>
           </div>
           
