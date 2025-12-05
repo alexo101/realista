@@ -274,7 +274,7 @@ export default function NetworkAdminPage() {
   const billingInfo = calculateBilling();
 
   const filteredAgencies = networkData?.agencies?.filter(agency => 
-    agency.name.toLowerCase().includes(searchQuery.toLowerCase())
+    agency.agencyName?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
   const handleLogout = async () => {
@@ -476,15 +476,15 @@ export default function NetworkAdminPage() {
                       {networkData.agencies.slice(0, 5).map((agency) => (
                         <div key={agency.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-3">
-                            {agency.logo ? (
-                              <img src={agency.logo} alt={agency.name} className="h-8 w-8 rounded object-contain bg-white" />
+                            {agency.agencyLogo ? (
+                              <img src={agency.agencyLogo} alt={agency.agencyName} className="h-8 w-8 rounded object-contain bg-white" />
                             ) : (
                               <div className="h-8 w-8 rounded bg-gray-200 flex items-center justify-center">
                                 <Building className="h-4 w-4 text-gray-400" />
                               </div>
                             )}
                             <div>
-                              <p className="font-medium text-sm">{agency.name}</p>
+                              <p className="font-medium text-sm">{agency.agencyName}</p>
                               <p className="text-xs text-muted-foreground">{agency.city || "Sin ciudad"}</p>
                             </div>
                           </div>
@@ -574,10 +574,10 @@ export default function NetworkAdminPage() {
                           <TableRow key={agency.id} data-testid={`row-agency-${agency.id}`}>
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                {agency.logo ? (
+                                {agency.agencyLogo ? (
                                   <img 
-                                    src={agency.logo} 
-                                    alt={agency.name} 
+                                    src={agency.agencyLogo} 
+                                    alt={agency.agencyName} 
                                     className="h-10 w-10 rounded object-contain bg-gray-100"
                                   />
                                 ) : (
@@ -585,7 +585,7 @@ export default function NetworkAdminPage() {
                                     <Building className="h-5 w-5 text-gray-400" />
                                   </div>
                                 )}
-                                <span className="font-medium">{agency.name}</span>
+                                <span className="font-medium">{agency.agencyName}</span>
                               </div>
                             </TableCell>
                             <TableCell>{agency.city || "Sin especificar"}</TableCell>
