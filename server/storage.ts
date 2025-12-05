@@ -3480,9 +3480,9 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         isNull(agencies.networkId),
         isNull(agencies.deletedAt),
-        sql`LOWER(${agencies.name}) LIKE ${searchQuery}`
+        sql`LOWER(${agencies.agencyName}) LIKE ${searchQuery}`
       ))
-      .orderBy(agencies.name)
+      .orderBy(agencies.agencyName)
       .limit(10);
     return result;
   }

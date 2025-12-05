@@ -816,10 +816,16 @@ export default function NetworkAdminPage() {
             <DialogHeader>
               <DialogTitle>Añadir agencia existente</DialogTitle>
               <DialogDescription>
-                Busca agencias existentes para añadirlas a tu red de {networkData.name}
+                Busca agencias independientes para añadirlas a tu red de {networkData.name}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Nota:</strong> Solo aparecerán agencias que no pertenezcan a ninguna red. 
+                  Las agencias que ya forman parte de otra red no se mostrarán en los resultados.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label>Buscar agencia</Label>
                 <div className="relative">
