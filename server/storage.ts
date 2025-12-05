@@ -595,11 +595,12 @@ export class DatabaseStorage implements IStorage {
       // Enrich agencies with review statistics (matching agency profile calculation)
       const enhancedAgencies = await Promise.all(
         agencyResults.map(async (agency) => {
-          // Get direct agency reviews
+          // Get direct agency reviews with last review date
           const agencyReviewStats = await db
             .select({
               reviewCount: sql<number>`count(*)::integer`,
               reviewAverage: sql<number>`COALESCE(ROUND(AVG(${reviews.rating}), 2), 0)::float`,
+              lastReviewDate: sql<string>`MAX(${reviews.date})`,
             })
             .from(reviews)
             .where(
@@ -612,11 +613,13 @@ export class DatabaseStorage implements IStorage {
           const agencyStats = agencyReviewStats[0];
           const agencyScore = Number(agencyStats?.reviewAverage) || 0;
           const agencyReviewCount = Number(agencyStats?.reviewCount) || 0;
+          const agencyLastReviewDate = agencyStats?.lastReviewDate || null;
 
-          // Get reviews from linked agents (matching agency profile logic)
+          // Get reviews from linked agents (matching agency profile logic) with last review date
           const linkedAgentReviews = await db.execute(
             sql`SELECT COUNT(r.*)::integer as agent_review_count, 
-                       COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average
+                       COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average,
+                       MAX(r.date) as agent_last_review_date
                 FROM reviews r 
                 JOIN agency_agents aa ON r.target_id = aa.agent_id 
                 WHERE aa.agency_id = ${agency.id} 
@@ -626,6 +629,7 @@ export class DatabaseStorage implements IStorage {
 
           const agentReviewCount = linkedAgentReviews.rows[0]?.agent_review_count || 0;
           const agentReviewAverage = linkedAgentReviews.rows[0]?.agent_review_average || 0;
+          const agentLastReviewDate = linkedAgentReviews.rows[0]?.agent_last_review_date || null;
 
           // Calculate combined score (matching agency profile logic)
           const totalReviews = agencyReviewCount + Number(agentReviewCount);
@@ -641,8 +645,23 @@ export class DatabaseStorage implements IStorage {
             }
           }
 
-          // Return the agency directly
-          return agency;
+          // Determine the most recent review date (from agency or agent reviews)
+          let lastReviewDate: string | null = null;
+          if (agencyLastReviewDate && agentLastReviewDate) {
+            lastReviewDate = new Date(agencyLastReviewDate) > new Date(agentLastReviewDate) 
+              ? agencyLastReviewDate 
+              : agentLastReviewDate;
+          } else {
+            lastReviewDate = agencyLastReviewDate || agentLastReviewDate;
+          }
+
+          // Return the agency with review statistics
+          return {
+            ...agency,
+            reviewCount: totalReviews,
+            rating: finalScore,
+            lastReviewDate,
+          };
         })
       );
 
