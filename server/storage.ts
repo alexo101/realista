@@ -3455,8 +3455,8 @@ export class DatabaseStorage implements IStorage {
   async getAgencyAgentCount(agencyId: number): Promise<number> {
     const [result] = await db
       .select({ count: count() })
-      .from(agents)
-      .where(eq(agents.agencyId, agencyId));
+      .from(agencyAgents)
+      .where(eq(agencyAgents.agencyId, agencyId));
     return result?.count || 0;
   }
 
