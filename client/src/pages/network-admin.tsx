@@ -858,10 +858,10 @@ export default function NetworkAdminPage() {
                       data-testid={`available-agency-${agency.id}`}
                     >
                       <div className="flex items-center gap-3">
-                        {agency.logo ? (
+                        {agency.agencyLogo ? (
                           <img 
-                            src={agency.logo} 
-                            alt={agency.name} 
+                            src={agency.agencyLogo} 
+                            alt={agency.agencyName} 
                             className="h-10 w-10 rounded object-contain bg-gray-100"
                           />
                         ) : (
@@ -870,7 +870,7 @@ export default function NetworkAdminPage() {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium">{agency.name}</p>
+                          <p className="font-medium">{agency.agencyName}</p>
                           <p className="text-sm text-muted-foreground">{agency.city || "Sin ciudad"}</p>
                         </div>
                       </div>
