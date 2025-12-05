@@ -798,7 +798,7 @@ export default function NeighborhoodResultsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="best_rating">Mejor puntuación</SelectItem>
-                    <SelectItem value="newest">Más recientes</SelectItem>
+                    <SelectItem value="newest_reviews">Más recientes</SelectItem>
                     <SelectItem value="most_reviews">Más reseñas</SelectItem>
                     <SelectItem value="most_properties">Más propiedades</SelectItem>
                   </SelectContent>
@@ -813,10 +813,10 @@ export default function NeighborhoodResultsPage() {
                   switch (agenciesFilter) {
                     case 'best_rating':
                       return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-                    case 'newest':
+                    case 'newest_reviews':
                       return sortedAgencies.sort((a, b) => 
-                        (b.createdAt ? new Date(b.createdAt).getTime() : 0) - 
-                        (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
+                        (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
                       );
                     case 'most_reviews':
                       return sortedAgencies.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
