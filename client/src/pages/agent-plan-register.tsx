@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, User, Sparkles, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
@@ -55,10 +55,12 @@ export default function AgentPlanRegister() {
     confirmPassword: ""
   });
 
-  // Extract plan details from URL using window.location.search
-  const params = new URLSearchParams(window.location.search);
-  const planId = params.get('plan') || 'basico';
-  const billing = params.get('billing') || 'monthly';
+  // Try to get plan from route params first, then fall back to query params
+  const routeParams = useParams<{ plan?: string; billing?: string }>();
+  const queryParams = new URLSearchParams(window.location.search);
+  
+  const planId = routeParams.plan || queryParams.get('plan') || 'basico';
+  const billing = routeParams.billing || queryParams.get('billing') || 'monthly';
   
   console.log('Agent Registration - Plan ID:', planId, 'Billing:', billing);
   

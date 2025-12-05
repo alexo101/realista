@@ -306,16 +306,13 @@ export default function RealistaPro() {
 
   const handlePlanSelection = (plan: any) => {
     if (!user) {
-      const params = new URLSearchParams({
-        plan: plan.id,
-        billing: isYearly ? "yearly" : "monthly"
-      });
+      const billing = isYearly ? "yearly" : "monthly";
       
       const registrationPath = profileType === "agencies" 
-        ? `/agency-plan-register?${params.toString()}`
+        ? `/agency-plan-register/${plan.id}/${billing}`
         : profileType === "agents"
-        ? `/agent-plan-register?${params.toString()}`
-        : `/network-plan-register?${params.toString()}`;
+        ? `/agent-plan-register/${plan.id}/${billing}`
+        : `/network-plan-register/${plan.id}/${billing}`;
       
       navigate(registrationPath);
       return;

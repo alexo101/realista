@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Check, Network, Eye, EyeOff, Building, CreditCard, Users, BarChart3 } from "lucide-react";
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
@@ -45,8 +45,10 @@ export default function NetworkPlanRegister() {
     billingMode: "network"
   });
 
-  const params = new URLSearchParams(window.location.search);
-  const billing = params.get('billing') || 'monthly';
+  // Try to get billing from route params first, then fall back to query params
+  const routeParams = useParams<{ plan?: string; billing?: string }>();
+  const queryParams = new URLSearchParams(window.location.search);
+  const billing = routeParams.billing || queryParams.get('billing') || 'monthly';
   
   const displayPrice = billing === 'yearly'
     ? `${Math.floor(networkPlan.yearlyPrice / 12)}€/mes`

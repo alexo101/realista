@@ -62,6 +62,11 @@ function Router() {
       {/* Backwards compatibility routes - redirect to Spanish */}
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
+      {/* Path-based registration routes must come BEFORE parameterless routes for wouter matching */}
+      <Route path="/agency-plan-register/:plan/:billing" component={AgencyPlanRegister} />
+      <Route path="/agent-plan-register/:plan/:billing" component={AgentPlanRegister} />
+      <Route path="/network-plan-register/:plan/:billing" component={NetworkPlanRegister} />
+      {/* Fallback routes for query param URLs */}
       <Route path="/agency-plan-register" component={AgencyPlanRegister} />
       <Route path="/agent-plan-register" component={AgentPlanRegister} />
       <Route path="/network-plan-register" component={NetworkPlanRegister} />
