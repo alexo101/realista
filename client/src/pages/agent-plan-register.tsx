@@ -108,12 +108,22 @@ export default function AgentPlanRegister() {
       // Update user context with the logged-in user
       setUser(userData);
 
+      // If checkout URL is provided (paid plan), redirect to Stripe
+      if (userData.checkoutUrl) {
+        toast({
+          title: "¡Cuenta creada!",
+          description: "Redirigiendo a la página de pago..."
+        });
+        window.location.href = userData.checkoutUrl;
+        return;
+      }
+
       toast({
         title: "¡Cuenta creada exitosamente!",
         description: "Tu cuenta de agente ha sido creada y ya puedes empezar a gestionar tus propiedades"
       });
 
-      // Redirect to agent calendar
+      // Redirect to agent calendar (free plan)
       if (userData.agentUuid) {
         navigate(`/gestionar/${userData.agentUuid}/calendario`);
       } else {

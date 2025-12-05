@@ -802,13 +802,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error al enviar email de bienvenida:', emailError);
       }
 
+      // For paid plans (lider), create Stripe checkout session
+      let checkoutUrl: string | null = null;
+      if (subscriptionPlan === 'lider') {
+        try {
+          const { stripeService } = await import("./stripeService");
+          
+          // Get the price ID for Agent Líder from Stripe
+          const products = await stripeService.listProductsWithPrices('agent');
+          const agentLiderProduct = products.find((p: any) => p.name === 'Agent Líder');
+          
+          if (agentLiderProduct && agentLiderProduct.prices.length > 0) {
+            // Find the right price based on billing cycle
+            const price = agentLiderProduct.prices.find((p: any) => {
+              const interval = p.recurring?.interval;
+              return isYearlyBilling ? interval === 'year' : interval === 'month';
+            }) || agentLiderProduct.prices[0];
+            
+            // Create Stripe customer
+            const customer = await stripeService.createCustomer(
+              agent.email,
+              agent.name || agent.email,
+              'agent',
+              agent.id
+            );
+            
+            // Save customer ID to agent
+            await stripeService.updateCustomerId('agent', agent.id, customer.id);
+            
+            // Create checkout session
+            const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+            const session = await stripeService.createCheckoutSession(
+              customer.id,
+              price.id,
+              `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=success`,
+              `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=cancelled`,
+              'agent',
+              agent.id
+            );
+            
+            checkoutUrl = session.url;
+            console.log('Stripe checkout session created for agent:', agent.id);
+          }
+        } catch (stripeError) {
+          console.error('Error creating Stripe checkout for agent:', stripeError);
+          // Continue without checkout - user can pay later
+        }
+      }
+
       // Return user data without password
       const { password: _, ...userResponse } = agent;
       res.status(201).json({
         ...userResponse,
         isAdmin: false,
         isClient: false,
-        agentUuid: agent.uuid
+        agentUuid: agent.uuid,
+        checkoutUrl
       });
     } catch (error) {
       console.error('Error registering agent:', error);
