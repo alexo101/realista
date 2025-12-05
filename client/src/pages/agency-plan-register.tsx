@@ -179,12 +179,31 @@ export default function AgencyPlanRegister() {
       // Update user context with the logged-in user
       setUser(userData);
 
-      toast({
-        title: "¡Cuenta creada exitosamente!",
-        description: "Tu agencia ha sido registrada y ya puedes empezar a gestionar tus propiedades"
-      });
+      // If checkout URL is provided (paid plan), redirect to Stripe
+      if (userData.checkoutUrl) {
+        toast({
+          title: "¡Cuenta creada!",
+          description: "Redirigiendo a la página de pago..."
+        });
+        window.location.href = userData.checkoutUrl;
+        return;
+      }
 
-      // Redirect to calendar page
+      // If there was a Stripe error for paid plan, show warning but still allow access
+      if (userData.stripeError) {
+        toast({
+          title: "Cuenta creada con aviso",
+          description: userData.stripeError,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "¡Cuenta creada exitosamente!",
+          description: "Tu agencia ha sido registrada y ya puedes empezar a gestionar tus propiedades"
+        });
+      }
+
+      // Redirect to calendar page (free plan or stripe error)
       if (userData.agentUuid) {
         navigate(`/gestionar/${userData.agentUuid}/calendario`);
       } else {

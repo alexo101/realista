@@ -469,6 +469,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error al enviar email de bienvenida:', emailError);
       }
 
+      // For paid plans (pequeña, mediana, lider), create Stripe checkout session
+      let checkoutUrl: string | null = null;
+      let stripeError: string | null = null;
+      
+      // Hardcoded fallback price IDs for Agency plans (from Stripe)
+      const AGENCY_PRICES = {
+        'pequeña': {
+          monthly: 'price_1SXWwjLUOluRoTfmCcc8t3Zi', // 29€/month
+          yearly: 'price_1SXWwjLUOluRoTfmgw3QbEg3'   // 290€/year
+        },
+        'mediana': {
+          monthly: 'price_1SXWwkLUOluRoTfmEJilorxX', // 79€/month
+          yearly: 'price_1SXWwkLUOluRoTfm27nDYDzB'   // 790€/year
+        },
+        'lider': {
+          monthly: 'price_1SXWwkLUOluRoTfmeva2XNzr', // 249€/month
+          yearly: 'price_1SXWwkLUOluRoTfmrqNVpOwU'   // 2490€/year
+        }
+      };
+      
+      const isPaidPlan = ['pequeña', 'mediana', 'lider'].includes(subscriptionPlan);
+      
+      if (isPaidPlan) {
+        try {
+          const { stripeService } = await import("./stripeService");
+          
+          // Get price ID - use hardcoded fallback for reliability
+          const planPrices = AGENCY_PRICES[subscriptionPlan as keyof typeof AGENCY_PRICES];
+          const priceId = isYearlyBilling ? planPrices.yearly : planPrices.monthly;
+          
+          console.log('Using price ID for agency:', priceId, 'plan:', subscriptionPlan);
+          
+          // Create Stripe customer for the agency
+          const customer = await stripeService.createCustomer(
+            email,
+            agencyName,
+            'agency',
+            agency.id
+          );
+          
+          // Save customer ID to agency
+          await stripeService.updateCustomerId('agency', agency.id, customer.id);
+          
+          // Build base URL - always use https for Stripe callbacks
+          const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+          const forwardedHost = req.get('x-forwarded-host');
+          
+          let baseUrl: string;
+          if (replitDomain) {
+            baseUrl = `https://${replitDomain}`;
+          } else if (forwardedHost && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
+            baseUrl = `https://${forwardedHost}`;
+          } else {
+            console.error('Cannot determine valid public URL for Stripe callback');
+            stripeError = 'No se pudo configurar el pago. Contacta con soporte.';
+            throw new Error('No valid public URL for Stripe');
+          }
+          
+          const session = await stripeService.createCheckoutSession(
+            customer.id,
+            priceId,
+            `${baseUrl}/gestionar/${adminAgent.uuid}/calendario?payment=success`,
+            `${baseUrl}/gestionar/${adminAgent.uuid}/calendario?payment=cancelled`,
+            'agency',
+            agency.id
+          );
+          
+          checkoutUrl = session.url;
+          console.log('Stripe checkout session created for agency:', agency.id, 'priceId:', priceId);
+        } catch (err) {
+          console.error('Error creating Stripe checkout for agency:', err);
+          if (!stripeError) {
+            stripeError = 'Error al procesar el pago. Puedes intentarlo de nuevo desde tu perfil.';
+          }
+        }
+      }
+
       // Return user data without password
       const { password: _, ...userResponse } = adminAgent;
       res.status(201).json({ 
@@ -480,7 +557,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: 'admin',
         subscriptionPlan: agency.subscriptionPlan,
         isYearlyBilling: agency.isYearlyBilling,
-        agentUuid: adminAgent.uuid
+        agentUuid: adminAgent.uuid,
+        checkoutUrl,
+        stripeError
       });
     } catch (error) {
       console.error('Error registering agency:', error);
