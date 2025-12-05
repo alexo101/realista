@@ -88,6 +88,8 @@ export default function NetworkAdminPage() {
   const [agencySearchQuery, setAgencySearchQuery] = useState("");
   const [isDetachOpen, setIsDetachOpen] = useState(false);
   const [agencyToDetach, setAgencyToDetach] = useState<Agency | null>(null);
+  const [isPlanChangeOpen, setIsPlanChangeOpen] = useState(false);
+  const [planChangeData, setPlanChangeData] = useState<{ agency: Agency; newPlan: string } | null>(null);
   
   const [newAgencyData, setNewAgencyData] = useState({
     name: "",
@@ -558,11 +560,11 @@ export default function NetworkAdminPage() {
                       <TableRow>
                         <TableHead>Agencia</TableHead>
                         <TableHead>Ciudad</TableHead>
-                        <TableHead>Plan</TableHead>
                         <TableHead className="text-center">Límite agentes</TableHead>
                         <TableHead className="text-center">Límite propiedades</TableHead>
                         <TableHead className="text-center">Agentes</TableHead>
                         <TableHead className="text-center">Propiedades</TableHead>
+                        <TableHead>Plan</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -589,10 +591,21 @@ export default function NetworkAdminPage() {
                               </div>
                             </TableCell>
                             <TableCell>{agency.city || "Sin especificar"}</TableCell>
+                            <TableCell className="text-center">
+                              {agency.seatsLimit === null ? '∞' : (agency.seatsLimit === 9999 ? 'Sin límite' : agency.seatsLimit)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {agency.activePropertiesLimit === null ? '∞' : (agency.activePropertiesLimit === 9999 ? 'Sin límite' : agency.activePropertiesLimit)}
+                            </TableCell>
+                            <TableCell className="text-center">{agency.agentCount || 0}</TableCell>
+                            <TableCell className="text-center">{agency.propertyCount || 0}</TableCell>
                             <TableCell>
                               <Select
                                 value={planKey}
-                                onValueChange={(value) => updateAgencyPlanMutation.mutate({ agencyId: agency.id, plan: value })}
+                                onValueChange={(value) => {
+                                  setPlanChangeData({ agency, newPlan: value });
+                                  setIsPlanChangeOpen(true);
+                                }}
                                 disabled={updateAgencyPlanMutation.isPending}
                               >
                                 <SelectTrigger className="w-32" data-testid={`select-plan-${agency.id}`}>
@@ -606,14 +619,6 @@ export default function NetworkAdminPage() {
                                 </SelectContent>
                               </Select>
                             </TableCell>
-                            <TableCell className="text-center">
-                              {agency.seatsLimit === null ? '∞' : (agency.seatsLimit === 9999 ? 'Sin límite' : agency.seatsLimit)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {agency.activePropertiesLimit === null ? '∞' : (agency.activePropertiesLimit === 9999 ? 'Sin límite' : agency.activePropertiesLimit)}
-                            </TableCell>
-                            <TableCell className="text-center">{agency.agentCount || 0}</TableCell>
-                            <TableCell className="text-center">{agency.propertyCount || 0}</TableCell>
                             <TableCell className="text-right">
                               <Button 
                                 variant="ghost" 
@@ -925,6 +930,38 @@ export default function NetworkAdminPage() {
                   <UserMinus className="h-4 w-4 mr-2" />
                 )}
                 Eliminar de la red
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isPlanChangeOpen} onOpenChange={setIsPlanChangeOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cambiar plan de agencia</DialogTitle>
+              <DialogDescription>
+                ¿Quieres cambiar el plan de <strong>{planChangeData?.agency.agencyName}</strong> a <strong>{planChangeData?.newPlan && AGENCY_PLAN_PRICES[planChangeData.newPlan]?.name}</strong>?
+                Los límites de agentes y propiedades se actualizarán automáticamente.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPlanChangeOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (planChangeData) {
+                    updateAgencyPlanMutation.mutate({ agencyId: planChangeData.agency.id, plan: planChangeData.newPlan });
+                    setIsPlanChangeOpen(false);
+                  }
+                }}
+                disabled={updateAgencyPlanMutation.isPending}
+                data-testid="button-confirm-plan-change"
+              >
+                {updateAgencyPlanMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Cambiar plan
               </Button>
             </DialogFooter>
           </DialogContent>
