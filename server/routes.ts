@@ -804,49 +804,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For paid plans (lider), create Stripe checkout session
       let checkoutUrl: string | null = null;
+      let stripeError: string | null = null;
+      
+      // Hardcoded fallback price IDs for Agent Líder (from Stripe)
+      const AGENT_LIDER_PRICES = {
+        monthly: 'price_1SXWwlLUOluRoTfmxmnVsmc0', // 20€/month
+        yearly: 'price_1SXWwlLUOluRoTfmhzd9sYvp'   // 200€/year
+      };
+      
       if (subscriptionPlan === 'lider') {
         try {
           const { stripeService } = await import("./stripeService");
           
-          // Get the price ID for Agent Líder from Stripe
-          const products = await stripeService.listProductsWithPrices('agent');
-          const agentLiderProduct = products.find((p: any) => p.name === 'Agent Líder');
+          // Try to get price ID dynamically, fallback to hardcoded
+          let priceId: string | null = null;
           
-          if (agentLiderProduct && agentLiderProduct.prices.length > 0) {
-            // Find the right price based on billing cycle
-            const price = agentLiderProduct.prices.find((p: any) => {
-              const interval = p.recurring?.interval;
-              return isYearlyBilling ? interval === 'year' : interval === 'month';
-            }) || agentLiderProduct.prices[0];
-            
-            // Create Stripe customer
-            const customer = await stripeService.createCustomer(
-              agent.email,
-              agent.name || agent.email,
-              'agent',
-              agent.id
+          try {
+            const products = await stripeService.listProductsWithPrices('agent');
+            const agentLiderProduct = products.find((p: any) => 
+              p.name?.includes('Agente') && p.name?.includes('Líder')
             );
             
-            // Save customer ID to agent
-            await stripeService.updateCustomerId('agent', agent.id, customer.id);
-            
-            // Create checkout session
-            const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
-            const session = await stripeService.createCheckoutSession(
-              customer.id,
-              price.id,
-              `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=success`,
-              `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=cancelled`,
-              'agent',
-              agent.id
-            );
-            
-            checkoutUrl = session.url;
-            console.log('Stripe checkout session created for agent:', agent.id);
+            if (agentLiderProduct && agentLiderProduct.prices.length > 0) {
+              const price = agentLiderProduct.prices.find((p: any) => {
+                const interval = p.recurring?.interval;
+                return isYearlyBilling ? interval === 'year' : interval === 'month';
+              });
+              if (price?.id) {
+                priceId = price.id;
+              }
+            }
+          } catch (lookupError) {
+            console.warn('Dynamic price lookup failed, using fallback:', lookupError);
           }
-        } catch (stripeError) {
-          console.error('Error creating Stripe checkout for agent:', stripeError);
-          // Continue without checkout - user can pay later
+          
+          // Use fallback if dynamic lookup failed
+          if (!priceId) {
+            priceId = isYearlyBilling ? AGENT_LIDER_PRICES.yearly : AGENT_LIDER_PRICES.monthly;
+            console.log('Using fallback price ID:', priceId);
+          }
+          
+          // Create Stripe customer
+          const customer = await stripeService.createCustomer(
+            agent.email,
+            agent.name || agent.email,
+            'agent',
+            agent.id
+          );
+          
+          // Save customer ID to agent
+          await stripeService.updateCustomerId('agent', agent.id, customer.id);
+          
+          // Build base URL - always use https for Stripe callbacks
+          // Priority: REPLIT_DOMAINS > x-forwarded-host > fallback to error
+          const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+          const forwardedHost = req.get('x-forwarded-host');
+          
+          let baseUrl: string;
+          if (replitDomain) {
+            baseUrl = `https://${replitDomain}`;
+          } else if (forwardedHost && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
+            // Always use https for Stripe (force even if forwarded as http)
+            baseUrl = `https://${forwardedHost}`;
+          } else {
+            // Fallback: can't determine valid public URL
+            console.error('Cannot determine valid public URL for Stripe callback');
+            stripeError = 'No se pudo configurar el pago. Contacta con soporte.';
+            throw new Error('No valid public URL for Stripe');
+          }
+          
+          const session = await stripeService.createCheckoutSession(
+            customer.id,
+            priceId,
+            `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=success`,
+            `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=cancelled`,
+            'agent',
+            agent.id
+          );
+          
+          checkoutUrl = session.url;
+          console.log('Stripe checkout session created for agent:', agent.id, 'priceId:', priceId);
+        } catch (err) {
+          console.error('Error creating Stripe checkout for agent:', err);
+          stripeError = 'Error al procesar el pago. Puedes intentarlo de nuevo desde tu perfil.';
         }
       }
 
@@ -857,7 +897,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isAdmin: false,
         isClient: false,
         agentUuid: agent.uuid,
-        checkoutUrl
+        checkoutUrl,
+        stripeError
       });
     } catch (error) {
       console.error('Error registering agent:', error);

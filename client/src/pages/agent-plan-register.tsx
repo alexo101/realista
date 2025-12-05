@@ -118,12 +118,21 @@ export default function AgentPlanRegister() {
         return;
       }
 
-      toast({
-        title: "¡Cuenta creada exitosamente!",
-        description: "Tu cuenta de agente ha sido creada y ya puedes empezar a gestionar tus propiedades"
-      });
+      // If there was a Stripe error for paid plan, show warning but still allow access
+      if (userData.stripeError) {
+        toast({
+          title: "Cuenta creada con aviso",
+          description: userData.stripeError,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "¡Cuenta creada exitosamente!",
+          description: "Tu cuenta de agente ha sido creada y ya puedes empezar a gestionar tus propiedades"
+        });
+      }
 
-      // Redirect to agent calendar (free plan)
+      // Redirect to agent calendar
       if (userData.agentUuid) {
         navigate(`/gestionar/${userData.agentUuid}/calendario`);
       } else {
