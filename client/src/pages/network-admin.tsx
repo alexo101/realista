@@ -607,10 +607,10 @@ export default function NetworkAdminPage() {
                               </Select>
                             </TableCell>
                             <TableCell className="text-center">
-                              {agency.seatsLimit === null ? '∞' : agency.seatsLimit}
+                              {agency.seatsLimit === null ? '∞' : (agency.seatsLimit === 9999 ? 'Sin límite' : agency.seatsLimit)}
                             </TableCell>
                             <TableCell className="text-center">
-                              {agency.activePropertiesLimit === null ? '∞' : agency.activePropertiesLimit}
+                              {agency.activePropertiesLimit === null ? '∞' : (agency.activePropertiesLimit === 9999 ? 'Sin límite' : agency.activePropertiesLimit)}
                             </TableCell>
                             <TableCell className="text-center">{agency.agentCount || 0}</TableCell>
                             <TableCell className="text-center">{agency.propertyCount || 0}</TableCell>
