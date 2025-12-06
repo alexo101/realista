@@ -51,8 +51,7 @@ export default function AgentPlanRegister() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
-    password: "",
-    confirmPassword: ""
+    password: ""
   });
 
   // Try to get plan from route params first, then fall back to query params
@@ -79,15 +78,6 @@ export default function AgentPlanRegister() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Las contraseñas no coinciden",
-        variant: "destructive"
-      });
-      return;
-    }
-
     if (formData.password.length < 8) {
       toast({
         title: "Error",
@@ -226,20 +216,6 @@ export default function AgentPlanRegister() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                  <Input
-                    id="confirmPassword"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Repite tu contraseña"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    required
-                    minLength={8}
-                    data-testid="input-confirm-password"
-                  />
                 </div>
 
                 <Button 
