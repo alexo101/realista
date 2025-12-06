@@ -398,21 +398,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Determine seat limit based on plan
-      const seatLimits: Record<string, number> = {
-        'basica': 1,
-        'pequeña': 5,
-        'mediana': 15,
-        'lider': 50
+      // SECURITY: Always create agency on free tier (basica) first
+      // Stripe webhook will upgrade to paid plan only after successful payment
+      // This prevents users from accessing paid features by abandoning checkout
+      const FREE_TIER_LIMITS = {
+        subscriptionPlan: 'basica',
+        seatsLimit: 1,
+        activePropertiesLimit: 2,
+        isYearlyBilling: false
       };
 
-      // Create agency with subscription using provided agency name and city
+      // Create agency with FREE tier - upgrade happens via Stripe webhook after payment
       const agencyData = {
         agencyName: agencyName.trim(),
         city: city,
-        subscriptionPlan,
-        isYearlyBilling: isYearlyBilling || false,
-        seatsLimit: seatLimits[subscriptionPlan] || 1,
+        subscriptionPlan: FREE_TIER_LIMITS.subscriptionPlan,
+        isYearlyBilling: FREE_TIER_LIMITS.isYearlyBilling,
+        seatsLimit: FREE_TIER_LIMITS.seatsLimit,
+        activePropertiesLimit: FREE_TIER_LIMITS.activePropertiesLimit,
       };
 
       const agency = await storage.createAgency(agencyData);
@@ -439,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminAgent.id // Admin triggered their own addition
       );
 
-      // Create session with proper user object
+      // Create session with proper user object (free tier until payment confirmed)
       (req as any).session.user = {
         id: adminAgent.id,
         email: adminAgent.email,
@@ -450,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: null,
         agencyId: agency.id,
         agencyName: agency.agencyName,
-        subscriptionPlan: agency.subscriptionPlan,
+        subscriptionPlan: FREE_TIER_LIMITS.subscriptionPlan, // Always free tier until Stripe confirms payment
         agentUuid: adminAgent.uuid
       };
       
@@ -533,11 +536,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `${baseUrl}/gestionar/${adminAgent.uuid}/calendario?payment=success`,
             `${baseUrl}/gestionar/${adminAgent.uuid}/calendario?payment=cancelled`,
             'agency',
-            agency.id
+            agency.id,
+            subscriptionPlan, // Pass intended plan for audit/debugging
+            isYearlyBilling ? 'yearly' : 'monthly'
           );
           
           checkoutUrl = session.url;
-          console.log('Stripe checkout session created for agency:', agency.id, 'priceId:', priceId);
+          console.log('Stripe checkout session created for agency:', agency.id, 'priceId:', priceId, 'intendedPlan:', subscriptionPlan);
         } catch (err) {
           console.error('Error creating Stripe checkout for agency:', err);
           if (!stripeError) {
@@ -546,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Return user data without password
+      // Return user data without password (always free tier until payment confirmed)
       const { password: _, ...userResponse } = adminAgent;
       res.status(201).json({ 
         ...userResponse, 
@@ -555,10 +560,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId: agency.id,
         agencyName: agency.agencyName,
         role: 'admin',
-        subscriptionPlan: agency.subscriptionPlan,
-        isYearlyBilling: agency.isYearlyBilling,
+        subscriptionPlan: FREE_TIER_LIMITS.subscriptionPlan, // Free tier until Stripe confirms payment
+        isYearlyBilling: FREE_TIER_LIMITS.isYearlyBilling,
         agentUuid: adminAgent.uuid,
-        checkoutUrl,
+        checkoutUrl, // User must complete this to upgrade from free tier
         stripeError
       });
     } catch (error) {
@@ -838,20 +843,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create independent agent with personal subscription
+      // SECURITY: Always create agent on free tier (basico) first
+      // Stripe webhook will upgrade to paid plan only after successful payment
+      // This prevents users from accessing paid features by abandoning checkout
+      const AGENT_FREE_TIER = {
+        subscriptionPlan: 'basico',
+        isYearlyBilling: false
+      };
+
+      // Create independent agent with FREE tier - upgrade happens via Stripe webhook after payment
       const agentData = {
         email,
         password,
         agentType: 'independent',
-        subscriptionPlan,
-        isYearlyBilling: isYearlyBilling || false,
+        subscriptionPlan: AGENT_FREE_TIER.subscriptionPlan,
+        isYearlyBilling: AGENT_FREE_TIER.isYearlyBilling,
         city: null
       };
 
       const agent = await storage.createUser(agentData);
       console.log('Agent created:', agent.id);
 
-      // Create session with proper user object
+      // Create session with proper user object (free tier until payment confirmed)
       (req as any).session.user = {
         id: agent.id,
         email: agent.email,
@@ -862,7 +875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: agent.phone,
         agencyId: null,
         agencyName: null,
-        subscriptionPlan: agent.subscriptionPlan,
+        subscriptionPlan: AGENT_FREE_TIER.subscriptionPlan, // Always free tier until Stripe confirms payment
         agentUuid: agent.uuid
       };
       
@@ -958,11 +971,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=success`,
             `${baseUrl}/gestionar/${agent.uuid}/calendario?payment=cancelled`,
             'agent',
-            agent.id
+            agent.id,
+            subscriptionPlan, // Pass intended plan for audit/debugging
+            isYearlyBilling ? 'yearly' : 'monthly'
           );
           
           checkoutUrl = session.url;
-          console.log('Stripe checkout session created for agent:', agent.id, 'priceId:', priceId);
+          console.log('Stripe checkout session created for agent:', agent.id, 'priceId:', priceId, 'intendedPlan:', subscriptionPlan);
         } catch (err) {
           console.error('Error creating Stripe checkout for agent:', err);
           stripeError = 'Error al procesar el pago. Puedes intentarlo de nuevo desde tu perfil.';

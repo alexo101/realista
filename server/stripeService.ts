@@ -30,13 +30,17 @@ export class StripeService {
   }
 
   // Create checkout session for subscription
+  // SECURITY: intendedPlan is passed for audit/debugging purposes
+  // The actual plan upgrade is determined by the Stripe price's product metadata
   async createCheckoutSession(
     customerId: string, 
     priceId: string, 
     successUrl: string, 
     cancelUrl: string,
     entityType: EntityType,
-    entityId: number
+    entityId: number,
+    intendedPlan?: string,
+    billingCycle?: 'monthly' | 'yearly'
   ) {
     const stripe = await getUncachableStripeClient();
     return await stripe.checkout.sessions.create({
@@ -49,11 +53,15 @@ export class StripeService {
       metadata: {
         entityType,
         entityId: String(entityId),
+        intendedPlan: intendedPlan || '',
+        billingCycle: billingCycle || '',
       },
       subscription_data: {
         metadata: {
           entityType,
           entityId: String(entityId),
+          intendedPlan: intendedPlan || '',
+          billingCycle: billingCycle || '',
         },
       },
     });
