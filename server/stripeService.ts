@@ -311,8 +311,8 @@ export class StripeService {
             subscriptionPlan: isActive ? planName : 'basica',
             isYearlyBilling: isActive ? isYearly : false,
             agenciesLimit: isActive ? (limits as any).agencies : (freeTierLimits as any).agencies,
-            agentsLimit: isActive ? (limits as any).agents : (freeTierLimits as any).agents,
-            propertiesLimit: isActive ? (limits as any).properties : (freeTierLimits as any).properties,
+            totalSeatsLimit: isActive ? (limits as any).agents : (freeTierLimits as any).agents,
+            totalActivePropertiesLimit: isActive ? (limits as any).properties : (freeTierLimits as any).properties,
           })
           .where(eq(networks.id, entityId));
         
@@ -395,8 +395,8 @@ export class StripeService {
           subscriptionPlan: 'basica',
           isYearlyBilling: false,
           agenciesLimit: (limits as any).agencies,
-          agentsLimit: (limits as any).agents,
-          propertiesLimit: (limits as any).properties,
+          totalSeatsLimit: (limits as any).agents,
+          totalActivePropertiesLimit: (limits as any).properties,
         })
         .where(eq(networks.id, entityId));
       console.log(`Activated free tier for network ${entityId}`);
