@@ -1,9 +1,8 @@
 // Stripe webhook handlers for Realista
 // Reference: connection:conn_stripe_01KAYT26YTNSFF1S0A9Q4FE38R
 
-import { getStripeSync, getUncachableStripeClient } from './stripeClient';
+import { getStripeSync } from './stripeClient';
 import { stripeService } from './stripeService';
-import Stripe from 'stripe';
 
 // Events that should trigger subscription sync
 const SUBSCRIPTION_EVENTS = [
@@ -28,19 +27,20 @@ export class WebhookHandlers {
     const sync = await getStripeSync();
     
     // Process the webhook via stripe-replit-sync (syncs to stripe schema)
+    // This also verifies the signature internally
     await sync.processWebhook(payload, signature, uuid);
 
-    // Parse the event to check if we need to sync subscription status
+    // Parse the raw payload to extract event data
+    // Signature was already verified by sync.processWebhook above
     try {
-      const stripe = await getUncachableStripeClient();
-      const webhookSecret = await sync.getWebhookSecret(uuid);
-      const event = stripe.webhooks.constructEvent(payload.toString(), signature, webhookSecret);
+      const eventData = JSON.parse(payload.toString());
+      const eventType = eventData.type;
 
-      console.log(`Stripe webhook received: ${event.type}`);
+      console.log(`Received webhook ${eventData.id}: ${eventType} for ${eventData.data?.object?.object || 'unknown'} ${eventData.data?.object?.id || ''}`);
 
       // Handle subscription-related events
-      if (SUBSCRIPTION_EVENTS.includes(event.type)) {
-        await WebhookHandlers.handleSubscriptionEvent(event);
+      if (SUBSCRIPTION_EVENTS.includes(eventType)) {
+        await WebhookHandlers.handleSubscriptionEvent(eventType, eventData.data?.object);
       }
     } catch (parseError: any) {
       console.error('Error parsing webhook event for sync:', parseError.message);
@@ -48,23 +48,23 @@ export class WebhookHandlers {
     }
   }
 
-  private static async handleSubscriptionEvent(event: Stripe.Event): Promise<void> {
+  private static async handleSubscriptionEvent(eventType: string, data: any): Promise<void> {
     let subscriptionId: string | null = null;
 
-    switch (event.type) {
+    switch (eventType) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        subscriptionId = subscription.id;
+        subscriptionId = data?.id;
+        console.log(`Subscription event ${eventType}: subscription ${subscriptionId}, status: ${data?.status}`);
         break;
       }
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode === 'subscription' && session.subscription) {
-          subscriptionId = typeof session.subscription === 'string' 
-            ? session.subscription 
-            : session.subscription.id;
+        if (data?.mode === 'subscription' && data?.subscription) {
+          subscriptionId = typeof data.subscription === 'string' 
+            ? data.subscription 
+            : data.subscription.id;
+          console.log(`Checkout completed: session ${data.id}, subscription ${subscriptionId}`);
         }
         break;
       }
@@ -73,8 +73,13 @@ export class WebhookHandlers {
     if (subscriptionId) {
       console.log(`Syncing subscription status for: ${subscriptionId}`);
       // Wait a moment for stripe-replit-sync to finish writing to the database
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      await stripeService.syncSubscriptionStatus(subscriptionId);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      try {
+        await stripeService.syncSubscriptionStatus(subscriptionId);
+        console.log(`Successfully synced subscription ${subscriptionId}`);
+      } catch (syncError: any) {
+        console.error(`Failed to sync subscription ${subscriptionId}:`, syncError.message);
+      }
     }
   }
 }
