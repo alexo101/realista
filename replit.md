@@ -47,6 +47,12 @@ Preferred communication style: Simple, everyday language.
   - **Customer Portal**: `/api/stripe/portal` enables self-service billing management
   - **Subscription Sync**: `stripeService.syncSubscriptionStatus()` updates agency/agent/network `subscription_plan`, `seats_limit`, `active_properties_limit` from Stripe data
   - **Free Tier Activation**: `/api/stripe/activate-free-tier` for Básica/Básico plans that don't require payment
+  - **Secure Upgrade Flow**: Plan upgrades go through Stripe checkout (`/api/agencies/:id/upgrade-plan`):
+    - Validates plan with Zod schema (only paid tiers: pequeña, mediana, lider)
+    - Creates or retrieves Stripe customer ID
+    - If agency has existing subscription → redirects to Customer Portal
+    - If new subscription → creates checkout session with proper success/cancel URLs
+    - Plan only activates via webhook confirmation after successful payment
 
 ### Feature Specifications
 - **User Management**: Role-based authentication, dedicated registration flows, and profile management for agents and agencies.
