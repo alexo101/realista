@@ -83,9 +83,10 @@ export default function UpgradePlan() {
   const [, navigate] = useLocation();
   const [selectedPlan, setSelectedPlan] = useState<typeof agencyPlans[0] | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isYearlyBilling, setIsYearlyBilling] = useState(false);
 
   // Get agency data to find agency ID
-  const { data: agencies } = useQuery({
+  const { data: agencies } = useQuery<{ id: number; subscriptionPlan: string }[]>({
     queryKey: ['/api/agencies'],
     enabled: !!user?.isAdmin,
   });
@@ -93,18 +94,27 @@ export default function UpgradePlan() {
   const agencyId = agencies?.[0]?.id;
 
   const upgradeMutation = useMutation({
-    mutationFn: async (plan: string) => {
+    mutationFn: async ({ plan, isYearlyBilling }: { plan: string; isYearlyBilling: boolean }) => {
       if (!agencyId) throw new Error("No se encontró la agencia");
-      return await apiRequest('PATCH', `/api/agencies/${agencyId}/upgrade-plan`, { plan });
+      return await apiRequest('PATCH', `/api/agencies/${agencyId}/upgrade-plan`, { plan, isYearlyBilling });
     },
-    onSuccess: () => {
-      toast({
-        title: "Tu plan ha sido mejorado. Se cargará en su método de pago establecido",
-        duration: 8000,
-      });
-      setShowConfirmModal(false);
-      // Redirect to calendar page
-      setTimeout(() => navigate('/gestionar'), 2000);
+    onSuccess: (data: { checkoutUrl: string; type: string; message: string }) => {
+      if (data.checkoutUrl) {
+        toast({
+          title: data.type === 'portal' ? "Abriendo portal de facturación" : "Redirigiendo a Stripe",
+          description: data.message,
+          duration: 3000,
+        });
+        setShowConfirmModal(false);
+        // Redirect to Stripe checkout or customer portal
+        window.location.href = data.checkoutUrl;
+      } else {
+        toast({
+          title: "Error",
+          description: "No se recibió la URL de pago",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -122,7 +132,7 @@ export default function UpgradePlan() {
 
   const handleConfirmUpgrade = () => {
     if (selectedPlan) {
-      upgradeMutation.mutate(selectedPlan.id);
+      upgradeMutation.mutate({ plan: selectedPlan.id, isYearlyBilling });
     }
   };
 
@@ -278,9 +288,41 @@ export default function UpgradePlan() {
               </li>
             </ul>
             
+            {/* Billing Period Toggle */}
+            <div className="mt-4 flex items-center justify-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <span className={`text-sm font-medium ${!isYearlyBilling ? 'text-primary' : 'text-muted-foreground'}`}>
+                Mensual
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsYearlyBilling(!isYearlyBilling)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isYearlyBilling ? 'bg-primary' : 'bg-gray-300'
+                }`}
+                data-testid="toggle-billing-period"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isYearlyBilling ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className={`text-sm font-medium ${isYearlyBilling ? 'text-primary' : 'text-muted-foreground'}`}>
+                Anual
+              </span>
+              {isYearlyBilling && (
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  2 meses gratis
+                </Badge>
+              )}
+            </div>
+
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-900">
-                <strong>Precio:</strong> {selectedPlan?.monthlyPrice}€/mes
+                <strong>Precio:</strong>{' '}
+                {isYearlyBilling 
+                  ? `${selectedPlan?.yearlyPrice}€/año (${Math.floor((selectedPlan?.yearlyPrice || 0) / 12)}€/mes)`
+                  : `${selectedPlan?.monthlyPrice}€/mes`}
               </p>
             </div>
           </div>
@@ -299,7 +341,7 @@ export default function UpgradePlan() {
               disabled={upgradeMutation.isPending}
               data-testid="button-confirm-upgrade"
             >
-              {upgradeMutation.isPending ? 'Procesando...' : 'Confirmar mejora'}
+              {upgradeMutation.isPending ? 'Redirigiendo a Stripe...' : 'Continuar al pago'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -3669,7 +3669,8 @@ Gracias!
     }
   });
 
-  // Upgrade agency subscription plan
+  // Upgrade agency subscription plan via Stripe checkout
+  // SECURITY: Plan upgrade only happens via Stripe webhook after successful payment
   app.patch("/api/agencies/:id/upgrade-plan", 
     requireAuth,
     authorize({
@@ -3682,7 +3683,23 @@ Gracias!
     async (req, res) => {
     try {
       const agencyId = parseInt(req.params.id);
-      const { plan } = req.body;
+      const sessionUser = req.user as any;
+
+      // Validate request body with Zod
+      const upgradeSchema = z.object({
+        plan: z.enum(['pequeña', 'mediana', 'lider']),
+        isYearlyBilling: z.boolean().default(false)
+      });
+
+      const parseResult = upgradeSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Datos inválidos", 
+          errors: parseResult.error.flatten().fieldErrors 
+        });
+      }
+
+      const { plan, isYearlyBilling } = parseResult.data;
 
       // Get the agency
       const agency = await storage.getAgency(agencyId);
@@ -3690,67 +3707,107 @@ Gracias!
         return res.status(404).json({ message: "Agencia no encontrada" });
       }
 
-      // Validate the plan
-      const validPlans = ['pequeña', 'mediana', 'lider'];
-      if (!validPlans.includes(plan)) {
-        return res.status(400).json({ message: "Plan inválido" });
+      // Prevent upgrading to same plan
+      if (agency.subscriptionPlan === plan) {
+        return res.status(400).json({ message: "Ya tienes este plan activo" });
       }
 
-      // Determine the new limits based on the plan
-      let seatsLimit: number | null;
-      let activePropertiesLimit: number | null;
+      const { stripeService } = await import("./stripeService");
 
-      switch (plan) {
-        case 'pequeña':
-          seatsLimit = 2;
-          activePropertiesLimit = 10;
-          break;
-        case 'mediana':
-          seatsLimit = 6;
-          activePropertiesLimit = 30;
-          break;
-        case 'lider':
-          seatsLimit = null; // unlimited
-          activePropertiesLimit = null; // unlimited
-          break;
-        default:
-          return res.status(400).json({ message: "Plan inválido" });
-      }
-
-      // Store previous state for audit
-      const previousState = {
-        subscriptionPlan: agency.subscriptionPlan,
-        seatsLimit: agency.seatsLimit,
-        activePropertiesLimit: agency.activePropertiesLimit,
+      // Helper function to get base URL with reliable fallback
+      const getBaseUrl = (): string => {
+        const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+        if (replitDomain) return `https://${replitDomain}`;
+        
+        const forwardedHost = req.get('x-forwarded-host');
+        if (forwardedHost && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
+          return `https://${forwardedHost}`;
+        }
+        
+        // Fallback for development: use request host with protocol
+        const host = req.get('host') || 'localhost:5000';
+        const protocol = req.protocol || 'http';
+        return `${protocol}://${host}`;
       };
 
-      // Update the agency plan and limits
-      const updatedAgency = await storage.updateAgency(agencyId, {
-        subscriptionPlan: plan,
-        seatsLimit,
-        activePropertiesLimit,
-      });
+      const baseUrl = getBaseUrl();
 
-      // Log the subscription event
-      await storage.recordSubscriptionEvent({
-        entityType: 'agency',
-        entityId: agencyId,
-        eventType: 'plan_changed',
-        previousState,
-        newState: {
-          subscriptionPlan: plan,
-          seatsLimit,
-          activePropertiesLimit,
-        },
-        triggeredBy: sessionUserId,
-        reason: `Plan mejorado a ${plan}`,
-        metadata: {
-          upgradedAt: new Date().toISOString(),
-        },
-      });
+      // If agency already has an active Stripe subscription, redirect to Customer Portal
+      if (agency.stripeSubscriptionId && agency.stripeCustomerId) {
+        console.log(`Agency ${agencyId} has existing subscription, redirecting to Customer Portal`);
+        
+        const portalSession = await stripeService.createCustomerPortalSession(
+          agency.stripeCustomerId,
+          `${baseUrl}/gestionar/${sessionUser.uuid}/facturacion`
+        );
+        
+        return res.json({ 
+          checkoutUrl: portalSession.url,
+          type: 'portal',
+          message: 'Redirigiendo al portal de facturación para cambiar de plan'
+        });
+      }
 
-      console.log(`Agency ${agencyId} upgraded to ${plan} plan`);
-      res.json(updatedAgency);
+      // Price IDs for Agency plans
+      const AGENCY_PRICES: Record<string, { monthly: string; yearly: string }> = {
+        'pequeña': {
+          monthly: 'price_1SXWwjLUOluRoTfmCcc8t3Zi',
+          yearly: 'price_1SXWwjLUOluRoTfmgw3QbEg3'
+        },
+        'mediana': {
+          monthly: 'price_1SXWwjLUOluRoTfmpEjIb3YL',
+          yearly: 'price_1SXWwjLUOluRoTfmoXkDt8Ft'
+        },
+        'lider': {
+          monthly: 'price_1SXWwkLUOluRoTfmeva2XNzr',
+          yearly: 'price_1SXWwkLUOluRoTfmnYJ35KxC'
+        }
+      };
+
+      const planPrices = AGENCY_PRICES[plan];
+      const priceId = isYearlyBilling ? planPrices.yearly : planPrices.monthly;
+
+      // Create or get Stripe customer for the agency
+      let customerId = agency.stripeCustomerId;
+      
+      if (!customerId) {
+        // Get admin agent to use their email
+        const adminAgent = await storage.getUser(agency.adminAgentId);
+        if (!adminAgent) {
+          return res.status(404).json({ message: "No se encontró el administrador de la agencia" });
+        }
+        
+        const customer = await stripeService.createCustomer(
+          adminAgent.email,
+          agency.agencyName,
+          'agency',
+          agencyId
+        );
+        customerId = customer.id;
+        
+        // Save customer ID to agency
+        await stripeService.updateCustomerId('agency', agencyId, customerId);
+      }
+
+      // Create Stripe checkout session (baseUrl already defined above)
+      const session = await stripeService.createCheckoutSession(
+        customerId,
+        priceId,
+        `${baseUrl}/gestionar/${sessionUser.uuid}/facturacion?payment=success&plan=${plan}`,
+        `${baseUrl}/gestionar/${sessionUser.uuid}/facturacion?payment=cancelled`,
+        'agency',
+        agencyId,
+        plan,
+        isYearlyBilling ? 'yearly' : 'monthly'
+      );
+
+      console.log(`Stripe checkout session created for agency upgrade: ${agencyId} to ${plan}, priceId: ${priceId}`);
+      
+      res.json({ 
+        checkoutUrl: session.url,
+        type: 'checkout',
+        message: 'Redirigiendo a Stripe para completar el pago'
+      });
     } catch (error) {
       console.error('Error upgrading agency plan:', error);
       res.status(500).json({ message: "Error al mejorar el plan" });
