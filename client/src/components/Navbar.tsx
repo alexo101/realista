@@ -1,11 +1,5 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Home, Menu, X, Sparkles } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { LanguageSelector } from "./LanguageSelector";
@@ -17,12 +11,6 @@ export function Navbar() {
   const { user } = useUser();
   const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Check if user is an admin with "basica" plan
-  const isBasicPlanAdmin = user?.isAdmin && user?.subscriptionPlan === 'basica';
-  const buttonText = isBasicPlanAdmin ? 'Mejora tu plan' : t('nav.realista_pro');
-  const buttonLink = isBasicPlanAdmin ? '/app/mejora-tu-plan' : '/realista-pro';
-  const tooltipText = 'Amplía las capacidades de tu agencia';
 
   return (
     <>
@@ -37,24 +25,15 @@ export function Navbar() {
             {/* Desktop navigation */}
             <div className="hidden md:flex items-center space-x-4">
               <LanguageSelector />
-              {/* RealistaPro link - always visible */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href={buttonLink}>
-                      <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        {buttonText}
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  {isBasicPlanAdmin && (
-                    <TooltipContent>
-                      <p>{tooltipText}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              {/* RealistaPro link - only visible for non-logged-in users */}
+              {!user && (
+                <Link href="/realista-pro">
+                  <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {t('nav.realista_pro')}
+                  </Button>
+                </Link>
+              )}
               
               {user ? (
                 <>
@@ -102,24 +81,15 @@ export function Navbar() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-200">
             <div className="px-4 py-2 space-y-2">
-              {/* RealistaPro link - always visible */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href={buttonLink} className="block">
-                      <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold shadow-lg">
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        {buttonText}
-                      </Button>
-                    </Link>
-                  </TooltipTrigger>
-                  {isBasicPlanAdmin && (
-                    <TooltipContent>
-                      <p>{tooltipText}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              {/* RealistaPro link - only visible for non-logged-in users */}
+              {!user && (
+                <Link href="/realista-pro" className="block">
+                  <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold shadow-lg">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {t('nav.realista_pro')}
+                  </Button>
+                </Link>
+              )}
               
               {user ? (
                 <>
