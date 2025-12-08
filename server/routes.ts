@@ -4637,6 +4637,36 @@ Gracias!
     }
   });
 
+  // Get invoices for entity from Stripe
+  app.get("/api/stripe/invoices/:entityType/:entityId", async (req, res) => {
+    try {
+      const { entityType, entityId } = req.params;
+      
+      let entity: any;
+      if (entityType === 'agency') {
+        entity = await storage.getAgencyById(parseInt(entityId));
+      } else {
+        entity = await storage.getAgentById(parseInt(entityId));
+      }
+
+      if (!entity) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
+
+      if (!entity.stripeCustomerId) {
+        return res.json([]);
+      }
+
+      const { stripeService } = await import("./stripeService");
+      const invoices = await stripeService.getCustomerInvoices(entity.stripeCustomerId);
+      
+      res.json(invoices);
+    } catch (error) {
+      console.error("Error getting invoices:", error);
+      res.status(500).json({ error: "Failed to get invoices" });
+    }
+  });
+
   // =============================================================================
   // NETWORK (FRANCHISE) MANAGEMENT ROUTES
   // =============================================================================

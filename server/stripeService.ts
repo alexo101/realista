@@ -121,6 +121,18 @@ export class StripeService {
     return result.rows[0] || null;
   }
 
+  // Get invoices for a customer from stripe schema
+  async getCustomerInvoices(customerId: string, limit = 10) {
+    const result = await db.execute(
+      sql`SELECT id, amount_paid, currency, status, created, hosted_invoice_url 
+          FROM stripe.invoices 
+          WHERE customer = ${customerId} 
+          ORDER BY created DESC 
+          LIMIT ${limit}`
+    );
+    return result.rows;
+  }
+
   // Get products with their prices (for displaying subscription options)
   async listProductsWithPrices(entityType: EntityType) {
     const result = await db.execute(

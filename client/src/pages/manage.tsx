@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -36,6 +36,7 @@ import { ReviewManagement } from "@/components/ReviewManagement";
 import { AgentCalendar } from "@/pages/agent-calendar";
 import { TeamManagement } from "@/components/TeamManagement";
 import { NetworkManagement } from "@/components/NetworkManagement";
+import { BillingTab } from "@/components/BillingTab";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,7 +60,8 @@ const VALID_SECTIONS = [
   'mensajes', 
   'resenas', 
   'equipo',
-  'red'
+  'red',
+  'facturacion'
 ] as const;
 
 type DashboardSection = typeof VALID_SECTIONS[number];
@@ -744,6 +746,24 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
+
+              {/* Billing section - visible to agency admins and individual agents */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={currentSection === "facturacion"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/facturacion`)}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Suscripción y facturación" : ""}
+                >
+                  <CreditCard className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Suscripción y facturación</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Suscripción y facturación
+                    </div>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
           </SidebarMenu>
           </SidebarContent>
         </Sidebar>
@@ -838,6 +858,15 @@ export default function ManagePage() {
                 Red
               </Button>
             )}
+            <Button
+              variant={currentSection === "facturacion" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => navigate(`/gestionar/${user?.agentUuid}/facturacion`)}
+              className="whitespace-nowrap"
+            >
+              <CreditCard className="h-4 w-4 mr-1" />
+              Facturación
+            </Button>
           </div>
         </div>
 
@@ -2381,6 +2410,13 @@ export default function ManagePage() {
             <NetworkManagement networkId={user.networkId} />
           )}
 
+          {currentSection === "facturacion" && user?.id && (
+            <BillingTab 
+              entityType={user.isAdmin ? 'agency' : 'agent'} 
+              entityId={user.isAdmin ? (user.agencyId || user.id) : user.id}
+              agentUuid={user.agentUuid || ''}
+            />
+          )}
           
         </main>
       </SidebarProvider>
