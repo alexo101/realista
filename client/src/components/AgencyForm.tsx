@@ -255,26 +255,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label htmlFor="agencyWebsite">Sitio web</Label>
-              <Input
-                id="agencyWebsite"
-                value={agencyWebsite}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setAgencyWebsite(value);
-                  if (value && !validateWebsite(value)) {
-                    setWebsiteError("URL inválida. Debe incluir http:// o https://");
-                  } else {
-                    setWebsiteError("");
-                  }
-                }}
-                placeholder="URL de tu sitio web (con https://)"
-                className={websiteError ? "border-red-500" : ""}
-              />
-              {websiteError && <p className="text-sm text-red-500 mt-1">{websiteError}</p>}
-            </div>
-
-            <div>
               <Label htmlFor="yearEstablished">Año de fundación</Label>
               <Select
                 value={yearEstablished ? yearEstablished.toString() : 'none'}
@@ -369,6 +349,34 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             <div>
               <Label>Enlaces a página web y redes sociales</Label>
               <div className="space-y-3 mt-2">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    </div>
+                    <Input
+                      id="agencyWebsite"
+                      value={agencyWebsite}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setAgencyWebsite(value);
+                        if (value && !validateWebsite(value)) {
+                          setWebsiteError("URL inválida. Debe incluir http:// o https://");
+                        } else {
+                          setWebsiteError("");
+                        }
+                      }}
+                      placeholder="URL de tu sitio web (con https://)"
+                      className={websiteError ? "border-red-500" : ""}
+                    />
+                  </div>
+                  {websiteError && <p className="text-sm text-red-500 mt-1">{websiteError}</p>}
+                </div>
+
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
