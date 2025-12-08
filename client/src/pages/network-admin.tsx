@@ -615,8 +615,8 @@ export default function NetworkAdminPage() {
                                 }}
                                 disabled={updateAgencyPlanMutation.isPending}
                               >
-                                <SelectTrigger className="w-40 justify-start" data-testid={`select-plan-${agency.id}`}>
-                                  <span className="text-left">{PLAN_DISPLAY_LABELS[planKey]}</span>
+                                <SelectTrigger className="w-40 flex justify-between pr-2" data-testid={`select-plan-${agency.id}`}>
+                                  <span className="text-left flex-1">{PLAN_DISPLAY_LABELS[planKey]}</span>
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="basica">Básica (0€)</SelectItem>
