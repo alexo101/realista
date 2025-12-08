@@ -367,7 +367,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label>Enlaces a redes sociales</Label>
+              <Label>Enlaces a página web y redes sociales</Label>
               <div className="space-y-3 mt-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
