@@ -316,7 +316,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 data-testid="button-upgrade-plan"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                Cambiar plan
+                {currentPlan.id === 'basica' || currentPlan.id === 'basico' ? 'Mejorar plan' : 'Cambiar plan'}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
