@@ -76,6 +76,13 @@ const AGENCY_PLAN_PRICES: Record<string, { name: string; price: number; seats: n
   'lider': { name: 'Líder', price: 249, seats: null, properties: null },
 };
 
+const PLAN_DISPLAY_LABELS: Record<string, string> = {
+  'basica': 'Básica (0€)',
+  'pequeña': 'Pequeña (29€)',
+  'mediana': 'Mediana (79€)',
+  'lider': 'Líder (249€)',
+};
+
 export default function NetworkAdminPage() {
   const { user, logout, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
@@ -608,8 +615,8 @@ export default function NetworkAdminPage() {
                                 }}
                                 disabled={updateAgencyPlanMutation.isPending}
                               >
-                                <SelectTrigger className="w-32" data-testid={`select-plan-${agency.id}`}>
-                                  <SelectValue />
+                                <SelectTrigger className="w-40 justify-start" data-testid={`select-plan-${agency.id}`}>
+                                  <span className="text-left">{PLAN_DISPLAY_LABELS[planKey]}</span>
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="basica">Básica (0€)</SelectItem>
