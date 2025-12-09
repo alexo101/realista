@@ -281,7 +281,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                   <span className="text-sm">Límite de agentes</span>
                 </div>
                 <p className="text-2xl font-bold" data-testid="text-agents-limit">
-                  {billingInfo?.seatsLimit === null ? 'Sin límite' : billingInfo?.seatsLimit || 1}
+                  {billingInfo?.seatsLimit === null || billingInfo?.seatsLimit === 999999 ? 'Sin límite' : billingInfo?.seatsLimit || 1}
                 </p>
               </div>
             )}
@@ -291,7 +291,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 <span className="text-sm">Límite de propiedades</span>
               </div>
               <p className="text-2xl font-bold" data-testid="text-properties-limit">
-                {billingInfo?.activePropertiesLimit === null ? 'Sin límite' : billingInfo?.activePropertiesLimit || 2}
+                {billingInfo?.activePropertiesLimit === null || billingInfo?.activePropertiesLimit === 999999 ? 'Sin límite' : billingInfo?.activePropertiesLimit || 2}
               </p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
