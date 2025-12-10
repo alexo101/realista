@@ -402,20 +402,32 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
             </div>
           </div>
 
-          {/* Change Plan Button */}
-          {superiorPlans.length > 0 && (
-            <div className="mt-6">
-              <Button
-                onClick={() => navigate(`/mejorar-plan`)}
-                className="w-full md:w-auto"
-                data-testid="button-upgrade-plan"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                {currentPlan.id === 'basica' || currentPlan.id === 'basico' ? 'Mejorar plan' : 'Cambiar plan'}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          )}
+          {/* Change Plan Dropdown */}
+          <div className="mt-6">
+            <Label className="text-sm text-muted-foreground mb-2 block">Cambiar plan</Label>
+            <Select
+              value={currentPlan.id}
+              onValueChange={handlePlanSelect}
+              disabled={changePlanMutation.isPending}
+            >
+              <SelectTrigger className="w-full md:w-64 flex justify-between" data-testid="select-plan">
+                <span className="text-left flex-1">{planLabels[currentPlan.id]}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {plans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id} data-testid={`select-plan-option-${plan.id}`}>
+                    {planLabels[plan.id]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {changePlanMutation.isPending && (
+              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Procesando cambio de plan...
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -674,6 +686,57 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Plan Change Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar cambio de plan</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>Estás a punto de cambiar tu plan de suscripción:</p>
+                <div className="flex items-center justify-center gap-4 py-4">
+                  <div className="text-center">
+                    <Badge className={currentPlan.badgeColor}>{currentPlan.name}</Badge>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {currentPlan.monthlyPrice}€/mes
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                  {getPendingPlanDetails() && (
+                    <div className="text-center">
+                      <Badge className={getPendingPlanDetails()!.badgeColor}>
+                        {getPendingPlanDetails()!.name}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {getPendingPlanDetails()!.monthlyPrice}€/mes
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {getPendingPlanDetails() && getPendingPlanDetails()!.monthlyPrice > currentPlan.monthlyPrice && (
+                  <p className="text-sm text-center">
+                    Serás redirigido a la página de pago para completar el proceso.
+                  </p>
+                )}
+                {getPendingPlanDetails() && getPendingPlanDetails()!.monthlyPrice < currentPlan.monthlyPrice && (
+                  <p className="text-sm text-center">
+                    Serás redirigido al portal de facturación para gestionar el cambio.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelPlanChange} data-testid="button-cancel-plan-change">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmPlanChange} data-testid="button-confirm-plan-change">
+              Confirmar cambio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
