@@ -400,7 +400,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
 
           {/* Change Plan Dropdown */}
           <div className="mt-6">
-            <Label className="text-sm text-muted-foreground mb-2 block">Cambiar plan</Label>
+            <Label className="text-sm text-muted-foreground mb-2 block">Plan actual</Label>
             <Select
               value={selectedPlanId || currentPlan.id}
               onValueChange={handlePlanSelect}
