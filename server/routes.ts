@@ -4579,7 +4579,7 @@ Gracias!
   // Create checkout session for plan upgrade (from billing tab dropdown)
   app.post("/api/stripe/checkout-plan", async (req, res) => {
     try {
-      if (!req.session.userId) {
+      if (!req.session.user) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
@@ -4627,11 +4627,11 @@ Gracias!
       let name: string;
       
       if (entityType === 'agency') {
-        const agency = await storage.getAgencyById(entityId);
+        const agency = await storage.getAgency(entityId);
         if (!agency) {
           return res.status(404).json({ error: "Agency not found" });
         }
-        const adminAgent = await storage.getUser(agency.adminAgentId);
+        const adminAgent = await storage.getAgentById(agency.adminAgentId);
         if (!adminAgent) {
           return res.status(404).json({ error: "Admin agent not found" });
         }
