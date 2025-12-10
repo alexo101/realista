@@ -227,31 +227,24 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       const newPlan = plans.find(p => p.id === newPlanId);
       if (!newPlan) throw new Error("Plan no encontrado");
 
-      if (newPlan.monthlyPrice === 0) {
+      // For free plan or downgrades with existing subscription, use portal
+      if (newPlan.monthlyPrice === 0 || billingInfo?.stripeSubscriptionId) {
         if (billingInfo?.stripeCustomerId) {
-          const response = await apiRequest('POST', '/api/stripe/portal', { 
+          return await apiRequest('POST', '/api/stripe/portal', { 
             customerId: billingInfo.stripeCustomerId 
           });
-          return response.json();
-        } else {
-          throw new Error("Para cambiar al plan gratuito, gestiona tu suscripción desde el portal");
+        } else if (newPlan.monthlyPrice === 0) {
+          throw new Error("Ya estás en el plan gratuito");
         }
       }
 
-      if (billingInfo?.stripeSubscriptionId) {
-        const response = await apiRequest('POST', '/api/stripe/portal', { 
-          customerId: billingInfo.stripeCustomerId 
-        });
-        return response.json();
-      }
-
-      const response = await apiRequest('POST', '/api/stripe/checkout', {
+      // For upgrades without existing subscription, create checkout
+      return await apiRequest('POST', '/api/stripe/checkout-plan', {
         entityType,
         entityId,
         planId: newPlanId,
         isYearly: billingInfo?.isYearlyBilling || false
       });
-      return response.json();
     },
     onSuccess: (data) => {
       if (data.url) {

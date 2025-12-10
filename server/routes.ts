@@ -4576,6 +4576,106 @@ Gracias!
     }
   });
 
+  // Create checkout session for plan upgrade (from billing tab dropdown)
+  app.post("/api/stripe/checkout-plan", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { entityType, entityId, planId, isYearly } = req.body;
+      
+      if (!entityType || !entityId || !planId) {
+        return res.status(400).json({ error: "entityType, entityId, and planId are required" });
+      }
+
+      // Price mappings
+      const AGENCY_PRICES: Record<string, { monthly: string; yearly: string }> = {
+        'pequeña': {
+          monthly: 'price_1SXWwjLUOluRoTfmCcc8t3Zi',
+          yearly: 'price_1SXWwjLUOluRoTfmgw3QbEg3'
+        },
+        'mediana': {
+          monthly: 'price_1SXWwkLUOluRoTfmEJilorxX',
+          yearly: 'price_1SXWwkLUOluRoTfm27nDYDzB'
+        },
+        'lider': {
+          monthly: 'price_1SXWwkLUOluRoTfmeva2XNzr',
+          yearly: 'price_1SXWwkLUOluRoTfmrqNVpOwU'
+        }
+      };
+
+      const AGENT_PRICES: Record<string, { monthly: string; yearly: string }> = {
+        'lider': {
+          monthly: 'price_1SXWwkLUOluRoTfmsG0VnAfx', // Agent Líder 20€/month
+          yearly: 'price_1SXWwkLUOluRoTfmPpDrXNtN'   // Agent Líder 200€/year
+        }
+      };
+
+      const priceMapping = entityType === 'agency' ? AGENCY_PRICES : AGENT_PRICES;
+      const planPrices = priceMapping[planId];
+
+      if (!planPrices) {
+        return res.status(400).json({ error: `Invalid plan: ${planId}` });
+      }
+
+      const priceId = isYearly ? planPrices.yearly : planPrices.monthly;
+      const { stripeService } = await import("./stripeService");
+
+      // Get entity info for customer creation
+      let email: string;
+      let name: string;
+      
+      if (entityType === 'agency') {
+        const agency = await storage.getAgencyById(entityId);
+        if (!agency) {
+          return res.status(404).json({ error: "Agency not found" });
+        }
+        const adminAgent = await storage.getUser(agency.adminAgentId);
+        if (!adminAgent) {
+          return res.status(404).json({ error: "Admin agent not found" });
+        }
+        email = adminAgent.email;
+        name = agency.agencyName;
+      } else {
+        const agent = await storage.getAgentById(entityId);
+        if (!agent) {
+          return res.status(404).json({ error: "Agent not found" });
+        }
+        email = agent.email;
+        name = `${agent.name} ${agent.surname}`;
+      }
+
+      // Get or create Stripe customer
+      let customerId = await stripeService.getCustomerByEntity(entityType, entityId);
+      
+      if (!customerId) {
+        const customer = await stripeService.createCustomer(email, name, entityType, entityId);
+        customerId = customer.id;
+        await stripeService.updateCustomerId(entityType, entityId, customerId);
+      }
+      
+      // Build return URL
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      
+      // Create checkout session with metadata for the intended plan
+      const session = await stripeService.createCheckoutSession(
+        customerId,
+        priceId,
+        `${baseUrl}/gestionar?success=true&plan=${planId}`,
+        `${baseUrl}/gestionar?cancelled=true`,
+        entityType,
+        entityId
+      );
+
+      console.log('Created checkout session for plan change:', { entityType, entityId, planId, priceId });
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating checkout session for plan:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
   // Activate free tier for agency or agent (no Stripe payment needed)
   app.post("/api/stripe/activate-free-tier", async (req, res) => {
     try {
