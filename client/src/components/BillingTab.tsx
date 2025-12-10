@@ -165,6 +165,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   });
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   const plans = entityType === 'agency' ? AGENCY_PLANS : AGENT_PLANS;
   const planLabels = entityType === 'agency' ? AGENCY_PLAN_LABELS : AGENT_PLAN_LABELS;
@@ -267,6 +268,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   });
 
   const handlePlanSelect = (planId: string) => {
+    setSelectedPlanId(planId);
     if (planId !== currentPlan.id) {
       setPendingPlan(planId);
       setShowConfirmDialog(true);
@@ -282,6 +284,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
 
   const handleCancelPlanChange = () => {
     setPendingPlan(null);
+    setSelectedPlanId(currentPlan.id);
     setShowConfirmDialog(false);
   };
 
@@ -406,12 +409,12 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
           <div className="mt-6">
             <Label className="text-sm text-muted-foreground mb-2 block">Cambiar plan</Label>
             <Select
-              value={currentPlan.id}
+              value={selectedPlanId || currentPlan.id}
               onValueChange={handlePlanSelect}
               disabled={changePlanMutation.isPending}
             >
               <SelectTrigger className="w-full md:w-64 flex justify-between" data-testid="select-plan">
-                <span className="text-left flex-1">{planLabels[currentPlan.id]}</span>
+                <span className="text-left flex-1">{planLabels[selectedPlanId || currentPlan.id]}</span>
               </SelectTrigger>
               <SelectContent>
                 {plans.map((plan) => (
@@ -688,7 +691,9 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       </Card>
 
       {/* Plan Change Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <AlertDialog open={showConfirmDialog} onOpenChange={(open) => {
+        if (!open) handleCancelPlanChange();
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar cambio de plan</AlertDialogTitle>
