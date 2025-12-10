@@ -9,6 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   CreditCard, 
   Building, 
@@ -26,6 +37,18 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+const AGENCY_PLAN_LABELS: Record<string, string> = {
+  'basica': 'Básica (0€/mes)',
+  'pequeña': 'Pequeña (29€/mes)',
+  'mediana': 'Mediana (79€/mes)',
+  'lider': 'Líder (249€/mes)',
+};
+
+const AGENT_PLAN_LABELS: Record<string, string> = {
+  'basico': 'Básico (0€/mes)',
+  'lider': 'Líder (20€/mes)',
+};
 
 interface BillingInfo {
   currentPlan: string;
@@ -140,8 +163,11 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
     businessName: "",
     address: ""
   });
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const plans = entityType === 'agency' ? AGENCY_PLANS : AGENT_PLANS;
+  const planLabels = entityType === 'agency' ? AGENCY_PLAN_LABELS : AGENT_PLAN_LABELS;
 
   const { data: billingInfo, isLoading } = useQuery<BillingInfo>({
     queryKey: ['/api/stripe/billing', entityType, entityId],
@@ -194,6 +220,75 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       });
     },
   });
+
+  const changePlanMutation = useMutation({
+    mutationFn: async (newPlanId: string) => {
+      const newPlan = plans.find(p => p.id === newPlanId);
+      if (!newPlan) throw new Error("Plan no encontrado");
+
+      if (newPlan.monthlyPrice === 0) {
+        if (billingInfo?.stripeCustomerId) {
+          const response = await apiRequest('POST', '/api/stripe/portal', { 
+            customerId: billingInfo.stripeCustomerId 
+          });
+          return response.json();
+        } else {
+          throw new Error("Para cambiar al plan gratuito, gestiona tu suscripción desde el portal");
+        }
+      }
+
+      if (billingInfo?.stripeSubscriptionId) {
+        const response = await apiRequest('POST', '/api/stripe/portal', { 
+          customerId: billingInfo.stripeCustomerId 
+        });
+        return response.json();
+      }
+
+      const response = await apiRequest('POST', '/api/stripe/checkout', {
+        entityType,
+        entityId,
+        planId: newPlanId,
+        isYearly: billingInfo?.isYearlyBilling || false
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo procesar el cambio de plan",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePlanSelect = (planId: string) => {
+    if (planId !== currentPlan.id) {
+      setPendingPlan(planId);
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleConfirmPlanChange = () => {
+    if (pendingPlan) {
+      changePlanMutation.mutate(pendingPlan);
+      setShowConfirmDialog(false);
+    }
+  };
+
+  const handleCancelPlanChange = () => {
+    setPendingPlan(null);
+    setShowConfirmDialog(false);
+  };
+
+  const getPendingPlanDetails = () => {
+    if (!pendingPlan) return null;
+    return plans.find(p => p.id === pendingPlan);
+  };
 
   const currentPlan = plans.find(p => p.id === billingInfo?.currentPlan?.toLowerCase()) || plans[0];
   const currentPlanIndex = plans.findIndex(p => p.id === currentPlan.id);
