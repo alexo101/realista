@@ -202,18 +202,15 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       const newPlan = plans.find(p => p.id === newPlanId);
       if (!newPlan) throw new Error("Plan no encontrado");
 
-      // For free plan or downgrades with existing subscription, use portal
-      if (newPlan.monthlyPrice === 0 || billingInfo?.stripeSubscriptionId) {
-        if (billingInfo?.stripeCustomerId) {
-          return await apiRequest('POST', '/api/stripe/portal', { 
-            customerId: billingInfo.stripeCustomerId 
-          });
-        } else if (newPlan.monthlyPrice === 0) {
-          throw new Error("Ya estás en el plan gratuito");
-        }
+      // For free plan downgrades, use activate-free-tier endpoint
+      if (newPlan.monthlyPrice === 0) {
+        return await apiRequest('POST', '/api/stripe/activate-free-tier', {
+          entityType,
+          entityId
+        });
       }
 
-      // For upgrades without existing subscription, create checkout
+      // For all paid plans, redirect to Stripe checkout
       return await apiRequest('POST', '/api/stripe/checkout-plan', {
         entityType,
         entityId,
@@ -223,7 +220,16 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
     },
     onSuccess: (data) => {
       if (data.url) {
+        // Redirect to Stripe checkout
         window.location.href = data.url;
+      } else if (data.success) {
+        // Free tier activated successfully
+        toast({
+          title: "Plan actualizado",
+          description: "Tu plan ha sido cambiado exitosamente",
+        });
+        // Refresh the page to show updated plan
+        window.location.reload();
       }
     },
     onError: (error: any) => {
