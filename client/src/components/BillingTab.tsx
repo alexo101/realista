@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { 
-  CreditCard, 
   Building, 
   Users, 
   Star, 
@@ -198,30 +197,6 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
     enabled: !!entityId && !!billingInfo?.stripeCustomerId
   });
 
-  const portalMutation = useMutation({
-    mutationFn: async () => {
-      if (!billingInfo?.stripeCustomerId) {
-        throw new Error("No customer ID found");
-      }
-      const response = await apiRequest('POST', '/api/stripe/portal', { 
-        customerId: billingInfo.stripeCustomerId 
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo abrir el portal de facturación",
-        variant: "destructive",
-      });
-    },
-  });
-
   const changePlanMutation = useMutation({
     mutationFn: async (newPlanId: string) => {
       const newPlan = plans.find(p => p.id === newPlanId);
@@ -345,21 +320,6 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 </CardDescription>
               </div>
             </div>
-            {currentPlan.monthlyPrice > 0 && billingInfo?.stripeCustomerId && (
-              <Button
-                variant="outline"
-                onClick={() => portalMutation.mutate()}
-                disabled={portalMutation.isPending}
-                data-testid="button-manage-subscription"
-              >
-                {portalMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <CreditCard className="h-4 w-4 mr-2" />
-                )}
-                Gestionar suscripción
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent>
