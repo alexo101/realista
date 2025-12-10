@@ -4662,7 +4662,7 @@ Gracias!
       const session = await stripeService.createCheckoutSession(
         customerId,
         priceId,
-        `${baseUrl}/gestionar?success=true&plan=${planId}`,
+        `${baseUrl}/gestionar?success=true&plan=${encodeURIComponent(planId)}`,
         `${baseUrl}/gestionar?cancelled=true`,
         entityType,
         entityId

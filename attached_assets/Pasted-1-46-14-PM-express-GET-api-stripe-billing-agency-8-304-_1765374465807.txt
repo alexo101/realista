@@ -1,0 +1,81 @@
+1:46:14 PM [express] GET /api/stripe/billing/agency/8 304 in 277ms :: {"currentPlan":"mediana","isYe…
+Error creating checkout session for plan: StripeInvalidRequestError: Invalid URL: Non-ASCII characters in URLs must be percent-encoded in order for the URL to be valid.
+    at generateV1Error (file:///home/runner/workspace/node_modules/stripe/esm/Error.js:8:20)
+    at res.toJSON.then.StripeAPIError.message (file:///home/runner/workspace/node_modules/stripe/esm/RequestSender.js:105:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  type: 'StripeInvalidRequestError',
+  raw: {
+    code: 'url_invalid',
+    doc_url: 'https://stripe.com/docs/error-codes/url-invalid',
+    message: 'Invalid URL: Non-ASCII characters in URLs must be percent-encoded in order for the URL to be valid.',
+    param: 'success_url',
+    request_log_url: 'https://dashboard.stripe.com/test/logs/req_VIn9UarddvxZ9W?t=1765374389',
+    type: 'invalid_request_error',
+    headers: {
+      server: 'nginx',
+      date: 'Wed, 10 Dec 2025 13:46:29 GMT',
+      'content-type': 'application/json',
+      'content-length': '393',
+      connection: 'keep-alive',
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+      'access-control-allow-origin': '*',
+      'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+      'access-control-max-age': '300',
+      'cache-control': 'no-cache, no-store',
+      'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=cf-mTMtESXDxQveS5m0CReVeR8scchqpYYTevpVmlCUhRmZpcEJLAHCaPZSompq5lrLSDFZd_GBffSpk",
+      'idempotency-key': 'stripe-node-retry-eca917df-8048-46c6-a4e5-4ff20ccf4615',
+      'original-request': 'req_VIn9UarddvxZ9W',
+      'request-id': 'req_VIn9UarddvxZ9W',
+      'stripe-version': '2025-08-27.basil',
+      vary: 'Origin',
+      'x-stripe-priority-routing-enabled': 'true',
+      'x-stripe-routing-context-priority-tier': 'api-testmode',
+      'x-wc': 'ABGHIJ',
+      'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+    },
+    statusCode: 400,
+    requestId: 'req_VIn9UarddvxZ9W'
+  },
+  rawType: 'invalid_request_error',
+  code: 'url_invalid',
+  doc_url: 'https://stripe.com/docs/error-codes/url-invalid',
+  param: 'success_url',
+  detail: undefined,
+  headers: {
+    server: 'nginx',
+    date: 'Wed, 10 Dec 2025 13:46:29 GMT',
+    'content-type': 'application/json',
+    'content-length': '393',
+    connection: 'keep-alive',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+    'access-control-max-age': '300',
+    'cache-control': 'no-cache, no-store',
+    'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self'; script-src 'self' 'report-sample'; style-src 'self'; worker-src 'none'; upgrade-insecure-requests; report-uri https://q.stripe.com/csp-violation?q=cf-mTMtESXDxQveS5m0CReVeR8scchqpYYTevpVmlCUhRmZpcEJLAHCaPZSompq5lrLSDFZd_GBffSpk",
+    'idempotency-key': 'stripe-node-retry-eca917df-8048-46c6-a4e5-4ff20ccf4615',
+    'original-request': 'req_VIn9UarddvxZ9W',
+    'request-id': 'req_VIn9UarddvxZ9W',
+    'stripe-version': '2025-08-27.basil',
+    vary: 'Origin',
+    'x-stripe-priority-routing-enabled': 'true',
+    'x-stripe-routing-context-priority-tier': 'api-testmode',
+    'x-wc': 'ABGHIJ',
+    'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+  },
+  requestId: 'req_VIn9UarddvxZ9W',
+  statusCode: 400,
+  userMessage: undefined,
+  charge: undefined,
+  decline_code: undefined,
+  payment_intent: undefined,
+  payment_method: undefined,
+  payment_method_type: undefined,
+  setup_intent: undefined,
+  source: undefined
+}
+1:46:29 PM [express] POST /api/stripe/checkout-plan 500 in 1272ms :: {"error":"Failed to create chec…
+Received webhook evt_1ScnirLUOluRoTfm8TTTk4S7: customer.created for customer cus_TZxelRBC8neytb
+Received webhook evt_1ScnirLUOluRoTfm8TTTk4S7: customer.created for customer cus_TZxelRBC8neytb
