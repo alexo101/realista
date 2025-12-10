@@ -333,7 +333,6 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               </div>
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  Plan actual
                   <Badge className={currentPlan.badgeColor} data-testid="badge-current-plan">
                     {currentPlan.name}
                   </Badge>
