@@ -99,6 +99,7 @@ export const agencies = pgTable("agencies", {
   // Stripe integration fields
   stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID for billing
   stripeSubscriptionId: text("stripe_subscription_id"), // Current active subscription ID
+  subscriptionStartDate: timestamp("subscription_start_date"), // When the current subscription started (for renewal calculation)
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -137,6 +138,7 @@ export const agents = pgTable("agents", {
   // Stripe integration fields (for independent agents only)
   stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID for billing
   stripeSubscriptionId: text("stripe_subscription_id"), // Current active subscription ID
+  subscriptionStartDate: timestamp("subscription_start_date"), // When the current subscription started (for renewal calculation)
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
