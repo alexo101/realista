@@ -165,6 +165,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'yearly' | null>(null);
 
   const plans = entityType === 'agency' ? AGENCY_PLANS : AGENT_PLANS;
   const planLabels = entityType === 'agency' ? AGENCY_PLAN_LABELS : AGENT_PLAN_LABELS;
@@ -198,8 +199,8 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   });
 
   const changePlanMutation = useMutation({
-    mutationFn: async (newPlanId: string) => {
-      const newPlan = plans.find(p => p.id === newPlanId);
+    mutationFn: async ({ planId, isYearly }: { planId: string; isYearly: boolean }) => {
+      const newPlan = plans.find(p => p.id === planId);
       if (!newPlan) throw new Error("Plan no encontrado");
 
       // For free plan downgrades, use activate-free-tier endpoint
@@ -214,8 +215,8 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       return await apiRequest('POST', '/api/stripe/checkout-plan', {
         entityType,
         entityId,
-        planId: newPlanId,
-        isYearly: billingInfo?.isYearlyBilling || false
+        planId,
+        isYearly
       });
     },
     onSuccess: (data) => {
@@ -241,24 +242,45 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
     },
   });
 
+  // Compute current plan first - needed for other calculations
+  const currentPlan = plans.find(p => p.id === billingInfo?.currentPlan?.toLowerCase()) || plans[0];
+  const currentPlanIndex = plans.findIndex(p => p.id === currentPlan.id);
+  const superiorPlans = plans.slice(currentPlanIndex + 1);
+  const currentBillingPeriod = billingInfo?.isYearlyBilling ? 'yearly' : 'monthly';
+
   const handlePlanSelect = (planId: string) => {
     setSelectedPlanId(planId);
-    if (planId !== currentPlan.id) {
-      setPendingPlan(planId);
-      setShowConfirmDialog(true);
+  };
+
+  const handleBillingPeriodSelect = (period: string) => {
+    // Only allow selection if it's valid
+    if (period === 'monthly' || period === 'yearly') {
+      setSelectedBillingPeriod(period);
     }
   };
 
+  // Check if there are pending changes
+  const effectiveSelectedPlan = selectedPlanId || currentPlan.id;
+  const effectiveSelectedPeriod = selectedBillingPeriod || currentBillingPeriod;
+  const hasPlanChange = effectiveSelectedPlan !== currentPlan.id;
+  const hasPeriodChange = effectiveSelectedPeriod !== currentBillingPeriod;
+  const hasAnyChange = hasPlanChange || hasPeriodChange;
+
+  const handleConfirmClick = () => {
+    setPendingPlan(effectiveSelectedPlan);
+    setShowConfirmDialog(true);
+  };
+
   const handleConfirmPlanChange = () => {
-    if (pendingPlan) {
-      changePlanMutation.mutate(pendingPlan);
-      setShowConfirmDialog(false);
-    }
+    const isYearly = effectiveSelectedPeriod === 'yearly';
+    changePlanMutation.mutate({ planId: effectiveSelectedPlan, isYearly });
+    setShowConfirmDialog(false);
   };
 
   const handleCancelPlanChange = () => {
     setPendingPlan(null);
     setSelectedPlanId(currentPlan.id);
+    setSelectedBillingPeriod(currentBillingPeriod as 'monthly' | 'yearly');
     setShowConfirmDialog(false);
   };
 
@@ -266,10 +288,6 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
     if (!pendingPlan) return null;
     return plans.find(p => p.id === pendingPlan);
   };
-
-  const currentPlan = plans.find(p => p.id === billingInfo?.currentPlan?.toLowerCase()) || plans[0];
-  const currentPlanIndex = plans.findIndex(p => p.id === currentPlan.id);
-  const superiorPlans = plans.slice(currentPlanIndex + 1);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString('es-ES', {
@@ -363,29 +381,96 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
             </div>
           </div>
 
-          {/* Change Plan Dropdown */}
-          <div className="mt-6">
-            <Label className="text-sm text-muted-foreground mb-2 block">Plan actual</Label>
-            <Select
-              value={selectedPlanId || currentPlan.id}
-              onValueChange={handlePlanSelect}
-              disabled={changePlanMutation.isPending}
-            >
-              <SelectTrigger className="w-full md:w-64 flex justify-between" data-testid="select-plan">
-                <span className="text-left flex-1">{planLabels[selectedPlanId || currentPlan.id]}</span>
-              </SelectTrigger>
-              <SelectContent>
-                {plans.map((plan) => (
-                  <SelectItem key={plan.id} value={plan.id} data-testid={`select-plan-option-${plan.id}`}>
-                    {planLabels[plan.id]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Change Plan and Billing Period Selectors */}
+          <div className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Plan Selector */}
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Plan</Label>
+                <Select
+                  value={effectiveSelectedPlan}
+                  onValueChange={handlePlanSelect}
+                  disabled={changePlanMutation.isPending}
+                >
+                  <SelectTrigger className="w-full flex justify-between" data-testid="select-plan">
+                    <span className="text-left flex-1">{planLabels[effectiveSelectedPlan]}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {plans.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id} data-testid={`select-plan-option-${plan.id}`}>
+                        {planLabels[plan.id]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Billing Period Selector */}
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2 block">Período de facturación</Label>
+                <Select
+                  value={effectiveSelectedPeriod}
+                  onValueChange={handleBillingPeriodSelect}
+                  disabled={changePlanMutation.isPending}
+                >
+                  <SelectTrigger 
+                    className="w-full flex justify-between" 
+                    data-testid="select-billing-period"
+                  >
+                    <span className="text-left flex-1">
+                      {effectiveSelectedPeriod === 'yearly' ? 'Anual' : 'Mensual'}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem 
+                      value="monthly" 
+                      disabled={currentBillingPeriod === 'yearly'}
+                      data-testid="select-billing-period-monthly"
+                      title={currentBillingPeriod === 'yearly' ? 'Actualmente tienes un plan anual activo. Consulta la sección "Fecha de renovación"' : undefined}
+                    >
+                      Mensual
+                      {currentBillingPeriod === 'yearly' && (
+                        <span className="text-xs text-muted-foreground ml-2">(No disponible)</span>
+                      )}
+                    </SelectItem>
+                    <SelectItem value="yearly" data-testid="select-billing-period-yearly">
+                      Anual (ahorra 2 meses)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {currentBillingPeriod === 'yearly' && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Actualmente tienes un plan anual activo. Consulta la sección "Fecha de renovación"
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Confirm Button */}
+            {hasAnyChange && (
+              <div className="pt-2">
+                <Button
+                  onClick={handleConfirmClick}
+                  disabled={changePlanMutation.isPending}
+                  className="w-full md:w-auto"
+                  data-testid="button-confirm-subscription-change"
+                >
+                  {changePlanMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Procesando...
+                    </>
+                  ) : (
+                    'Confirmar cambios'
+                  )}
+                </Button>
+              </div>
+            )}
+
             {changePlanMutation.isPending && (
-              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Procesando cambio de plan...
+                Procesando cambio de suscripción...
               </p>
             )}
           </div>
@@ -654,37 +739,67 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar cambio de plan</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar cambio de suscripción</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
-                <p>Estás a punto de cambiar tu plan de suscripción:</p>
-                <div className="flex items-center justify-center gap-4 py-4">
-                  <div className="text-center">
-                    <Badge className={currentPlan.badgeColor}>{currentPlan.name}</Badge>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {currentPlan.monthlyPrice}€/mes
-                    </p>
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                  {getPendingPlanDetails() && (
-                    <div className="text-center">
-                      <Badge className={getPendingPlanDetails()!.badgeColor}>
-                        {getPendingPlanDetails()!.name}
-                      </Badge>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {getPendingPlanDetails()!.monthlyPrice}€/mes
-                      </p>
+                <p>Estás a punto de modificar tu suscripción:</p>
+                
+                {/* Plan Change */}
+                {hasPlanChange && getPendingPlanDetails() && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Cambio de plan:</p>
+                    <div className="flex items-center justify-center gap-4 py-2">
+                      <div className="text-center">
+                        <Badge className={currentPlan.badgeColor}>{currentPlan.name}</Badge>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                      <div className="text-center">
+                        <Badge className={getPendingPlanDetails()!.badgeColor}>
+                          {getPendingPlanDetails()!.name}
+                        </Badge>
+                      </div>
                     </div>
-                  )}
-                </div>
-                {getPendingPlanDetails() && getPendingPlanDetails()!.monthlyPrice > currentPlan.monthlyPrice && (
-                  <p className="text-sm text-center">
-                    Serás redirigido a la página de pago para completar el proceso.
-                  </p>
+                  </div>
                 )}
-                {getPendingPlanDetails() && getPendingPlanDetails()!.monthlyPrice < currentPlan.monthlyPrice && (
-                  <p className="text-sm text-center">
-                    Serás redirigido al portal de facturación para gestionar el cambio.
+
+                {/* Period Change */}
+                {hasPeriodChange && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Cambio de período:</p>
+                    <div className="flex items-center justify-center gap-4 py-2">
+                      <div className="text-center">
+                        <Badge variant="outline">
+                          {currentBillingPeriod === 'yearly' ? 'Anual' : 'Mensual'}
+                        </Badge>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                      <div className="text-center">
+                        <Badge variant="outline">
+                          {effectiveSelectedPeriod === 'yearly' ? 'Anual' : 'Mensual'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Price Summary */}
+                <div className="bg-muted p-3 rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">Nuevo precio:</p>
+                  <p className="text-lg font-bold">
+                    {(() => {
+                      const plan = getPendingPlanDetails() || currentPlan;
+                      const isYearly = effectiveSelectedPeriod === 'yearly';
+                      return isYearly 
+                        ? `${plan.yearlyPrice}€/año`
+                        : `${plan.monthlyPrice}€/mes`;
+                    })()}
+                  </p>
+                </div>
+
+                {/* Redirect message */}
+                {(getPendingPlanDetails()?.monthlyPrice || 0) > 0 && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    Serás redirigido a Stripe para completar el proceso de pago.
                   </p>
                 )}
               </div>
