@@ -47,6 +47,8 @@ Preferred communication style: Simple, everyday language.
   - **Customer Portal**: `/api/stripe/portal` enables self-service billing management
   - **Subscription Sync**: `stripeService.syncSubscriptionStatus()` updates agency/agent/network `subscription_plan`, `seats_limit`, `active_properties_limit` from Stripe data
   - **Free Tier Activation**: `/api/stripe/activate-free-tier` for Básica/Básico plans that don't require payment
+  - **Subscription Start Date Tracking**: `subscriptionStartDate` field on agencies/agents tracks when subscription started, used to calculate renewal dates when Stripe sync data is unavailable
+  - **Renewal Date Calculation**: Three-tier priority: Stripe current_period_end → calculated from subscriptionStartDate + billing period → fallback message
   - **Secure Upgrade Flow**: Plan upgrades go through Stripe checkout (`/api/agencies/:id/upgrade-plan`):
     - Validates plan with Zod schema (only paid tiers: pequeña, mediana, lider)
     - Creates or retrieves Stripe customer ID
