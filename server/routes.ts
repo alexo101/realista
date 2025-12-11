@@ -4729,6 +4729,7 @@ Gracias!
         stripeSubscriptionId: entity.stripeSubscriptionId || null,
         seatsLimit: entity.seatsLimit || (entityType === 'agency' ? 1 : undefined),
         activePropertiesLimit: entity.activePropertiesLimit || 5,
+        subscriptionStartDate: entity.subscriptionStartDate || null,
         subscription,
       });
     } catch (error) {

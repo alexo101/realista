@@ -56,6 +56,7 @@ interface BillingInfo {
   stripeSubscriptionId: string | null;
   seatsLimit: number | null;
   activePropertiesLimit: number | null;
+  subscriptionStartDate: string | null;
   subscription: {
     status: string;
     current_period_end: number;
@@ -565,31 +566,82 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {billingInfo?.subscription?.current_period_end ? (
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Calendar className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-lg" data-testid="text-renewal-date">
-                  {formatDate(billingInfo.subscription.current_period_end)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {billingInfo.subscription.cancel_at_period_end 
-                    ? 'Tu suscripción finalizará en esta fecha'
-                    : 'Tu suscripción se renovará automáticamente'
-                  }
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-muted-foreground" data-testid="text-no-renewal">
-              {currentPlan.monthlyPrice === 0 
-                ? 'Estás en el plan gratuito - sin fecha de renovación'
-                : 'No hay fecha de renovación disponible'
+          {(() => {
+            // Priority 1: Use Stripe subscription data if available
+            if (billingInfo?.subscription?.current_period_end) {
+              return (
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Calendar className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-lg" data-testid="text-renewal-date">
+                      {formatDate(billingInfo.subscription.current_period_end)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {billingInfo.subscription.cancel_at_period_end 
+                        ? 'Tu suscripción finalizará en esta fecha'
+                        : 'Tu suscripción se renovará automáticamente'
+                      }
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            
+            // Priority 2: Calculate from subscriptionStartDate if available
+            if (billingInfo?.subscriptionStartDate && currentPlan.monthlyPrice > 0) {
+              const startDate = new Date(billingInfo.subscriptionStartDate);
+              const renewalDate = new Date(startDate);
+              
+              // Add 1 year or 1 month based on billing period
+              if (billingInfo.isYearlyBilling) {
+                renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+              } else {
+                renewalDate.setMonth(renewalDate.getMonth() + 1);
               }
-            </p>
-          )}
+              
+              // If renewal date is in the past, calculate next one from today
+              const now = new Date();
+              while (renewalDate < now) {
+                if (billingInfo.isYearlyBilling) {
+                  renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+                } else {
+                  renewalDate.setMonth(renewalDate.getMonth() + 1);
+                }
+              }
+              
+              return (
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <Calendar className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-lg" data-testid="text-renewal-date">
+                      {renewalDate.toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Tu suscripción se renovará automáticamente
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            
+            // Priority 3: Show appropriate message for free plans or missing data
+            return (
+              <p className="text-muted-foreground" data-testid="text-no-renewal">
+                {currentPlan.monthlyPrice === 0 
+                  ? 'Estás en el plan gratuito - sin fecha de renovación'
+                  : 'No hay fecha de renovación disponible'
+                }
+              </p>
+            );
+          })()}
         </CardContent>
       </Card>
 
