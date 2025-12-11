@@ -312,6 +312,7 @@ export class StripeService {
             isYearlyBilling: isActive ? isYearly : false,
             seatsLimit: isActive ? (limits as any).seats : (freeTierLimits as any).seats,
             activePropertiesLimit: isActive ? (limits as any).properties : (freeTierLimits as any).properties,
+            subscriptionStartDate: isActive ? new Date() : null,
           })
           .where(eq(agencies.id, entityId));
         
@@ -335,6 +336,7 @@ export class StripeService {
             stripeSubscriptionId: isActive ? subscriptionId : null,
             subscriptionPlan: isActive ? planName : 'basico',
             isYearlyBilling: isActive ? isYearly : false,
+            subscriptionStartDate: isActive ? new Date() : null,
           })
           .where(eq(agents.id, entityId));
         
@@ -398,6 +400,7 @@ export class StripeService {
           isYearlyBilling: false,
           seatsLimit: (limits as any).seats,
           activePropertiesLimit: (limits as any).properties,
+          subscriptionStartDate: new Date(),
         })
         .where(eq(agencies.id, entityId));
       console.log(`Activated free tier for agency ${entityId}`);
@@ -417,6 +420,7 @@ export class StripeService {
         .set({
           subscriptionPlan: 'basico',
           isYearlyBilling: false,
+          subscriptionStartDate: new Date(),
         })
         .where(eq(agents.id, entityId));
       console.log(`Activated free tier for agent ${entityId}`);
