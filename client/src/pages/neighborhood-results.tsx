@@ -151,7 +151,7 @@ export default function NeighborhoodResultsPage() {
     propertyType: "Vivienda",
     priceMin: minPriceFromUrl ? parseInt(minPriceFromUrl) : null,
     priceMax: maxPriceFromUrl ? parseInt(maxPriceFromUrl) : null,
-    bedrooms: defaultBedrooms || 1,
+    bedrooms: defaultBedrooms,
     bathrooms: null,
     features: []
   });
