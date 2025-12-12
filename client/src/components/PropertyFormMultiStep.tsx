@@ -98,7 +98,10 @@ const step2Schema = step1Schema.extend({
 const step3Schema = step2Schema.extend({
   features: z.array(z.string()).default([]),
   availability: z.enum(availabilityOptions).default("Inmediatamente"),
-  availabilityDate: z.date().optional(),
+  availabilityDate: z.union([
+    z.date(),
+    z.string().transform((val) => new Date(val)),
+  ]).optional().nullable(),
   propertyCondition: z.enum(propertyConditionOptions).optional(),
   housingStatus: z.enum(housingStatusOptions).optional(),
   isActive: z.boolean().default(true),
