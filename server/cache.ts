@@ -37,6 +37,23 @@ class MemoryCache {
     this.cache.clear();
   }
 
+  // Clear all cache entries that match a prefix pattern
+  clearByPrefix(prefix: string): void {
+    for (const key of Array.from(this.cache.keys())) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  // Clear all property-related caches
+  clearPropertyCaches(): void {
+    this.clearByPrefix('search_properties_');
+    this.clearByPrefix('property_');
+    this.clearByPrefix('most_viewed_');
+    console.log('Property search caches cleared');
+  }
+
   // Clean expired entries periodically
   cleanExpired(): void {
     const now = Date.now();

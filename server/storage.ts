@@ -2041,9 +2041,14 @@ export class DatabaseStorage implements IStorage {
         .set({ slug: finalSlug })
         .where(eq(properties.uuid, newProperty.uuid))
         .returning();
+      
+      // Clear property caches so new property appears in searches immediately
+      cache.clearPropertyCaches();
       return updatedProperty;
     }
     
+    // Clear property caches so new property appears in searches immediately
+    cache.clearPropertyCaches();
     return newProperty;
   }
 
@@ -2082,6 +2087,9 @@ export class DatabaseStorage implements IStorage {
       .set(propertyToUpdate)
       .where(eq(properties.uuid, uuid))
       .returning();
+    
+    // Clear property caches so updated property reflects in searches immediately
+    cache.clearPropertyCaches();
     return updatedProperty;
   }
 
@@ -2102,6 +2110,8 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProperty(uuid: string): Promise<void> {
     await db.delete(properties).where(eq(properties.uuid, uuid));
+    // Clear property caches so deleted property is removed from searches immediately
+    cache.clearPropertyCaches();
   }
 
   async togglePropertyStatus(uuid: string, isActive: boolean): Promise<Property> {
@@ -2110,6 +2120,9 @@ export class DatabaseStorage implements IStorage {
       .set({ isActive })
       .where(eq(properties.uuid, uuid))
       .returning();
+    
+    // Clear property caches so status change reflects in searches immediately
+    cache.clearPropertyCaches();
     return updatedProperty;
   }
 
