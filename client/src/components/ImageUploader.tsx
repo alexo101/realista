@@ -311,8 +311,8 @@ export function ImageUploader({
               </p>
               <p className="text-xs text-gray-400">
                 {multiple 
-                  ? `Máximo ${effectiveMaxFiles} archivos por lote • PNG, JPG, WebP • Optimización automática` 
-                  : 'Máximo 1 archivo • PNG, JPG, WebP • Optimización automática'
+                  ? `Máximo ${effectiveMaxFiles} archivos por lote • Formatos PNG, JPG, WebP` 
+                  : 'Máximo 1 archivo • Formatos PNG, JPG, WebP'
                 }
               </p>
               {multiple && currentImageCount > 0 && (
