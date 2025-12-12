@@ -143,6 +143,16 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(initialData?.neighborhood);
   const [isAddressValid, setIsAddressValid] = useState<boolean>(!!initialData?.address);
 
+  // Process initialData to ensure dates are Date objects
+  const processedInitialData = initialData ? {
+    ...initialData,
+    availabilityDate: initialData.availabilityDate 
+      ? (typeof initialData.availabilityDate === 'string' 
+          ? new Date(initialData.availabilityDate) 
+          : initialData.availabilityDate)
+      : undefined,
+  } : null;
+
   const steps = [
     { id: 1, name: "Información básica", completed: currentStep > 1 },
     { id: 2, name: "Ubicación", completed: currentStep > 2 },
@@ -165,7 +175,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         ? step4Schema
         : step5Schema
     ),
-    defaultValues: initialData || {
+    defaultValues: processedInitialData || {
       reference: "",
       type: undefined as any,
       housingType: undefined as any,
@@ -1052,7 +1062,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={field.value}
+                                selected={field.value ?? undefined}
                                 onSelect={field.onChange}
                                 disabled={(date) => date < new Date()}
                                 initialFocus
