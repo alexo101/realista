@@ -71,7 +71,7 @@ export function PropertyFilters({
       ? defaultBedroomsList 
       : defaultBedrooms !== null 
         ? [defaultBedrooms] 
-        : [1]
+        : []
   );
   const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
