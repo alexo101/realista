@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, Enter } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -1662,7 +1662,7 @@ export default function ManagePage() {
                                     onClick={() => fetchPropertyForEditMutation.mutate(property.uuid)}
                                     data-testid={`button-edit-property-${property.uuid}`}
                                   >
-                                    <Enter className="h-4 w-4" />
+                                    <LogIn className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </TableCell>
