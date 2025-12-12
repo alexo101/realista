@@ -71,10 +71,10 @@ const housingStatusOptions = ["Disponible sin limitación", "Sin cédula de habi
 // Step 1 schema: Basic Information
 const step1Schema = z.object({
   reference: z.string().optional(),
-  type: z.enum(propertyTypes, { required_error: "Selecciona el tipo de inmueble" }),
+  type: z.enum(propertyTypes, { required_error: "Campo requerido" }),
   housingType: z.enum(housingTypes).optional().nullable(),
-  operationType: z.enum(["Venta", "Alquiler"], { required_error: "Selecciona el tipo de operación" }),
-  price: z.coerce.number().min(1, "El precio es obligatorio"),
+  operationType: z.enum(["Venta", "Alquiler"], { required_error: "Campo requerido" }),
+  price: z.coerce.number({ required_error: "Campo requerido", invalid_type_error: "Campo requerido" }).min(1, "El precio es obligatorio"),
   bedrooms: z.coerce.number().int("Debe ser un número entero").min(1, "Al menos 1").optional().nullable(),
   bathrooms: z.coerce.number().int("Debe ser un número entero").min(1, "Al menos 1").optional().nullable(),
   superficie: z.coerce.number().min(1, "Debe ser mayor que 0").optional().nullable(),
@@ -85,13 +85,13 @@ const step2Schema = step1Schema.extend({
   locality: z.string().optional(),
   streetName: z.string().optional(),
   streetNumber: z.string().optional(),
-  address: z.string().min(1, "La dirección es obligatoria"),
+  address: z.string({ required_error: "Campo requerido" }).min(1, "La dirección es obligatoria"),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   escalera: z.enum(escaleraOptions).nullable().optional(),
   planta: z.enum(plantaOptions).nullable().optional(),
   puerta: z.enum(puertaOptions).nullable().optional(),
-  neighborhood: z.string().min(1, "Selecciona un barrio"),
+  neighborhood: z.string({ required_error: "Campo requerido" }).min(1, "Selecciona un barrio"),
 });
 
 // Step 3 schema: Features
@@ -112,12 +112,12 @@ const step4Schema = step3Schema.extend({
 
 // Step 5 schema: Description (final)
 const step5Schema = step4Schema.extend({
-  title: z.string()
+  title: z.string({ required_error: "Campo requerido" })
     .min(1, "El título es obligatorio")
     .refine(val => !val.includes("Borrador - Título pendiente"), {
       message: "Por favor, escribe un título personalizado para tu propiedad"
     }),
-  description: z.string()
+  description: z.string({ required_error: "Campo requerido" })
     .min(1, "La descripción es obligatoria")
     .refine(val => !val.includes("Borrador - Información pendiente"), {
       message: "Por favor, escribe una descripción personalizada para tu propiedad"
