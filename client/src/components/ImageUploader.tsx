@@ -162,10 +162,8 @@ export function ImageUploader({
       const avgSavings = compressedCount > 0 ? Math.round(totalSavings / compressedCount) : 0;
       
       toast({
-        title: compressedCount > 0 ? "Imágenes optimizadas y subidas" : "Imagen(es) subida(s)",
-        description: compressedCount > 0 
-          ? `${uploadedUrls.length} imagen(es) subida(s). ${compressedCount} optimizada(s) automáticamente (${avgSavings}% menos tamaño).`
-          : `${uploadedUrls.length} imagen(es) subida(s) correctamente.`,
+        title: `Se han subido ${uploadedUrls.length} imagen(es)`,
+        description: "Las imágenes están listas para usar.",
       });
 
       event.target.value = '';
