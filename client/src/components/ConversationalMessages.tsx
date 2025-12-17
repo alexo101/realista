@@ -368,7 +368,7 @@ export function ConversationalMessages() {
   };
 
   // Fetch client details for modal
-  const { data: clientDetails, isLoading: loadingClientDetails } = useQuery({
+  const { data: clientDetails, isLoading: loadingClientDetails, isFetching: fetchingClientDetails } = useQuery({
     queryKey: ['/api/clients', selectedClientId],
     queryFn: async () => {
       if (!selectedClientId) return null;
@@ -379,6 +379,8 @@ export function ConversationalMessages() {
       return response.json();
     },
     enabled: !!selectedClientId && showClientModal,
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache client details to prevent showing wrong client
   });
 
   // Close client modal
@@ -612,7 +614,7 @@ export function ConversationalMessages() {
             </DialogTitle>
           </DialogHeader>
           
-          {loadingClientDetails ? (
+          {loadingClientDetails || fetchingClientDetails ? (
             <div className="p-8 text-center">
               <div className="text-gray-500">Cargando información del cliente...</div>
             </div>
