@@ -97,6 +97,8 @@ const VALID_SECTIONS = [
   'busquedas',
   'citas',
   'favoritos',
+  'agencias-favoritas',
+  'agentes-favoritos',
   'mensajes'
 ] as const;
 
@@ -1151,6 +1153,181 @@ export default function ClientProfile() {
           </div>
         );
 
+      case "agencias-favoritas":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agencias favoritas</h1>
+              <p className="text-gray-600">Agencias inmobiliarias que has guardado como favoritas</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-blue-500" />
+                  Mis agencias favoritas ({favoriteAgencies.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {favoriteAgencies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No tienes agencias favoritas
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Cuando encuentres una agencia que te interese, guárdala aquí para acceder fácilmente a ella
+                    </p>
+                    <Button variant="outline" onClick={() => navigate("/agencias")}>
+                      Explorar agencias
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {favoriteAgencies.map((agency) => (
+                      <Card 
+                        key={agency.id} 
+                        className="hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/agencia/${agency.id}`)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={agency.agencyLogo} />
+                              <AvatarFallback>
+                                <Building2 className="h-6 w-6" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 truncate">
+                                {agency.agencyName}
+                              </h3>
+                              <p className="text-sm text-gray-500 truncate">
+                                {agency.email}
+                              </p>
+                            </div>
+                          </div>
+                          {agency.agencyAddress && (
+                            <p className="text-sm text-gray-600 flex items-center gap-1 mb-2">
+                              <MapPin className="h-3 w-3" />
+                              {agency.agencyAddress}
+                            </p>
+                          )}
+                          {agency.agencyInfluenceNeighborhoods && agency.agencyInfluenceNeighborhoods.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {agency.agencyInfluenceNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {neighborhood}
+                                </Badge>
+                              ))}
+                              {agency.agencyInfluenceNeighborhoods.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{agency.agencyInfluenceNeighborhoods.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case "agentes-favoritos":
+        return (
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agentes favoritos</h1>
+              <p className="text-gray-600">Agentes inmobiliarios que has guardado como favoritos</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-yellow-500" />
+                  Mis agentes favoritos ({favoriteAgents.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {favoriteAgents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Star className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No tienes agentes favoritos
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Cuando encuentres un agente que te interese, guárdalo aquí para acceder fácilmente a él
+                    </p>
+                    <Button variant="outline" onClick={() => navigate("/agentes")}>
+                      Explorar agentes
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {favoriteAgents.map((agent) => (
+                      <Card 
+                        key={agent.id} 
+                        className="hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/agente/${agent.slug || agent.id}`)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={agent.avatar} />
+                              <AvatarFallback>
+                                {agent.name[0]}{agent.surname[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 truncate">
+                                {agent.name} {agent.surname}
+                              </h3>
+                              <p className="text-sm text-gray-500 truncate">
+                                {agent.email}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            {agent.yearsOfExperience && (
+                              <span className="text-sm text-gray-600">
+                                {agent.yearsOfExperience} años exp.
+                              </span>
+                            )}
+                            {agent.rating && (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span className="text-sm font-medium">{agent.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                          </div>
+                          {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {agent.influenceNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {neighborhood}
+                                </Badge>
+                              ))}
+                              {agent.influenceNeighborhoods.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{agent.influenceNeighborhoods.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        );
+
       case "mensajes":
         return (
           <div className="space-y-6">
@@ -1401,7 +1578,7 @@ export default function ClientProfile() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Favorites Section */}
+              {/* Favorites Section - Properties */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/favoritos`)}
@@ -1411,6 +1588,32 @@ export default function ClientProfile() {
                 >
                   <Heart className="h-4 w-4" />
                   {!sidebarCollapsed && <span>Propiedades favoritas</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Favorites Section - Agencies */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/agencias-favoritas`)}
+                  isActive={currentSection === "agencias-favoritas"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-agencias-favoritas"
+                >
+                  <Building2 className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Agencias favoritas</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Favorites Section - Agents */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/agentes-favoritos`)}
+                  isActive={currentSection === "agentes-favoritos"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-agentes-favoritos"
+                >
+                  <Star className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>Agentes favoritos</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
