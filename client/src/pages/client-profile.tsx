@@ -482,7 +482,6 @@ export default function ClientProfile() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Perfil</h1>
               <p className="text-gray-600">Gestiona tu información personal y preferencias</p>
             </div>
-
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-12">
                 {/* Photo Upload Section */}
@@ -1400,7 +1399,7 @@ export default function ClientProfile() {
                   data-testid="sidebar-favoritos"
                 >
                   <Heart className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Favoritos</span>}
+                  {!sidebarCollapsed && <span>Propiedades favoritas</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
