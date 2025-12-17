@@ -2646,6 +2646,8 @@ export class DatabaseStorage implements IStorage {
     const favorites = await db
       .select({
         id: agencies.id,
+        uuid: agencies.uuid,
+        slug: agencies.slug,
         email: agencies.agencyEmailToDisplay,
         agencyName: agencies.agencyName,
         agencyWebsite: agencies.agencyWebsite,
