@@ -156,7 +156,7 @@ export default function AgencyProfile() {
       
       // Also invalidate the status query for this specific agency
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/clients/${user?.id}/favorites/agencies/${identifier}/status`] 
+        queryKey: [`/api/clients/${user?.id}/favorites/agencies/${agency?.uuid}/status`] 
       });
       
       toast({
@@ -196,8 +196,8 @@ export default function AgencyProfile() {
       return;
     }
     
-    if (identifier) {
-      toggleFavoriteMutation.mutate(identifier);
+    if (agency?.uuid) {
+      toggleFavoriteMutation.mutate(agency.uuid);
     }
   };
 
@@ -358,17 +358,17 @@ export default function AgencyProfile() {
 
   // Query para verificar si la agencia ya está en favoritos
   const { data: favoriteStatus } = useQuery({
-    queryKey: [`/api/clients/${user?.id}/favorites/agencies/${identifier}/status`],
+    queryKey: [`/api/clients/${user?.id}/favorites/agencies/${agency?.uuid}/status`],
     queryFn: async () => {
-      if (!user || !user.isClient || !identifier) return { isFavorite: false };
+      if (!user || !user.isClient || !agency?.uuid) return { isFavorite: false };
       
-      const response = await fetch(`/api/clients/${user.id}/favorites/agencies/${identifier}/status`);
+      const response = await fetch(`/api/clients/${user.id}/favorites/agencies/${agency.uuid}/status`);
       if (!response.ok) {
         return { isFavorite: false };
       }
       return response.json();
     },
-    enabled: !!user?.isClient && !!identifier
+    enabled: !!user?.isClient && !!agency?.uuid
   });
 
   // Efecto para actualizar el estado de favorito cuando se carga la página

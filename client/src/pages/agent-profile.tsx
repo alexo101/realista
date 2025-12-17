@@ -167,7 +167,7 @@ export default function AgentProfile() {
       
       // Also invalidate the status query for this specific agent
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/clients/${user?.id}/favorites/agents/${identifier}/status`] 
+        queryKey: [`/api/clients/${user?.id}/favorites/agents/${agent?.uuid}/status`] 
       });
       
       toast({
@@ -207,8 +207,8 @@ export default function AgentProfile() {
       return;
     }
     
-    if (!identifier) return;
-    toggleFavoriteMutation.mutate(identifier);
+    if (!agent?.uuid) return;
+    toggleFavoriteMutation.mutate(agent.uuid);
   };
 
   // Función para compartir
@@ -304,17 +304,17 @@ export default function AgentProfile() {
 
   // Query para verificar si el agente ya está en favoritos
   const { data: favoriteStatus, isFetching: favoriteStatusFetching } = useQuery({
-    queryKey: [`/api/clients/${user?.id}/favorites/agents/${identifier}/status`],
+    queryKey: [`/api/clients/${user?.id}/favorites/agents/${agent?.uuid}/status`],
     queryFn: async () => {
-      if (!user || !user.isClient || !identifier) return { isFavorite: false };
+      if (!user || !user.isClient || !agent?.uuid) return { isFavorite: false };
       
-      const response = await fetch(`/api/clients/${user.id}/favorites/agents/${identifier}/status`);
+      const response = await fetch(`/api/clients/${user.id}/favorites/agents/${agent.uuid}/status`);
       if (!response.ok) {
         return { isFavorite: false };
       }
       return response.json();
     },
-    enabled: !!user?.isClient && !!identifier
+    enabled: !!user?.isClient && !!agent?.uuid
   });
 
   // Efecto para actualizar el estado de favorito cuando se carga la página

@@ -1631,21 +1631,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Client favorite agents endpoints
-  app.post("/api/clients/favorites/agents/:agentId", async (req, res) => {
+  app.post("/api/clients/favorites/agents/:agentUuid", async (req, res) => {
     try {
-      const agentId = parseInt(req.params.agentId);
+      const agentUuid = req.params.agentUuid;
       const { clientId } = req.body;
 
       if (!clientId) {
         return res.status(401).json({ message: "Client ID is required" });
       }
 
-      const isFavorite = await storage.toggleFavoriteAgent(clientId, agentId);
+      // Look up agent by UUID to get numeric ID
+      const agent = await storage.getAgentByUuid(agentUuid);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+
+      const isFavorite = await storage.toggleFavoriteAgent(clientId, agent.id);
 
       res.status(200).json({ 
         message: isFavorite ? "Agente agregado a favoritos" : "Agente eliminado de favoritos",
         isFavorite: isFavorite,
-        agentId: agentId
+        agentId: agent.id
       });
     } catch (error) {
       console.error('Error updating favorite agent:', error);
@@ -1664,11 +1670,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/:clientId/favorites/agents/:agentId/status", async (req, res) => {
+  app.get("/api/clients/:clientId/favorites/agents/:agentUuid/status", async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
-      const agentId = parseInt(req.params.agentId);
-      const isFavorite = await storage.isFavoriteAgent(clientId, agentId);
+      const agentUuid = req.params.agentUuid;
+      
+      // Look up agent by UUID to get numeric ID
+      const agent = await storage.getAgentByUuid(agentUuid);
+      if (!agent) {
+        return res.status(200).json({ isFavorite: false });
+      }
+      
+      const isFavorite = await storage.isFavoriteAgent(clientId, agent.id);
       res.status(200).json({ isFavorite });
     } catch (error) {
       console.error('Error checking favorite status:', error);
@@ -1696,20 +1709,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Client favorite agencies endpoints
-  app.post("/api/clients/favorites/agencies/:agencyId", async (req, res) => {
+  app.post("/api/clients/favorites/agencies/:agencyUuid", async (req, res) => {
     try {
-      const agencyId = parseInt(req.params.agencyId);
+      const agencyUuid = req.params.agencyUuid;
       const { clientId } = req.body;
 
       if (!clientId) {
         return res.status(400).json({ message: "Client ID is required" });
       }
 
-      if (isNaN(agencyId)) {
-        return res.status(400).json({ message: "Invalid agency ID" });
+      // Look up agency by UUID to get numeric ID
+      const agency = await storage.getAgencyByUuid(agencyUuid);
+      if (!agency) {
+        return res.status(404).json({ message: "Agency not found" });
       }
 
-      const isFavorite = await storage.toggleFavoriteAgency(clientId, agencyId);
+      const isFavorite = await storage.toggleFavoriteAgency(clientId, agency.id);
       res.status(200).json({ 
         isFavorite, 
         message: isFavorite ? "Agency added to favorites" : "Agency removed from favorites" 
@@ -1731,11 +1746,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/:clientId/favorites/agencies/:agencyId/status", async (req, res) => {
+  app.get("/api/clients/:clientId/favorites/agencies/:agencyUuid/status", async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
-      const agencyId = parseInt(req.params.agencyId);
-      const isFavorite = await storage.isFavoriteAgency(clientId, agencyId);
+      const agencyUuid = req.params.agencyUuid;
+      
+      // Look up agency by UUID to get numeric ID
+      const agency = await storage.getAgencyByUuid(agencyUuid);
+      if (!agency) {
+        return res.status(200).json({ isFavorite: false });
+      }
+      
+      const isFavorite = await storage.isFavoriteAgency(clientId, agency.id);
       res.status(200).json({ isFavorite });
     } catch (error) {
       console.error('Error checking favorite status:', error);
