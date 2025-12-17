@@ -14,6 +14,16 @@ import {
 } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -458,6 +468,7 @@ export default function ClientProfile() {
   const [editingSearchId, setEditingSearchId] = useState<number | null>(null);
   const [editingSearchName, setEditingSearchName] = useState("");
   const [deletingSearchId, setDeletingSearchId] = useState<number | null>(null);
+  const [removingFavoriteProperty, setRemovingFavoriteProperty] = useState<FavoriteProperty | null>(null);
 
   // Show loading spinner while user context is loading
   if (isLoading) {
@@ -1042,8 +1053,8 @@ export default function ClientProfile() {
                                   className="p-1 h-7 w-7 hover:bg-gray-100"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // Toggle favorite - since this is already a favorite, clicking removes it
-                                    toggleFavoritePropertyMutation.mutate(property.uuid);
+                                    // Show confirmation dialog before removing
+                                    setRemovingFavoriteProperty(property);
                                   }}
                                   data-testid={`button-unfavorite-property-${property.uuid}`}
                                 >
@@ -1439,6 +1450,32 @@ export default function ClientProfile() {
           </div>
         </main>
       </SidebarProvider>
+
+      {/* Confirmation dialog for removing favorite property */}
+      <AlertDialog open={!!removingFavoriteProperty} onOpenChange={(open) => !open && setRemovingFavoriteProperty(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar de favoritos</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que quieres eliminar "{removingFavoriteProperty?.title}" de tus favoritos?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-remove-favorite">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (removingFavoriteProperty) {
+                  toggleFavoritePropertyMutation.mutate(removingFavoriteProperty.uuid);
+                  setRemovingFavoriteProperty(null);
+                }
+              }}
+              data-testid="button-confirm-remove-favorite"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
