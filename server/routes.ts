@@ -4054,13 +4054,15 @@ Gracias!
         senderName = inquiry.name;
       }
       
-      // Save the message to the database
+      // Save the message to the database with 'delivered' status
+      // (message reached the server, so it's delivered)
       const messageData = {
         inquiryId: conversationId,
         senderType,
         senderId,
         senderName,
         content,
+        status: 'delivered' as const, // Message is delivered when it reaches the server
       };
       
       const savedMessage = await storage.createConversationMessage(messageData);

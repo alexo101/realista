@@ -79,11 +79,18 @@ export function ConversationalMessages() {
     scrollToBottom();
   }, [selectedConversation?.messages]);
 
-  // Load conversations and pinned conversations
+  // Load conversations and pinned conversations with polling for status updates
   useEffect(() => {
     if (user?.id) {
       fetchConversations();
       fetchPinnedConversations();
+      
+      // Poll every 30 seconds to get updated message statuses
+      const pollInterval = setInterval(() => {
+        refreshConversations();
+      }, 30000);
+      
+      return () => clearInterval(pollInterval);
     }
   }, [user?.id]);
 
@@ -107,6 +114,27 @@ export function ConversationalMessages() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Silent refresh without loading state (for polling)
+  const refreshConversations = async () => {
+    try {
+      const response = await fetch(`/api/conversations/agent/${user!.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data);
+        
+        // Update selected conversation if it exists
+        if (selectedConversation) {
+          const updated = data.find((c: Conversation) => c.id === selectedConversation.id);
+          if (updated) {
+            setSelectedConversation(updated);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing conversations:", error);
     }
   };
 

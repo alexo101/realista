@@ -72,11 +72,18 @@ export function ClientConversationalMessages() {
     scrollToBottom();
   }, [selectedConversation?.messages]);
 
-  // Load conversations and pinned conversations
+  // Load conversations and pinned conversations with polling for status updates
   useEffect(() => {
     if (user?.email && user?.isClient) {
       fetchConversations();
       fetchPinnedConversations();
+      
+      // Poll every 30 seconds to get updated message statuses
+      const pollInterval = setInterval(() => {
+        refreshConversations();
+      }, 30000);
+      
+      return () => clearInterval(pollInterval);
     }
   }, [user?.email, user?.isClient]);
 
@@ -100,6 +107,27 @@ export function ClientConversationalMessages() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Silent refresh without loading state (for polling)
+  const refreshConversations = async () => {
+    try {
+      const response = await fetch(`/api/conversations/client/${encodeURIComponent(user!.email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data);
+        
+        // Update selected conversation if it exists
+        if (selectedConversation) {
+          const updated = data.find((c: ClientConversation) => c.id === selectedConversation.id);
+          if (updated) {
+            setSelectedConversation(updated);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing conversations:", error);
     }
   };
 
