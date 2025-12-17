@@ -9,6 +9,7 @@ import {
   lte,
   arrayOverlaps,
   not,
+  ne,
   isNull,
   isNotNull,
   desc,
@@ -177,6 +178,7 @@ export interface IStorage {
   // Conversation Messages
   createConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
   getConversationMessages(inquiryId: number): Promise<ConversationMessage[]>;
+  markMessagesAsRead(inquiryId: number, readerType: 'client' | 'agent'): Promise<void>;
 
   // Pinned Conversations
   pinConversation(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<PinnedConversation>;
@@ -2437,6 +2439,24 @@ export class DatabaseStorage implements IStorage {
       .from(conversationMessages)
       .where(eq(conversationMessages.inquiryId, inquiryId))
       .orderBy(conversationMessages.createdAt);
+  }
+
+  async markMessagesAsRead(inquiryId: number, readerType: 'client' | 'agent'): Promise<void> {
+    // Mark messages from the opposite sender as read
+    // If client is reading, mark agent's messages as read
+    // If agent is reading, mark client's messages as read
+    const senderToMark = readerType === 'client' ? 'agent' : 'client';
+    
+    await db
+      .update(conversationMessages)
+      .set({ status: 'read' })
+      .where(
+        and(
+          eq(conversationMessages.inquiryId, inquiryId),
+          eq(conversationMessages.senderType, senderToMark),
+          ne(conversationMessages.status, 'read')
+        )
+      );
   }
 
   // Pinned Conversations methods

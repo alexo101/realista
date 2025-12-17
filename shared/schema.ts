@@ -319,6 +319,7 @@ export const conversationMessages = pgTable("conversation_messages", {
   senderId: integer("sender_id").notNull(), // Client ID or Agent ID based on sender type
   senderName: text("sender_name").notNull(),
   content: text("content").notNull(),
+  status: text("status").notNull().default("sent"), // "sent", "delivered", "read"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

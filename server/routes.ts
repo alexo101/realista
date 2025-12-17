@@ -3911,7 +3911,8 @@ Gracias!
             senderType: msg.senderType,
             content: msg.content,
             timestamp: msg.createdAt,
-            isRead: true
+            isRead: true,
+            status: msg.status || 'sent'
           }));
         } else {
           // If no persisted messages, create the initial message from the inquiry
@@ -3922,7 +3923,8 @@ Gracias!
             senderType: 'client',
             content: inquiry.message || `Consulta sobre la propiedad en ${inquiry.property?.address || 'esta dirección'}.`,
             timestamp: inquiry.createdAt,
-            isRead: true
+            isRead: true,
+            status: 'sent'
           }];
         }
 
@@ -3976,7 +3978,8 @@ Gracias!
             senderType: msg.senderType,
             content: msg.content,
             timestamp: msg.createdAt,
-            isRead: true
+            isRead: true,
+            status: msg.status || 'sent'
           }));
         } else {
           // If no persisted messages, create the initial message from the inquiry
@@ -3987,7 +3990,8 @@ Gracias!
             senderType: 'client',
             content: inquiry.message || `Consulta sobre la propiedad en ${inquiry.property?.address || 'esta dirección'}.`,
             timestamp: inquiry.createdAt,
-            isRead: true
+            isRead: true,
+            status: 'sent'
           }];
         }
 
@@ -4070,7 +4074,8 @@ Gracias!
         senderType: savedMessage.senderType,
         content: savedMessage.content,
         timestamp: savedMessage.createdAt,
-        isRead: false
+        isRead: false,
+        status: savedMessage.status || 'sent'
       };
       
       res.json(responseMessage);
@@ -4083,9 +4088,15 @@ Gracias!
   app.patch("/api/conversations/:conversationId/read", async (req, res) => {
     try {
       const conversationId = parseInt(req.params.conversationId);
+      const { readerType } = req.body; // 'client' or 'agent'
       
       // Mark inquiry as read (update status if needed)
       await storage.updateInquiryStatus(conversationId, 'contactado');
+      
+      // Mark messages from the opposite sender as 'read'
+      if (readerType === 'client' || readerType === 'agent') {
+        await storage.markMessagesAsRead(conversationId, readerType);
+      }
       
       res.json({ message: "Conversación marcada como leída" });
     } catch (error) {

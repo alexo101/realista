@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Send, MessageCircle, Home, Pin, PinOff, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, Heart, Clock, Euro } from "lucide-react";
+import { Search, Send, MessageCircle, Home, Pin, PinOff, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, Heart, Clock, Euro, Check, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,22 @@ interface Message {
   content: string;
   timestamp: string;
   isRead: boolean;
+  status: 'sent' | 'delivered' | 'read';
+}
+
+// Message status indicator component (WhatsApp-style check marks)
+function MessageStatusIndicator({ status, isAgentMessage }: { status: string; isAgentMessage: boolean }) {
+  if (!isAgentMessage) return null; // Only show for agent's own messages
+  
+  switch (status) {
+    case 'read':
+      return <CheckCheck className="h-3.5 w-3.5 text-blue-400" />;
+    case 'delivered':
+      return <CheckCheck className="h-3.5 w-3.5 text-blue-200" />;
+    case 'sent':
+    default:
+      return <Check className="h-3.5 w-3.5 text-blue-200" />;
+  }
 }
 
 interface Conversation {
@@ -184,6 +200,41 @@ export function ConversationalMessages() {
     } finally {
       setPinningConversation(null);
     }
+  };
+
+  // Mark messages as read when opening a conversation
+  const markConversationAsRead = async (conversationId: number) => {
+    try {
+      await fetch(`/api/conversations/${conversationId}/read`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ readerType: 'agent' })
+      });
+    } catch (error) {
+      console.error("Error marking conversation as read:", error);
+    }
+  };
+
+  // Handle conversation selection and mark as read
+  const selectConversation = (conversation: Conversation) => {
+    setSelectedConversation(conversation);
+    markConversationAsRead(conversation.id);
+    
+    // Update local message status to 'read' for client's messages
+    setConversations(prev => prev.map(conv => {
+      if (conv.id === conversation.id) {
+        return {
+          ...conv,
+          messages: conv.messages.map(msg => ({
+            ...msg,
+            status: msg.senderType === 'client' ? 'read' as const : msg.status
+          }))
+        };
+      }
+      return conv;
+    }));
   };
 
   // Send message
@@ -387,10 +438,7 @@ export function ConversationalMessages() {
                     className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${
                       selectedConversation?.id === conversation.id ? 'bg-blue-50 border-blue-200' : ''
                     }`}
-                    onClick={() => {
-                      setSelectedConversation(conversation);
-                      markAsRead(conversation.id);
-                    }}
+                    onClick={() => selectConversation(conversation)}
                   >
                     <div className="flex items-start gap-3">
                       <Avatar className="h-10 w-10">
@@ -506,11 +554,15 @@ export function ConversationalMessages() {
                         }`}
                       >
                         <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${
+                        <div className={`flex items-center justify-end gap-1 mt-1 ${
                           message.senderType === 'agent' ? 'text-blue-100' : 'text-gray-500'
                         }`}>
-                          {formatTime(message.timestamp)}
-                        </p>
+                          <span className="text-xs">{formatTime(message.timestamp)}</span>
+                          <MessageStatusIndicator 
+                            status={message.status || 'sent'} 
+                            isAgentMessage={message.senderType === 'agent'} 
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}

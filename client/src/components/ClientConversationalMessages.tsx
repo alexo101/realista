@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, MessageCircle, Home, Pin, PinOff } from "lucide-react";
+import { Search, Send, MessageCircle, Home, Pin, PinOff, Check, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,22 @@ interface Message {
   content: string;
   timestamp: string;
   isRead: boolean;
+  status: 'sent' | 'delivered' | 'read';
+}
+
+// Message status indicator component (WhatsApp-style check marks)
+function MessageStatusIndicator({ status, isClientMessage }: { status: string; isClientMessage: boolean }) {
+  if (!isClientMessage) return null; // Only show for client's own messages
+  
+  switch (status) {
+    case 'read':
+      return <CheckCheck className="h-3.5 w-3.5 text-blue-400" />;
+    case 'delivered':
+      return <CheckCheck className="h-3.5 w-3.5 text-green-200" />;
+    case 'sent':
+    default:
+      return <Check className="h-3.5 w-3.5 text-green-200" />;
+  }
 }
 
 interface ClientConversation {
@@ -177,6 +193,41 @@ export function ClientConversationalMessages() {
     } finally {
       setPinningConversation(null);
     }
+  };
+
+  // Mark messages as read when opening a conversation
+  const markConversationAsRead = async (conversationId: number) => {
+    try {
+      await fetch(`/api/conversations/${conversationId}/read`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ readerType: 'client' })
+      });
+    } catch (error) {
+      console.error("Error marking conversation as read:", error);
+    }
+  };
+
+  // Handle conversation selection and mark as read
+  const selectConversation = (conversation: ClientConversation) => {
+    setSelectedConversation(conversation);
+    markConversationAsRead(conversation.id);
+    
+    // Update local message status to 'read' for agent's messages
+    setConversations(prev => prev.map(conv => {
+      if (conv.id === conversation.id) {
+        return {
+          ...conv,
+          messages: conv.messages.map(msg => ({
+            ...msg,
+            status: msg.senderType === 'agent' ? 'read' as const : msg.status
+          }))
+        };
+      }
+      return conv;
+    }));
   };
 
   // Send message
@@ -341,7 +392,7 @@ export function ClientConversationalMessages() {
                     className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${
                       selectedConversation?.id === conversation.id ? 'bg-green-50 border-green-200' : ''
                     }`}
-                    onClick={() => setSelectedConversation(conversation)}
+                    onClick={() => selectConversation(conversation)}
                   >
                     <div className="flex items-start gap-3">
                       <Avatar className="h-10 w-10">
@@ -369,9 +420,7 @@ export function ClientConversationalMessages() {
                           {conversation.lastMessage}
                         </p>
                         {conversation.status === 'pendiente' && (
-                          <Badge variant="outline" className="mt-1 text-xs">
-                            Pendiente
-                          </Badge>
+                          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-1" title="Mensaje sin respuesta" />
                         )}
                       </div>
                     </div>
@@ -445,11 +494,15 @@ export function ClientConversationalMessages() {
                         }`}
                       >
                         <p className="text-sm">{message.content}</p>
-                        <p className={`text-xs mt-1 ${
+                        <div className={`flex items-center justify-end gap-1 mt-1 ${
                           message.senderType === 'client' ? 'text-green-100' : 'text-gray-500'
                         }`}>
-                          {formatTime(message.timestamp)}
-                        </p>
+                          <span className="text-xs">{formatTime(message.timestamp)}</span>
+                          <MessageStatusIndicator 
+                            status={message.status || 'sent'} 
+                            isClientMessage={message.senderType === 'client'} 
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
