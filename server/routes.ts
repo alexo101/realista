@@ -3900,6 +3900,9 @@ Gracias!
         // Get the full message history for this conversation
         const messageHistory = await storage.getConversationMessages(inquiry.id);
         
+        // Try to find the actual client by email
+        const actualClient = await storage.getClientByEmail(inquiry.email);
+        
         let messages = [];
         
         if (messageHistory.length > 0) {
@@ -3916,9 +3919,10 @@ Gracias!
           }));
         } else {
           // If no persisted messages, create the initial message from the inquiry
+          const clientId = actualClient?.id || inquiry.id;
           messages = [{
             id: 1,
-            senderId: inquiry.id,
+            senderId: clientId,
             senderName: inquiry.name,
             senderType: 'client',
             content: inquiry.message || `Consulta sobre la propiedad en ${inquiry.property?.address || 'esta dirección'}.`,
@@ -3931,10 +3935,14 @@ Gracias!
         // Get the last message for display
         const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
         
+        // Use actual client ID if found, otherwise fall back to inquiry ID
+        const clientId = actualClient?.id || null;
+        const clientName = actualClient ? `${actualClient.name} ${actualClient.surname || ''}`.trim() : inquiry.name;
+        
         return {
           id: inquiry.id,
-          clientId: inquiry.id, // Using inquiry ID as client reference
-          clientName: inquiry.name,
+          clientId: clientId, // Using actual client ID from clients table
+          clientName: clientName,
           clientEmail: inquiry.email,
           clientPhone: inquiry.phone,
           propertyId: inquiry.propertyId,
