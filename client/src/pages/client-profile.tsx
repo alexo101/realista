@@ -1237,12 +1237,9 @@ export default function ClientProfile() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No tienes agencias favoritas
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-gray-500">
                       Cuando encuentres una agencia que te interese, guárdala aquí para acceder fácilmente a ella
                     </p>
-                    <Button variant="outline" onClick={() => navigate("/agencias")}>
-                      Explorar agencias
-                    </Button>
                   </div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
