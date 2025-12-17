@@ -1,5 +1,5 @@
 import { UserCircle, MapPin, ExternalLink, Users, Star, Heart } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/user-context";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,6 +31,7 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   // Get favorite status for all agents if user is logged in as client
   const { data: favoriteStatus = {} } = useQuery({
@@ -89,6 +90,27 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
   });
 
   const handleFavoriteClick = (agentId: number) => {
+    // If user is not logged in, redirect to login page
+    if (!user) {
+      toast({
+        title: "Inicia sesión para guardar",
+        description: "Debes iniciar sesión para agregar agentes a favoritos",
+        variant: "destructive",
+      });
+      navigate("/iniciar-sesion");
+      return;
+    }
+    
+    // If user is not a client, show error
+    if (!user.isClient) {
+      toast({
+        title: "Función solo para clientes",
+        description: "Solo los clientes pueden agregar agentes a favoritos",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     toggleFavoriteMutation.mutate(agentId);
   };
 
@@ -121,7 +143,7 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {results.map((agent) => {
         const isFavorite = favoriteStatus[agent.id] || false;
-        const showFavoriteButton = user?.isClient;
+        const showFavoriteButton = true; // Always show favorite button, redirect to login if not logged in
         
         return (
           <div key={agent.id} className="bg-white rounded-lg shadow-md p-6 flex flex-col">
