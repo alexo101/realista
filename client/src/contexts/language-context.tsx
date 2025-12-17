@@ -81,7 +81,7 @@ const translations = {
     // Navbar
     'nav.home': 'Home',
     'nav.login': 'Log in',
-    'nav.profile': 'My profile',
+    'nav.profile': 'My personal area',
     'nav.manage': 'Manage all',
     'nav.realista_pro': 'RealistaPro',
     
