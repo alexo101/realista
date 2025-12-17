@@ -99,7 +99,7 @@ interface FavoriteAgency {
   agencyAddress?: string;
   agencyInfluenceNeighborhoods?: string[];
   reviewCount?: number;
-  rating?: number;
+  reviewAverage?: number;
 }
 
 // Valid dashboard sections
@@ -1314,22 +1314,20 @@ export default function ClientProfile() {
                             </div>
                           </div>
 
-                          {/* Reviews section */}
-                          {(agency.reviewCount !== undefined || agency.rating !== undefined) && (
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                                <span className="text-sm font-medium">
-                                  {agency.rating && agency.rating > 0 ? agency.rating.toFixed(1) : "Sin valoración"}
-                                </span>
-                              </div>
-                              {agency.reviewCount !== undefined && agency.reviewCount > 0 && (
-                                <span className="text-sm text-gray-500">
-                                  ({agency.reviewCount} {agency.reviewCount === 1 ? "reseña" : "reseñas"})
-                                </span>
-                              )}
+                          {/* Reviews section - always show */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                              <span className="text-sm font-medium">
+                                {agency.reviewAverage && agency.reviewAverage > 0 ? agency.reviewAverage.toFixed(1) : "Sin valoración"}
+                              </span>
                             </div>
-                          )}
+                            {agency.reviewCount !== undefined && agency.reviewCount > 0 && (
+                              <span className="text-sm text-gray-500">
+                                ({agency.reviewCount} {agency.reviewCount === 1 ? "reseña" : "reseñas"})
+                              </span>
+                            )}
+                          </div>
 
                           {agency.agencyAddress && (
                             <p className="text-sm text-gray-600 flex items-center gap-1 mb-2">

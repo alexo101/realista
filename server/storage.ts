@@ -2660,6 +2660,8 @@ export class DatabaseStorage implements IStorage {
         isAdmin: sql<boolean>`false`.as('isAdmin'),
         isAgent: sql<boolean>`false`.as('isAgent'),
         isAgency: sql<boolean>`true`.as('isAgency'),
+        reviewCount: sql<number>`COALESCE((SELECT COUNT(*) FROM reviews WHERE reviews.agency_id = ${agencies.id}), 0)::integer`.as('reviewCount'),
+        reviewAverage: sql<number>`COALESCE((SELECT ROUND(AVG(rating), 2) FROM reviews WHERE reviews.agency_id = ${agencies.id}), 0)::float`.as('reviewAverage'),
       })
       .from(clientFavoriteAgencies)
       .innerJoin(agencies, eq(agencies.id, clientFavoriteAgencies.agencyId))
