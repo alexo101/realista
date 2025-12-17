@@ -26,6 +26,7 @@ interface Agency {
   description?: string;
   reviewCount?: number;
   reviewAverage?: number;
+  rating?: number;
 }
 
 interface AgencyResultsProps {
@@ -230,12 +231,14 @@ function AgencyCard({ agency }: { agency: Agency }) {
             {agency.agencyAddress || "Sin dirección"}
           </p>
 
-          {(agency.reviewCount !== undefined && agency.reviewAverage !== undefined) && (
+          {(agency.reviewCount !== undefined && (agency.reviewAverage !== undefined || agency.rating !== undefined)) && (
             <div className="flex items-center gap-2 mt-1">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-400 fill-current" />
                 <span className="text-sm font-medium">
-                  {agency.reviewAverage > 0 ? agency.reviewAverage.toFixed(1) : "Sin valoración"}
+                  {(agency.reviewAverage ?? agency.rating ?? 0) > 0 
+                    ? (agency.reviewAverage ?? agency.rating ?? 0).toFixed(1) 
+                    : "Sin valoración"}
                 </span>
               </div>
               {agency.reviewCount > 0 && (
