@@ -38,7 +38,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2, Share2 } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -423,6 +423,32 @@ export default function ClientProfile() {
       toast({
         title: "Error",
         description: "No se pudo actualizar el nombre de la búsqueda",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for toggling favorite property
+  const toggleFavoritePropertyMutation = useMutation({
+    mutationFn: async (propertyUuid: string): Promise<{ isFavorite: boolean; message: string }> => {
+      return await apiRequest("POST", `/api/clients/favorites/properties/${propertyUuid}`, {
+        clientId: user?.id
+      });
+    },
+    onSuccess: (data) => {
+      // Invalidate favorite properties query to refetch
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${user?.id}/favorites/properties`] });
+      toast({
+        title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
+        description: data.isFavorite 
+          ? "La propiedad se ha agregado a tus favoritos."
+          : "La propiedad se ha eliminado de tus favoritos."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "No se pudo actualizar favoritos",
         variant: "destructive",
       });
     },
@@ -996,8 +1022,8 @@ export default function ClientProfile() {
                         : [];
                       
                       return (
-                        <Card key={property.uuid} className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-0">
+                        <Card key={property.uuid} className="hover:shadow-md transition-shadow h-full flex flex-col">
+                          <CardContent className="p-0 flex flex-col flex-1">
                             {propertyImages.length > 0 && (
                               <img
                                 src={propertyImages[0]}
@@ -1005,15 +1031,56 @@ export default function ClientProfile() {
                                 className="w-full h-48 object-cover rounded-t-lg"
                               />
                             )}
-                          <div className="p-4">
+                          <div className="p-4 flex flex-col flex-1">
                             <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-semibold text-gray-900 line-clamp-2">
+                              <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
                                 {property.title}
                               </h3>
-                              <Badge variant={property.operationType === "Venta" ? "default" : "secondary"}>
-                                {property.operationType}
-                              </Badge>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-1 h-7 w-7 hover:bg-gray-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Toggle favorite - since this is already a favorite, clicking removes it
+                                    toggleFavoritePropertyMutation.mutate(property.uuid);
+                                  }}
+                                  data-testid={`button-unfavorite-property-${property.uuid}`}
+                                >
+                                  <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-1 h-7 w-7 hover:bg-gray-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Share property
+                                    const propertyUrl = `${window.location.origin}/property/${property.uuid}`;
+                                    if (navigator.share) {
+                                      navigator.share({
+                                        title: property.title,
+                                        text: `Mira esta propiedad: ${property.title}`,
+                                        url: propertyUrl,
+                                      });
+                                    } else {
+                                      navigator.clipboard.writeText(propertyUrl);
+                                      toast({
+                                        title: "Enlace copiado",
+                                        description: "El enlace de la propiedad se ha copiado al portapapeles",
+                                      });
+                                    }
+                                  }}
+                                  data-testid={`button-share-property-${property.uuid}`}
+                                >
+                                  <Share2 className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                                </Button>
+                              </div>
                             </div>
+                            <Badge variant={property.operationType === "Venta" ? "default" : "secondary"} className="w-fit mb-2">
+                              {property.operationType}
+                            </Badge>
                             <p className="text-2xl font-bold text-primary mb-2">
                               €{property.price.toLocaleString()}
                             </p>
@@ -1032,9 +1099,11 @@ export default function ClientProfile() {
                                 <span>{property.superficie} m²</span>
                               )}
                             </div>
+                            {/* Spacer to push button to bottom */}
+                            <div className="flex-1" />
                             <Button 
                               size="sm" 
-                              className="w-full"
+                              className="w-full mt-auto"
                               onClick={() => navigate(`/property/${property.uuid}`)}
                             >
                               Ver detalles
