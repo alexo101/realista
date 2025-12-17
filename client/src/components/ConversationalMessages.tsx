@@ -25,17 +25,21 @@ interface Message {
 }
 
 // Message status indicator component (WhatsApp-style check marks)
+// Colors adjusted to be visible on blue background of agent messages
 function MessageStatusIndicator({ status, isAgentMessage }: { status: string; isAgentMessage: boolean }) {
   if (!isAgentMessage) return null; // Only show for agent's own messages
   
   switch (status) {
     case 'read':
-      return <CheckCheck className="h-3.5 w-3.5 text-blue-500" />;
+      // Double blue checks - use cyan/light blue for visibility on blue background
+      return <CheckCheck className="h-3.5 w-3.5 text-cyan-300" />;
     case 'delivered':
-      return <CheckCheck className="h-3.5 w-3.5 text-gray-400" />;
+      // Double grey checks - use white/light for visibility on blue background
+      return <CheckCheck className="h-3.5 w-3.5 text-white/70" />;
     case 'sent':
     default:
-      return <Check className="h-3.5 w-3.5 text-gray-400" />;
+      // Single grey check - use white/light for visibility on blue background
+      return <Check className="h-3.5 w-3.5 text-white/70" />;
   }
 }
 
