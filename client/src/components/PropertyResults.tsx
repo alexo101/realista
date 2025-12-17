@@ -81,7 +81,11 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
       });
     },
     onSuccess: (data, propertyUuid) => {
-      // Invalidate and refetch favorite status
+      // Invalidate the batch query that fetches favorite statuses for this component
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${user?.id}/favorites/properties/batch`] 
+      });
+      // Also invalidate other related queries
       queryClient.invalidateQueries({ 
         queryKey: [`/api/clients/${user?.id}/favorites/properties/status`] 
       });
