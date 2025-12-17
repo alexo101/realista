@@ -30,12 +30,12 @@ function MessageStatusIndicator({ status, isAgentMessage }: { status: string; is
   
   switch (status) {
     case 'read':
-      return <CheckCheck className="h-3.5 w-3.5 text-blue-400" />;
+      return <CheckCheck className="h-3.5 w-3.5 text-blue-500" />;
     case 'delivered':
-      return <CheckCheck className="h-3.5 w-3.5 text-blue-200" />;
+      return <CheckCheck className="h-3.5 w-3.5 text-gray-400" />;
     case 'sent':
     default:
-      return <Check className="h-3.5 w-3.5 text-blue-200" />;
+      return <Check className="h-3.5 w-3.5 text-gray-400" />;
   }
 }
 
