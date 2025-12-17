@@ -48,7 +48,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2, Share2 } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2, Share2, Copy } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useUser } from "@/contexts/user-context";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -84,11 +91,15 @@ interface FavoriteProperty {
 
 interface FavoriteAgency {
   id: number;
+  uuid: string;
+  slug?: string;
   agencyName: string;
   email: string;
   agencyLogo?: string;
   agencyAddress?: string;
   agencyInfluenceNeighborhoods?: string[];
+  reviewCount?: number;
+  rating?: number;
 }
 
 // Valid dashboard sections
@@ -466,11 +477,62 @@ export default function ClientProfile() {
     },
   });
 
+  // Mutation for toggling favorite agency
+  const toggleFavoriteAgencyMutation = useMutation({
+    mutationFn: async (agencyUuid: string): Promise<{ isFavorite: boolean; message: string }> => {
+      return await apiRequest("POST", `/api/clients/favorites/agencies/${agencyUuid}`, {
+        clientId: user?.id
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${user?.id}/favorites/agencies`] });
+      toast({
+        title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
+        description: data.isFavorite 
+          ? "La agencia se ha agregado a tus favoritos."
+          : "La agencia se ha eliminado de tus favoritos."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "No se pudo actualizar favoritos",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper function for sharing agencies
+  const handleShareAgency = (agency: FavoriteAgency, platform: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const url = `${window.location.origin}/agencias/${agency.slug || agency.id}`;
+    const text = `Conoce ${agency.agencyName} en Realista`;
+    
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${text} - ${url}`)}`, '_blank');
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(url);
+        toast({
+          title: "Enlace copiado",
+          description: "El enlace de la agencia ha sido copiado al portapapeles",
+        });
+        break;
+      case 'email':
+        window.open(`mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(url)}`, '_blank');
+        break;
+    }
+  };
+
   // State for edit mode
   const [editingSearchId, setEditingSearchId] = useState<number | null>(null);
   const [editingSearchName, setEditingSearchName] = useState("");
   const [deletingSearchId, setDeletingSearchId] = useState<number | null>(null);
   const [removingFavoriteProperty, setRemovingFavoriteProperty] = useState<FavoriteProperty | null>(null);
+  const [removingFavoriteAgency, setRemovingFavoriteAgency] = useState<FavoriteAgency | null>(null);
 
   // Show loading spinner while user context is loading
   if (isLoading) {
@@ -1187,11 +1249,55 @@ export default function ClientProfile() {
                     {favoriteAgencies.map((agency) => (
                       <Card 
                         key={agency.id} 
-                        className="hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/agencia/${agency.id}`)}
+                        className="hover:shadow-md transition-shadow cursor-pointer relative"
+                        onClick={() => navigate(`/agencias/${agency.slug || agency.id}`)}
+                        data-testid={`card-favorite-agency-${agency.id}`}
                       >
                         <CardContent className="p-4">
-                          <div className="flex items-center gap-3 mb-3">
+                          {/* Action buttons in top right */}
+                          <div className="absolute top-2 right-2 flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setRemovingFavoriteAgency(agency);
+                              }}
+                              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                              data-testid={`button-remove-agency-${agency.id}`}
+                              aria-label="Eliminar de favoritos"
+                            >
+                              <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                            </button>
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                                  data-testid={`button-share-agency-${agency.id}`}
+                                  aria-label="Compartir agencia"
+                                >
+                                  <Share2 className="w-4 h-4 text-gray-400 hover:text-primary" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => handleShareAgency(agency, 'whatsapp', e)} data-testid="share-whatsapp">
+                                  <SiWhatsapp className="w-4 h-4 mr-2 text-green-500" />
+                                  WhatsApp
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => handleShareAgency(agency, 'email', e)} data-testid="share-email">
+                                  <Mail className="w-4 h-4 mr-2" />
+                                  Email
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => handleShareAgency(agency, 'copy', e)} data-testid="share-copy">
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Copiar enlace
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          <div className="flex items-center gap-3 mb-3 pr-16">
                             <Avatar className="h-12 w-12">
                               <AvatarImage src={agency.agencyLogo} />
                               <AvatarFallback>
@@ -1207,6 +1313,24 @@ export default function ClientProfile() {
                               </p>
                             </div>
                           </div>
+
+                          {/* Reviews section */}
+                          {(agency.reviewCount !== undefined || agency.rating !== undefined) && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-1">
+                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                                <span className="text-sm font-medium">
+                                  {agency.rating && agency.rating > 0 ? agency.rating.toFixed(1) : "Sin valoración"}
+                                </span>
+                              </div>
+                              {agency.reviewCount !== undefined && agency.reviewCount > 0 && (
+                                <span className="text-sm text-gray-500">
+                                  ({agency.reviewCount} {agency.reviewCount === 1 ? "reseña" : "reseñas"})
+                                </span>
+                              )}
+                            </div>
+                          )}
+
                           {agency.agencyAddress && (
                             <p className="text-sm text-gray-600 flex items-center gap-1 mb-2">
                               <MapPin className="h-3 w-3" />
@@ -1673,6 +1797,32 @@ export default function ClientProfile() {
                 }
               }}
               data-testid="button-confirm-remove-favorite"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation dialog for removing favorite agency */}
+      <AlertDialog open={!!removingFavoriteAgency} onOpenChange={(open) => !open && setRemovingFavoriteAgency(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar de favoritos</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que quieres eliminar "{removingFavoriteAgency?.agencyName}" de tus agencias favoritas?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-remove-agency-favorite">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (removingFavoriteAgency) {
+                  toggleFavoriteAgencyMutation.mutate(removingFavoriteAgency.uuid);
+                  setRemovingFavoriteAgency(null);
+                }
+              }}
+              data-testid="button-confirm-remove-agency-favorite"
             >
               Eliminar
             </AlertDialogAction>
