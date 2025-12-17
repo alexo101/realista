@@ -1075,17 +1075,9 @@ export default function ClientProfile() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No tienes propiedades favoritas
                     </h3>
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-gray-500">
                       Busca propiedades y guarda las que más te interesen para revisarlas después
                     </p>
-                    <div className="flex gap-2 justify-center">
-                      <Button onClick={() => navigate("/buscar/comprar")}>
-                        Buscar en venta
-                      </Button>
-                      <Button variant="outline" onClick={() => navigate("/buscar/alquilar")}>
-                        Buscar en alquiler
-                      </Button>
-                    </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
