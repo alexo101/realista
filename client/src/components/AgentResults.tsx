@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 // Actualizamos la interfaz para que coincida con la respuesta real del servidor
 interface Agent {
   id: number;
+  uuid?: string; // UUID for favorites API
   slug?: string; // Slug for SEO-friendly URLs
   name: string | null;
   surname: string | null;
@@ -50,7 +51,7 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
 
   // Mutation to toggle favorite status
   const toggleFavoriteMutation = useMutation({
-    mutationFn: async (agentId: number): Promise<{ isFavorite: boolean; message: string }> => {
+    mutationFn: async (agentUuid: string): Promise<{ isFavorite: boolean; message: string }> => {
       if (!user || !user.id) {
         throw new Error("Debes iniciar sesión para agregar favoritos");
       }
@@ -60,11 +61,11 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
       }
 
       // apiRequest already returns parsed JSON, no need to call .json() again
-      return await apiRequest("POST", `/api/clients/favorites/agents/${agentId}`, {
+      return await apiRequest("POST", `/api/clients/favorites/agents/${agentUuid}`, {
         clientId: user.id
       });
     },
-    onSuccess: (data, agentId) => {
+    onSuccess: (data) => {
       // Invalidate and refetch favorite status
       queryClient.invalidateQueries({ 
         queryKey: [`/api/clients/${user?.id}/favorites/agents/status`] 
@@ -89,7 +90,7 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
     },
   });
 
-  const handleFavoriteClick = (agentId: number) => {
+  const handleFavoriteClick = (agentUuid: string | undefined) => {
     // If user is not logged in, redirect to login page
     if (!user) {
       toast({
@@ -111,7 +112,16 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
       return;
     }
     
-    toggleFavoriteMutation.mutate(agentId);
+    if (!agentUuid) {
+      toast({
+        title: "Error",
+        description: "No se pudo identificar el agente",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toggleFavoriteMutation.mutate(agentUuid);
   };
 
   if (showSkeleton) {
@@ -159,7 +169,7 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
                         className={`absolute -top-2 -right-2 h-8 w-8 p-0 ${isFavorite ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-600"}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleFavoriteClick(agent.id);
+                          handleFavoriteClick(agent.uuid);
                         }}
                         disabled={toggleFavoriteMutation.isPending}
                       >
