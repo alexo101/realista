@@ -106,7 +106,6 @@ interface FavoriteAgency {
 const VALID_SECTIONS = [
   'perfil',
   'busquedas',
-  'citas',
   'favoritos',
   'agencias-favoritas',
   'agentes-favoritos',
@@ -1186,27 +1185,6 @@ export default function ClientProfile() {
           </div>
         );
 
-      case "citas":
-        return (
-          <div className="space-y-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Citas</h1>
-              <p className="text-gray-600">Gestiona tus citas programadas con agentes</p>
-            </div>
-            <Card>
-              <CardContent className="p-8 text-center">
-                <CalendarDays className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Próximamente
-                </h3>
-                <p className="text-gray-500">
-                  Esta sección estará disponible próximamente para gestionar tus citas
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
       case "agencias-favoritas":
         return (
           <div className="space-y-6">
@@ -1670,19 +1648,6 @@ export default function ClientProfile() {
                 >
                   <Bookmark className="h-4 w-4" />
                   {!sidebarCollapsed && <span>Mis búsquedas</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Appointments Section */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/citas`)}
-                  isActive={currentSection === "citas"}
-                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-citas"
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Mis citas</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
