@@ -60,6 +60,7 @@ import { useUser } from "@/contexts/user-context";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ClientConversationalMessages } from "@/components/ClientConversationalMessages";
+import { MobileClientNav } from "@/components/MobileClientNav";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -107,8 +108,6 @@ const VALID_SECTIONS = [
   'perfil',
   'busquedas',
   'favoritos',
-  'agencias-favoritas',
-  'agentes-favoritos',
   'mensajes'
 ] as const;
 
@@ -1055,33 +1054,44 @@ export default function ClientProfile() {
       case "favoritos":
         return (
           <div className="space-y-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Propiedades Favoritas</h1>
-              <p className="text-gray-600">Propiedades que has guardado para revisar más tarde</p>
+            <div className="mb-4 md:mb-8">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Favoritos</h1>
+              <p className="text-gray-600 text-sm md:text-base">Propiedades, agentes y agencias que has guardado</p>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="h-5 w-5 text-blue-500" />
-                  Propiedades favoritas ({favoriteProperties.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <Tabs defaultValue="propiedades" className="w-full">
+              <TabsList className="w-full grid grid-cols-3 mb-4">
+                <TabsTrigger value="propiedades" data-testid="tab-propiedades">
+                  <Home className="h-4 w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Propiedades</span>
+                  <span className="sm:hidden">Prop.</span>
+                </TabsTrigger>
+                <TabsTrigger value="agentes" data-testid="tab-agentes">
+                  <Star className="h-4 w-4 mr-1 md:mr-2" />
+                  <span>Agentes</span>
+                </TabsTrigger>
+                <TabsTrigger value="agencias" data-testid="tab-agencias">
+                  <Building2 className="h-4 w-4 mr-1 md:mr-2" />
+                  <span>Agencias</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="propiedades">
                 {favoriteProperties.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes propiedades favoritas
-                    </h3>
-                    <p className="text-gray-500">
-                      Busca propiedades y guarda las que más te interesen para revisarlas después
-                    </p>
-                  </div>
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No tienes propiedades favoritas
+                      </h3>
+                      <p className="text-gray-500">
+                        Busca propiedades y guarda las que más te interesen
+                      </p>
+                    </CardContent>
+                  </Card>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {favoriteProperties.map((property) => {
-                      // Use imageUrls or empty array if none available
                       const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
                         ? property.imageUrls
                         : [];
@@ -1096,123 +1106,170 @@ export default function ClientProfile() {
                                 className="w-full h-48 object-cover rounded-t-lg"
                               />
                             )}
-                          <div className="p-4 flex flex-col flex-1">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
-                                {property.title}
-                              </h3>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="p-1 h-7 w-7 hover:bg-gray-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Show confirmation dialog before removing
-                                    setRemovingFavoriteProperty(property);
-                                  }}
-                                  data-testid={`button-unfavorite-property-${property.uuid}`}
-                                >
-                                  <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="p-1 h-7 w-7 hover:bg-gray-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Share property
-                                    const propertyUrl = `${window.location.origin}/property/${property.uuid}`;
-                                    if (navigator.share) {
-                                      navigator.share({
-                                        title: property.title,
-                                        text: `Mira esta propiedad: ${property.title}`,
-                                        url: propertyUrl,
-                                      });
-                                    } else {
-                                      navigator.clipboard.writeText(propertyUrl);
-                                      toast({
-                                        title: "Enlace copiado",
-                                        description: "El enlace de la propiedad se ha copiado al portapapeles",
-                                      });
-                                    }
-                                  }}
-                                  data-testid={`button-share-property-${property.uuid}`}
-                                >
-                                  <Share2 className="h-4 w-4 text-gray-400 hover:text-blue-500" />
-                                </Button>
+                            <div className="p-4 flex flex-col flex-1">
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
+                                  {property.title}
+                                </h3>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="p-1 h-7 w-7 hover:bg-gray-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRemovingFavoriteProperty(property);
+                                    }}
+                                    data-testid={`button-unfavorite-property-${property.uuid}`}
+                                  >
+                                    <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="p-1 h-7 w-7 hover:bg-gray-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const propertyUrl = `${window.location.origin}/property/${property.uuid}`;
+                                      if (navigator.share) {
+                                        navigator.share({
+                                          title: property.title,
+                                          text: `Mira esta propiedad: ${property.title}`,
+                                          url: propertyUrl,
+                                        });
+                                      } else {
+                                        navigator.clipboard.writeText(propertyUrl);
+                                        toast({
+                                          title: "Enlace copiado",
+                                          description: "El enlace de la propiedad se ha copiado al portapapeles",
+                                        });
+                                      }
+                                    }}
+                                    data-testid={`button-share-property-${property.uuid}`}
+                                  >
+                                    <Share2 className="h-4 w-4 text-gray-400 hover:text-blue-500" />
+                                  </Button>
+                                </div>
                               </div>
+                              <Badge variant={property.operationType === "Venta" ? "default" : "secondary"} className="w-fit mb-2">
+                                {property.operationType}
+                              </Badge>
+                              <p className="text-2xl font-bold text-primary mb-2">
+                                €{property.price.toLocaleString()}
+                              </p>
+                              <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                                <MapPin className="h-4 w-4" />
+                                {property.neighborhood}
+                              </p>
+                              <div className="flex gap-4 text-sm text-gray-500 mb-3">
+                                {property.bedrooms && <span>{property.bedrooms} hab.</span>}
+                                {property.bathrooms && <span>{property.bathrooms} baños</span>}
+                                {property.superficie && <span>{property.superficie} m²</span>}
+                              </div>
+                              <div className="flex-1" />
+                              <Button 
+                                size="sm" 
+                                className="w-full mt-auto"
+                                onClick={() => navigate(`/property/${property.uuid}`)}
+                              >
+                                Ver detalles
+                              </Button>
                             </div>
-                            <Badge variant={property.operationType === "Venta" ? "default" : "secondary"} className="w-fit mb-2">
-                              {property.operationType}
-                            </Badge>
-                            <p className="text-2xl font-bold text-primary mb-2">
-                              €{property.price.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {property.neighborhood}
-                            </p>
-                            <div className="flex gap-4 text-sm text-gray-500 mb-3">
-                              {property.bedrooms && (
-                                <span>{property.bedrooms} hab.</span>
-                              )}
-                              {property.bathrooms && (
-                                <span>{property.bathrooms} baños</span>
-                              )}
-                              {property.superficie && (
-                                <span>{property.superficie} m²</span>
-                              )}
-                            </div>
-                            {/* Spacer to push button to bottom */}
-                            <div className="flex-1" />
-                            <Button 
-                              size="sm" 
-                              className="w-full mt-auto"
-                              onClick={() => navigate(`/property/${property.uuid}`)}
-                            >
-                              Ver detalles
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        );
+              </TabsContent>
 
-      case "agencias-favoritas":
-        return (
-          <div className="space-y-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agencias favoritas</h1>
-              <p className="text-gray-600">Agencias inmobiliarias que has guardado como favoritas</p>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-blue-500" />
-                  Mis agencias favoritas ({favoriteAgencies.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {favoriteAgencies.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes agencias favoritas
-                    </h3>
-                    <p className="text-gray-500">
-                      Cuando encuentres una agencia que te interese, guárdala aquí para acceder fácilmente a ella
-                    </p>
-                  </div>
+              <TabsContent value="agentes">
+                {favoriteAgents.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Star className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No tienes agentes favoritos
+                      </h3>
+                      <p className="text-gray-500">
+                        Guarda agentes que te interesen para contactarlos después
+                      </p>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {favoriteAgents.map((agent) => (
+                      <Card 
+                        key={agent.id} 
+                        className="hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/agente/${agent.slug || agent.id}`)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={agent.avatar} />
+                              <AvatarFallback>
+                                {agent.name[0]}{agent.surname[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 truncate">
+                                {agent.name} {agent.surname}
+                              </h3>
+                              <p className="text-sm text-gray-500 truncate">
+                                {agent.email}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            {agent.yearsOfExperience && (
+                              <span className="text-sm text-gray-600">
+                                {agent.yearsOfExperience} años exp.
+                              </span>
+                            )}
+                            {agent.rating && (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span className="text-sm font-medium">{agent.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                          </div>
+                          {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {agent.influenceNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {neighborhood}
+                                </Badge>
+                              ))}
+                              {agent.influenceNeighborhoods.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{agent.influenceNeighborhoods.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="agencias">
+                {favoriteAgencies.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No tienes agencias favoritas
+                      </h3>
+                      <p className="text-gray-500">
+                        Guarda agencias que te interesen para acceder a ellas
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {favoriteAgencies.map((agency) => (
                       <Card 
                         key={agency.id} 
@@ -1221,7 +1278,6 @@ export default function ClientProfile() {
                         data-testid={`card-favorite-agency-${agency.id}`}
                       >
                         <CardContent className="p-4">
-                          {/* Action buttons in top right */}
                           <div className="absolute top-2 right-2 flex items-center gap-1">
                             <button
                               onClick={(e) => {
@@ -1281,7 +1337,6 @@ export default function ClientProfile() {
                             </div>
                           </div>
 
-                          {/* Reviews section - always show */}
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex items-center gap-1">
                               <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -1321,96 +1376,8 @@ export default function ClientProfile() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      case "agentes-favoritos":
-        return (
-          <div className="space-y-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agentes favoritos</h1>
-              <p className="text-gray-600">Agentes inmobiliarios que has guardado como favoritos</p>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-500" />
-                  Mis agentes favoritos ({favoriteAgents.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {favoriteAgents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Star className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes agentes favoritos
-                    </h3>
-                    <p className="text-gray-500">
-                      Cuando encuentres un agente que te interese, guárdalo aquí para acceder fácilmente a él
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {favoriteAgents.map((agent) => (
-                      <Card 
-                        key={agent.id} 
-                        className="hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/agente/${agent.slug || agent.id}`)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={agent.avatar} />
-                              <AvatarFallback>
-                                {agent.name[0]}{agent.surname[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 truncate">
-                                {agent.name} {agent.surname}
-                              </h3>
-                              <p className="text-sm text-gray-500 truncate">
-                                {agent.email}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            {agent.yearsOfExperience && (
-                              <span className="text-sm text-gray-600">
-                                {agent.yearsOfExperience} años exp.
-                              </span>
-                            )}
-                            {agent.rating && (
-                              <div className="flex items-center gap-1">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                <span className="text-sm font-medium">{agent.rating.toFixed(1)}</span>
-                              </div>
-                            )}
-                          </div>
-                          {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {agent.influenceNeighborhoods.slice(0, 3).map((neighborhood, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {neighborhood}
-                                </Badge>
-                              ))}
-                              {agent.influenceNeighborhoods.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{agent.influenceNeighborhoods.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         );
 
@@ -1651,7 +1618,7 @@ export default function ClientProfile() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Favorites Section - Properties */}
+              {/* Favorites Section */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/favoritos`)}
@@ -1660,33 +1627,7 @@ export default function ClientProfile() {
                   data-testid="sidebar-favoritos"
                 >
                   <Heart className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Propiedades favoritas</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Favorites Section - Agencies */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/agencias-favoritas`)}
-                  isActive={currentSection === "agencias-favoritas"}
-                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-agencias-favoritas"
-                >
-                  <Building2 className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Agencias favoritas</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Favorites Section - Agents */}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/agentes-favoritos`)}
-                  isActive={currentSection === "agentes-favoritos"}
-                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  data-testid="sidebar-agentes-favoritos"
-                >
-                  <Star className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Agentes favoritos</span>}
+                  {!sidebarCollapsed && <span>Favoritos</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -1706,8 +1647,8 @@ export default function ClientProfile() {
           </SidebarContent>
         </Sidebar>
 
-        {/* Sidebar Toggle Button - Positioned at the border like manage page */}
-        <div className={`fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ${sidebarCollapsed ? 'left-14' : 'left-60'}`}>
+        {/* Sidebar Toggle Button - Positioned at the border like manage page (hidden on mobile) */}
+        <div className={`hidden md:block fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ${sidebarCollapsed ? 'left-14' : 'left-60'}`}>
           <Button
             variant="ghost"
             size="sm"
@@ -1720,12 +1661,15 @@ export default function ClientProfile() {
         </div>
 
         {/* Main content area */}
-        <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
+        <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 pb-20 md:pb-6 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
           <div className="max-w-6xl mx-auto">
             {renderMainContent()}
           </div>
         </main>
       </SidebarProvider>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileClientNav currentSection={currentSection} />
 
       {/* Confirmation dialog for removing favorite property */}
       <AlertDialog open={!!removingFavoriteProperty} onOpenChange={(open) => !open && setRemovingFavoriteProperty(null)}>
