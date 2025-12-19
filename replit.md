@@ -15,6 +15,12 @@ Preferred communication style: Simple, everyday language.
 - **Components**: Radix UI primitives styled with shadcn/ui, integrated with Tailwind CSS for a custom theme.
 - **Design Approach**: Responsive design across all devices with consistent visual alignment.
 - **Navigation**: Wouter for client-side routing, featuring an enhanced navbar with mobile menu.
+- **Mobile Client Navigation**: Dedicated bottom navigation bar for client profiles on mobile devices (MobileClientNav component):
+  - 5 tabs: Inicio (home), Chats (mensajes), Favoritos, Búsquedas, Perfil
+  - Hidden on md+ screens (`md:hidden`), only visible on mobile
+  - Login gating: Protected sections redirect to /iniciar-sesion if not authenticated
+  - Only "Inicio" tab is public, all others require login
+- **Consolidated Favorites**: Client favorites unified into single section with 3 tabs (Propiedades/Agentes/Agencias) instead of separate routes
 - **Interaction**: Draggable image galleries, autocomplete search, multi-tab interfaces, an integrated calendar for appointments, and a conversational messaging interface.
 
 ### Technical Implementations
