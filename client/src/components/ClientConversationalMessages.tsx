@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useUser } from "@/contexts/user-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, MessageCircle, Home, Pin, PinOff, Check, CheckCheck } from "lucide-react";
-import { format } from "date-fns";
+import { Search, Send, MessageCircle, Home, Pin, ArrowLeft, Check, CheckCheck, Building2 } from "lucide-react";
+import { format, isToday, isYesterday } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,9 +19,8 @@ interface Message {
   status: 'sent' | 'delivered' | 'read';
 }
 
-// Message status indicator component (WhatsApp-style check marks)
 function MessageStatusIndicator({ status, isClientMessage }: { status: string; isClientMessage: boolean }) {
-  if (!isClientMessage) return null; // Only show for client's own messages
+  if (!isClientMessage) return null;
   
   switch (status) {
     case 'read':
@@ -41,12 +38,15 @@ interface ClientConversation {
   agentId: number;
   agentName: string;
   agentAvatar?: string;
+  agencyName?: string;
+  agencyLogo?: string;
   propertyId: number;
   propertyTitle: string;
   propertyAddress: string;
   lastMessage: string;
   lastMessageTime: string;
   status: string;
+  unreadCount?: number;
   messages: Message[];
 }
 
@@ -63,7 +63,6 @@ export function ClientConversationalMessages() {
   const [pinningConversation, setPinningConversation] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -72,13 +71,11 @@ export function ClientConversationalMessages() {
     scrollToBottom();
   }, [selectedConversation?.messages]);
 
-  // Load conversations and pinned conversations with polling for status updates
   useEffect(() => {
     if (user?.email && user?.isClient) {
       fetchConversations();
       fetchPinnedConversations();
       
-      // Poll every 30 seconds to get updated message statuses
       const pollInterval = setInterval(() => {
         refreshConversations();
       }, 30000);
@@ -110,7 +107,6 @@ export function ClientConversationalMessages() {
     }
   };
   
-  // Silent refresh without loading state (for polling)
   const refreshConversations = async () => {
     try {
       const response = await fetch(`/api/conversations/client/${encodeURIComponent(user!.email)}`);
@@ -118,7 +114,6 @@ export function ClientConversationalMessages() {
         const data = await response.json();
         setConversations(data);
         
-        // Update selected conversation if it exists
         if (selectedConversation) {
           const updated = data.find((c: ClientConversation) => c.id === selectedConversation.id);
           if (updated) {
@@ -131,7 +126,6 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Fetch pinned conversations
   const fetchPinnedConversations = async () => {
     try {
       const response = await fetch(`/api/conversations/pinned?userType=client&userId=0&userEmail=${encodeURIComponent(user!.email)}`);
@@ -144,7 +138,6 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Pin a conversation
   const pinConversation = async (inquiryId: number) => {
     try {
       setPinningConversation(inquiryId);
@@ -165,12 +158,11 @@ export function ClientConversationalMessages() {
         throw new Error(errorData.error || 'Error al fijar conversación');
       }
 
-      // Update local state
       setPinnedConversations(prev => [...prev, inquiryId]);
       
       toast({
-        title: "Éxito",
-        description: "Conversación fijada correctamente",
+        title: "Conversación fijada",
+        description: "La conversación aparecerá primero en la lista",
       });
     } catch (error) {
       console.error("Error pinning conversation:", error);
@@ -184,7 +176,6 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Unpin a conversation
   const unpinConversation = async (inquiryId: number) => {
     try {
       setPinningConversation(inquiryId);
@@ -204,12 +195,10 @@ export function ClientConversationalMessages() {
         throw new Error('Error al desfijar conversación');
       }
 
-      // Update local state
       setPinnedConversations(prev => prev.filter(id => id !== inquiryId));
       
       toast({
-        title: "Éxito",
-        description: "Conversación desfijada correctamente",
+        title: "Conversación desfijada",
       });
     } catch (error) {
       console.error("Error unpinning conversation:", error);
@@ -223,7 +212,6 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Mark messages as read when opening a conversation
   const markConversationAsRead = async (conversationId: number) => {
     try {
       await fetch(`/api/conversations/${conversationId}/read`, {
@@ -238,16 +226,15 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Handle conversation selection and mark as read
   const selectConversation = (conversation: ClientConversation) => {
     setSelectedConversation(conversation);
     markConversationAsRead(conversation.id);
     
-    // Update local message status to 'read' for agent's messages
     setConversations(prev => prev.map(conv => {
       if (conv.id === conversation.id) {
         return {
           ...conv,
+          unreadCount: 0,
           messages: conv.messages.map(msg => ({
             ...msg,
             status: msg.senderType === 'agent' ? 'read' as const : msg.status
@@ -258,7 +245,10 @@ export function ClientConversationalMessages() {
     }));
   };
 
-  // Send message
+  const goBackToList = () => {
+    setSelectedConversation(null);
+  };
+
   const sendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) return;
 
@@ -281,7 +271,6 @@ export function ClientConversationalMessages() {
 
       const newMsg = await response.json();
       
-      // Update conversation with new message
       setSelectedConversation(prev => {
         if (!prev) return prev;
         return {
@@ -292,7 +281,6 @@ export function ClientConversationalMessages() {
         };
       });
 
-      // Update conversations list
       setConversations(prev => 
         prev.map(conv => 
           conv.id === selectedConversation.id 
@@ -302,11 +290,6 @@ export function ClientConversationalMessages() {
       );
 
       setNewMessage("");
-      
-      toast({
-        title: "Mensaje enviado",
-        description: "Tu mensaje ha sido enviado al agente",
-      });
       
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
@@ -320,7 +303,6 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Handle enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -328,247 +310,291 @@ export function ClientConversationalMessages() {
     }
   };
 
-  // Filter conversations and sort by pinned status
   const filteredConversations = conversations
     .filter(
       (conversation) =>
         conversation.agentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        conversation.propertyAddress.toLowerCase().includes(searchTerm.toLowerCase())
+        conversation.propertyAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        conversation.propertyTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        conversation.agencyName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      // Sort pinned conversations first
       const aIsPinned = pinnedConversations.includes(a.id);
       const bIsPinned = pinnedConversations.includes(b.id);
       
       if (aIsPinned && !bIsPinned) return -1;
       if (!aIsPinned && bIsPinned) return 1;
       
-      // For conversations with same pin status, sort by last message time (most recent first)
       return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
     });
 
-  // Format time
-  const formatTime = (dateString: string) => {
+  const formatTimeShort = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      const now = new Date();
-      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
       
-      if (diffInHours < 24) {
+      if (isToday(date)) {
         return format(date, "HH:mm");
+      } else if (isYesterday(date)) {
+        return "Ayer";
       } else {
-        return format(date, "dd/MM/yyyy");
+        const dayName = format(date, "EEE", { locale: es });
+        return dayName.charAt(0).toUpperCase() + dayName.slice(1);
       }
     } catch (e) {
-      return dateString;
+      return "";
     }
   };
 
-  // Get initials for avatar
+  const formatMessageTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, "HH:mm");
+    } catch (e) {
+      return "";
+    }
+  };
+
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const getUnreadCount = (conversation: ClientConversation) => {
+    if (conversation.unreadCount !== undefined) {
+      return conversation.unreadCount;
+    }
+    return conversation.messages.filter(
+      m => m.senderType === 'agent' && !m.isRead
+    ).length;
   };
 
   if (loading) {
     return (
-      <Card className="h-[600px]">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Cargando conversaciones...</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center h-64 md:h-[500px]">
+        <div className="text-center">
+          <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-500">Cargando conversaciones...</p>
+        </div>
+      </div>
     );
   }
 
-  return (
-    <Card className="h-[600px]">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MessageCircle className="h-5 w-5 text-green-500" />
-          Mis Conversaciones
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="flex h-[520px]">
-          {/* Conversations List */}
-          <div className="w-80 border-r bg-gray-50">
-            <div className="p-4 border-b">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por agente o propiedad..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div className="overflow-y-auto h-full">
-              {filteredConversations.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  {searchTerm ? "No se encontraron conversaciones" : "No hay conversaciones"}
-                </div>
-              ) : (
-                filteredConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${
-                      selectedConversation?.id === conversation.id ? 'bg-green-50 border-green-200' : ''
-                    }`}
-                    onClick={() => selectConversation(conversation)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={conversation.agentAvatar} />
-                        <AvatarFallback className="bg-green-500 text-white">
-                          {getInitials(conversation.agentName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-medium text-sm truncate">
-                            {conversation.agentName}
-                          </h3>
-                          <span className="text-xs text-gray-500 ml-2">
-                            {formatTime(conversation.lastMessageTime)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Home className="h-3 w-3 text-gray-400" />
-                          <p className="text-xs text-gray-600 truncate">
-                            {conversation.propertyAddress}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1 truncate">
-                          {conversation.lastMessage}
-                        </p>
-                        {conversation.status === 'pendiente' && (
-                          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-1" title="Mensaje sin respuesta" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+  const ConversationsList = () => (
+    <div className="bg-white md:border-r h-full flex flex-col">
+      <div className="p-3 md:p-4 border-b sticky top-0 bg-white z-10">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Buscar conversaciones..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 rounded-full bg-gray-100 border-0"
+            data-testid="input-search-conversations"
+          />
+        </div>
+      </div>
+      
+      <div className="divide-y flex-1 overflow-y-auto">
+        {filteredConversations.length === 0 ? (
+          <div className="p-8 text-center">
+            <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">
+              {searchTerm ? "No se encontraron conversaciones" : "No hay conversaciones"}
+            </p>
           </div>
-
-          {/* Chat Area */}
-          <div className="flex-1 flex flex-col">
-            {selectedConversation ? (
-              <>
-                {/* Chat Header */}
-                <div className="p-4 border-b bg-white">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={selectedConversation.agentAvatar} />
-                        <AvatarFallback className="bg-green-500 text-white">
-                          {getInitials(selectedConversation.agentName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h3 className="font-medium">{selectedConversation.agentName}</h3>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <Home className="h-3 w-3" />
-                          <span>{selectedConversation.propertyAddress}</span>
-                        </div>
-                      </div>
+        ) : (
+          filteredConversations.map((conversation) => {
+            const unreadCount = getUnreadCount(conversation);
+            const isPinned = pinnedConversations.includes(conversation.id);
+            const isSelected = selectedConversation?.id === conversation.id;
+            
+            return (
+              <div
+                key={conversation.id}
+                className={`flex items-center gap-3 p-3 md:p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors ${
+                  isPinned ? 'bg-primary/5' : ''
+                } ${isSelected ? 'bg-primary/10 border-l-2 border-l-primary' : ''}`}
+                onClick={() => selectConversation(conversation)}
+                data-testid={`conversation-item-${conversation.id}`}
+              >
+                <div className="relative">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={conversation.agentAvatar || conversation.agencyLogo} />
+                    <AvatarFallback className="bg-primary text-white">
+                      {conversation.agencyName 
+                        ? <Building2 className="h-5 w-5" />
+                        : getInitials(conversation.agentName)
+                      }
+                    </AvatarFallback>
+                  </Avatar>
+                  {isPinned && (
+                    <div className="absolute -top-1 -right-1 bg-primary rounded-full p-0.5">
+                      <Pin className="h-2.5 w-2.5 text-white fill-white" />
                     </div>
-                    
-                    {/* Pin Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const isPinned = pinnedConversations.includes(selectedConversation.id);
-                        if (isPinned) {
-                          unpinConversation(selectedConversation.id);
-                        } else {
-                          pinConversation(selectedConversation.id);
-                        }
-                      }}
-                      disabled={pinningConversation === selectedConversation.id}
-                      data-testid={`button-pin-conversation-${selectedConversation.id}`}
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
-                    >
-                      {pinnedConversations.includes(selectedConversation.id) ? (
-                        <Pin className="h-4 w-4 text-green-500 fill-green-500" />
-                      ) : (
-                        <Pin className="h-4 w-4 text-gray-400" />
-                      )}
-                    </Button>
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold text-gray-900 truncate text-sm">
+                      {conversation.agencyName || conversation.agentName}
+                      {!conversation.agencyName && " - Agente"}
+                    </h3>
+                    <span className="text-xs text-gray-500 flex-shrink-0">
+                      {formatTimeShort(conversation.lastMessageTime)}
+                    </span>
                   </div>
+                  <p className="text-sm text-gray-500 truncate mt-0.5">
+                    {conversation.lastMessage}
+                  </p>
                 </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {selectedConversation.messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.senderType === 'client' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.senderType === 'client'
-                            ? 'bg-green-500 text-white'
-                            : 'bg-gray-200 text-gray-800'
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
-                        <div className={`flex items-center justify-end gap-1 mt-1 ${
-                          message.senderType === 'client' ? 'text-green-100' : 'text-gray-500'
-                        }`}>
-                          <span className="text-xs">{formatTime(message.timestamp)}</span>
-                          <MessageStatusIndicator 
-                            status={message.status || 'sent'} 
-                            isClientMessage={message.senderType === 'client'} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Message Input */}
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Escribe un mensaje..."
-                      className="flex-1"
-                      disabled={sendingMessage}
-                    />
-                    <Button
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim() || sendingMessage}
-                      size="sm"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
+                
+                {unreadCount > 0 && (
+                  <div className="flex-shrink-0 bg-primary text-white text-xs font-medium rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center">
+                    {unreadCount}
                   </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                <div className="text-center">
-                  <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p>Selecciona una conversación para empezar</p>
-                </div>
+                )}
               </div>
-            )}
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+
+  const ChatView = () => {
+    if (!selectedConversation) {
+      return (
+        <div className="hidden md:flex items-center justify-center h-full bg-gray-50 text-gray-500">
+          <div className="text-center">
+            <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-lg">Selecciona una conversación</p>
+            <p className="text-sm text-gray-400 mt-1">para ver los mensajes</p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      );
+    }
+
+    const isPinned = pinnedConversations.includes(selectedConversation.id);
+    
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <div className="flex items-center gap-3 p-3 md:p-4 border-b bg-white sticky top-0 z-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goBackToList}
+            className="p-2 md:hidden"
+            data-testid="button-back-to-list"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarImage src={selectedConversation.agentAvatar || selectedConversation.agencyLogo} />
+            <AvatarFallback className="bg-primary text-white">
+              {selectedConversation.agencyName 
+                ? <Building2 className="h-5 w-5" />
+                : getInitials(selectedConversation.agentName)
+              }
+            </AvatarFallback>
+          </Avatar>
+          
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 truncate text-sm md:text-base">
+              {selectedConversation.agencyName || selectedConversation.agentName}
+              {!selectedConversation.agencyName && " - Agente"}
+            </h3>
+            <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+              <Home className="h-3 w-3 flex-shrink-0" />
+              {selectedConversation.propertyTitle || selectedConversation.propertyAddress}
+            </p>
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => isPinned ? unpinConversation(selectedConversation.id) : pinConversation(selectedConversation.id)}
+            disabled={pinningConversation === selectedConversation.id}
+            className="p-2"
+            data-testid={`button-pin-conversation-${selectedConversation.id}`}
+          >
+            <Pin className={`h-5 w-5 ${isPinned ? 'text-primary fill-primary' : 'text-gray-400'}`} />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-gray-50">
+          {selectedConversation.messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.senderType === 'client' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] md:max-w-[70%] px-3 py-2 rounded-2xl ${
+                  message.senderType === 'client'
+                    ? 'bg-primary text-white rounded-br-md'
+                    : 'bg-white text-gray-800 rounded-bl-md shadow-sm'
+                }`}
+              >
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <div className={`flex items-center justify-end gap-1 mt-1 ${
+                  message.senderType === 'client' ? 'text-primary-foreground/70' : 'text-gray-400'
+                }`}>
+                  <span className="text-[10px]">{formatMessageTime(message.timestamp)}</span>
+                  <MessageStatusIndicator 
+                    status={message.status || 'sent'} 
+                    isClientMessage={message.senderType === 'client'} 
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="p-3 md:p-4 border-t bg-white">
+          <div className="flex gap-2 items-end">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Escribe un mensaje..."
+              className="flex-1 rounded-full"
+              disabled={sendingMessage}
+              data-testid="input-message"
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={!newMessage.trim() || sendingMessage}
+              size="icon"
+              className="rounded-full h-10 w-10 flex-shrink-0"
+              data-testid="button-send-message"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-lg border h-[calc(100vh-280px)] md:h-[600px] overflow-hidden">
+      <div className="md:hidden h-full">
+        {selectedConversation ? (
+          <ChatView />
+        ) : (
+          <ConversationsList />
+        )}
+      </div>
+      
+      <div className="hidden md:flex h-full">
+        <div className="w-80 lg:w-96 flex-shrink-0 h-full overflow-hidden">
+          <ConversationsList />
+        </div>
+        <div className="flex-1 h-full overflow-hidden">
+          <ChatView />
+        </div>
+      </div>
+    </div>
   );
 }
