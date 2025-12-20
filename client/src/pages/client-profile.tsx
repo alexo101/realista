@@ -556,7 +556,7 @@ export default function ClientProfile() {
               <p className="text-gray-600">Gestiona tu información personal y preferencias</p>
             </div>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-12">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-32">
                 {/* Photo Upload Section */}
                 <Card>
                   <CardContent className="pt-6">
