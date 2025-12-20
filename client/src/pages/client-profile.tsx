@@ -48,7 +48,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2, Share2, Copy } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2, Share2, Copy, Eye } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import {
   DropdownMenu,
@@ -1424,155 +1424,158 @@ export default function ClientProfile() {
                     {savedSearches.map((search) => (
                       <Card key={search.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1">
-                              {editingSearchId === search.id ? (
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    value={editingSearchName}
-                                    onChange={(e) => setEditingSearchName(e.target.value)}
-                                    className="flex-1"
-                                    data-testid={`input-edit-search-${search.id}`}
-                                    autoFocus
-                                  />
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      updateSavedSearchMutation.mutate({
-                                        id: search.id,
-                                        name: editingSearchName,
-                                      });
-                                      setEditingSearchId(null);
-                                    }}
-                                    data-testid={`button-save-edit-${search.id}`}
-                                  >
-                                    Guardar
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingSearchId(null);
-                                      setEditingSearchName("");
-                                    }}
-                                    data-testid={`button-cancel-edit-${search.id}`}
-                                  >
-                                    Cancelar
-                                  </Button>
-                                </div>
-                              ) : (
-                                <>
-                                  <h3 className="font-semibold text-gray-900 mb-2">
-                                    {search.name}
-                                  </h3>
-                                  <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-                                    {search.city && (
-                                      <Badge variant="secondary">{search.city}</Badge>
-                                    )}
-                                    {search.district && (
-                                      <Badge variant="secondary">{search.district}</Badge>
-                                    )}
-                                    {search.neighborhood && (
-                                      <Badge variant="secondary">{search.neighborhood}</Badge>
-                                    )}
-                                    {search.operationType && (
-                                      <Badge variant="outline">{search.operationType}</Badge>
-                                    )}
-                                    {search.priceMin && search.priceMax && (
-                                      <Badge variant="outline">
-                                        {search.priceMin.toLocaleString()} - {search.priceMax.toLocaleString()} €
-                                      </Badge>
-                                    )}
-                                    {search.bedrooms && (
-                                      <Badge variant="outline">{search.bedrooms} hab.</Badge>
-                                    )}
-                                    {search.bathrooms && (
-                                      <Badge variant="outline">{search.bathrooms} baños</Badge>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                            {editingSearchId !== search.id && (
-                              <div className="flex items-center gap-2 flex-wrap justify-end">
+                          <div className="flex flex-col gap-3">
+                            {/* Title - full width */}
+                            {editingSearchId === search.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={editingSearchName}
+                                  onChange={(e) => setEditingSearchName(e.target.value)}
+                                  className="flex-1"
+                                  data-testid={`input-edit-search-${search.id}`}
+                                  autoFocus
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    updateSavedSearchMutation.mutate({
+                                      id: search.id,
+                                      name: editingSearchName,
+                                    });
+                                    setEditingSearchId(null);
+                                  }}
+                                  data-testid={`button-save-edit-${search.id}`}
+                                >
+                                  Guardar
+                                </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => {
-                                    // Build search URL with filters
-                                    const params = new URLSearchParams();
-                                    if (search.operationType) params.append("operationType", search.operationType);
-                                    if (search.priceMin) params.append("minPrice", search.priceMin.toString());
-                                    if (search.priceMax) params.append("maxPrice", search.priceMax.toString());
-                                    if (search.bedrooms) params.append("bedrooms", search.bedrooms.toString());
-                                    if (search.bathrooms) params.append("bathrooms", search.bathrooms.toString());
-                                    
-                                    let url = "/";
-                                    if (search.neighborhood) {
-                                      const neighborhood = search.district 
-                                        ? `${search.neighborhood}, ${search.district}, ${search.city}` 
-                                        : search.neighborhood;
-                                      url = `/neighborhood/${encodeURIComponent(neighborhood)}/properties?${params.toString()}`;
-                                    } else if (search.district) {
-                                      url = `/neighborhood/${encodeURIComponent(`${search.district}, ${search.city}`)}/properties?${params.toString()}`;
-                                    } else if (search.city) {
-                                      url = `/neighborhood/${encodeURIComponent(search.city)}/properties?${params.toString()}`;
-                                    }
-                                    
-                                    navigate(url);
+                                    setEditingSearchId(null);
+                                    setEditingSearchName("");
                                   }}
-                                  data-testid={`button-apply-search-${search.id}`}
+                                  data-testid={`button-cancel-edit-${search.id}`}
                                 >
-                                  Ver resultados
+                                  Cancelar
                                 </Button>
-                                {deletingSearchId === search.id ? (
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => {
-                                        deleteSavedSearchMutation.mutate(search.id);
-                                        setDeletingSearchId(null);
-                                      }}
-                                      className="text-xs px-2"
-                                      data-testid={`button-confirm-delete-${search.id}`}
-                                    >
-                                      Sí
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setDeletingSearchId(null)}
-                                      className="text-xs px-2"
-                                      data-testid={`button-cancel-delete-${search.id}`}
-                                    >
-                                      No
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setEditingSearchId(search.id);
-                                        setEditingSearchName(search.name);
-                                      }}
-                                      data-testid={`button-edit-search-${search.id}`}
-                                    >
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setDeletingSearchId(search.id)}
-                                      data-testid={`button-delete-search-${search.id}`}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
                               </div>
+                            ) : (
+                              <>
+                                <h3 className="font-semibold text-gray-900 w-full">
+                                  {search.name}
+                                </h3>
+                                
+                                {/* Filter pills - show only smallest location */}
+                                <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                                  {/* Location: show only the smallest region */}
+                                  {search.neighborhood ? (
+                                    <Badge variant="secondary">{search.neighborhood}</Badge>
+                                  ) : search.district ? (
+                                    <Badge variant="secondary">{search.district}</Badge>
+                                  ) : search.city ? (
+                                    <Badge variant="secondary">{search.city}</Badge>
+                                  ) : null}
+                                  {search.operationType && (
+                                    <Badge variant="outline">{search.operationType}</Badge>
+                                  )}
+                                  {search.priceMin && search.priceMax && (
+                                    <Badge variant="outline">
+                                      {search.priceMin.toLocaleString()} - {search.priceMax.toLocaleString()} €
+                                    </Badge>
+                                  )}
+                                  {search.bedrooms && (
+                                    <Badge variant="outline">{search.bedrooms} hab.</Badge>
+                                  )}
+                                  {search.bathrooms && (
+                                    <Badge variant="outline">{search.bathrooms} baños</Badge>
+                                  )}
+                                </div>
+
+                                {/* Actions - at bottom */}
+                                <div className="flex items-center gap-2 pt-2 border-t mt-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      // Build search URL with filters
+                                      const params = new URLSearchParams();
+                                      if (search.operationType) params.append("operationType", search.operationType);
+                                      if (search.priceMin) params.append("minPrice", search.priceMin.toString());
+                                      if (search.priceMax) params.append("maxPrice", search.priceMax.toString());
+                                      if (search.bedrooms) params.append("bedrooms", search.bedrooms.toString());
+                                      if (search.bathrooms) params.append("bathrooms", search.bathrooms.toString());
+                                      
+                                      let url = "/";
+                                      if (search.neighborhood) {
+                                        const neighborhood = search.district 
+                                          ? `${search.neighborhood}, ${search.district}, ${search.city}` 
+                                          : search.neighborhood;
+                                        url = `/neighborhood/${encodeURIComponent(neighborhood)}/properties?${params.toString()}`;
+                                      } else if (search.district) {
+                                        url = `/neighborhood/${encodeURIComponent(`${search.district}, ${search.city}`)}/properties?${params.toString()}`;
+                                      } else if (search.city) {
+                                        url = `/neighborhood/${encodeURIComponent(search.city)}/properties?${params.toString()}`;
+                                      }
+                                      
+                                      navigate(url);
+                                    }}
+                                    data-testid={`button-apply-search-${search.id}`}
+                                    title="Ver resultados"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  {deletingSearchId === search.id ? (
+                                    <div className="flex items-center gap-1 ml-auto">
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => {
+                                          deleteSavedSearchMutation.mutate(search.id);
+                                          setDeletingSearchId(null);
+                                        }}
+                                        className="text-xs px-2"
+                                        data-testid={`button-confirm-delete-${search.id}`}
+                                      >
+                                        Sí
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setDeletingSearchId(null)}
+                                        className="text-xs px-2"
+                                        data-testid={`button-cancel-delete-${search.id}`}
+                                      >
+                                        No
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1 ml-auto">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingSearchId(search.id);
+                                          setEditingSearchName(search.name);
+                                        }}
+                                        data-testid={`button-edit-search-${search.id}`}
+                                        title="Editar nombre"
+                                      >
+                                        <Edit2 className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setDeletingSearchId(search.id)}
+                                        data-testid={`button-delete-search-${search.id}`}
+                                        title="Eliminar"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
                             )}
                           </div>
                         </CardContent>
