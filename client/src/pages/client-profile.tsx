@@ -1494,7 +1494,7 @@ export default function ClientProfile() {
                               )}
                             </div>
                             {editingSearchId !== search.id && (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap justify-end">
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1525,19 +1525,8 @@ export default function ClientProfile() {
                                 >
                                   Ver resultados
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setEditingSearchId(search.id);
-                                    setEditingSearchName(search.name);
-                                  }}
-                                  data-testid={`button-edit-search-${search.id}`}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
                                 {deletingSearchId === search.id ? (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1">
                                     <Button
                                       size="sm"
                                       variant="destructive"
@@ -1545,28 +1534,43 @@ export default function ClientProfile() {
                                         deleteSavedSearchMutation.mutate(search.id);
                                         setDeletingSearchId(null);
                                       }}
+                                      className="text-xs px-2"
                                       data-testid={`button-confirm-delete-${search.id}`}
                                     >
-                                      Confirmar
+                                      Sí
                                     </Button>
                                     <Button
                                       size="sm"
                                       variant="outline"
                                       onClick={() => setDeletingSearchId(null)}
+                                      className="text-xs px-2"
                                       data-testid={`button-cancel-delete-${search.id}`}
                                     >
-                                      Cancelar
+                                      No
                                     </Button>
                                   </div>
                                 ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => setDeletingSearchId(search.id)}
-                                    data-testid={`button-delete-search-${search.id}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingSearchId(search.id);
+                                        setEditingSearchName(search.name);
+                                      }}
+                                      data-testid={`button-edit-search-${search.id}`}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setDeletingSearchId(search.id)}
+                                      data-testid={`button-delete-search-${search.id}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
                                 )}
                               </div>
                             )}
