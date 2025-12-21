@@ -34,7 +34,29 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInDate: true,
 }).partial();
 import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail } from "./emailService";
-import { randomUUID } from 'crypto';
+import { randomUUID, scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(scrypt);
+
+// Password hashing utilities
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString('hex');
+  const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
+
+async function comparePassword(password: string, storedPassword: string): Promise<boolean> {
+  // Check if password is hashed (contains salt separator)
+  if (storedPassword.includes(':')) {
+    const [salt, hash] = storedPassword.split(':');
+    const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
+    const storedHash = Buffer.from(hash, 'hex');
+    return timingSafeEqual(derivedKey, storedHash);
+  }
+  // Legacy plain text comparison (for existing users)
+  return password === storedPassword;
+}
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
@@ -1155,34 +1177,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const clients = await storage.getClients();
         const client = clients.find(c => c.email === email);
 
-        if (client && client.password === password) {
-          // Convertir cliente a formato de usuario para compatibilidad
-          user = {
-            id: client.id,
-            uuid: client.uuid, // Include client UUID
-            email: client.email,
-            password: client.password,
-            name: client.name,
-            surname: client.surname,
-            description: null,
-            avatar: null,
-            createdAt: client.createdAt,
-            influence_neighborhoods: null,
-            yearsOfExperience: null,
-            languagesSpoken: null,
-            agencyId: null,
-            isAdmin: false,
-            phone: client.phone
-          };
-          isClient = true;
+        if (client && client.password) {
+          const clientPasswordValid = await comparePassword(password, client.password);
+          if (clientPasswordValid) {
+            // Convertir cliente a formato de usuario para compatibilidad
+            user = {
+              id: client.id,
+              uuid: client.uuid, // Include client UUID
+              email: client.email,
+              password: client.password,
+              name: client.name,
+              surname: client.surname,
+              description: null,
+              avatar: null,
+              createdAt: client.createdAt,
+              influence_neighborhoods: null,
+              yearsOfExperience: null,
+              languagesSpoken: null,
+              agencyId: null,
+              isAdmin: false,
+              phone: client.phone
+            };
+            isClient = true;
+          }
         }
       }
 
       console.log('Login - Usuario encontrado:', user ? 'Sí' : 'No', isClient ? '(Cliente)' : '(Agente)');
 
-      if (!user || (!isClient && user.password !== password)) {
-        console.log('Login - Credenciales inválidas');
+      // Verify password for agents (clients already verified above)
+      if (!user) {
+        console.log('Login - Usuario no encontrado');
         return res.status(401).json({ message: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo" });
+      }
+      
+      if (!isClient && user.password) {
+        const agentPasswordValid = await comparePassword(password, user.password);
+        if (!agentPasswordValid) {
+          console.log('Login - Credenciales inválidas');
+          return res.status(401).json({ message: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo" });
+        }
       }
 
       // For agents, check if they're an admin of an agency
