@@ -113,7 +113,7 @@ export const agents = pgTable("agents", {
   uuid: uuid("uuid").notNull().unique().defaultRandom(), // Public-facing UUID for security
   slug: text("slug").unique(), // SEO-friendly URL slug (nullable initially, will be populated)
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"), // Nullable for pending invited agents (set on acceptance)
   name: text("name"),
   surname: text("surname"),
   phone: text("phone"), // Contact phone number
@@ -139,6 +139,10 @@ export const agents = pgTable("agents", {
   stripeCustomerId: text("stripe_customer_id"), // Stripe customer ID for billing
   stripeSubscriptionId: text("stripe_subscription_id"), // Current active subscription ID
   subscriptionStartDate: timestamp("subscription_start_date"), // When the current subscription started (for renewal calculation)
+  // Invitation tracking (for agents invited to join agencies)
+  invitationStatus: text("invitation_status"), // "pending" or "active" (null for non-invited agents)
+  invitationToken: text("invitation_token"), // Token for validating invitation acceptance
+  invitationExpiresAt: timestamp("invitation_expires_at"), // When the invitation expires
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
