@@ -1507,6 +1507,7 @@ export class DatabaseStorage implements IStorage {
           pausedAt: agents.pausedAt,
           deletedAt: agents.deletedAt,
           createdAt: agents.createdAt,
+          invitationStatus: agents.invitationStatus, // For team table display
         })
         .from(agents)
         .innerJoin(

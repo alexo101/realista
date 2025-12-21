@@ -7,12 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, UserPlus } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Users, UserPlus, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
+
+interface TeamAgent {
+  id: number;
+  name: string | null;
+  surname: string | null;
+  email: string;
+  invitationStatus: string | null;
+}
 
 const createAgentSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),
@@ -29,6 +39,8 @@ interface TeamManagementProps {
 
 export function TeamManagement({ agencyId }: TeamManagementProps) {
   const [showAddAgentForm, setShowAddAgentForm] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingInvitation, setPendingInvitation] = useState<CreateAgentFormData | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useUser();
@@ -40,34 +52,46 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     enabled: !!user?.id && user?.isAdmin,
   });
 
+  // Fetch team agents for the agency
+  const { data: teamAgents = [], isLoading: teamAgentsLoading } = useQuery<TeamAgent[]>({
+    queryKey: ["/api/agency-agents", agencyId],
+    queryFn: () => fetch(`/api/agency-agents/${agencyId}`).then(res => res.json()),
+    enabled: !!agencyId,
+  });
+
   const form = useForm<CreateAgentFormData>({
     resolver: zodResolver(createAgentSchema),
     defaultValues: {
       name: "",
       surname: "",
       email: "",
-      agencyId: "",
+      agencyId: agencyId?.toString() || "",
     },
   });
 
   // Create agent invitation mutation
   const createAgentMutation = useMutation({
     mutationFn: async (agentData: CreateAgentFormData) => {
-      return apiRequest("POST", "/api/agents/invite", {
+      const res = await apiRequest("POST", "/api/agents/invite", {
         name: agentData.name,
         surname: agentData.surname,
         email: agentData.email,
-        agencyId: agentData.agencyId || null,
+        agencyId: agentData.agencyId || agencyId?.toString() || null,
       });
+      return res.json();
     },
     onSuccess: (data: any) => {
       toast({
         title: "Invitación enviada exitosamente",
-        description: `Se ha enviado una invitación a ${data.email} para unirse al equipo.`,
+        description: `Se ha enviado una invitación a ${pendingInvitation?.email || data.email} para unirse al equipo.`,
       });
       form.reset();
       setShowAddAgentForm(false);
+      setShowConfirmDialog(false);
+      setPendingInvitation(null);
+      // Invalidate both queries to refresh the team list
       queryClient.invalidateQueries({ queryKey: ["/api/agents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/agency-agents", agencyId] });
     },
     onError: (error: any) => {
       toast({
@@ -75,16 +99,43 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
         description: error.message || "No se pudo enviar la invitación.",
         variant: "destructive",
       });
+      setShowConfirmDialog(false);
+      setPendingInvitation(null);
     },
   });
 
+  // Handle form submit - show confirmation dialog
   const handleSubmit = (data: CreateAgentFormData) => {
-    createAgentMutation.mutate(data);
+    setPendingInvitation(data);
+    setShowConfirmDialog(true);
+  };
+
+  // Confirm and send invitation
+  const confirmInvitation = () => {
+    if (pendingInvitation) {
+      createAgentMutation.mutate(pendingInvitation);
+    }
   };
 
   const isFormValid = () => {
     const values = form.getValues();
     return values.name && values.surname && values.email;
+  };
+
+  // Helper to get status badge
+  const getStatusBadge = (invitationStatus: string | null) => {
+    if (invitationStatus === 'pending') {
+      return (
+        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300" data-testid="badge-status-pending">
+          Pendiente
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300" data-testid="badge-status-active">
+        Activo
+      </Badge>
+    );
   };
 
   return (
@@ -105,15 +156,48 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
 
       
 
-      {/* Agent List */}
+      {/* Agent List Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Agentes</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Lista de Agentes
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            La lista de agentes se mostrará aquí una vez que se implemente la funcionalidad de consulta.
-          </div>
+          {teamAgentsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Cargando equipo...</span>
+            </div>
+          ) : teamAgents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>No hay agentes en el equipo todavía.</p>
+              <p className="text-sm">Haz clic en "Añadir agentes" para invitar a nuevos miembros.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Apellido</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {teamAgents.map((agent) => (
+                  <TableRow key={agent.id} data-testid={`row-agent-${agent.id}`}>
+                    <TableCell className="font-medium">{agent.name || '-'}</TableCell>
+                    <TableCell>{agent.surname || '-'}</TableCell>
+                    <TableCell>{agent.email}</TableCell>
+                    <TableCell>{getStatusBadge(agent.invitationStatus)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -225,12 +309,54 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                 <Button 
                   type="submit" 
                   disabled={!isFormValid() || createAgentMutation.isPending}
+                  data-testid="button-submit-invitation"
                 >
-                  {createAgentMutation.isPending ? "Enviando invitación..." : "Enviar invitación"}
+                  {createAgentMutation.isPending ? "Enviando invitación..." : "Continuar"}
                 </Button>
               </div>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar invitación</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas enviar una invitación a <strong>{pendingInvitation?.name} {pendingInvitation?.surname}</strong> ({pendingInvitation?.email})?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowConfirmDialog(false);
+                setPendingInvitation(null);
+              }}
+              disabled={createAgentMutation.isPending}
+              data-testid="button-cancel-confirm"
+            >
+              No
+            </Button>
+            <Button 
+              type="button" 
+              onClick={confirmInvitation}
+              disabled={createAgentMutation.isPending}
+              data-testid="button-confirm-invitation"
+            >
+              {createAgentMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                "Sí, enviar invitación"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
