@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
-import { Building, User as UserIcon, Users, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Building, User as UserIcon, Users, Eye, EyeOff, CheckCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Esquema de validación para el formulario
@@ -61,6 +61,9 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<{ agencyName?: string; redirectPath?: string } | null>(null);
+  const submittingRef = useRef(false);
 
   // Plan configurations for display
   // Configuración del formulario
@@ -174,7 +177,14 @@ export default function RegisterPage() {
 
   // Manejar envío del formulario
   const onSubmit = async (data: FormData) => {
+    // Prevent double submission using ref (synchronous check)
+    if (submittingRef.current) {
+      console.log("Submission already in progress, ignoring duplicate");
+      return;
+    }
+    submittingRef.current = true;
     setIsSubmitting(true);
+    
     try {
       // Handle invitation flow differently
       if (isInvitation && invitationData.token) {
@@ -189,27 +199,55 @@ export default function RegisterPage() {
         const response = await apiRequest("POST", "/api/auth/register-invited-agent", payload);
 
         if (response.ok) {
-          const userData = await response.json();
+          let userData;
+          try {
+            userData = await response.json();
+          } catch (jsonError) {
+            console.error("Error parsing success response:", jsonError);
+            userData = {};
+          }
+          
           setUser(userData);
+          
+          // Clear the invitation token to prevent reuse
+          setInvitationData(prev => ({ ...prev, token: undefined }));
+
+          // Show success state
+          const redirectPath = userData.agentUuid 
+            ? `/gestionar/${userData.agentUuid}/calendario`
+            : "/gestionar";
+          
+          setSuccessData({ 
+            agencyName: invitationData.agencyName, 
+            redirectPath 
+          });
+          setRegistrationSuccess(true);
 
           toast({
             title: "¡Bienvenido al equipo!",
             description: `Te has unido exitosamente a ${invitationData.agencyName}`,
           });
 
-          // Redirect to agent's calendar dashboard
-          if (userData.agentUuid) {
-            navigate(`/gestionar/${userData.agentUuid}/calendario`);
-          } else {
-            navigate("/gestionar");
-          }
+          // Redirect after a brief delay to show success
+          setTimeout(() => {
+            navigate(redirectPath);
+          }, 1500);
         } else {
-          const error = await response.json();
+          let errorMessage = "Ha ocurrido un error. Por favor, inténtalo de nuevo.";
+          try {
+            const error = await response.json();
+            errorMessage = error.message || errorMessage;
+          } catch (jsonError) {
+            console.error("Error parsing error response:", jsonError);
+          }
+          
           toast({
             title: "Error al registrarse",
-            description: error.message || "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+            description: errorMessage,
             variant: "destructive",
           });
+          // Reset the ref so user can try again
+          submittingRef.current = false;
         }
         return;
       }
@@ -235,7 +273,13 @@ export default function RegisterPage() {
       const response = await apiRequest("POST", "/api/auth/register", payload);
 
       if (response.ok) {
-        const userData = await response.json();
+        let userData;
+        try {
+          userData = await response.json();
+        } catch (jsonError) {
+          console.error("Error parsing success response:", jsonError);
+          userData = {};
+        }
         setUser(userData);
 
         let successMessage = "Tu cuenta ha sido creada correctamente.";
@@ -264,12 +308,20 @@ export default function RegisterPage() {
           navigate("/gestionar");
         }
       } else {
-        const error = await response.json();
+        let errorMessage = "Ha ocurrido un error. Por favor, inténtalo de nuevo.";
+        try {
+          const error = await response.json();
+          errorMessage = error.message || errorMessage;
+        } catch (jsonError) {
+          console.error("Error parsing error response:", jsonError);
+        }
         toast({
           title: "Error al registrarse",
-          description: error.message || "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+          description: errorMessage,
           variant: "destructive",
         });
+        // Reset the ref so user can try again
+        submittingRef.current = false;
       }
     } catch (error) {
       console.error("Error durante el registro:", error);
@@ -278,10 +330,39 @@ export default function RegisterPage() {
         description: "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
+      // Reset the ref so user can try again
+      submittingRef.current = false;
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Show success screen for invited agents
+  if (registrationSuccess && successData) {
+    return (
+      <div className="container mx-auto pt-24 pb-12">
+        <div className="flex flex-col gap-8 max-w-xl mx-auto">
+          <div className="w-full bg-white p-8 rounded-lg shadow text-center">
+            <div className="flex justify-center mb-6">
+              <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold mb-4 text-green-700">
+              ¡Registro exitoso!
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Te has unido exitosamente a <strong>{successData.agencyName}</strong>.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Redirigiendo a tu panel...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto pt-24 pb-12">
