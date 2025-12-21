@@ -3317,6 +3317,10 @@ export class DatabaseStorage implements IStorage {
     agencyId: number; 
     invitedBy: number 
   }): Promise<User> {
+    // Fetch agency UUID first
+    const [agency] = await db.select({ uuid: agencies.uuid }).from(agencies).where(eq(agencies.id, agentData.agencyId));
+    if (!agency) throw new Error('Agency not found');
+    
     // Generate slug for the agent
     const baseSlug = generateAgentSlug(agentData.name, agentData.surname);
     
@@ -3342,10 +3346,12 @@ export class DatabaseStorage implements IStorage {
         .where(eq(agents.id, newAgent.id));
     }
     
-    // Link agent to agency as member
+    // Link agent to agency as member (include required UUIDs)
     await db.insert(agencyAgents).values({
       agencyId: agentData.agencyId,
+      agencyUuid: agency.uuid,
       agentId: newAgent.id,
+      agentUuid: newAgent.uuid,
       role: 'member',
       addedBy: agentData.invitedBy
     });
