@@ -196,16 +196,9 @@ export default function RegisterPage() {
 
         console.log("Enviando datos de registro de agente invitado con token");
 
-        const response = await apiRequest("POST", "/api/auth/register-invited-agent", payload);
-
-        if (response.ok) {
-          let userData;
-          try {
-            userData = await response.json();
-          } catch (jsonError) {
-            console.error("Error parsing success response:", jsonError);
-            userData = {};
-          }
+        try {
+          // apiRequest returns parsed JSON directly and throws on error
+          const userData = await apiRequest("POST", "/api/auth/register-invited-agent", payload);
           
           setUser(userData);
           
@@ -232,14 +225,9 @@ export default function RegisterPage() {
           setTimeout(() => {
             navigate(redirectPath);
           }, 1500);
-        } else {
-          let errorMessage = "Ha ocurrido un error. Por favor, inténtalo de nuevo.";
-          try {
-            const error = await response.json();
-            errorMessage = error.message || errorMessage;
-          } catch (jsonError) {
-            console.error("Error parsing error response:", jsonError);
-          }
+        } catch (error: any) {
+          console.error("Error durante el registro de agente invitado:", error);
+          const errorMessage = error.message?.replace(/^\d+:\s*/, '') || "Ha ocurrido un error. Por favor, inténtalo de nuevo.";
           
           toast({
             title: "Error al registrarse",
