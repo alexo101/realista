@@ -728,7 +728,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Validate invitation token
+      // NEW FLOW: Check for pending agent directly by invitation token
+      const pendingAgent = await storage.getAgentByInvitationToken(token);
+      
+      if (pendingAgent) {
+        // NEW FLOW: Activate the pending agent (agent was created when invitation was sent)
+        console.log('Found pending agent:', pendingAgent.id, 'activating...');
+        
+        // Hash the password before storing
+        const hashedPassword = await hashPassword(password);
+        
+        // Activate the agent (set password, change status to active)
+        const activatedAgent = await storage.activateInvitedAgent(pendingAgent.id, hashedPassword);
+        console.log('Agent activated:', activatedAgent.id);
+        
+        // Get agency for the session data
+        const agentRole = await storage.getAgentRole(activatedAgent.id);
+        const agency = agentRole.agencyId ? await storage.getAgencyById(agentRole.agencyId) : null;
+        
+        // Also mark the old invitation as consumed for backwards compatibility
+        await storage.consumeInvitation(token);
+        
+        // Create session with proper user object
+        (req as any).session.user = {
+          id: activatedAgent.id,
+          email: activatedAgent.email,
+          name: activatedAgent.name,
+          surname: activatedAgent.surname,
+          isAdmin: false,
+          isClient: false,
+          phone: activatedAgent.phone,
+          agencyId: agentRole.agencyId,
+          agencyName: agency?.agencyName || null,
+          agentUuid: activatedAgent.uuid
+        };
+        
+        await new Promise((resolve, reject) => {
+          (req as any).session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
+        });
+
+        // Send welcome email
+        try {
+          await sendWelcomeEmail(activatedAgent.email, `${activatedAgent.name} ${activatedAgent.surname}`, true);
+          console.log('Email de bienvenida enviado a:', activatedAgent.email);
+        } catch (emailError) {
+          console.error('Error enviando email de bienvenida:', emailError);
+        }
+
+        // Return user data without password
+        const { password: _, ...agentResponse } = activatedAgent;
+        return res.status(201).json({
+          ...agentResponse,
+          isAdmin: false,
+          isClient: false,
+          agencyId: agentRole.agencyId,
+          agencyName: agency?.agencyName || null,
+          role: 'member',
+          subscriptionPlan: agency?.subscriptionPlan || null,
+          isYearlyBilling: agency?.isYearlyBilling || false,
+          agentUuid: activatedAgent.uuid
+        });
+      }
+
+      // LEGACY FLOW: Fall back to invitation table for old invitations
       const invitation = await storage.getInvitationByToken(token);
       if (!invitation) {
         return res.status(404).json({ 
@@ -752,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create agent linked to agency
+      // Create agent linked to agency (legacy flow)
       const agentData = {
         email: invitation.email,
         password,
@@ -766,7 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const agent = await storage.createUser(agentData);
-      console.log('Invited agent created:', agent.id, 'for agency:', invitation.agencyId);
+      console.log('Invited agent created (legacy):', agent.id, 'for agency:', invitation.agencyId);
 
       // Link agent to agency via agency_agents table (atomic with seat check)
       await storage.addAgentToAgencyAtomic(
