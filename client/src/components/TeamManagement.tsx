@@ -78,7 +78,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
         email: agentData.email,
         agencyId: agentData.agencyId || agencyId?.toString() || null,
       });
-      return res.json();
+      return res;
     },
     onSuccess: (data: any) => {
       toast({
