@@ -178,7 +178,19 @@ export async function sendAgentInvitation(
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     
-    // Create invitation record in database
+    // Create pending agent record immediately (new flow)
+    // This allows the agent to appear in the team table as "Pendiente"
+    await storage.createPendingInvitedAgent({
+      email: to,
+      name,
+      surname,
+      invitationToken: token,
+      invitationExpiresAt: expiresAt,
+      agencyId,
+      invitedBy
+    });
+    
+    // Also keep the invitation record for backwards compatibility
     await storage.createInvitation({
       token,
       email: to,

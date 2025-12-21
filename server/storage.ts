@@ -245,6 +245,11 @@ export interface IStorage {
   getInvitationByToken(token: string): Promise<AgentInvitation | undefined>;
   consumeInvitation(token: string): Promise<AgentInvitation | undefined>;
   cleanupExpiredInvitations(): Promise<void>;
+  
+  // Pending Invited Agents (new flow: agent record created immediately when invited)
+  createPendingInvitedAgent(agentData: { email: string; name: string; surname: string; invitationToken: string; invitationExpiresAt: Date; agencyId: number; invitedBy: number }): Promise<User>;
+  getAgentByInvitationToken(token: string): Promise<User | undefined>;
+  activateInvitedAgent(agentId: number, hashedPassword: string): Promise<User>;
 
   // Networks (Franchises)
   getNetworkById(id: number): Promise<Network | undefined>;
@@ -3299,6 +3304,83 @@ export class DatabaseStorage implements IStorage {
         isNull(agentInvitations.consumedAt),
         lte(agentInvitations.expiresAt, thirtyDaysAgo)
       ));
+  }
+
+  // Pending Invited Agents (new flow: agent record created immediately when invited)
+  async createPendingInvitedAgent(agentData: { 
+    email: string; 
+    name: string; 
+    surname: string; 
+    invitationToken: string; 
+    invitationExpiresAt: Date; 
+    agencyId: number; 
+    invitedBy: number 
+  }): Promise<User> {
+    // Generate slug for the agent
+    const baseSlug = generateAgentSlug(agentData.name, agentData.surname);
+    
+    // Create the agent with pending status (no password)
+    const [newAgent] = await db.insert(agents).values({
+      email: agentData.email,
+      name: agentData.name,
+      surname: agentData.surname,
+      password: null, // Will be set when they accept the invitation
+      agentType: 'agency_member',
+      invitationStatus: 'pending',
+      invitationToken: agentData.invitationToken,
+      invitationExpiresAt: agentData.invitationExpiresAt,
+      slug: baseSlug
+    }).returning();
+    
+    // Ensure unique slug with ID suffix if needed
+    if (newAgent.name && newAgent.surname && newAgent.slug === baseSlug) {
+      const finalSlug = generateAgentSlug(newAgent.name, newAgent.surname, newAgent.id);
+      await db
+        .update(agents)
+        .set({ slug: finalSlug })
+        .where(eq(agents.id, newAgent.id));
+    }
+    
+    // Link agent to agency as member
+    await db.insert(agencyAgents).values({
+      agencyId: agentData.agencyId,
+      agentId: newAgent.id,
+      role: 'member',
+      addedBy: agentData.invitedBy
+    });
+    
+    return newAgent;
+  }
+
+  async getAgentByInvitationToken(token: string): Promise<User | undefined> {
+    const [agent] = await db
+      .select()
+      .from(agents)
+      .where(and(
+        eq(agents.invitationToken, token),
+        eq(agents.invitationStatus, 'pending'),
+        gte(agents.invitationExpiresAt, new Date()) // Only get non-expired invitations
+      ));
+    return agent;
+  }
+
+  async activateInvitedAgent(agentId: number, hashedPassword: string): Promise<User> {
+    const [activatedAgent] = await db
+      .update(agents)
+      .set({ 
+        password: hashedPassword,
+        invitationStatus: 'active',
+        invitationToken: null, // Clear the token after activation
+        invitationExpiresAt: null
+      })
+      .where(eq(agents.id, agentId))
+      .returning();
+    
+    if (!activatedAgent) {
+      throw new Error('Agent not found');
+    }
+    
+    return activatedAgent;
   }
 
   // Network (Franchise) methods
