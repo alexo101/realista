@@ -604,6 +604,7 @@ export class DatabaseStorage implements IStorage {
       const enhancedAgencies = await Promise.all(
         agencyResults.map(async (agency) => {
           // Get direct agency reviews with last review date
+          // Only count reviews WITH a property for rating calculation
           const agencyReviewStats = await db
             .select({
               reviewCount: sql<number>`count(*)::integer`,
@@ -614,7 +615,9 @@ export class DatabaseStorage implements IStorage {
             .where(
               and(
                 eq(reviews.targetId, agency.id),
-                eq(reviews.targetType, 'agency')
+                eq(reviews.targetType, 'agency'),
+                eq(reviews.confirmed, true),
+                isNotNull(reviews.propertyUuid)
               )
             );
 
@@ -885,13 +888,14 @@ export class DatabaseStorage implements IStorage {
     if (!agency) return undefined;
 
     // Get review statistics for this agency
+    // Only count reviews WITH a property for the average (reviews without property don't count toward rating)
     let reviewCount = 0;
     let reviewAverage = 0;
     try {
       const reviewResults = await db.execute(
         sql`SELECT COUNT(*)::integer as count, COALESCE(ROUND(AVG(rating), 2), 0)::float as average 
             FROM reviews 
-            WHERE target_id = ${id} AND target_type = 'agency' AND confirmed = true`
+            WHERE target_id = ${id} AND target_type = 'agency' AND confirmed = true AND property_uuid IS NOT NULL`
       );
       const row = reviewResults.rows[0] as any;
       reviewCount = row?.count || 0;
@@ -990,8 +994,8 @@ export class DatabaseStorage implements IStorage {
 
   async getAgencyReviews(agencyId: number): Promise<Review[]> {
     try {
-      // Only count confirmed reviews where a property was selected (propertyUuid IS NOT NULL)
-      // Reviews without a property are general feedback and don't count toward the agency average
+      // Return all confirmed reviews. Reviews without a property (propertyUuid IS NULL)
+      // are displayed but should not count toward the agency average rating calculation.
       const result = await db
         .select()
         .from(reviews)
@@ -999,8 +1003,7 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(reviews.targetId, agencyId), 
             eq(reviews.targetType, "agency"),
-            eq(reviews.confirmed, true),
-            isNotNull(reviews.propertyUuid)
+            eq(reviews.confirmed, true)
           ),
         )
         .orderBy(sql`${reviews.date} DESC`);
@@ -2666,8 +2669,8 @@ export class DatabaseStorage implements IStorage {
         isAdmin: sql<boolean>`false`.as('isAdmin'),
         isAgent: sql<boolean>`false`.as('isAgent'),
         isAgency: sql<boolean>`true`.as('isAgency'),
-        reviewCount: sql<number>`COALESCE((SELECT COUNT(*) FROM reviews WHERE reviews.target_id = ${agencies.id} AND reviews.target_type = 'agency'), 0)::integer`.as('reviewCount'),
-        reviewAverage: sql<number>`COALESCE((SELECT ROUND(AVG(rating), 2) FROM reviews WHERE reviews.target_id = ${agencies.id} AND reviews.target_type = 'agency'), 0)::float`.as('reviewAverage'),
+        reviewCount: sql<number>`COALESCE((SELECT COUNT(*) FROM reviews WHERE reviews.target_id = ${agencies.id} AND reviews.target_type = 'agency' AND confirmed = true AND property_uuid IS NOT NULL), 0)::integer`.as('reviewCount'),
+        reviewAverage: sql<number>`COALESCE((SELECT ROUND(AVG(rating), 2) FROM reviews WHERE reviews.target_id = ${agencies.id} AND reviews.target_type = 'agency' AND confirmed = true AND property_uuid IS NOT NULL), 0)::float`.as('reviewAverage'),
       })
       .from(clientFavoriteAgencies)
       .innerJoin(agencies, eq(agencies.id, clientFavoriteAgencies.agencyId))
