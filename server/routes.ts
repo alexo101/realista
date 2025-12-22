@@ -3509,9 +3509,35 @@ Gracias!
       }
 
       const agentName = `${agent.name || ''} ${agent.surname || ''}`.trim() || 'Tu agente';
+      
+      // Get agent's agency info
+      const agentRole = await storage.getAgentRole(agent.id);
+      let agencyName = 'la agencia';
+      let agencySlug = '';
+      if (agentRole.agencyId) {
+        const agency = await storage.getAgencyById(agentRole.agencyId);
+        if (agency) {
+          agencyName = agency.agencyName;
+          agencySlug = agency.slug || agency.uuid;
+        }
+      }
+      
+      // Build profile URLs
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'https://realista.homes';
+      const agentProfileUrl = `${baseUrl}/agentes/${agent.slug || agent.uuid}`;
+      const agencyProfileUrl = agencySlug ? `${baseUrl}/agencias/${agencySlug}` : baseUrl;
 
       // Enviar email de solicitud de reseña
-      const emailSent = await sendReviewRequest(clientEmail, clientName || 'Cliente', agentName);
+      const emailSent = await sendReviewRequest(
+        clientEmail, 
+        clientName || 'Cliente', 
+        agentName,
+        agencyName,
+        agentProfileUrl,
+        agencyProfileUrl
+      );
 
       if (!emailSent) {
         return res.status(500).json({ message: "Error al enviar la solicitud de reseña" });
@@ -4132,11 +4158,35 @@ Gracias!
         return res.status(404).json({ message: "Cliente o agente no encontrado" });
       }
       
+      const agentName = `${agent.name || ''} ${agent.surname || ''}`.trim() || 'Tu agente';
+      
+      // Get agent's agency info
+      const agentRole = await storage.getAgentRole(agent.id);
+      let agencyName = 'la agencia';
+      let agencySlug = '';
+      if (agentRole.agencyId) {
+        const agency = await storage.getAgencyById(agentRole.agencyId);
+        if (agency) {
+          agencyName = agency.agencyName;
+          agencySlug = agency.slug || agency.uuid;
+        }
+      }
+      
+      // Build profile URLs
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : 'https://realista.homes';
+      const agentProfileUrl = `${baseUrl}/agentes/${agent.slug || agent.uuid}`;
+      const agencyProfileUrl = agencySlug ? `${baseUrl}/agencias/${agencySlug}` : baseUrl;
+      
       // Enviar email de solicitud de reseña
       const success = await sendReviewRequest(
         client.email, 
         client.name, 
-        agent.name || "Agente"
+        agentName,
+        agencyName,
+        agentProfileUrl,
+        agencyProfileUrl
       );
       
       if (success) {

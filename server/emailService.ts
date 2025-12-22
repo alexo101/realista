@@ -256,7 +256,14 @@ export async function sendAgentInvitation(
 }
 
 // Función para enviar solicitud de reseña
-export async function sendReviewRequest(to: string, clientName: string, agentName: string) {
+export async function sendReviewRequest(
+  to: string, 
+  clientName: string, 
+  agentName: string, 
+  agencyName: string,
+  agentProfileUrl: string,
+  agencyProfileUrl: string
+) {
   try {
     const { client, fromEmail } = await getUncachableResendClient();
     
@@ -271,9 +278,17 @@ export async function sendReviewRequest(to: string, clientName: string, agentNam
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #2563eb;">Solicitud de reseña</h2>
         <p>Hola ${clientName},</p>
-        <p>El agente <strong>${agentName}</strong> te ha solicitado una reseña sobre los servicios que has recibido.</p>
-        <p>Tu opinión es muy importante para nosotros y nos ayuda a seguir mejorando nuestros servicios.</p>
-        <p>Si deseas compartir tu experiencia, puedes hacerlo accediendo a nuestra plataforma.</p>
+        <p>El agente inmobiliario <strong>${agentName}</strong> de la agencia <strong>${agencyName}</strong> te ha solicitado una reseña sobre los servicios que has recibido.</p>
+        <p>Tu opinión es muy importante para mejorar la transparencia y calidad del sector inmobiliario.</p>
+        <p>Para compartir tu experiencia, puedes hacerlo en el perfil del agente o de la agencia:</p>
+        <ul style="list-style: none; padding: 0;">
+          <li style="margin-bottom: 10px;">
+            <a href="${agencyProfileUrl}" style="color: #2563eb; text-decoration: underline;">Perfil de la agencia ${agencyName}</a>
+          </li>
+          <li>
+            <a href="${agentProfileUrl}" style="color: #2563eb; text-decoration: underline;">Perfil del agente ${agentName}</a>
+          </li>
+        </ul>
         <p>Muchas gracias por tu tiempo y confianza.</p>
         <p style="margin-top: 30px;">Saludos cordiales,<br>El equipo de Realista</p>
       </body>
