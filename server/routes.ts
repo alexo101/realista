@@ -3201,6 +3201,45 @@ Gracias!
       };
 
       console.log('Creating inquiry with data:', inquiryData);
+      
+      // Auto-create client if they don't exist (for property inquiries, chats, etc.)
+      const { name, email, phone, agentId } = inquiryData;
+      if (email && agentId) {
+        try {
+          // Check if client already exists by email
+          const existingClient = await storage.getClientByEmail(email);
+          
+          if (!existingClient) {
+            // Create new client linked to the agent
+            const clientData = {
+              name: name || "Cliente",
+              surname: "", // Will be populated if/when client registers
+              email,
+              phone: phone || "",
+              status: "Nuevo",
+              agentId: agentId,
+              notes: "Cliente creado automáticamente desde consulta de propiedad",
+              propertyInterest: null,
+              budget: null,
+              password: null,
+            };
+            const newClient = await storage.createClient(clientData);
+            console.log('Auto-created client from inquiry:', newClient.id, newClient.email);
+          } else if (!existingClient.agentId) {
+            // Client exists but not assigned to an agent - assign to this agent
+            await storage.updateClient(existingClient.id, {
+              ...existingClient,
+              agentId: agentId,
+            });
+            console.log('Linked existing client to agent:', existingClient.id, agentId);
+          }
+          // If client exists and already has an agent, we don't change their assignment
+        } catch (clientError) {
+          // Log but don't fail the inquiry creation
+          console.error('Error auto-creating client:', clientError);
+        }
+      }
+      
       const newInquiry = await storage.createInquiry(inquiryData);
       res.status(201).json(newInquiry);
     } catch (error) {
@@ -3301,6 +3340,35 @@ Gracias!
         return res.status(400).json({ message: "All fields are required" });
       }
 
+      // Auto-create client if they don't exist
+      try {
+        const existingClient = await storage.getClientByEmail(email);
+        if (!existingClient) {
+          const clientData = {
+            name: name || "Cliente",
+            surname: "",
+            email,
+            phone: phone || "",
+            status: "Nuevo",
+            agentId: agent.id,
+            notes: "Cliente creado automáticamente desde contacto directo con agente",
+            propertyInterest: null,
+            budget: null,
+            password: null,
+          };
+          const newClient = await storage.createClient(clientData);
+          console.log('Auto-created client from agent contact:', newClient.id, newClient.email);
+        } else if (!existingClient.agentId) {
+          await storage.updateClient(existingClient.id, {
+            ...existingClient,
+            agentId: agent.id,
+          });
+          console.log('Linked existing client to agent:', existingClient.id, agent.id);
+        }
+      } catch (clientError) {
+        console.error('Error auto-creating client from agent contact:', clientError);
+      }
+
       // Enviar email al agente
       const agentName = `${agent.name || ''} ${agent.surname || ''}`.trim() || 'Agente';
       const emailSent = await sendAgentContactEmail(
@@ -3359,6 +3427,35 @@ Gracias!
       const owner = await storage.getAgentById(agency.adminAgentId);
       if (!owner) {
         return res.status(404).json({ message: "Agency owner not found" });
+      }
+
+      // Auto-create client assigned to agency admin (owner)
+      try {
+        const existingClient = await storage.getClientByEmail(email);
+        if (!existingClient) {
+          const clientData = {
+            name: name || "Cliente",
+            surname: "",
+            email,
+            phone: phone || "",
+            status: "Nuevo",
+            agentId: owner.id, // Assign to agency admin
+            notes: `Cliente creado automáticamente desde contacto con agencia ${agency.agencyName}`,
+            propertyInterest: null,
+            budget: null,
+            password: null,
+          };
+          const newClient = await storage.createClient(clientData);
+          console.log('Auto-created client from agency contact:', newClient.id, newClient.email, 'assigned to admin:', owner.id);
+        } else if (!existingClient.agentId) {
+          await storage.updateClient(existingClient.id, {
+            ...existingClient,
+            agentId: owner.id,
+          });
+          console.log('Linked existing client to agency admin:', existingClient.id, owner.id);
+        }
+      } catch (clientError) {
+        console.error('Error auto-creating client from agency contact:', clientError);
       }
 
       // Enviar email al owner de la agencia
