@@ -503,7 +503,6 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
       case "property_inquiry": return "Consulta de propiedad";
       case "agent_contact": return "Contacto directo";
       case "agency_contact": return "Contacto con agencia";
-      case "self_registered": return "Auto-registro";
       case "manual": return "Añadido manualmente";
       default: return "Origen desconocido";
     }
