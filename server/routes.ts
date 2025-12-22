@@ -217,7 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyInterest: req.body.propertyInterest || "",
         budget: req.body.budget || null,
         notes: req.body.notes || "Cliente registrado desde la web",
-        agentId: null // Los clientes auto-registrados no tienen agente asignado inicialmente
+        agentId: null, // Los clientes auto-registrados no tienen agente asignado inicialmente
+        source: "self_registered"
       });
 
       // Verificar si el email ya existe
@@ -3222,6 +3223,7 @@ Gracias!
               propertyInterest: null,
               budget: null,
               password: null,
+              source: "property_inquiry",
             };
             const newClient = await storage.createClient(clientData);
             console.log('Auto-created client from inquiry:', newClient.id, newClient.email);
@@ -3355,6 +3357,7 @@ Gracias!
             propertyInterest: null,
             budget: null,
             password: null,
+            source: "agent_contact",
           };
           const newClient = await storage.createClient(clientData);
           console.log('Auto-created client from agent contact:', newClient.id, newClient.email);
@@ -3444,6 +3447,7 @@ Gracias!
             propertyInterest: null,
             budget: null,
             password: null,
+            source: "agency_contact",
           };
           const newClient = await storage.createClient(clientData);
           console.log('Auto-created client from agency contact:', newClient.id, newClient.email, 'assigned to admin:', owner.id);

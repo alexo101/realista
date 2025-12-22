@@ -224,6 +224,7 @@ export const clients = pgTable("clients", {
   budget: integer("budget"), // Presupuesto
   notes: text("notes"), // Notas adicionales
   agentId: integer("agent_id"), // Ahora opcional para clientes auto-registrados
+  source: text("source"), // Where the client came from: "property_inquiry", "agent_contact", "agency_contact", "self_registered", "manual"
   createdAt: timestamp("created_at").notNull().defaultNow(),
   
   // New client profile fields
