@@ -337,7 +337,7 @@ const ReviewDetails = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{review.pinned ? "Quitar reseña destacada" : "Destacar esta reseña"}</p>
+                <p>{review.pinned ? "Quitar reseña destacada" : "Mostrar esta reseña como pública en el perfil del agente"}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
