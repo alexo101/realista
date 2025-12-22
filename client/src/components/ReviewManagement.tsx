@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   Card,
   CardContent,
@@ -37,6 +37,10 @@ import {
   ChevronDown,
   ChevronUp,
   Pin,
+  Send,
+  Mail,
+  Phone,
+  Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,6 +86,18 @@ interface Review {
   targetAvatar?: string;
   propertyTitle?: string;
   propertyAddress?: string;
+}
+
+// Definimos la estructura de un cliente elegible para solicitar reseña
+interface EligibleClient {
+  id: number;
+  uuid: string;
+  name: string;
+  surname?: string;
+  email: string;
+  phone: string;
+  source?: string;
+  createdAt: string;
 }
 
 // Componente para mostrar las estrellas de calificación
@@ -343,9 +359,11 @@ const ReviewDetails = ({
 
 export function ReviewManagement({ userId, userType }: { userId: number, userType: string }) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'all' | 'agent' | 'agency'>('all');
+  const [activeTab, setActiveTab] = useState<'reviews' | 'request'>('reviews');
+  const [reviewFilterTab, setReviewFilterTab] = useState<'all' | 'agent' | 'agency'>('all');
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isResponseDialogOpen, setIsResponseDialogOpen] = useState(false);
+  const [sendingRequestTo, setSendingRequestTo] = useState<number | null>(null);
   
   // Consulta para obtener las reseñas
   const {
@@ -360,6 +378,49 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
         throw new Error("Error al cargar las reseñas");
       }
       return response.json();
+    },
+  });
+  
+  // Consulta para obtener clientes elegibles para solicitar reseña
+  const {
+    data: eligibleClients = [],
+    isLoading: clientsLoading,
+  } = useQuery<EligibleClient[]>({
+    queryKey: ["/api/agents", userId, "clients"],
+    queryFn: async () => {
+      const response = await fetch(`/api/agents/${userId}/clients`);
+      if (!response.ok) {
+        throw new Error("Error al cargar los clientes");
+      }
+      return response.json();
+    },
+  });
+  
+  // Mutación para enviar solicitud de reseña
+  const sendReviewRequestMutation = useMutation({
+    mutationFn: async (clientId: number) => {
+      const client = eligibleClients.find(c => c.id === clientId);
+      if (!client) throw new Error("Cliente no encontrado");
+      
+      return apiRequest("POST", `/api/agents/${userId}/review-request`, {
+        clientEmail: client.email,
+        clientName: `${client.name} ${client.surname || ''}`.trim()
+      });
+    },
+    onSuccess: (_, clientId) => {
+      toast({
+        title: "Solicitud enviada",
+        description: "Se ha enviado una solicitud de reseña al cliente.",
+      });
+      setSendingRequestTo(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message?.replace(/^\d+:\s*/, '') || "No se pudo enviar la solicitud",
+        variant: "destructive",
+      });
+      setSendingRequestTo(null);
     },
   });
   
@@ -427,9 +488,27 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   
   // Filtrar reseñas según la pestaña activa
   const filteredReviews = reviews.filter((review: Review) => {
-    if (activeTab === 'all') return true;
-    return review.targetType === activeTab;
+    if (reviewFilterTab === 'all') return true;
+    return review.targetType === reviewFilterTab;
   });
+  
+  // Handler para enviar solicitud de reseña
+  const handleSendReviewRequest = (clientId: number) => {
+    setSendingRequestTo(clientId);
+    sendReviewRequestMutation.mutate(clientId);
+  };
+  
+  // Traducir el source a español
+  const getSourceLabel = (source?: string) => {
+    switch (source) {
+      case "property_inquiry": return "Consulta de propiedad";
+      case "agent_contact": return "Contacto directo";
+      case "agency_contact": return "Contacto con agencia";
+      case "self_registered": return "Auto-registro";
+      case "manual": return "Añadido manualmente";
+      default: return "Origen desconocido";
+    }
+  };
   
   // Handler para abrir el diálogo de respuesta
   const handleRespond = (review: Review) => {
@@ -502,53 +581,173 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4">
         <h2 className="text-2xl font-bold">Gestión de Reseñas</h2>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-          <TabsList>
-            <TabsTrigger value="all">
-              Todas ({reviews.length})
+        
+        {/* Main tabs: Received reviews vs Request reviews */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'reviews' | 'request')}>
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="reviews" data-testid="tab-reviews-received">
+              <Star className="h-4 w-4 mr-2" />
+              Reseñas recibidas ({reviews.length})
             </TabsTrigger>
-            <TabsTrigger value="agent">
-              Agente ({reviews.filter((r: Review) => r.targetType === 'agent').length})
-            </TabsTrigger>
-            <TabsTrigger value="agency">
-              Agencia ({reviews.filter((r: Review) => r.targetType === 'agency').length})
+            <TabsTrigger value="request" data-testid="tab-request-reviews">
+              <Send className="h-4 w-4 mr-2" />
+              Solicitar reseñas ({eligibleClients.length})
             </TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="reviews" className="mt-4">
+            {/* Filter tabs for reviews */}
+            <div className="flex justify-end mb-4">
+              <Tabs value={reviewFilterTab} onValueChange={(value) => setReviewFilterTab(value as any)}>
+                <TabsList>
+                  <TabsTrigger value="all">
+                    Todas ({reviews.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="agent">
+                    Agente ({reviews.filter((r: Review) => r.targetType === 'agent').length})
+                  </TabsTrigger>
+                  <TabsTrigger value="agency">
+                    Agencia ({reviews.filter((r: Review) => r.targetType === 'agency').length})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            
+            {filteredReviews.length === 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>No hay reseñas todavía</CardTitle>
+                  <CardDescription>
+                    {reviewFilterTab === 'all'
+                      ? 'Aún no has recibido ninguna reseña.'
+                      : `Aún no has recibido reseñas como ${reviewFilterTab === 'agent' ? 'agente' : 'agencia'}.`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-500">
+                    Las reseñas de clientes aparecerán aquí cuando las recibas. 
+                    Puedes solicitar reseñas a tus clientes en la pestaña "Solicitar reseñas".
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filteredReviews.map((review: Review) => (
+                  <ReviewDetails
+                    key={review.id}
+                    review={review}
+                    onRespond={handleRespond}
+                    onPin={handlePin}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="request" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Clientes disponibles para solicitar reseña
+                </CardTitle>
+                <CardDescription>
+                  Estos son tus clientes que han contactado contigo. Puedes enviarles una solicitud de reseña por email.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {clientsLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-12 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                ) : eligibleClients.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p className="font-medium">No tienes clientes todavía</p>
+                    <p className="text-sm mt-1">
+                      Los clientes que te contacten o hagan consultas aparecerán aquí automáticamente.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Contacto</TableHead>
+                        <TableHead>Origen</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead className="text-right">Acción</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {eligibleClients.map((client: EligibleClient) => (
+                        <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="rounded-full bg-gray-100 p-2">
+                                <User className="h-4 w-4 text-gray-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium">{client.name} {client.surname || ''}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {client.email}
+                              </span>
+                              {client.phone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {client.phone}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {getSourceLabel(client.source)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">
+                            {new Date(client.createdAt).toLocaleDateString('es-ES')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              onClick={() => handleSendReviewRequest(client.id)}
+                              disabled={sendingRequestTo === client.id}
+                              data-testid={`button-request-review-${client.id}`}
+                            >
+                              {sendingRequestTo === client.id ? (
+                                <>
+                                  <span className="animate-spin mr-2">⏳</span>
+                                  Enviando...
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="h-4 w-4 mr-1" />
+                                  Solicitar reseña
+                                </>
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
-      
-      {filteredReviews.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>No hay reseñas todavía</CardTitle>
-            <CardDescription>
-              {activeTab === 'all'
-                ? 'Aún no has recibido ninguna reseña.'
-                : `Aún no has recibido reseñas como ${activeTab === 'agent' ? 'agente' : 'agencia'}.`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-500">
-              Las reseñas de clientes aparecerán aquí cuando las recibas. 
-              Puedes mejorar tu visibilidad completando tu perfil y proporcionando 
-              un excelente servicio a tus clientes.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredReviews.map((review: Review) => (
-            <ReviewDetails
-              key={review.id}
-              review={review}
-              onRespond={handleRespond}
-              onPin={handlePin}
-            />
-          ))}
-        </div>
-      )}
       
       {selectedReview && (
         <ReviewResponseDialog

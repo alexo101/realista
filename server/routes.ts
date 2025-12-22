@@ -3482,6 +3482,45 @@ Gracias!
     }
   });
 
+  // Endpoint para solicitar reseña a un cliente
+  app.post("/api/agents/:identifier/review-request", async (req, res) => {
+    try {
+      const identifier = req.params.identifier;
+      const id = parseInt(identifier);
+
+      let agent;
+      if (isNaN(id)) {
+        agent = await storage.getAgentBySlug(identifier);
+      } else {
+        agent = await storage.getAgentById(id);
+      }
+
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+
+      const { clientEmail, clientName } = req.body;
+
+      if (!clientEmail) {
+        return res.status(400).json({ message: "Email del cliente es requerido" });
+      }
+
+      const agentName = `${agent.name || ''} ${agent.surname || ''}`.trim() || 'Tu agente';
+
+      // Enviar email de solicitud de reseña
+      const emailSent = await sendReviewRequest(clientEmail, clientName || 'Cliente', agentName);
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Error al enviar la solicitud de reseña" });
+      }
+
+      res.status(200).json({ success: true, message: "Solicitud de reseña enviada correctamente" });
+    } catch (error) {
+      console.error('Error sending review request:', error);
+      res.status(500).json({ message: "Error al enviar la solicitud de reseña" });
+    }
+  });
+
   app.post("/api/agents/:identifier/reviews", async (req, res) => {
     try {
       const identifier = req.params.identifier;
