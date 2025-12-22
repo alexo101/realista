@@ -146,6 +146,7 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: InsertClient): Promise<Client>;
   updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined>;
+  deleteClient(id: number): Promise<void>;
 
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string, city?: string, district?: string): Promise<NeighborhoodRating[]>;
@@ -2187,6 +2188,10 @@ export class DatabaseStorage implements IStorage {
       console.error('Error updating client profile:', error);
       return undefined;
     }
+  }
+
+  async deleteClient(id: number): Promise<void> {
+    await db.delete(clients).where(eq(clients.id, id));
   }
 
   // Neighborhood Ratings
