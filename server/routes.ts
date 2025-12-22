@@ -1604,6 +1604,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/clients/:id", requireAuth, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.id);
+      console.log('Attempting to delete client:', clientId);
+      await storage.deleteClient(clientId);
+      console.log('Client deleted successfully:', clientId);
+      res.json({ message: "Cliente eliminado correctamente" });
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      res.status(500).json({ message: "Error al eliminar el cliente" });
+    }
+  });
+
   // Send properties to multiple clients via email
   app.post("/api/clients/send-properties", requireAuth, async (req, res) => {
     try {
