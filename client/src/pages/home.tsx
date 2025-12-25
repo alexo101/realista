@@ -28,8 +28,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col pt-16">
-      <section className="bg-primary/5 py-8 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-primary/5 min-h-[calc(100vh-4rem)] md:min-h-0 md:py-16 flex flex-col justify-center px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto w-full">
           <h1 className="text-2xl md:text-4xl font-bold text-center mb-4">
             Encuentra tu hogar ideal con toda la información
           </h1>
