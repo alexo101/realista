@@ -72,6 +72,7 @@ Preferred communication style: Simple, everyday language.
   - **City URL Format**: `/barrio/[City]/inmuebles` for city-level views
   - **Province Aggregation**: Province-level pages aggregate all properties/agents/agencies from all cities within that province
   - **Breadcrumb Dropdowns**: Province dropdown shows cities in the province; City dropdown shows districts; District shows neighborhoods
+  - **Terminal Districts**: Districts with empty `neighborhoods: []` arrays are treated as leaf nodes - breadcrumb shows district as final level without dropdown, and property filtering uses district name directly
 - **Client Relationship Management (CRM)**: Client profiles with 6-tier status tracking (Nuevo, Seguimiento, En visitas, Cerrando, Ganado, Perdido), appointment scheduling, real-time messaging, lead/inquiry tracking, and a contact history timeline.
 - **Review & Rating System**: Multi-criteria agent reviews and a property verification workflow.
 - **RealistaPro Subscription System**: Three-tier model (Agency, Independent Agent, Inherited Agency Access) with seat limits, enforced by database rules, atomic operations, and an audit trail.
