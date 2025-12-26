@@ -278,11 +278,25 @@ export function findDistrictByNeighborhood(neighborhood: string, city: string = 
 }
 
 // Función para obtener todos los barrios que pertenecen a un distrito
+// If district has no neighborhoods (terminal district), returns the district name itself
 export function getNeighborhoodsByDistrict(districtName: string, city: string = 'Barcelona'): string[] {
   const cityStructure = ALL_CITIES.find(c => c.city === city);
   if (!cityStructure) return [];
   const district = cityStructure.districts.find(d => d.district === districtName);
-  return district ? district.neighborhoods : [];
+  if (!district) return [];
+  // If district has no neighborhoods, it's a terminal level - return district name for filtering
+  if (district.neighborhoods.length === 0) {
+    return [districtName];
+  }
+  return district.neighborhoods;
+}
+
+// Check if a district is terminal (has no child neighborhoods)
+export function isDistrictTerminal(districtName: string, city: string = 'Barcelona'): boolean {
+  const cityStructure = ALL_CITIES.find(c => c.city === city);
+  if (!cityStructure) return false;
+  const district = cityStructure.districts.find(d => d.district === districtName);
+  return district ? district.neighborhoods.length === 0 : false;
 }
 
 // Función para verificar si una consulta se refiere a toda la ciudad
