@@ -66,6 +66,12 @@ Preferred communication style: Simple, everyday language.
 - **User Management**: Role-based authentication, dedicated registration flows, and profile management for agents and agencies.
 - **Property Management**: Full CRUD operations with a multi-step creation workflow (5 steps), draft support, advanced filtering, and integration with Barcelona's district and neighborhood data. Google Maps provides live address previews and geocoding. Properties use UUIDs as primary keys.
 - **Search & Discovery**: Real-time autocomplete search for properties, agents, and agencies, with neighborhood-based and hierarchical location search capabilities (e.g., district-to-neighborhood expansion).
+- **5-Level Hierarchical Breadcrumb Navigation**: Supports navigation from Inicio → Province → City → District → Neighborhood:
+  - **Province Support**: 52 Spanish provinces with PROVINCE_CITIES mapping
+  - **Province URL Format**: `/barrio/[Province] (provincia)/inmuebles` for province-only views (disambiguates from cities with same name)
+  - **City URL Format**: `/barrio/[City]/inmuebles` for city-level views
+  - **Province Aggregation**: Province-level pages aggregate all properties/agents/agencies from all cities within that province
+  - **Breadcrumb Dropdowns**: Province dropdown shows cities in the province; City dropdown shows districts; District shows neighborhoods
 - **Client Relationship Management (CRM)**: Client profiles with 6-tier status tracking (Nuevo, Seguimiento, En visitas, Cerrando, Ganado, Perdido), appointment scheduling, real-time messaging, lead/inquiry tracking, and a contact history timeline.
 - **Review & Rating System**: Multi-criteria agent reviews and a property verification workflow.
 - **RealistaPro Subscription System**: Three-tier model (Agency, Independent Agent, Inherited Agency Access) with seat limits, enforced by database rules, atomic operations, and an audit trail.

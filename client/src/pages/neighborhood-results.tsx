@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities, expandNeighborhoodSearch } from "@/utils/neighborhoods";
+import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities, expandNeighborhoodSearch, isProvince, getProvinceByCity, getCitiesByProvince, getProvinces } from "@/utils/neighborhoods";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -85,7 +85,9 @@ export default function NeighborhoodResultsPage() {
   }, [user, toast]);
   
   // Parse hierarchical neighborhood format with fallbacks
-  let currentCity = 'Barcelona';
+  // Hierarchy: Province > City > District > Neighborhood
+  let currentProvince: string | undefined;
+  let currentCity: string | undefined;
   let currentDistrict: string | undefined;
   let currentNeighborhood: string | undefined;
   
@@ -95,33 +97,78 @@ export default function NeighborhoodResultsPage() {
     currentCity = locationParts.city;
     currentDistrict = locationParts.district;
     currentNeighborhood = locationParts.neighborhood;
+    currentProvince = getProvinceByCity(locationParts.city) || undefined;
   } else {
-    // Try parsing as "District, City" or just "City"
+    // Try parsing as "District, City", "City, Province", or single value
     const parts = decodedNeighborhood.split(',').map(p => p.trim());
     
     if (parts.length === 2) {
-      const [possibleDistrict, possibleCity] = parts;
-      const cities = getCities();
-      if (cities.includes(possibleCity)) {
-        const districts = getDistrictsByCity(possibleCity);
-        if (districts.includes(possibleDistrict)) {
-          currentCity = possibleCity;
-          currentDistrict = possibleDistrict;
+      const [first, second] = parts;
+      
+      // Check if it's "City, Province" format
+      if (isProvince(second)) {
+        currentProvince = second;
+        const citiesInProvince = getCitiesByProvince(second);
+        if (citiesInProvince.includes(first)) {
+          currentCity = first;
+          currentDistrict = undefined;
           currentNeighborhood = undefined;
+        }
+      } else {
+        // It's "District, City" format
+        const cities = getCities();
+        if (cities.includes(second)) {
+          const districts = getDistrictsByCity(second);
+          if (districts.includes(first)) {
+            currentCity = second;
+            currentDistrict = first;
+            currentNeighborhood = undefined;
+            currentProvince = getProvinceByCity(second) || undefined;
+          }
         }
       }
     } else if (parts.length === 1) {
-      const cities = getCities();
-      if (cities.includes(decodedNeighborhood)) {
-        currentCity = decodedNeighborhood;
-        currentDistrict = undefined;
-        currentNeighborhood = undefined;
+      // Check for explicit province suffix "(provincia)" - e.g., "Barcelona (provincia)"
+      const provinceMatch = decodedNeighborhood.match(/^(.+?)\s*\(provincia\)$/i);
+      if (provinceMatch) {
+        const provinceName = provinceMatch[1].trim();
+        if (isProvince(provinceName)) {
+          currentProvince = provinceName;
+          currentCity = undefined;
+          currentDistrict = undefined;
+          currentNeighborhood = undefined;
+        }
       } else {
-        // Fallback: treat as neighborhood and find its context
-        currentNeighborhood = decodedNeighborhood;
-        currentDistrict = findDistrictByNeighborhood(decodedNeighborhood, currentCity) || undefined;
+        // Priority: City > Province > Neighborhood (for backward compatibility)
+        // This handles cases like "Barcelona" which is both a province AND a city
+        const cities = getCities();
+        if (cities.includes(decodedNeighborhood)) {
+          // It's a city - prioritize city matching
+          currentCity = decodedNeighborhood;
+          currentDistrict = undefined;
+          currentNeighborhood = undefined;
+          currentProvince = getProvinceByCity(decodedNeighborhood) || undefined;
+        } else if (isProvince(decodedNeighborhood)) {
+          // It's a province (but not a city with same name)
+          currentProvince = decodedNeighborhood;
+          currentCity = undefined;
+          currentDistrict = undefined;
+          currentNeighborhood = undefined;
+        } else {
+          // Fallback: treat as neighborhood and find its context
+          currentNeighborhood = decodedNeighborhood;
+          // Default to Barcelona for legacy compatibility
+          currentCity = 'Barcelona';
+          currentDistrict = findDistrictByNeighborhood(decodedNeighborhood, currentCity) || undefined;
+          currentProvince = getProvinceByCity(currentCity) || undefined;
+        }
       }
     }
+  }
+  
+  // Ensure province is always set when city is known
+  if (currentCity && !currentProvince) {
+    currentProvince = getProvinceByCity(currentCity) || undefined;
   }
   
   // Extract URL parameters
@@ -251,7 +298,7 @@ export default function NeighborhoodResultsPage() {
     inlineRatingMutation.mutate({
       neighborhood: currentNeighborhood || decodedNeighborhood,
       district: currentDistrict || null,
-      city: currentCity,
+      city: currentCity || null,
       ...inlineUserRatings,
     });
   };
@@ -299,6 +346,9 @@ export default function NeighborhoodResultsPage() {
     saveSearchMutation.mutate();
   };
   
+  // Verificar si estamos en una página de provincia
+  const isProvincePage = currentProvince && !currentCity && !currentDistrict && !currentNeighborhood;
+  
   // Verificar si estamos en una página de ciudad general
   const isCityPage = currentCity && !currentDistrict && !currentNeighborhood;
   
@@ -310,14 +360,16 @@ export default function NeighborhoodResultsPage() {
   
   // CRITICAL FIX: Expand districts to their constituent neighborhoods
   // This ensures agents/properties assigned to specific neighborhoods appear on district pages
+  // Province-level search also expands to all neighborhoods in all cities of the province
   // Example: "Sant Andreu" district expands to ["Sant Andreu del Palomar", "La Sagrera", ...]
-  const expandedNeighborhoods = expandNeighborhoodSearch(decodedNeighborhood, currentCity);
+  // Example: "Barcelona" province expands to all Barcelona city neighborhoods
+  const expandedNeighborhoods = expandNeighborhoodSearch(decodedNeighborhood, currentCity || 'Barcelona');
   const effectiveNeighborhood = expandedNeighborhoods.length > 0 
     ? expandedNeighborhoods.join(',') 
     : decodedNeighborhood;
   
   // Determinar el distrito para barrios (para compatibilidad)
-  const legacyDistrict = !currentDistrict && currentNeighborhood ? findDistrictByNeighborhood(currentNeighborhood, currentCity) : currentDistrict;
+  const legacyDistrict = !currentDistrict && currentNeighborhood && currentCity ? findDistrictByNeighborhood(currentNeighborhood, currentCity) : currentDistrict;
   
   // Determinar la pestaña activa según la ruta (Spanish routes)
   const getActiveTab = () => {
@@ -566,8 +618,8 @@ export default function NeighborhoodResultsPage() {
     <div className="min-h-screen flex flex-col pt-16">
       <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-12">
         <div className="mb-6">
-          {/* Hierarchical Breadcrumb Navigation */}
-          <div className="flex items-center text-sm text-gray-500 mb-4">
+          {/* Hierarchical Breadcrumb Navigation: Inicio > Province > City > District > Neighborhood */}
+          <div className="flex items-center flex-wrap text-sm text-gray-500 mb-4">
             {/* Inicio - Always at top level */}
             <span 
               className="cursor-pointer hover:text-primary"
@@ -576,38 +628,75 @@ export default function NeighborhoodResultsPage() {
             >
               Inicio
             </span>
-            <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+            
+            {/* Province Level with cities dropdown */}
+            {currentProvince && (
+              <>
+                <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-province">
+                      {currentProvince}
+                    </span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
+                    {getCitiesByProvince(currentProvince).map(cityOption => (
+                      <DropdownMenuItem
+                        key={cityOption}
+                        onClick={() => setLocation(`/barrio/${encodeURIComponent(cityOption)}, ${encodeURIComponent(currentProvince)}/${getSpanishTabSegment(activeTab)}`)}
+                        className="cursor-pointer"
+                        data-testid={`breadcrumb-city-${cityOption}`}
+                      >
+                        {cityOption}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem
+                      onClick={() => setLocation(`/barrio/${encodeURIComponent(currentProvince + ' (provincia)')}/${getSpanishTabSegment(activeTab)}`)}
+                      className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                      data-testid="breadcrumb-province-all"
+                    >
+                      Ver toda la provincia
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
             
             {/* City Level with district dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-city">
-                  {currentCity}
-                </span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
-                {getDistrictsByCity(currentCity).map(districtOption => (
-                  <DropdownMenuItem
-                    key={districtOption}
-                    onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
-                    className="cursor-pointer"
-                    data-testid={`breadcrumb-district-${districtOption}`}
-                  >
-                    {districtOption}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuItem
-                  onClick={() => setLocation(`/barrio/${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
-                  className="cursor-pointer border-t mt-1 pt-2 font-medium"
-                  data-testid="breadcrumb-city-all"
-                >
-                  Ver todo {currentCity}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {currentCity && (
+              <>
+                <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-city">
+                      {currentCity}
+                    </span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
+                    {getDistrictsByCity(currentCity).map(districtOption => (
+                      <DropdownMenuItem
+                        key={districtOption}
+                        onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
+                        className="cursor-pointer"
+                        data-testid={`breadcrumb-district-${districtOption}`}
+                      >
+                        {districtOption}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem
+                      onClick={() => setLocation(`/barrio/${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
+                      className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                      data-testid="breadcrumb-city-all"
+                    >
+                      Ver todo {currentCity}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
             
             {/* District Level with neighborhood dropdown */}
-            {currentDistrict && (
+            {currentDistrict && currentCity && (
               <>
                 <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
                 <DropdownMenu>
@@ -877,6 +966,9 @@ export default function NeighborhoodResultsPage() {
             {/* Contenido de pestaña: Overview */}
             <TabsContent value="overview" className="mt-0">
               {/* Dynamic title based on hierarchical structure */}
+              {isProvincePage && currentProvince && (
+                <h2 className="text-2xl font-bold mb-4">Provincia de {currentProvince}</h2>
+              )}
               {isCityPage && (
                 <h2 className="text-2xl font-bold mb-4">{currentCity}</h2>
               )}
@@ -886,9 +978,30 @@ export default function NeighborhoodResultsPage() {
               {isNeighborhoodPage && (
                 <h2 className="text-2xl font-bold mb-4">Barrio de {currentNeighborhood}</h2>
               )}
+              
+                {/* Province information when viewing a province */}
+                {isProvincePage && currentProvince && (
+                  <div className="mb-6">
+                    <p className="text-gray-600 mb-4">
+                      La provincia de {currentProvince} incluye las siguientes ciudades:
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {getCitiesByProvince(currentProvince).map(cityOption => (
+                        <span 
+                          key={cityOption}
+                          className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
+                          onClick={() => setLocation(`/barrio/${encodeURIComponent(cityOption)}, ${encodeURIComponent(currentProvince)}/${getSpanishTabSegment(activeTab)}`)}
+                          data-testid={`province-city-link-${cityOption}`}
+                        >
+                          {cityOption}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {/* District information when viewing a district */}
-                {isDistrictPage && currentDistrict && (
+                {isDistrictPage && currentDistrict && currentCity && (
                   <div className="mb-6">
                     <p className="text-gray-600">
                       El distrito de {currentDistrict} incluye los siguientes barrios:
@@ -911,7 +1024,7 @@ export default function NeighborhoodResultsPage() {
                 )}
                 
                 {/* City information when viewing a city */}
-                {isCityPage && (
+                {isCityPage && currentCity && (
                   <div className="mb-6">
                     <p className="text-gray-600 mb-4">
                       {currentCity === 'Barcelona' ? 'Barcelona está dividida en los siguientes distritos:' : 

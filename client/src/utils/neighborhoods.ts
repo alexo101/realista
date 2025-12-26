@@ -150,6 +150,94 @@ const MADRID_STRUCTURE: CityStructure = {
 // All cities
 export const ALL_CITIES: CityStructure[] = [BARCELONA_STRUCTURE, MADRID_STRUCTURE];
 
+// Spanish Provinces
+export const PROVINCES: string[] = [
+  "Álava",
+  "Albacete",
+  "Alicante",
+  "Almería",
+  "Asturias",
+  "Ávila",
+  "Badajoz",
+  "Balears, (Illes)",
+  "Barcelona",
+  "Burgos",
+  "Cáceres",
+  "Cádiz",
+  "Cantabria",
+  "Castellón",
+  "Ceuta",
+  "Ciudad Real",
+  "Córdoba",
+  "Cuenca",
+  "Girona",
+  "Granada",
+  "Guadalajara",
+  "Gipuzkoa",
+  "Huelva",
+  "Huesca",
+  "Jaén",
+  "León",
+  "Lleida",
+  "Lugo",
+  "Madrid",
+  "Málaga",
+  "Melilla",
+  "Murcia",
+  "Navarra",
+  "Ourense",
+  "Palencia",
+  "Las Palmas",
+  "Pontevedra",
+  "La Rioja",
+  "Salamanca",
+  "Santa Cruz de Tenerife",
+  "Segovia",
+  "Sevilla",
+  "Soria",
+  "Tarragona",
+  "Teruel",
+  "Toledo",
+  "Valencia",
+  "Valladolid",
+  "Vizcaya",
+  "Zamora",
+  "Zaragoza"
+];
+
+// Province to Cities mapping (cities that have full neighborhood data)
+// Barcelona city belongs to Barcelona province, Madrid city belongs to Madrid province
+export const PROVINCE_CITIES: Record<string, string[]> = {
+  "Barcelona": ["Barcelona"],
+  "Madrid": ["Madrid"],
+  // Other provinces can be added here as more cities are supported
+};
+
+// Get all provinces
+export function getProvinces(): string[] {
+  return PROVINCES;
+}
+
+// Check if a name is a province
+export function isProvince(name: string): boolean {
+  return PROVINCES.includes(name);
+}
+
+// Get the province for a given city
+export function getProvinceByCity(city: string): string | null {
+  for (const [province, cities] of Object.entries(PROVINCE_CITIES)) {
+    if (cities.includes(city)) {
+      return province;
+    }
+  }
+  return null;
+}
+
+// Get all cities in a province
+export function getCitiesByProvince(province: string): string[] {
+  return PROVINCE_CITIES[province] || [];
+}
+
 // Legacy Barcelona exports for backward compatibility
 export const BARCELONA_DISTRICTS_AND_NEIGHBORHOODS = BARCELONA_STRUCTURE.districts;
 
@@ -204,11 +292,32 @@ export function isCityWideSearch(queryNeighborhood: string, city: string = 'Barc
 }
 
 // Función para expandir la búsqueda basada en la jerarquía
+// Now supports: Province > City > District > Neighborhood
 export function expandNeighborhoodSearch(queryNeighborhood: string, city: string = 'Barcelona'): string[] {
   // CRITICAL FIX: Parse hierarchical labels like "Gràcia, Barcelona" or "Vila de Gràcia, Gràcia, Barcelona"
   // The frontend sends these hierarchical formats but we need to extract the actual location name
   let actualQuery = queryNeighborhood;
   let effectiveCity = city; // Use local variable to avoid mutating the parameter
+  
+  // Check for explicit province suffix "(provincia)" - e.g., "Barcelona (provincia)"
+  const provinceMatch = queryNeighborhood.match(/^(.+?)\s*\(provincia\)$/i);
+  if (provinceMatch) {
+    const provinceName = provinceMatch[1].trim();
+    if (isProvince(provinceName)) {
+      // Expand to all neighborhoods in all cities of this province
+      const citiesInProvince = getCitiesByProvince(provinceName);
+      const allNeighborhoods: string[] = [];
+      
+      for (const cityName of citiesInProvince) {
+        const cityStructure = ALL_CITIES.find(c => c.city === cityName);
+        if (cityStructure) {
+          allNeighborhoods.push(...cityStructure.districts.flatMap(d => d.neighborhoods));
+        }
+      }
+      
+      return allNeighborhoods;
+    }
+  }
   
   const parsed = parseNeighborhoodDisplayName(queryNeighborhood);
   
@@ -217,13 +326,38 @@ export function expandNeighborhoodSearch(queryNeighborhood: string, city: string
     actualQuery = parsed.neighborhood;
     effectiveCity = parsed.city;
   } else {
-    // Check if it's a 2-part format like "District, City" or "Neighborhood, City"
+    // Check if it's a 2-part format like "District, City" or "City, Province"
     const parts = queryNeighborhood.split(',').map(p => p.trim());
     if (parts.length === 2) {
-      // First part is district or neighborhood, second part is city
-      actualQuery = parts[0];
-      effectiveCity = parts[1];
+      const [first, second] = parts;
+      // Check if second part is a province (for "City, Province" format)
+      if (isProvince(second)) {
+        // This is a city within a province, search that city
+        actualQuery = first;
+        effectiveCity = first;
+      } else {
+        // First part is district or neighborhood, second part is city
+        actualQuery = first;
+        effectiveCity = second;
+      }
     }
+  }
+  
+  // Check if the query is a province (but not a city with same name)
+  // This handles provinces that don't share names with cities
+  const cities = getCities();
+  if (isProvince(actualQuery) && !cities.includes(actualQuery)) {
+    const citiesInProvince = getCitiesByProvince(actualQuery);
+    const allNeighborhoods: string[] = [];
+    
+    for (const cityName of citiesInProvince) {
+      const cityStructure = ALL_CITIES.find(c => c.city === cityName);
+      if (cityStructure) {
+        allNeighborhoods.push(...cityStructure.districts.flatMap(d => d.neighborhoods));
+      }
+    }
+    
+    return allNeighborhoods;
   }
   
   const cityStructure = ALL_CITIES.find(c => c.city === effectiveCity);
