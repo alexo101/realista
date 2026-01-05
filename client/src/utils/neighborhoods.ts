@@ -147,15 +147,19 @@ const MADRID_STRUCTURE: CityStructure = {
   ]
 };
 
-// All cities
-export const ALL_CITIES: CityStructure[] = [BARCELONA_STRUCTURE, MADRID_STRUCTURE];
+// Import Spain-wide locations (excludes Barcelona and Madrid which are defined above)
+import { SPAIN_LOCATIONS, SPAIN_PROVINCE_CITIES } from './spain-locations.generated';
 
-// Spanish Provinces
+// All cities - Barcelona and Madrid first (manually curated), then the rest of Spain
+export const ALL_CITIES: CityStructure[] = [BARCELONA_STRUCTURE, MADRID_STRUCTURE, ...SPAIN_LOCATIONS];
+
+// Spanish Provinces (includes Andorra for cross-border coverage)
 export const PROVINCES: string[] = [
   "Álava",
   "Albacete",
   "Alicante",
   "Almería",
+  "Andorra",
   "Asturias",
   "Ávila",
   "Badajoz",
@@ -205,12 +209,15 @@ export const PROVINCES: string[] = [
   "Zaragoza"
 ];
 
-// Province to Cities mapping (cities that have full neighborhood data)
-// Barcelona city belongs to Barcelona province, Madrid city belongs to Madrid province
+// Province to Cities mapping - merges curated Barcelona/Madrid with Spain-wide data
 export const PROVINCE_CITIES: Record<string, string[]> = {
-  "Barcelona": ["Barcelona"],
-  "Madrid": ["Madrid"],
-  // Other provinces can be added here as more cities are supported
+  // Barcelona and Madrid are manually curated and may have different city names than SPAIN_PROVINCE_CITIES
+  "Barcelona": ["Barcelona", ...(SPAIN_PROVINCE_CITIES["Barcelona"] || []).filter(c => c !== "Barcelona")],
+  "Madrid": ["Madrid", ...(SPAIN_PROVINCE_CITIES["Madrid"] || []).filter(c => c !== "Madrid")],
+  // Spread all other provinces from Spain-wide data
+  ...Object.fromEntries(
+    Object.entries(SPAIN_PROVINCE_CITIES).filter(([prov]) => prov !== "Barcelona" && prov !== "Madrid")
+  )
 };
 
 // Get all provinces
@@ -297,6 +304,23 @@ export function isDistrictTerminal(districtName: string, city: string = 'Barcelo
   if (!cityStructure) return false;
   const district = cityStructure.districts.find(d => d.district === districtName);
   return district ? district.neighborhoods.length === 0 : false;
+}
+
+// Check if a city is terminal (has no districts - city is the final level)
+export function isCityTerminal(cityName: string): boolean {
+  const cityStructure = ALL_CITIES.find(c => c.city === cityName);
+  if (!cityStructure) return false;
+  return cityStructure.districts.length === 0;
+}
+
+// Get districts by city, or return city name if terminal (no districts)
+export function getDistrictsOrCityName(cityName: string): string[] {
+  const cityStructure = ALL_CITIES.find(c => c.city === cityName);
+  if (!cityStructure) return [];
+  if (cityStructure.districts.length === 0) {
+    return [cityName]; // Terminal city - return city name for filtering
+  }
+  return cityStructure.districts.map(d => d.district);
 }
 
 // Función para verificar si una consulta se refiere a toda la ciudad
