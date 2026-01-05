@@ -349,7 +349,19 @@ export function expandNeighborhoodSearch(queryNeighborhood: string, city: string
       for (const cityName of citiesInProvince) {
         const cityStructure = ALL_CITIES.find(c => c.city === cityName);
         if (cityStructure) {
-          allNeighborhoods.push(...cityStructure.districts.flatMap(d => d.neighborhoods));
+          // Handle terminal cities (no districts) - use city name for filtering
+          if (cityStructure.districts.length === 0) {
+            allNeighborhoods.push(cityName);
+          } else {
+            // Handle terminal districts (no neighborhoods) - use district name
+            for (const district of cityStructure.districts) {
+              if (district.neighborhoods.length === 0) {
+                allNeighborhoods.push(district.district);
+              } else {
+                allNeighborhoods.push(...district.neighborhoods);
+              }
+            }
+          }
         }
       }
       
@@ -391,7 +403,19 @@ export function expandNeighborhoodSearch(queryNeighborhood: string, city: string
     for (const cityName of citiesInProvince) {
       const cityStructure = ALL_CITIES.find(c => c.city === cityName);
       if (cityStructure) {
-        allNeighborhoods.push(...cityStructure.districts.flatMap(d => d.neighborhoods));
+        // Handle terminal cities (no districts) - use city name for filtering
+        if (cityStructure.districts.length === 0) {
+          allNeighborhoods.push(cityName);
+        } else {
+          // Handle terminal districts (no neighborhoods) - use district name
+          for (const district of cityStructure.districts) {
+            if (district.neighborhoods.length === 0) {
+              allNeighborhoods.push(district.district);
+            } else {
+              allNeighborhoods.push(...district.neighborhoods);
+            }
+          }
+        }
       }
     }
     
@@ -401,7 +425,20 @@ export function expandNeighborhoodSearch(queryNeighborhood: string, city: string
   const cityStructure = ALL_CITIES.find(c => c.city === effectiveCity);
   if (!cityStructure) return [];
   
-  const allNeighborhoods = cityStructure.districts.flatMap(d => d.neighborhoods);
+  // Handle terminal cities (no districts) - city is the final level
+  if (cityStructure.districts.length === 0) {
+    return [effectiveCity];
+  }
+  
+  // Build allNeighborhoods handling terminal districts
+  const allNeighborhoods: string[] = [];
+  for (const district of cityStructure.districts) {
+    if (district.neighborhoods.length === 0) {
+      allNeighborhoods.push(district.district);
+    } else {
+      allNeighborhoods.push(...district.neighborhoods);
+    }
+  }
   
   // Si es búsqueda a nivel de ciudad, devolver todos los barrios
   if (isCityWideSearch(actualQuery, effectiveCity)) {

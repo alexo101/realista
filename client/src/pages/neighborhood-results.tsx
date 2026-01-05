@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities, expandNeighborhoodSearch, isProvince, getProvinceByCity, getCitiesByProvince, getProvinces, isDistrictTerminal } from "@/utils/neighborhoods";
+import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities, expandNeighborhoodSearch, isProvince, getProvinceByCity, getCitiesByProvince, getProvinces, isDistrictTerminal, isCityTerminal } from "@/utils/neighborhoods";
 import { useUser } from "@/contexts/user-context";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -662,36 +662,44 @@ export default function NeighborhoodResultsPage() {
               </>
             )}
             
-            {/* City Level with district dropdown */}
+            {/* City Level with district dropdown (or just text for terminal cities) */}
             {currentCity && (
               <>
                 <ChevronLeft className="h-4 w-4 mx-1 rotate-180" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-city">
-                      {currentCity}
-                    </span>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
-                    {getDistrictsByCity(currentCity).map(districtOption => (
+                {isCityTerminal(currentCity) ? (
+                  /* Terminal city - no districts, show as final level */
+                  <span className="text-gray-900 font-medium" data-testid="breadcrumb-city">
+                    {currentCity}
+                  </span>
+                ) : (
+                  /* Regular city with districts - show dropdown */
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-city">
+                        {currentCity}
+                      </span>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
+                      {getDistrictsByCity(currentCity).map(districtOption => (
+                        <DropdownMenuItem
+                          key={districtOption}
+                          onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
+                          className="cursor-pointer"
+                          data-testid={`breadcrumb-district-${districtOption}`}
+                        >
+                          {districtOption}
+                        </DropdownMenuItem>
+                      ))}
                       <DropdownMenuItem
-                        key={districtOption}
-                        onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
-                        className="cursor-pointer"
-                        data-testid={`breadcrumb-district-${districtOption}`}
+                        onClick={() => setLocation(`/barrio/${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
+                        className="cursor-pointer border-t mt-1 pt-2 font-medium"
+                        data-testid="breadcrumb-city-all"
                       >
-                        {districtOption}
+                        Ver todo {currentCity}
                       </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuItem
-                      onClick={() => setLocation(`/barrio/${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
-                      className="cursor-pointer border-t mt-1 pt-2 font-medium"
-                      data-testid="breadcrumb-city-all"
-                    >
-                      Ver todo {currentCity}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </>
             )}
             
@@ -1044,23 +1052,33 @@ export default function NeighborhoodResultsPage() {
                 {/* City information when viewing a city */}
                 {isCityPage && currentCity && (
                   <div className="mb-6">
-                    <p className="text-gray-600 mb-4">
-                      {currentCity === 'Barcelona' ? 'Barcelona está dividida en los siguientes distritos:' : 
-                       currentCity === 'Madrid' ? 'Madrid cuenta con los siguientes distritos:' :
-                       `${currentCity} está dividida en los siguientes distritos:`}
-                    </p>
-                    <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {getDistrictsByCity(currentCity).map(districtOption => (
-                        <span 
-                          key={districtOption}
-                          className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
-                          onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
-                          data-testid={`city-district-link-${districtOption}`}
-                        >
-                          {districtOption}
-                        </span>
-                      ))}
-                    </div>
+                    {isCityTerminal(currentCity) ? (
+                      /* Terminal city - no districts subdivision */
+                      <p className="text-gray-600">
+                        {currentCity} es una localidad sin subdivisiones de distritos.
+                      </p>
+                    ) : (
+                      /* Regular city with districts */
+                      <>
+                        <p className="text-gray-600 mb-4">
+                          {currentCity === 'Barcelona' ? 'Barcelona está dividida en los siguientes distritos:' : 
+                           currentCity === 'Madrid' ? 'Madrid cuenta con los siguientes distritos:' :
+                           `${currentCity} está dividida en los siguientes distritos:`}
+                        </p>
+                        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {getDistrictsByCity(currentCity).map(districtOption => (
+                            <span 
+                              key={districtOption}
+                              className="bg-gray-100 px-3 py-2 rounded text-sm cursor-pointer hover:bg-primary/10 flex items-center justify-center text-center"
+                              onClick={() => setLocation(`/barrio/${encodeURIComponent(districtOption)}, ${encodeURIComponent(currentCity)}/${getSpanishTabSegment(activeTab)}`)}
+                              data-testid={`city-district-link-${districtOption}`}
+                            >
+                              {districtOption}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
                 
