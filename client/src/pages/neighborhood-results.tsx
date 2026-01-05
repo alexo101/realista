@@ -636,7 +636,7 @@ export default function NeighborhoodResultsPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <span className="cursor-pointer hover:text-primary underline-offset-4 hover:underline" data-testid="breadcrumb-province">
-                      {currentProvince}
+                      {currentProvince} provincia
                     </span>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-64 max-h-[80vh] overflow-y-auto">
