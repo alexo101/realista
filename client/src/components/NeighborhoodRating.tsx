@@ -272,9 +272,7 @@ export function NeighborhoodRating() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-lg shadow-lg p-4">
-        <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">
-          Busca y conoce los barrios de tu interés
-        </h2>
+        <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">Busca y conoce las localidades de tu interés</h2>
         
         {/* Search bar */}
         <form onSubmit={handleSearchSubmit} className="mb-6 max-w-md">
