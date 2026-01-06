@@ -28,10 +28,7 @@ export function Footer() {
               <Home className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold text-primary">Realista</span>
             </div>
-            <p className="text-gray-300 text-sm">
-              Tu plataforma de confianza para encontrar las mejores propiedades en Barcelona. 
-              Conectamos agentes, agencias y clientes de manera profesional y eficiente.
-            </p>
+            <p className="text-gray-300 text-sm">Tu plataforma de confianza para encontrar las mejores propiedades en España. Conectamos agentes, agencias y clientes de manera profesional y eficiente.</p>
             <div className="space-y-2 text-sm text-gray-300">
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
