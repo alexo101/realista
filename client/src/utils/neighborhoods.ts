@@ -491,6 +491,7 @@ export function parseNeighborhoodDisplayName(displayName: string): { neighborhoo
 }
 
 // Search function for hierarchical autocomplete
+// Now includes terminal districts (districts without neighborhoods) in search results
 export function searchNeighborhoods(query: string, cityFilter?: string): Array<{ neighborhood: string; district: string; city: string }> {
   const results: Array<{ neighborhood: string; district: string; city: string }> = [];
   const lowerQuery = query.toLowerCase();
@@ -502,15 +503,28 @@ export function searchNeighborhoods(query: string, cityFilter?: string): Array<{
     if (!cityStructure) continue;
     
     for (const districtData of cityStructure.districts) {
-      for (const neighborhood of districtData.neighborhoods) {
-        if (neighborhood.toLowerCase().includes(lowerQuery) || 
-            districtData.district.toLowerCase().includes(lowerQuery) ||
+      // Handle terminal districts (no neighborhoods) - district is the searchable/selectable level
+      if (districtData.neighborhoods.length === 0) {
+        if (districtData.district.toLowerCase().includes(lowerQuery) ||
             city.toLowerCase().includes(lowerQuery)) {
           results.push({
-            neighborhood,
+            neighborhood: districtData.district, // Use district name as the "neighborhood" for display
             district: districtData.district,
             city
           });
+        }
+      } else {
+        // Regular districts with neighborhoods
+        for (const neighborhood of districtData.neighborhoods) {
+          if (neighborhood.toLowerCase().includes(lowerQuery) || 
+              districtData.district.toLowerCase().includes(lowerQuery) ||
+              city.toLowerCase().includes(lowerQuery)) {
+            results.push({
+              neighborhood,
+              district: districtData.district,
+              city
+            });
+          }
         }
       }
     }
