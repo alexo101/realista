@@ -1,0 +1,54 @@
+9:47:04 PM [express] GET /api/neighborhoods/ratings/average 200 in 281ms :: {"count":1,"security":9,…
+Fetching items to sync from Stripe
+Sync complete: 0 items synced
+Syncing credit notes
+Fetching items to sync from Stripe
+Sync complete: 0 items synced
+Syncing disputes
+Fetching items to sync from Stripe
+Sync complete: 0 items synced
+Syncing early fraud warnings
+Fetching items to sync from Stripe
+Sync complete: 0 items synced
+Syncing refunds
+Fetching items to sync from Stripe
+Sync complete: 0 items synced
+Syncing checkout sessions
+Incremental sync from cursor: 1765470002
+Fetching items to sync from Stripe
+Upserting final batch of 1 items
+Sync complete: 1 items synced
+Stripe data synced
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js' imported from /home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js
+    at finalizeResolution (node:internal/modules/esm/resolve:283:11)
+    at moduleResolve (node:internal/modules/esm/resolve:952:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at resolveBase (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:3212)
+    at resolveDirectory (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:3584)
+    at resolveTsPaths (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:4073)
+    at resolve (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:4447)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at Hooks.resolve (node:internal/modules/esm/hooks:306:30)
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js' imported from /home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js
+    at finalizeResolution (node:internal/modules/esm/resolve:283:11)
+    at moduleResolve (node:internal/modules/esm/resolve:952:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at resolveBase (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:3212)
+    at resolveDirectory (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:3584)
+    at resolveTsPaths (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:4073)
+    at resolve (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:4447)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at Hooks.resolve (node:internal/modules/esm/hooks:306:30)
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/workspace/node_modules/vite/dist/node/chunks/dep-D-7KCb9p.js' imported from /home/runner/workspace/node_modules/vite/dist/node/chunks/dep-CHZK6zbr.js
+    at finalizeResolution (node:internal/modules/esm/resolve:283:11)
+    at moduleResolve (node:internal/modules/esm/resolve:952:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at resolveBase (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:3212)
+    at resolveDirectory (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:3584)
+    at resolveTsPaths (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:4073)
+    at resolve (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1767736006110:2:4447)
+    at nextResolve (node:internal/modules/esm/hooks:864:28)
+    at Hooks.resolve (node:internal/modules/esm/hooks:306:30)
