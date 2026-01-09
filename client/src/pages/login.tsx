@@ -186,7 +186,7 @@ export default function LoginPage() {
         </div>
 
         <div className="lg:w-1/2 bg-primary/5 p-8 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4">La plataforma inmobiliaria de referencia</h2>
+          <h2 className="text-2xl font-bold mb-4">Descubre todas las posibilidades de Realista</h2>
           <p className="mb-6 text-gray-700">
             Realista te ofrece las mejores herramientas para encontrar tu hogar ideal o potenciar tu negocio inmobiliario en España.
           </p>
