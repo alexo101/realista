@@ -10,6 +10,11 @@ import { AgentResults } from "@/components/AgentResults";
 import GoogleMapsNeighborhoodMap from "@/components/GoogleMapsNeighborhoodMap";
 import { Footer } from "@/components/Footer";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { MobileSearchHeader } from "@/components/MobileSearchHeader";
+import { MobileFilterRow } from "@/components/MobileFilterRow";
+import { MobileFilterSheet, MobileFiltersState } from "@/components/MobileFilterSheet";
+import { FloatingMapButton } from "@/components/FloatingMapButton";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map, Bookmark, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,6 +53,10 @@ export default function NeighborhoodResultsPage() {
   // State for save search button
   const [isSaveConfirming, setIsSaveConfirming] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  
+  // State for mobile filter sheet
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [mobileSortBy, setMobileSortBy] = useState<'newest' | 'price-asc' | 'price-m2' | 'price-drop'>('newest');
   
   // State for inline neighborhood rating form
   const [showInlineRatingForm, setShowInlineRatingForm] = useState(false);
@@ -346,6 +355,37 @@ export default function NeighborhoodResultsPage() {
     saveSearchMutation.mutate();
   };
   
+  // Handler for mobile filter apply
+  const handleMobileFiltersApply = (mobileFilters: MobileFiltersState) => {
+    setPropertyFilters({
+      operationType: mobileFilters.operationType,
+      propertyType: mobileFilters.propertyType,
+      priceMin: mobileFilters.priceMin,
+      priceMax: mobileFilters.priceMax,
+      bedrooms: mobileFilters.bedrooms.length > 0 ? Math.min(...mobileFilters.bedrooms) : null,
+      bathrooms: mobileFilters.bathrooms.length > 0 ? Math.min(...mobileFilters.bathrooms) : null,
+      features: mobileFilters.features,
+      sortBy: mobileSortBy
+    });
+  };
+
+  // Get display location name for mobile header
+  const getMobileLocationName = () => {
+    if (currentNeighborhood && currentNeighborhood !== currentCity) {
+      return `${currentNeighborhood}, ${currentCity}`;
+    }
+    if (currentDistrict) {
+      return `${currentDistrict}, ${currentCity}`;
+    }
+    if (currentCity) {
+      return currentCity;
+    }
+    if (currentProvince) {
+      return `${currentProvince} (provincia)`;
+    }
+    return decodedNeighborhood || 'Explorar';
+  };
+  
   // Verificar si estamos en una página de provincia
   const isProvincePage = currentProvince && !currentCity && !currentDistrict && !currentNeighborhood;
   
@@ -615,9 +655,56 @@ export default function NeighborhoodResultsPage() {
       propertiesError, agenciesError, agentsError, endTransition]);
 
   return (
-    <div className="min-h-screen flex flex-col pt-16">
+    <div className="min-h-screen flex flex-col pt-16 pb-16 md:pb-0">
+      {/* Mobile Header - Only visible on mobile */}
+      <div className="md:hidden sticky top-16 z-30 bg-white border-b">
+        <MobileSearchHeader
+          locationName={getMobileLocationName()}
+          propertyCount={properties?.length || 0}
+          onSaveSearch={handleSaveSearch}
+          isSaved={isSaved}
+          isSaveConfirming={isSaveConfirming}
+          isSavePending={saveSearchMutation.isPending}
+        />
+        <MobileFilterRow
+          activeTab={activeTab}
+          onTabChange={(tab) => handleTabChange(tab)}
+          sortBy={mobileSortBy}
+          onSortChange={(sort) => {
+            setMobileSortBy(sort);
+            setPropertyFilters(prev => ({ ...prev, sortBy: sort }));
+          }}
+          onOpenFilters={() => setIsMobileFilterOpen(true)}
+        />
+      </div>
+
+      {/* Mobile Filter Sheet */}
+      <MobileFilterSheet
+        isOpen={isMobileFilterOpen}
+        onClose={() => setIsMobileFilterOpen(false)}
+        filters={{
+          operationType: propertyFilters.operationType,
+          propertyType: propertyFilters.propertyType,
+          priceMin: propertyFilters.priceMin,
+          priceMax: propertyFilters.priceMax,
+          bedrooms: propertyFilters.bedrooms ? [propertyFilters.bedrooms] : [],
+          bathrooms: propertyFilters.bathrooms ? [propertyFilters.bathrooms] : [],
+          features: propertyFilters.features
+        }}
+        onApplyFilters={handleMobileFiltersApply}
+      />
+
+      {/* Floating Map Button - Mobile only */}
+      {activeTab === 'properties' && (
+        <FloatingMapButton
+          onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+          isMapView={viewMode === 'map'}
+        />
+      )}
+
       <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-12">
-        <div className="mb-6">
+        {/* Desktop Breadcrumb - Hidden on mobile */}
+        <div className="mb-6 hidden md:block">
           {/* Hierarchical Breadcrumb Navigation: Inicio > Province > City > District > Neighborhood */}
           <div className="flex items-center flex-wrap text-sm text-gray-500 mb-4">
             {/* Inicio - Always at top level */}
@@ -755,12 +842,14 @@ export default function NeighborhoodResultsPage() {
             )}
             
           </div>
+        </div>
           
           
           
-          {/* Tabs para diferentes tipos de resultados */}
-          <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid grid-cols-4 mb-8">
+        {/* Tabs para diferentes tipos de resultados */}
+        <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
+            {/* Desktop Tab List - Hidden on mobile since we use dropdown in MobileFilterRow */}
+            <TabsList className="hidden md:grid grid-cols-4 mb-8">
               <TabsTrigger value="properties" className="flex items-center gap-1">
                 <HomeIcon className="h-4 w-4" />
                 Propiedades
@@ -1402,12 +1491,14 @@ export default function NeighborhoodResultsPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
       
-      {/* Footer - Only on neighborhood pages */}
-      <footer className="mt-auto">
+      {/* Footer - Only on neighborhood pages, hidden on mobile */}
+      <footer className="mt-auto hidden md:block">
         <Footer />
       </footer>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 }
