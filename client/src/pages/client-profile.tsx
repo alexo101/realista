@@ -1060,7 +1060,7 @@ export default function ClientProfile() {
             </div>
 
             <Tabs defaultValue="propiedades" className="w-full">
-              <TabsList className="w-full grid grid-cols-3 mb-4">
+              <TabsList className="w-full grid grid-cols-3 mb-4 mt-4">
                 <TabsTrigger value="propiedades" data-testid="tab-propiedades">
                   <Home className="h-4 w-4 mr-1 md:mr-2" />
                   <span className="hidden sm:inline">Propiedades</span>
