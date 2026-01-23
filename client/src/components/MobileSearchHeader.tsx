@@ -1,24 +1,15 @@
-import { Search, Bookmark, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MobileSearchHeaderProps {
   locationName: string;
   propertyCount: number;
-  onSaveSearch: () => void;
-  isSaved: boolean;
-  isSaveConfirming: boolean;
-  isSavePending: boolean;
   className?: string;
 }
 
 export function MobileSearchHeader({
   locationName,
   propertyCount,
-  onSaveSearch,
-  isSaved,
-  isSaveConfirming,
-  isSavePending,
   className
 }: MobileSearchHeaderProps) {
   return (
@@ -38,31 +29,6 @@ export function MobileSearchHeader({
           {propertyCount}
         </span>
       </div>
-      
-      <Button
-        onClick={onSaveSearch}
-        disabled={isSavePending || isSaved}
-        variant="outline"
-        size="sm"
-        className={cn(
-          "flex items-center gap-1.5 rounded-full px-3 whitespace-nowrap",
-          isSaveConfirming && "bg-[#0284c5] text-white border-[#0284c5]",
-          isSaved && "bg-green-50 text-green-700 border-green-200"
-        )}
-        data-testid="button-mobile-save-search"
-      >
-        {isSaved ? (
-          <>
-            <Check className="h-4 w-4" />
-            <span className="sr-only md:not-sr-only">Guardada</span>
-          </>
-        ) : (
-          <>
-            <Bookmark className="h-4 w-4" />
-            <span>Guardar</span>
-          </>
-        )}
-      </Button>
     </div>
   );
 }

@@ -661,10 +661,6 @@ export default function NeighborhoodResultsPage() {
         <MobileSearchHeader
           locationName={getMobileLocationName()}
           propertyCount={properties?.length || 0}
-          onSaveSearch={handleSaveSearch}
-          isSaved={isSaved}
-          isSaveConfirming={isSaveConfirming}
-          isSavePending={saveSearchMutation.isPending}
         />
         <MobileFilterRow
           activeTab={activeTab}
@@ -870,43 +866,45 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Propiedades */}
             <TabsContent value="properties" className="mt-0">
-              {/* Filtros de propiedades con toggle de vista integrado */}
-              <PropertyFilters 
-                onFilterChange={setPropertyFilters}
-                defaultOperationType={propertyFilters.operationType}
-                defaultBedrooms={defaultBedrooms}
-                defaultBedroomsList={defaultBedroomsList}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                showViewToggle={true}
-                saveSearchButton={
-                  <Button
-                    onClick={handleSaveSearch}
-                    disabled={saveSearchMutation.isPending || isSaved}
-                    variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
-                    size="sm"
-                    data-testid="button-save-search"
-                    className="gap-2"
-                  >
-                    {isSaved ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Guardada
-                      </>
-                    ) : isSaveConfirming ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Confirmar guardar
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="h-4 w-4" />
-                        Guardar búsqueda
-                      </>
-                    )}
-                  </Button>
-                }
-              />
+              {/* Filtros de propiedades con toggle de vista integrado - hidden on mobile */}
+              <div className="hidden md:block">
+                <PropertyFilters 
+                  onFilterChange={setPropertyFilters}
+                  defaultOperationType={propertyFilters.operationType}
+                  defaultBedrooms={defaultBedrooms}
+                  defaultBedroomsList={defaultBedroomsList}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  showViewToggle={true}
+                  saveSearchButton={
+                    <Button
+                      onClick={handleSaveSearch}
+                      disabled={saveSearchMutation.isPending || isSaved}
+                      variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
+                      size="sm"
+                      data-testid="button-save-search"
+                      className="gap-2"
+                    >
+                      {isSaved ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Guardada
+                        </>
+                      ) : isSaveConfirming ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Confirmar guardar
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="h-4 w-4" />
+                          Guardar búsqueda
+                        </>
+                      )}
+                    </Button>
+                  }
+                />
+              </div>
 
               {/* Contenido condicional basado en el modo de vista */}
               {viewMode === 'list' ? (
