@@ -607,26 +607,6 @@ export function PropertyFilters({
             </Select>
           </div>
 
-          {/* Ordenar por */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-600 flex items-center">
-              Ordenar por
-            </Label>
-            <Select
-              value={sortBy}
-              onValueChange={(value) => setSortBy(value)}
-            >
-              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Más recientes" />
-              </SelectTrigger>
-              <SelectContent side="bottom">
-                <SelectItem value="newest">Más recientes</SelectItem>
-                <SelectItem value="price-asc">Más baratos</SelectItem>
-                <SelectItem value="price-m2">Más baratos €/m2</SelectItem>
-                <SelectItem value="price-drop">Mayores bajadas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {/* Etiquetas de características seleccionadas */}
