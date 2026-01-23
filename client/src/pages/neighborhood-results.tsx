@@ -839,7 +839,7 @@ export default function NeighborhoodResultsPage() {
           
           
         {/* Tabs para diferentes tipos de resultados */}
-        <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             {/* Desktop Tab List - Hidden on mobile since we use dropdown in MobileFilterRow */}
             <TabsList className="hidden md:grid grid-cols-4 mb-8">
               <TabsTrigger value="properties" className="flex items-center gap-1">
