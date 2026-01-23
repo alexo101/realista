@@ -683,7 +683,6 @@ export default function NeighborhoodResultsPage() {
         <PropertyFilters 
           onFilterChange={(filters) => {
             setPropertyFilters(filters);
-            setIsMobileFilterOpen(false);
           }}
           defaultOperationType={propertyFilters.operationType}
           defaultBedrooms={defaultBedrooms}

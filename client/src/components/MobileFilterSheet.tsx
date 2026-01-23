@@ -31,8 +31,8 @@ export function MobileFilterSheet({
 }: MobileFilterSheetProps) {
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="h-[90vh] rounded-t-2xl p-0">
-        <SheetHeader className="sticky top-0 bg-white border-b px-4 py-3 z-10">
+      <SheetContent side="bottom" className="h-[90vh] rounded-t-2xl p-0 flex flex-col">
+        <SheetHeader className="sticky top-0 bg-white border-b px-4 py-3 z-10 flex-shrink-0">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg font-semibold">Filtros</SheetTitle>
             <Button 
@@ -46,8 +46,18 @@ export function MobileFilterSheet({
           </div>
         </SheetHeader>
 
-        <div className="overflow-y-auto h-[calc(90vh-60px)] p-4">
+        <div className="overflow-y-auto flex-1 p-4">
           {children}
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex-shrink-0">
+          <Button 
+            onClick={onClose}
+            className="w-full bg-[#0284c5] hover:bg-[#0273b0] text-white"
+            data-testid="button-apply-filters"
+          >
+            Aplicar filtros
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
