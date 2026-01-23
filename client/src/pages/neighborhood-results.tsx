@@ -658,10 +658,18 @@ export default function NeighborhoodResultsPage() {
         <MobileFilterRow
           activeTab={activeTab}
           onTabChange={(tab) => handleTabChange(tab)}
-          sortBy={mobileSortBy}
-          onSortChange={(sort) => {
+          propertySortBy={mobileSortBy}
+          onPropertySortChange={(sort) => {
             setMobileSortBy(sort);
             setPropertyFilters(prev => ({ ...prev, sortBy: sort }));
+          }}
+          entitySortBy={activeTab === 'agencies' ? agenciesFilter as 'best_rating' | 'most_reviews' : agentsFilter as 'best_rating' | 'most_reviews'}
+          onEntitySortChange={(sort) => {
+            if (activeTab === 'agencies') {
+              setAgenciesFilter(sort);
+            } else if (activeTab === 'agents') {
+              setAgentsFilter(sort);
+            }
           }}
           onOpenFilters={() => setIsMobileFilterOpen(true)}
         />
@@ -976,7 +984,8 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
-              <div className="mb-4 flex justify-end">
+              {/* Desktop sort selector - hidden on mobile since MobileFilterRow handles it */}
+              <div className="mb-4 hidden md:flex justify-end">
                 <Select
                   value={agenciesFilter}
                   onValueChange={setAgenciesFilter}
@@ -1020,7 +1029,8 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Agentes */}
             <TabsContent value="agents" className="mt-0">
-              <div className="mb-4 flex justify-end">
+              {/* Desktop sort selector - hidden on mobile since MobileFilterRow handles it */}
+              <div className="mb-4 hidden md:flex justify-end">
                 <Select
                   value={agentsFilter}
                   onValueChange={setAgentsFilter}
