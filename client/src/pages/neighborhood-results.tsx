@@ -408,6 +408,13 @@ export default function NeighborhoodResultsPage() {
 
   const activeTab = getActiveTab();
   
+  // Reset map view when switching away from Properties tab on mobile
+  useEffect(() => {
+    if (activeTab !== 'properties' && viewMode === 'map') {
+      setViewMode('list');
+    }
+  }, [activeTab, viewMode]);
+  
   // Preload data for all tabs on component mount for faster switching
   useEffect(() => {
     const preloadData = () => {
