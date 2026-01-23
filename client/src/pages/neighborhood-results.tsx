@@ -13,7 +13,7 @@ import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/compo
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MobileSearchHeader } from "@/components/MobileSearchHeader";
 import { MobileFilterRow } from "@/components/MobileFilterRow";
-import { MobileFilterSheet, MobileFiltersState } from "@/components/MobileFilterSheet";
+import { MobileFilterSheet } from "@/components/MobileFilterSheet";
 import { FloatingMapButton } from "@/components/FloatingMapButton";
 import { Building2, UserCircle, ChevronLeft, HomeIcon, MapPin, Info, Star, ArrowDownAZ, ArrowUpDown, List, Map, Bookmark, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -355,20 +355,6 @@ export default function NeighborhoodResultsPage() {
     saveSearchMutation.mutate();
   };
   
-  // Handler for mobile filter apply
-  const handleMobileFiltersApply = (mobileFilters: MobileFiltersState) => {
-    setPropertyFilters({
-      operationType: mobileFilters.operationType,
-      propertyType: mobileFilters.propertyType,
-      priceMin: mobileFilters.priceMin,
-      priceMax: mobileFilters.priceMax,
-      bedrooms: mobileFilters.bedrooms.length > 0 ? Math.min(...mobileFilters.bedrooms) : null,
-      bathrooms: mobileFilters.bathrooms.length > 0 ? Math.min(...mobileFilters.bathrooms) : null,
-      features: mobileFilters.features,
-      sortBy: mobileSortBy
-    });
-  };
-
   // Get display location name for mobile header
   const getMobileLocationName = () => {
     if (currentNeighborhood && currentNeighborhood !== currentCity) {
@@ -674,21 +660,24 @@ export default function NeighborhoodResultsPage() {
         />
       </div>
 
-      {/* Mobile Filter Sheet */}
+      {/* Mobile Filter Sheet - Contains PropertyFilters component */}
       <MobileFilterSheet
         isOpen={isMobileFilterOpen}
         onClose={() => setIsMobileFilterOpen(false)}
-        filters={{
-          operationType: propertyFilters.operationType,
-          propertyType: propertyFilters.propertyType,
-          priceMin: propertyFilters.priceMin,
-          priceMax: propertyFilters.priceMax,
-          bedrooms: propertyFilters.bedrooms ? [propertyFilters.bedrooms] : [],
-          bathrooms: propertyFilters.bathrooms ? [propertyFilters.bathrooms] : [],
-          features: propertyFilters.features
-        }}
-        onApplyFilters={handleMobileFiltersApply}
-      />
+      >
+        <PropertyFilters 
+          onFilterChange={(filters) => {
+            setPropertyFilters(filters);
+            setIsMobileFilterOpen(false);
+          }}
+          defaultOperationType={propertyFilters.operationType}
+          defaultBedrooms={defaultBedrooms}
+          defaultBedroomsList={defaultBedroomsList}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          showViewToggle={false}
+        />
+      </MobileFilterSheet>
 
       {/* Floating Map Button - Mobile only */}
       {activeTab === 'properties' && (
