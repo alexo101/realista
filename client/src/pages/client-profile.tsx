@@ -1054,13 +1054,13 @@ export default function ClientProfile() {
       case "favoritos":
         return (
           <div className="space-y-6">
-            <div className="mb-4 md:mb-8">
+            <div className="mb-6 md:mb-8">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Favoritos</h1>
               <p className="text-gray-600 text-sm md:text-base">Propiedades, agentes y agencias que has guardado</p>
             </div>
 
             <Tabs defaultValue="propiedades" className="w-full">
-              <TabsList className="w-full grid grid-cols-3 mb-4 mt-8">
+              <TabsList className="w-full grid grid-cols-3 mb-4">
                 <TabsTrigger value="propiedades" data-testid="tab-propiedades">
                   <Home className="h-4 w-4 mr-1 md:mr-2" />
                   <span className="hidden sm:inline">Propiedades</span>

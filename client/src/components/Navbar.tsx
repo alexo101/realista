@@ -83,7 +83,7 @@ export function Navbar() {
             <div className="px-4 py-2 space-y-2">
               {/* RealistaPro link - only visible for non-logged-in users */}
               {!user && (
-                <Link href="/realista-pro" className="block">
+                <Link href="/realista-pro" className="block" onClick={() => setMobileMenuOpen(false)}>
                   <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold shadow-lg">
                     <Sparkles className="h-4 w-4 mr-2" />
                     {t('nav.realista_pro')}
@@ -94,13 +94,13 @@ export function Navbar() {
               {user ? (
                 <>
                   {user.isClient && user.clientUuid ? (
-                    <Link href={`/perfil-cliente/${user.clientUuid}/perfil`} className="block">
+                    <Link href={`/perfil-cliente/${user.clientUuid}/perfil`} className="block" onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="outline" className="w-full justify-start">
                         {t('nav.profile')}
                       </Button>
                     </Link>
                   ) : user.agentUuid ? (
-                    <Link href={`/gestionar/${user.agentUuid}/calendario`} className="block">
+                    <Link href={`/gestionar/${user.agentUuid}/calendario`} className="block" onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="outline" className="w-full justify-start">
                         {t('nav.manage')}
                       </Button>
@@ -112,7 +112,7 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/iniciar-sesion" className="block">
+                  <Link href="/iniciar-sesion" className="block" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="outline" className="w-full justify-start">
                       {t('nav.login')}
                     </Button>
