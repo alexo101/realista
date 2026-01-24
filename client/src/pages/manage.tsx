@@ -772,110 +772,8 @@ export default function ManagePage() {
           </SidebarContent>
         </Sidebar>
 
-        {/* Mobile navigation */}
-        <div className="md:hidden fixed top-16 left-0 right-0 bg-white border-b z-40">
-          <div className="flex overflow-x-auto p-2 gap-2">
-            <Button
-              variant={currentSection === "clientes" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes`)}
-              className="whitespace-nowrap"
-            >
-              <Users className="h-4 w-4 mr-1" />
-              CRM
-            </Button>
-            <Button
-              variant={currentSection === "calendario" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate(`/gestionar/${user?.agentUuid}/calendario`)}
-              className="whitespace-nowrap"
-            >
-              <Calendar className="h-4 w-4 mr-1" />
-              Calendario
-            </Button>
-            <Button
-              variant={currentSection === "perfil-agente" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agente`)}
-              className="whitespace-nowrap"
-            >
-              <UserCircle className="h-4 w-4 mr-1" />
-              Perfil
-            </Button>
-            <Button
-              variant={currentSection === "propiedades" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate(`/gestionar/${user?.agentUuid}/propiedades`)}
-              className="whitespace-nowrap"
-            >
-              <Building2 className="h-4 w-4 mr-1" />
-              Propiedades
-            </Button>
-            <Button
-              variant={currentSection === "mensajes" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate(`/gestionar/${user?.agentUuid}/mensajes`)}
-              className="whitespace-nowrap"
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              Consultas
-            </Button>
-            <Button
-              variant={currentSection === "resenas" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate(`/gestionar/${user?.agentUuid}/resenas`)}
-              className="whitespace-nowrap"
-            >
-              <Star className="h-4 w-4 mr-1" />
-              Reseñas
-            </Button>
-            {user?.isAdmin && (
-              <>
-                <Button
-                  variant={currentSection === "perfil-agencia" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agencia`)}
-                  className="whitespace-nowrap"
-                >
-                  <Building className="h-4 w-4 mr-1" />
-                  Agencia
-                </Button>
-                <Button
-                  variant={currentSection === "equipo" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
-                  className="whitespace-nowrap"
-                >
-                  <Users className="h-4 w-4 mr-1" />
-                  Equipo
-                </Button>
-              </>
-            )}
-            {user?.agentType === "network_admin" && (
-              <Button
-                variant={currentSection === "red" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => navigate(`/gestionar/${user?.agentUuid}/red`)}
-                className="whitespace-nowrap"
-              >
-                <Network className="h-4 w-4 mr-1" />
-                Red
-              </Button>
-            )}
-            <Button
-              variant={currentSection === "facturacion" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate(`/gestionar/${user?.agentUuid}/facturacion`)}
-              className="whitespace-nowrap"
-            >
-              <CreditCard className="h-4 w-4 mr-1" />
-              Facturación
-            </Button>
-          </div>
-        </div>
-
-        {/* Sidebar Toggle Button - Positioned at the border */}
-        <div className={`fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ${sidebarCollapsed ? 'left-14' : 'left-60'}`}>
+        {/* Sidebar Toggle Button - Positioned at the border (desktop only) */}
+        <div className={`hidden md:block fixed top-1/2 -translate-y-1/2 z-50 transition-all duration-300 ${sidebarCollapsed ? 'left-14' : 'left-60'}`}>
           <Button
             variant="ghost"
             size="sm"
@@ -886,7 +784,7 @@ export default function ManagePage() {
           </Button>
         </div>
 
-        <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
+        <main className={`absolute inset-0 p-4 md:p-6 pt-20 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
           {currentSection === "calendario" && user?.id && (
             <div className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />
