@@ -333,7 +333,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label htmlFor="influenceNeighborhoods">Barrios de influencia</Label>
+              <Label htmlFor="influenceNeighborhoods">Barrios de influencia (el perfil de tu agencia aparecerá en estos barrios)</Label>
               <NeighborhoodSelector
                 selectedNeighborhoods={influenceNeighborhoods}
                 city={city}
