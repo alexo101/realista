@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Send, MessageCircle, Home, Pin, PinOff, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, Heart, Clock, Euro, Check, CheckCheck } from "lucide-react";
+import { Search, Send, MessageCircle, Home, Pin, PinOff, User, Mail, Phone, Calendar, MapPin, Briefcase, Users, Heart, Clock, Euro, Check, CheckCheck, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -72,6 +72,7 @@ export function ConversationalMessages() {
   const [pinningConversation, setPinningConversation] = useState<number | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -252,6 +253,7 @@ export function ConversationalMessages() {
   // Handle conversation selection and mark as read
   const selectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
+    setMobileShowChat(true);
     markConversationAsRead(conversation.id);
     
     // Update local message status to 'read' for client's messages
@@ -267,6 +269,11 @@ export function ConversationalMessages() {
       }
       return conv;
     }));
+  };
+
+  // Handle back button on mobile
+  const handleMobileBack = () => {
+    setMobileShowChat(false);
   };
 
   // Send message
@@ -423,12 +430,12 @@ export function ConversationalMessages() {
 
   if (loading) {
     return (
-      <Card className="h-[600px]">
-        <CardContent className="p-6">
+      <Card className="h-[calc(100vh-200px)] md:h-[600px]">
+        <CardContent className="p-4 md:p-6">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Cargando conversaciones...</p>
+              <MessageCircle className="h-10 w-10 md:h-12 md:w-12 text-gray-300 mx-auto mb-3 md:mb-4" />
+              <p className="text-gray-500 text-sm md:text-base">Cargando conversaciones...</p>
             </div>
           </div>
         </CardContent>
@@ -437,66 +444,68 @@ export function ConversationalMessages() {
   }
 
   return (
-    <Card className="h-[600px]">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card className="h-[calc(100vh-200px)] md:h-[600px]">
+      <CardHeader className="px-3 py-3 md:px-6 md:py-4">
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
           <MessageCircle className="h-5 w-5 text-blue-500" />
           Mensajes
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="flex h-[520px]">
-          {/* Conversations List */}
-          <div className="w-80 border-r bg-gray-50">
-            <div className="p-4 border-b">
+        <div className="flex flex-col md:flex-row h-[calc(100vh-280px)] md:h-[520px]">
+          {/* Conversations List - hidden on mobile when viewing chat */}
+          <div className={`w-full md:w-80 border-r bg-gray-50 ${mobileShowChat ? 'hidden md:block' : 'block'}`}>
+            <div className="p-3 md:p-4 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Buscar por cliente o propiedad..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm md:text-base"
+                  data-testid="input-search-conversations"
                 />
               </div>
             </div>
             
-            <div className="overflow-y-auto h-full">
+            <div className="overflow-y-auto h-[calc(100%-60px)] md:h-full">
               {filteredConversations.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-4 text-center text-gray-500 text-sm md:text-base">
                   {searchTerm ? "No se encontraron conversaciones" : "No hay conversaciones"}
                 </div>
               ) : (
                 filteredConversations.map((conversation) => (
                   <div
                     key={conversation.id}
-                    className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${
+                    className={`p-3 md:p-4 border-b cursor-pointer hover:bg-gray-100 ${
                       selectedConversation?.id === conversation.id ? 'bg-blue-50 border-blue-200' : ''
                     }`}
                     onClick={() => selectConversation(conversation)}
+                    data-testid={`conversation-item-${conversation.id}`}
                   >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-blue-500 text-white">
+                    <div className="flex items-start gap-2 md:gap-3">
+                      <Avatar className="h-10 w-10 flex-shrink-0">
+                        <AvatarFallback className="bg-blue-500 text-white text-sm">
                           {getInitials(conversation.clientName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <h3 
                             className="font-medium text-sm truncate text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
                             onClick={(e) => handleClientNameClick(conversation.clientId, e)}
                             data-testid={`link-client-name-${conversation.clientId}`}
                             title="Ver información del cliente"
                           >
-                            <User className="h-3 w-3" />
-                            {conversation.clientName}
+                            <User className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{conversation.clientName}</span>
                           </h3>
-                          <span className="text-xs text-gray-500 ml-2">
+                          <span className="text-xs text-gray-500 flex-shrink-0">
                             {formatTime(conversation.lastMessageTime)}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 mt-1">
-                          <Home className="h-3 w-3 text-gray-400" />
+                          <Home className="h-3 w-3 text-gray-400 flex-shrink-0" />
                           <p className="text-xs text-gray-600 truncate">
                             {conversation.propertyAddress}
                           </p>
@@ -517,32 +526,42 @@ export function ConversationalMessages() {
             </div>
           </div>
 
-          {/* Chat Area */}
-          <div className="flex-1 flex flex-col">
+          {/* Chat Area - hidden on mobile when not viewing chat, full width on mobile */}
+          <div className={`flex-1 flex flex-col w-full ${mobileShowChat ? 'block' : 'hidden md:block'}`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-white">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-blue-500 text-white">
+                <div className="p-3 md:p-4 border-b bg-white">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                      {/* Back button - only visible on mobile */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleMobileBack}
+                        className="md:hidden h-8 w-8 p-0 flex-shrink-0"
+                        data-testid="button-back-mobile"
+                      >
+                        <ArrowLeft className="h-5 w-5" />
+                      </Button>
+                      <Avatar className="h-9 w-9 md:h-10 md:w-10 flex-shrink-0">
+                        <AvatarFallback className="bg-blue-500 text-white text-sm">
                           {getInitials(selectedConversation.clientName)}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
+                      <div className="min-w-0">
                         <h3 
-                          className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
+                          className="font-medium text-sm md:text-base text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
                           onClick={(e) => handleClientNameClick(selectedConversation.clientId, e)}
                           data-testid={`link-client-header-${selectedConversation.clientId}`}
                           title="Ver información del cliente"
                         >
-                          <User className="h-4 w-4" />
-                          {selectedConversation.clientName}
+                          <User className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{selectedConversation.clientName}</span>
                         </h3>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <Home className="h-3 w-3" />
-                          <span>{selectedConversation.propertyAddress}</span>
+                        <div className="flex items-center gap-1 text-xs md:text-sm text-gray-600">
+                          <Home className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{selectedConversation.propertyAddress}</span>
                         </div>
                       </div>
                     </div>
@@ -562,7 +581,7 @@ export function ConversationalMessages() {
                       }}
                       disabled={pinningConversation === selectedConversation.id}
                       data-testid={`button-pin-conversation-${selectedConversation.id}`}
-                      className="h-8 w-8 p-0 hover:bg-gray-100"
+                      className="h-8 w-8 p-0 hover:bg-gray-100 flex-shrink-0"
                     >
                       {pinnedConversations.includes(selectedConversation.id) ? (
                         <Pin className="h-4 w-4 text-blue-500 fill-blue-500" />
@@ -574,20 +593,20 @@ export function ConversationalMessages() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
                   {selectedConversation.messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${message.senderType === 'agent' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        className={`max-w-[85%] sm:max-w-[75%] md:max-w-xs lg:max-w-md px-3 md:px-4 py-2 rounded-lg break-words ${
                           message.senderType === 'agent'
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-200 text-gray-800'
                         }`}
                       >
-                        <p className="text-sm">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         <div className={`flex items-center justify-end gap-1 mt-1 ${
                           message.senderType === 'agent' ? 'text-blue-100' : 'text-gray-500'
                         }`}>
@@ -603,32 +622,35 @@ export function ConversationalMessages() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
-                <div className="p-4 border-t bg-gray-50">
-                  <div className="flex gap-2">
+                {/* Message Input - optimized for mobile keyboards */}
+                <div className="p-2 md:p-4 border-t bg-gray-50 safe-area-pb">
+                  <div className="flex gap-2 items-end">
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Escribe un mensaje..."
-                      className="flex-1"
+                      className="flex-1 text-base md:text-sm min-h-[44px] md:min-h-0"
                       disabled={sendingMessage}
+                      data-testid="input-new-message"
                     />
                     <Button
                       onClick={sendMessage}
                       disabled={!newMessage.trim() || sendingMessage}
                       size="sm"
+                      className="h-11 w-11 md:h-9 md:w-auto md:px-3 p-0 flex-shrink-0"
+                      data-testid="button-send-message"
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-5 w-5 md:h-4 md:w-4" />
                     </Button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
+              <div className="flex items-center justify-center h-full text-gray-500 p-4">
                 <div className="text-center">
-                  <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p>Selecciona una conversación para empezar</p>
+                  <MessageCircle className="h-10 w-10 md:h-12 md:w-12 text-gray-300 mx-auto mb-3 md:mb-4" />
+                  <p className="text-sm md:text-base">Selecciona una conversación para empezar</p>
                 </div>
               </div>
             )}

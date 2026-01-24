@@ -140,23 +140,25 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - Stacks on mobile */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Gestionar mi equipo</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold">Gestionar mi equipo</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Administra los agentes de tu equipo
           </p>
         </div>
-        <Button onClick={() => setShowAddAgentForm(true)} className="flex items-center gap-2">
+        <Button 
+          onClick={() => setShowAddAgentForm(true)} 
+          className="w-full md:w-auto flex items-center justify-center gap-2"
+          data-testid="button-add-agent"
+        >
           <Plus className="h-4 w-4" />
-          Añadir agentes
+          Invitar miembro
         </Button>
       </div>
 
-      
-
-      {/* Agent List Table */}
+      {/* Agent List */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -174,36 +176,69 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <p>No hay agentes en el equipo todavía.</p>
-              <p className="text-sm">Haz clic en "Añadir agentes" para invitar a nuevos miembros.</p>
+              <p className="text-sm">Haz clic en "Invitar miembro" para invitar a nuevos miembros.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Apellido</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table - Hidden on mobile */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Apellido</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Estado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teamAgents.map((agent) => (
+                      <TableRow key={agent.id} data-testid={`row-agent-${agent.id}`}>
+                        <TableCell className="font-medium">{agent.name || '-'}</TableCell>
+                        <TableCell>{agent.surname || '-'}</TableCell>
+                        <TableCell>{agent.email}</TableCell>
+                        <TableCell>{getStatusBadge(agent.invitationStatus)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View - Shown only on mobile */}
+              <div className="block md:hidden space-y-3">
                 {teamAgents.map((agent) => (
-                  <TableRow key={agent.id} data-testid={`row-agent-${agent.id}`}>
-                    <TableCell className="font-medium">{agent.name || '-'}</TableCell>
-                    <TableCell>{agent.surname || '-'}</TableCell>
-                    <TableCell>{agent.email}</TableCell>
-                    <TableCell>{getStatusBadge(agent.invitationStatus)}</TableCell>
-                  </TableRow>
+                  <div
+                    key={agent.id}
+                    className="border rounded-lg p-4 space-y-3"
+                    data-testid={`card-agent-${agent.id}`}
+                  >
+                    {/* Name and Role */}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-base">
+                          {agent.name || '-'} {agent.surname || ''}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Agente</p>
+                      </div>
+                      {getStatusBadge(agent.invitationStatus)}
+                    </div>
+                    
+                    {/* Email */}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="text-sm break-all">{agent.email}</p>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Add Agent Dialog */}
       <Dialog open={showAddAgentForm} onOpenChange={setShowAddAgentForm}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full mx-auto">
           <DialogHeader>
             <DialogTitle>Añadir nuevo agente</DialogTitle>
           </DialogHeader>
@@ -298,17 +333,20 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
               />
 
               {/* Actions */}
-              <div className="flex justify-end gap-4 pt-4">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-4 pt-4">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => setShowAddAgentForm(false)}
+                  className="w-full sm:w-auto"
+                  data-testid="button-cancel-add"
                 >
                   Cancelar
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={!isFormValid() || createAgentMutation.isPending}
+                  className="w-full sm:w-auto"
                   data-testid="button-submit-invitation"
                 >
                   {createAgentMutation.isPending ? "Enviando invitación..." : "Continuar"}
@@ -321,14 +359,14 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full mx-auto">
           <DialogHeader>
             <DialogTitle>Confirmar invitación</DialogTitle>
             <DialogDescription>
               ¿Estás seguro de que deseas enviar una invitación a <strong>{pendingInvitation?.name} {pendingInvitation?.surname}</strong> ({pendingInvitation?.email})?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex gap-2">
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
             <Button 
               type="button" 
               variant="outline" 
@@ -337,6 +375,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                 setPendingInvitation(null);
               }}
               disabled={createAgentMutation.isPending}
+              className="w-full sm:w-auto"
               data-testid="button-cancel-confirm"
             >
               No
@@ -345,6 +384,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
               type="button" 
               onClick={confirmInvitation}
               disabled={createAgentMutation.isPending}
+              className="w-full sm:w-auto"
               data-testid="button-confirm-invitation"
             >
               {createAgentMutation.isPending ? (

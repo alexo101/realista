@@ -146,36 +146,36 @@ const ReviewResponseDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Responder a la reseña</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg md:text-xl">Responder a la reseña</DialogTitle>
+          <DialogDescription className="text-sm">
             Tu respuesta será visible públicamente en el perfil.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4">
-          <div className="mb-4 p-4 bg-gray-50 rounded-md">
-            <div className="flex items-center mb-2">
+        <div className="py-2 md:py-4">
+          <div className="mb-4 p-3 md:p-4 bg-gray-50 rounded-md">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center mb-2">
               <StarRating rating={review.rating} />
-              <span className="ml-2 text-sm text-gray-500">
+              <span className="text-xs sm:text-sm text-gray-500 sm:ml-2">
                 por {review.author || "Cliente anónimo"} • {new Date(review.date).toLocaleDateString('es-ES')}
               </span>
             </div>
-            <p className="text-gray-700">{review.comment}</p>
+            <p className="text-gray-700 text-sm md:text-base">{review.comment}</p>
           </div>
           
           <Textarea
             value={response}
             onChange={(e) => setResponse(e.target.value)}
             placeholder="Escribe tu respuesta a esta reseña..."
-            className="min-h-[100px]"
+            className="min-h-[100px] text-sm md:text-base"
           />
         </div>
         
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={!response.trim()}>
+        <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
+          <Button onClick={handleSubmit} disabled={!response.trim()} className="w-full sm:w-auto">
             {review.agentResponse ? "Actualizar respuesta" : "Publicar respuesta"}
           </Button>
         </DialogFooter>
@@ -199,25 +199,27 @@ const ReviewDetails = ({
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-start">
           <div className="flex items-start gap-2">
-            <div className="rounded-full bg-gray-100 p-2">
+            <div className="rounded-full bg-gray-100 p-2 shrink-0">
               {review.targetType === 'agent' ? (
-                <User className="h-6 w-6 text-gray-600" />
+                <User className="h-5 w-5 md:h-6 md:w-6 text-gray-600" />
               ) : (
-                <Building className="h-6 w-6 text-gray-600" />
+                <Building className="h-5 w-5 md:h-6 md:w-6 text-gray-600" />
               )}
             </div>
-            <div>
-              <CardTitle className="text-lg">
+            <div className="min-w-0">
+              <CardTitle className="text-base md:text-lg break-words">
                 Reseña para {review.targetName || `${review.targetType === 'agent' ? 'Agente' : 'Agencia'} #${review.targetId}`}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 {review.author || "Cliente anónimo"} • {new Date(review.date).toLocaleDateString('es-ES')}
               </CardDescription>
             </div>
           </div>
-          <StarRating rating={review.rating} />
+          <div className="ml-9 md:ml-0">
+            <StarRating rating={review.rating} />
+          </div>
         </div>
       </CardHeader>
       
@@ -225,14 +227,14 @@ const ReviewDetails = ({
         <div className="space-y-2">
           {review.comment && (
             <div>
-              <p className="text-gray-700">{review.comment}</p>
+              <p className="text-gray-700 text-sm md:text-base">{review.comment}</p>
             </div>
           )}
           
           {review.agentResponse && (
             <div className="mt-3 pl-4 border-l-2 border-primary">
               <p className="text-sm font-medium text-primary">Tu respuesta:</p>
-              <p className="text-gray-700">{review.agentResponse}</p>
+              <p className="text-gray-700 text-sm md:text-base">{review.agentResponse}</p>
               <p className="text-xs text-gray-500 mt-1">
                 {review.responseDate && new Date(review.responseDate).toLocaleDateString('es-ES')}
               </p>
@@ -242,7 +244,7 @@ const ReviewDetails = ({
           {expanded && (
             <>
               <Separator className="my-2" />
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
                   <p className="font-medium">Conocimiento del área</p>
                   <StarRating rating={review.areaKnowledge} />
@@ -266,9 +268,9 @@ const ReviewDetails = ({
               </div>
               
               {review.propertyTitle && (
-                <div className="flex items-center mt-2 text-sm">
-                  <Home className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>
+                <div className="flex items-start mt-2 text-sm">
+                  <Home className="h-4 w-4 mr-2 text-gray-500 shrink-0 mt-0.5" />
+                  <span className="break-words">
                     <span className="font-medium">Propiedad: </span>
                     {review.propertyTitle}
                     {review.propertyAddress && ` - ${review.propertyAddress}`}
@@ -280,8 +282,8 @@ const ReviewDetails = ({
         </div>
       </CardContent>
       
-      <CardFooter className="flex justify-between pt-2">
-        <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)}>
+      <CardFooter className="flex flex-col gap-3 pt-2 md:flex-row md:justify-between">
+        <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)} className="w-full md:w-auto">
           {expanded ? (
             <>
               <ChevronUp className="h-4 w-4 mr-1" /> Menos detalles
@@ -293,7 +295,7 @@ const ReviewDetails = ({
           )}
         </Button>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
           {review.verified ? (
             <TooltipProvider>
               <Tooltip>
@@ -331,9 +333,11 @@ const ReviewDetails = ({
                   size="sm"
                   variant={review.pinned ? "default" : "outline"}
                   onClick={() => onPin(review)}
+                  className="text-xs md:text-sm"
                 >
                   <Pin className={`h-4 w-4 mr-1 ${review.pinned ? 'text-white' : ''}`} />
-                  {review.pinned ? "Quitar destaque" : "Destacar"}
+                  <span className="hidden sm:inline">{review.pinned ? "Quitar destaque" : "Destacar"}</span>
+                  <span className="sm:hidden">{review.pinned ? "Quitar" : "Destacar"}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -346,9 +350,11 @@ const ReviewDetails = ({
             size="sm"
             variant={review.agentResponse ? "outline" : "default"}
             onClick={() => onRespond(review)}
+            className="text-xs md:text-sm"
           >
             <MessageSquare className="h-4 w-4 mr-1" />
-            {review.agentResponse ? "Editar respuesta" : "Responder"}
+            <span className="hidden sm:inline">{review.agentResponse ? "Editar respuesta" : "Responder"}</span>
+            <span className="sm:hidden">{review.agentResponse ? "Editar" : "Responder"}</span>
           </Button>
         </div>
       </CardFooter>
@@ -578,35 +584,41 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   }
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col gap-4">
-        <h2 className="text-2xl font-bold">Gestión de Reseñas</h2>
+        <h2 className="text-xl md:text-2xl font-bold">Gestión de Reseñas</h2>
         
         {/* Main tabs: Received reviews vs Request reviews */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'reviews' | 'request')}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="reviews" data-testid="tab-reviews-received">
-              <Star className="h-4 w-4 mr-2" />
-              Reseñas recibidas ({reviews.length})
+          <TabsList className="grid w-full grid-cols-2 md:max-w-md">
+            <TabsTrigger value="reviews" data-testid="tab-reviews-received" className="text-xs sm:text-sm">
+              <Star className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Reseñas recibidas</span>
+              <span className="sm:hidden">Reseñas</span>
+              <span className="ml-1">({reviews.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="request" data-testid="tab-request-reviews">
-              <Send className="h-4 w-4 mr-2" />
-              Solicitar reseñas ({eligibleClients.length})
+            <TabsTrigger value="request" data-testid="tab-request-reviews" className="text-xs sm:text-sm">
+              <Send className="h-4 w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Solicitar reseñas</span>
+              <span className="sm:hidden">Solicitar</span>
+              <span className="ml-1">({eligibleClients.length})</span>
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="reviews" className="mt-4">
             {/* Filter tabs for reviews */}
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-center md:justify-end mb-4">
               <Tabs value={reviewFilterTab} onValueChange={(value) => setReviewFilterTab(value as any)}>
-                <TabsList>
-                  <TabsTrigger value="all">
-                    Todas ({reviews.length})
+                <TabsList className="grid grid-cols-3 w-full md:w-auto">
+                  <TabsTrigger value="all" className="text-xs sm:text-sm">
+                    <span className="hidden sm:inline">Todas</span>
+                    <span className="sm:hidden">Todo</span>
+                    <span className="ml-1">({reviews.length})</span>
                   </TabsTrigger>
-                  <TabsTrigger value="agent">
+                  <TabsTrigger value="agent" className="text-xs sm:text-sm">
                     Agente ({reviews.filter((r: Review) => r.targetType === 'agent').length})
                   </TabsTrigger>
-                  <TabsTrigger value="agency">
+                  <TabsTrigger value="agency" className="text-xs sm:text-sm">
                     Agencia ({reviews.filter((r: Review) => r.targetType === 'agency').length})
                   </TabsTrigger>
                 </TabsList>
@@ -646,13 +658,15 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
           
           <TabsContent value="request" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-3 md:pb-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                   <Users className="h-5 w-5" />
-                  Clientes disponibles para solicitar reseña
+                  <span className="hidden sm:inline">Clientes disponibles para solicitar reseña</span>
+                  <span className="sm:hidden">Clientes disponibles</span>
                 </CardTitle>
-                <CardDescription>
-                  Estos son tus clientes que han contactado contigo. Puedes enviarles una solicitud de reseña por email.
+                <CardDescription className="text-sm">
+                  <span className="hidden sm:inline">Estos son tus clientes que han contactado contigo. Puedes enviarles una solicitud de reseña por email.</span>
+                  <span className="sm:hidden">Envía solicitudes de reseña a tus clientes.</span>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -671,75 +685,136 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                     </p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Contacto</TableHead>
-                        <TableHead>Origen</TableHead>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead className="text-right">Acción</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    {/* Mobile card view */}
+                    <div className="block md:hidden space-y-3">
                       {eligibleClients.map((client: EligibleClient) => (
-                        <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="rounded-full bg-gray-100 p-2">
-                                <User className="h-4 w-4 text-gray-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium">{client.name} {client.surname || ''}</p>
+                        <Card key={client.id} className="p-4" data-testid={`card-client-${client.id}`}>
+                          <div className="flex items-start gap-3">
+                            <div className="rounded-full bg-gray-100 p-2 shrink-0">
+                              <User className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{client.name} {client.surname || ''}</p>
+                              <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(client.createdAt).toLocaleDateString('es-ES')}
                               </div>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1 text-sm text-gray-600">
-                              <span className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                {client.email}
-                              </span>
-                              {client.phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {client.phone}
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs shrink-0">
                               {getSourceLabel(client.source)}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {new Date(client.createdAt).toLocaleDateString('es-ES')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              onClick={() => handleSendReviewRequest(client.id)}
-                              disabled={sendingRequestTo === client.id}
-                              data-testid={`button-request-review-${client.id}`}
-                            >
-                              {sendingRequestTo === client.id ? (
-                                <>
-                                  <span className="animate-spin mr-2">⏳</span>
-                                  Enviando...
-                                </>
-                              ) : (
-                                <>
-                                  <Send className="h-4 w-4 mr-1" />
-                                  Solicitar reseña
-                                </>
-                              )}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                          </div>
+                          
+                          <div className="mt-3 space-y-1 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{client.email}</span>
+                            </div>
+                            {client.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-3 w-3 shrink-0" />
+                                <span>{client.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <Button
+                            size="sm"
+                            className="w-full mt-3"
+                            onClick={() => handleSendReviewRequest(client.id)}
+                            disabled={sendingRequestTo === client.id}
+                            data-testid={`button-request-review-mobile-${client.id}`}
+                          >
+                            {sendingRequestTo === client.id ? (
+                              <>
+                                <span className="animate-spin mr-2">⏳</span>
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-1" />
+                                Solicitar reseña
+                              </>
+                            )}
+                          </Button>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                    
+                    {/* Desktop table view */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Contacto</TableHead>
+                            <TableHead>Origen</TableHead>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead className="text-right">Acción</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {eligibleClients.map((client: EligibleClient) => (
+                            <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="rounded-full bg-gray-100 p-2">
+                                    <User className="h-4 w-4 text-gray-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{client.name} {client.surname || ''}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1 text-sm text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <Mail className="h-3 w-3" />
+                                    {client.email}
+                                  </span>
+                                  {client.phone && (
+                                    <span className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {client.phone}
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">
+                                  {getSourceLabel(client.source)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-500">
+                                {new Date(client.createdAt).toLocaleDateString('es-ES')}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSendReviewRequest(client.id)}
+                                  disabled={sendingRequestTo === client.id}
+                                  data-testid={`button-request-review-${client.id}`}
+                                >
+                                  {sendingRequestTo === client.id ? (
+                                    <>
+                                      <span className="animate-spin mr-2">⏳</span>
+                                      Enviando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Send className="h-4 w-4 mr-1" />
+                                      Solicitar reseña
+                                    </>
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

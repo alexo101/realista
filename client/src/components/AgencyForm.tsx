@@ -160,8 +160,8 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     <Card className="mb-6">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex flex-col items-center mb-6">
-            <div className="w-32 h-32 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
+          <div className="flex flex-col items-center mb-6 px-4 sm:px-0">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
               {logoPreview ? (
                 <img
                   src={logoPreview}
@@ -169,10 +169,10 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <Building className="w-16 h-16 text-gray-400" />
+                <Building className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400" />
               )}
             </div>
-            <Label htmlFor="agency-logo-upload" className="cursor-pointer text-sm text-primary">
+            <Label htmlFor="agency-logo-upload" className="cursor-pointer text-sm text-primary py-2 px-4 min-h-[44px] flex items-center">
               {logoPreview ? "Cambiar logo" : "Subir logo"}
             </Label>
             <Input
@@ -193,6 +193,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 onChange={(e) => setAgencyName(e.target.value)}
                 placeholder="Introduce el nombre de la agencia"
                 required
+                className="min-h-[44px] w-full"
               />
             </div>
 
@@ -203,6 +204,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 value={agencyAddress}
                 onChange={(e) => setAgencyAddress(e.target.value)}
                 placeholder="Dirección física de la agencia"
+                className="min-h-[44px] w-full"
               />
             </div>
 
@@ -213,7 +215,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 value={agencyDescription}
                 onChange={(e) => setAgencyDescription(e.target.value)}
                 placeholder="Describe tu agencia inmobiliaria a clientes potenciales"
-                className="min-h-[120px]"
+                className="min-h-[120px] w-full"
               />
             </div>
 
@@ -232,7 +234,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   }
                 }}
                 placeholder="Teléfono de contacto (ej: +34 600 123 456)"
-                className={phoneError ? "border-red-500" : ""}
+                className={`min-h-[44px] w-full ${phoneError ? "border-red-500" : ""}`}
               />
               {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
             </div>
@@ -253,7 +255,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 }}
                 placeholder="Email para mostrar en el perfil público"
                 type="email"
-                className={emailError ? "border-red-500" : ""}
+                className={`min-h-[44px] w-full ${emailError ? "border-red-500" : ""}`}
               />
               {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
             </div>
@@ -270,7 +272,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   }
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px] w-full">
                   <SelectValue placeholder="Selecciona el año de fundación" />
                 </SelectTrigger>
                 <SelectContent>
@@ -300,6 +302,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     type="button"
                     variant={agencySupportedLanguages.includes(lang) ? "default" : "outline"}
                     size="sm"
+                    className="min-h-[40px] px-3"
                     onClick={() => {
                       if (agencySupportedLanguages.includes(lang)) {
                         setAgencySupportedLanguages(agencySupportedLanguages.filter(l => l !== lang));
@@ -331,7 +334,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                       setCityDropdownOpen(true);
                       setCitySearchTerm("");
                     }}
-                    className="pl-9 pr-8"
+                    className="pl-9 pr-8 min-h-[44px] w-full"
                     data-testid="input-agency-city-search"
                   />
                   {city && !cityDropdownOpen && (
@@ -368,7 +371,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                           <button
                             key={`${cityOption}-${index}`}
                             type="button"
-                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                            className={`w-full px-4 py-3 min-h-[44px] text-left text-sm hover:bg-gray-100 ${
                               city === cityOption ? 'bg-primary/10 text-primary font-medium' : ''
                             }`}
                             onClick={() => {
@@ -414,8 +417,8 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               <Label>Enlaces a página web y redes sociales</Label>
               <div className="space-y-3 mt-2">
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="2" y1="12" x2="22" y2="12"></line>
@@ -435,14 +438,14 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                         }
                       }}
                       placeholder="URL de tu sitio web (con https://)"
-                      className={websiteError ? "border-red-500" : ""}
+                      className={`min-h-[44px] flex-1 ${websiteError ? "border-red-500" : ""}`}
                     />
                   </div>
-                  {websiteError && <p className="text-sm text-red-500 mt-1">{websiteError}</p>}
+                  {websiteError && <p className="text-sm text-red-500 mt-1 ml-12 sm:ml-[52px]">{websiteError}</p>}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                     </svg>
@@ -451,11 +454,12 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     placeholder="URL de Facebook"
                     value={facebookUrl}
                     onChange={(e) => setFacebookUrl(e.target.value)}
+                    className="min-h-[44px] flex-1"
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
@@ -466,22 +470,24 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     placeholder="URL de Instagram"
                     value={instagramUrl}
                     onChange={(e) => setInstagramUrl(e.target.value)}
+                    className="min-h-[44px] flex-1"
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                     <SiGooglemaps className="w-5 h-5 text-primary" />
                   </div>
                   <Input
                     placeholder="URL de Google Maps"
                     value={googleMapsUrl}
                     onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                    className="min-h-[44px] flex-1"
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
                       <rect x="2" y="9" width="4" height="12"></rect>
@@ -492,25 +498,28 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     placeholder="URL de LinkedIn"
                     value={linkedinUrl}
                     onChange={(e) => setLinkedinUrl(e.target.value)}
+                    className="min-h-[44px] flex-1"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onCancel}
+                className="w-full sm:w-auto min-h-[44px]"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={!isValid || isSubmitting}
+                className="w-full sm:w-auto min-h-[44px]"
               >
                 {isSubmitting ? (
-                  <span className="flex items-center">
+                  <span className="flex items-center justify-center">
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -518,7 +527,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     Guardando...
                   </span>
                 ) : (
-                  <span className="flex items-center">
+                  <span className="flex items-center justify-center">
                     <Check className="mr-2 h-4 w-4" />
                     {agency ? "Actualizar agencia" : "Crear agencia"}
                   </span>

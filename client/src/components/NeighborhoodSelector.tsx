@@ -177,16 +177,16 @@ export function NeighborhoodSelector({
           onFocus={() => setShowResults(search.length >= 3)}
           onKeyDown={handleKeyDown}
           placeholder={buttonText}
-          className="w-full"
+          className="w-full min-h-[44px]"
         />
         
         {showResults && filteredResults.length > 0 && (
-          <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto" style={{ maxHeight: '200px' }}>
+          <div className="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg overflow-auto" style={{ maxHeight: '250px' }}>
             {filteredResults.map((result, index) => (
               <button
                 key={result}
                 type="button"
-                className={`w-full text-left p-3 hover:bg-gray-100 border-b border-gray-100 last:border-0 flex items-center justify-between ${
+                className={`w-full text-left p-3 min-h-[48px] hover:bg-gray-100 border-b border-gray-100 last:border-0 flex items-center justify-between ${
                   highlightedIndex === index ? 'bg-gray-100' : ''
                 }`}
                 onClick={() => toggleNeighborhood(result)}
@@ -203,12 +203,13 @@ export function NeighborhoodSelector({
       </div>
       {/* Action buttons for multi-selection */}
       {!singleSelection && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={clearAll}
             size="sm"
             type="button"
+            className="min-h-[40px]"
           >
             Limpiar
           </Button>
@@ -217,6 +218,7 @@ export function NeighborhoodSelector({
             onClick={selectAll}
             size="sm"
             type="button"
+            className="min-h-[40px]"
           >Todas las zonas</Button>
         </div>
       )}

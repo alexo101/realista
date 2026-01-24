@@ -490,69 +490,71 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               Compara lo que obtendrías con un plan superior
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Característica</TableHead>
-                  <TableHead className="text-center">
-                    <Badge className={currentPlan.badgeColor}>{currentPlan.name}</Badge>
-                    <span className="block text-xs text-muted-foreground mt-1">(Actual)</span>
-                  </TableHead>
-                  {superiorPlans.map((plan) => (
-                    <TableHead key={plan.id} className="text-center">
-                      <Badge className={plan.badgeColor}>{plan.name}</Badge>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entityType === 'agency' && (
+          <CardContent className="px-2 sm:px-6">
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <Table className="min-w-[500px]">
+                <TableHeader>
                   <TableRow>
-                    <TableCell className="font-medium">Límite de agentes</TableCell>
-                    <TableCell className="text-center">
-                      {(() => {
-                        const limit = (currentPlan as any).agentsLimit;
-                        return limit === null ? 'Sin límite' : (limit || 'N/A');
-                      })()}
-                    </TableCell>
+                    <TableHead className="whitespace-nowrap">Característica</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">
+                      <Badge className={currentPlan.badgeColor}>{currentPlan.name}</Badge>
+                      <span className="block text-xs text-muted-foreground mt-1">(Actual)</span>
+                    </TableHead>
                     {superiorPlans.map((plan) => (
-                      <TableCell key={plan.id} className="text-center font-semibold text-primary">
+                      <TableHead key={plan.id} className="text-center whitespace-nowrap">
+                        <Badge className={plan.badgeColor}>{plan.name}</Badge>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {entityType === 'agency' && (
+                    <TableRow>
+                      <TableCell className="font-medium whitespace-nowrap">Límite de agentes</TableCell>
+                      <TableCell className="text-center">
                         {(() => {
-                          const limit = (plan as any).agentsLimit;
+                          const limit = (currentPlan as any).agentsLimit;
                           return limit === null ? 'Sin límite' : (limit || 'N/A');
                         })()}
                       </TableCell>
+                      {superiorPlans.map((plan) => (
+                        <TableCell key={plan.id} className="text-center font-semibold text-primary">
+                          {(() => {
+                            const limit = (plan as any).agentsLimit;
+                            return limit === null ? 'Sin límite' : (limit || 'N/A');
+                          })()}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )}
+                  <TableRow>
+                    <TableCell className="font-medium whitespace-nowrap">Límite de propiedades</TableCell>
+                    <TableCell className="text-center">
+                      {currentPlan.propertiesLimit === null ? 'Sin límite' : currentPlan.propertiesLimit}
+                    </TableCell>
+                    {superiorPlans.map((plan) => (
+                      <TableCell key={plan.id} className="text-center font-semibold text-primary">
+                        {plan.propertiesLimit === null ? 'Sin límite' : plan.propertiesLimit}
+                      </TableCell>
                     ))}
                   </TableRow>
-                )}
-                <TableRow>
-                  <TableCell className="font-medium">Límite de propiedades</TableCell>
-                  <TableCell className="text-center">
-                    {currentPlan.propertiesLimit === null ? 'Sin límite' : currentPlan.propertiesLimit}
-                  </TableCell>
-                  {superiorPlans.map((plan) => (
-                    <TableCell key={plan.id} className="text-center font-semibold text-primary">
-                      {plan.propertiesLimit === null ? 'Sin límite' : plan.propertiesLimit}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Precio mensual</TableCell>
-                  <TableCell className="text-center">{currentPlan.monthlyPrice}€</TableCell>
-                  {superiorPlans.map((plan) => (
-                    <TableCell key={plan.id} className="text-center">{plan.monthlyPrice}€</TableCell>
-                  ))}
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Precio anual</TableCell>
-                  <TableCell className="text-center">{currentPlan.yearlyPrice}€</TableCell>
-                  {superiorPlans.map((plan) => (
-                    <TableCell key={plan.id} className="text-center">{plan.yearlyPrice}€</TableCell>
-                  ))}
-                </TableRow>
-              </TableBody>
-            </Table>
+                  <TableRow>
+                    <TableCell className="font-medium whitespace-nowrap">Precio mensual</TableCell>
+                    <TableCell className="text-center">{currentPlan.monthlyPrice}€</TableCell>
+                    {superiorPlans.map((plan) => (
+                      <TableCell key={plan.id} className="text-center">{plan.monthlyPrice}€</TableCell>
+                    ))}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium whitespace-nowrap">Precio anual</TableCell>
+                    <TableCell className="text-center">{currentPlan.yearlyPrice}€</TableCell>
+                    {superiorPlans.map((plan) => (
+                      <TableCell key={plan.id} className="text-center">{plan.yearlyPrice}€</TableCell>
+                    ))}
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -664,47 +666,89 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               <Skeleton className="h-12" />
             </div>
           ) : invoices && invoices.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Importe</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Importe</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id} data-testid={`row-invoice-${invoice.id}`}>
+                        <TableCell>{formatDate(invoice.created)}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={invoice.status === 'paid' ? 'default' : 'secondary'}
+                            className={invoice.status === 'paid' ? 'bg-green-100 text-green-700' : ''}
+                          >
+                            {invoice.status === 'paid' ? 'Pagada' : invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(invoice.amount_paid, invoice.currency)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {invoice.hosted_invoice_url && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(invoice.hosted_invoice_url!, '_blank')}
+                              data-testid={`button-view-invoice-${invoice.id}`}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Ver
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
                 {invoices.map((invoice) => (
-                  <TableRow key={invoice.id} data-testid={`row-invoice-${invoice.id}`}>
-                    <TableCell>{formatDate(invoice.created)}</TableCell>
-                    <TableCell>
+                  <div 
+                    key={invoice.id} 
+                    className="bg-muted/50 rounded-lg p-4 space-y-3"
+                    data-testid={`card-invoice-${invoice.id}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{formatDate(invoice.created)}</span>
                       <Badge 
                         variant={invoice.status === 'paid' ? 'default' : 'secondary'}
                         className={invoice.status === 'paid' ? 'bg-green-100 text-green-700' : ''}
                       >
                         {invoice.status === 'paid' ? 'Pagada' : invoice.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(invoice.amount_paid, invoice.currency)}
-                    </TableCell>
-                    <TableCell className="text-right">
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-semibold">
+                        {formatCurrency(invoice.amount_paid, invoice.currency)}
+                      </span>
                       {invoice.hosted_invoice_url && (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
+                          className="w-full sm:w-auto"
                           onClick={() => window.open(invoice.hosted_invoice_url!, '_blank')}
-                          data-testid={`button-view-invoice-${invoice.id}`}
+                          data-testid={`button-view-invoice-mobile-${invoice.id}`}
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          Ver
+                          Ver factura
                         </Button>
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           ) : (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
@@ -772,7 +816,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
             <Button
               variant="outline"
               disabled
-              className="opacity-50"
+              className="opacity-50 w-full md:w-auto"
               data-testid="button-save-tax-info"
             >
               <CheckCircle className="h-4 w-4 mr-2" />

@@ -792,7 +792,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "perfil-agente" && (
-            <div className="max-w-2xl mx-auto space-y-8 pb-16">
+            <div className="max-w-2xl mx-auto space-y-4 md:space-y-8 pb-24 md:pb-16 px-2 md:px-0">
               <div className="flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
                   {user?.avatar ? (
@@ -1051,15 +1051,15 @@ export default function ManagePage() {
                   </p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   <Label>Redes sociales</Label>
                   <p className="text-sm text-gray-500">
                     Añade tus perfiles de redes sociales para que aparezcan en tu perfil público.
                   </p>
                   
                   <div className="space-y-3 mt-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                         </svg>
@@ -1068,11 +1068,12 @@ export default function ManagePage() {
                         placeholder="URL de Facebook"
                         value={agentFacebookUrl}
                         onChange={(e) => {setAgentFacebookUrl(e.target.value); setHasAgentChanges(true);}}
+                        className="min-h-[44px]"
                       />
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                           <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
@@ -1083,11 +1084,12 @@ export default function ManagePage() {
                         placeholder="URL de Instagram"
                         value={agentInstagramUrl}
                         onChange={(e) => {setAgentInstagramUrl(e.target.value); setHasAgentChanges(true);}}
+                        className="min-h-[44px]"
                       />
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-primary/10 rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
                           <rect x="2" y="9" width="4" height="12"></rect>
@@ -1098,16 +1100,17 @@ export default function ManagePage() {
                         placeholder="URL de LinkedIn"
                         value={agentLinkedinUrl}
                         onChange={(e) => {setAgentLinkedinUrl(e.target.value); setHasAgentChanges(true);}}
+                        className="min-h-[44px]"
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end mt-4">
+              <div className="flex justify-center md:justify-end mt-4 md:mt-6">
                 <Button
                   type="button"
-                  className="relative"
+                  className="relative w-full md:w-auto min-h-[48px] md:min-h-0"
                   onClick={() => {
                     // Validate phone number if provided
                     if (phone && phone.trim() !== '') {
@@ -1477,41 +1480,60 @@ export default function ManagePage() {
           {currentSection === "propiedades" && (
             <div className="space-y-4">
               {!(isAddingProperty || editingProperty) && (
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Gestión de Propiedades</h2>
-                  <div className="flex items-center gap-2">
-                    {/* View Toggle Buttons */}
-                    <div className="flex border rounded-md">
-                      <Button
-                        variant={propertiesView === 'grid' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setPropertiesView('grid')}
-                        className="rounded-r-none"
-                        data-testid="button-view-grid"
+                <>
+                  {/* Desktop Header */}
+                  <div className="hidden md:flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Gestión de Propiedades</h2>
+                    <div className="flex items-center gap-2">
+                      {/* View Toggle Buttons */}
+                      <div className="flex border rounded-md">
+                        <Button
+                          variant={propertiesView === 'grid' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setPropertiesView('grid')}
+                          className="rounded-r-none"
+                          data-testid="button-view-grid"
+                        >
+                          <LayoutGrid className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={propertiesView === 'table' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setPropertiesView('table')}
+                          className="rounded-l-none"
+                          data-testid="button-view-table"
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          setIsAddingProperty(true);
+                          setEditingProperty(null);
+                        }} 
+                        size="lg"
                       >
-                        <LayoutGrid className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant={propertiesView === 'table' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setPropertiesView('table')}
-                        className="rounded-l-none"
-                        data-testid="button-view-table"
-                      >
-                        <List className="h-4 w-4" />
+                        Añadir propiedad
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Mobile Header */}
+                  <div className="md:hidden space-y-3">
+                    <h2 className="text-xl font-bold">Gestión de Propiedades</h2>
                     <Button 
                       onClick={() => {
                         setIsAddingProperty(true);
                         setEditingProperty(null);
                       }} 
+                      className="w-full"
                       size="lg"
                     >
+                      <Plus className="h-4 w-4 mr-2" />
                       Añadir propiedad
                     </Button>
                   </div>
-                </div>
+                </>
               )}
 
               {(isAddingProperty || editingProperty || fetchPropertyForEditMutation.isPending) ? (
@@ -1593,50 +1615,53 @@ export default function ManagePage() {
                         Empieza añadiendo tu primera propiedad
                       </p>
                     </div>
-                  ) : propertiesView === 'table' ? (
-                    /* Table View */
-                    (<div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[120px]">Referencia</TableHead>
-                            <TableHead>Dirección</TableHead>
-                            <TableHead className="w-[120px]">Precio</TableHead>
-                            <TableHead className="w-[100px] text-center">Acciones</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {properties.map((property) => (
-                            <TableRow key={property.uuid} className="hover:bg-gray-50">
-                              <TableCell className="font-medium">
-                                {property.reference || '-'}
-                              </TableCell>
-                              <TableCell>
-                                <div className="line-clamp-1">{property.address}</div>
-                              </TableCell>
-                              <TableCell className="font-semibold text-primary">
-                                €{property.price?.toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-center">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => fetchPropertyForEditMutation.mutate(property.uuid)}
-                                    data-testid={`button-edit-property-${property.uuid}`}
-                                  >
-                                    <LogIn className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>)
                   ) : (
-                    /* Grid View */
-                    (<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                    <>
+                      {/* Table View - Desktop only when table view is selected */}
+                      {propertiesView === 'table' && (
+                        <div className="hidden md:block bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-[120px]">Referencia</TableHead>
+                                <TableHead>Dirección</TableHead>
+                                <TableHead className="w-[120px]">Precio</TableHead>
+                                <TableHead className="w-[100px] text-center">Acciones</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {properties.map((property) => (
+                                <TableRow key={property.uuid} className="hover:bg-gray-50">
+                                  <TableCell className="font-medium">
+                                    {property.reference || '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="line-clamp-1">{property.address}</div>
+                                  </TableCell>
+                                  <TableCell className="font-semibold text-primary">
+                                    €{property.price?.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center justify-center">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => fetchPropertyForEditMutation.mutate(property.uuid)}
+                                        data-testid={`button-edit-property-${property.uuid}`}
+                                      >
+                                        <LogIn className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+
+                      {/* Grid View - Always on mobile, on desktop when grid view is selected */}
+                      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 ${propertiesView === 'table' ? 'md:hidden' : ''}`}>
                       {properties.map((property) => {
                         const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
                           ? property.imageUrls
@@ -1733,11 +1758,28 @@ export default function ManagePage() {
                                   )}
                                 </div>
                               )}
+
+                              {/* Mobile touch-friendly action button */}
+                              <div className="md:hidden mt-3 pt-3 border-t">
+                                <Button
+                                  variant="outline"
+                                  className="w-full h-11"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    fetchPropertyForEditMutation.mutate(property.uuid);
+                                  }}
+                                  data-testid={`button-edit-property-mobile-${property.uuid}`}
+                                >
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Editar propiedad
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         );
                       })}
-                    </div>)
+                      </div>
+                    </>
                   )}
                 </>
               )}
@@ -1746,9 +1788,12 @@ export default function ManagePage() {
 
           {currentSection === "clientes" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              {/* Header - responsive */}
+              <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
                 <h2 className="text-2xl font-bold">Gestión de Clientes</h2>
-                <div className="flex items-center gap-2">
+                
+                {/* Desktop buttons */}
+                <div className="hidden md:flex items-center gap-2">
                   {/* View toggle buttons */}
                   <div className="flex items-center border rounded-md">
                     <Button 
@@ -1814,6 +1859,62 @@ export default function ManagePage() {
                 </div>
               </div>
 
+              {/* Mobile view toggle - full width */}
+              <div className="md:hidden flex items-center border rounded-md w-full">
+                <Button 
+                  variant={clientsView === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setClientsView('list')}
+                  className="rounded-r-none flex-1"
+                  data-testid="button-view-list-mobile"
+                >
+                  <List className="h-4 w-4 mr-1" />
+                  Lista
+                </Button>
+                <Button 
+                  variant={clientsView === 'kanban' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setClientsView('kanban')}
+                  className="rounded-l-none flex-1"
+                  data-testid="button-view-kanban-mobile"
+                >
+                  <LayoutGrid className="h-4 w-4 mr-1" />
+                  Panel
+                </Button>
+              </div>
+
+              {/* Mobile action buttons - full width */}
+              <div className="md:hidden flex flex-col gap-2">
+                {selectedClientIds.size > 0 && (
+                  <Button 
+                    variant="outline"
+                    className="w-full border-primary text-primary hover:bg-primary hover:text-white"
+                    onClick={() => {
+                      setIsSendModalOpen(true);
+                      setSendModalStep(1);
+                      setPropertySearch("");
+                      setSelectedPropertyIds(new Set());
+                      setEmailMessage("");
+                    }}
+                    data-testid="button-send-to-clients-mobile"
+                  >
+                    <Send className="mr-2 h-4 w-4" />
+                    Enviar a {selectedClientIds.size}
+                  </Button>
+                )}
+                <Button 
+                  className="w-full"
+                  onClick={() => {
+                    setIsAddingClient(true);
+                    setEditingClient(null);
+                  }}
+                  data-testid="button-add-client-mobile"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir cliente
+                </Button>
+              </div>
+
               <AddClientModal
                 isOpen={isAddingClient || !!editingClient}
                 onClose={() => {
@@ -1872,95 +1973,182 @@ export default function ManagePage() {
                   }}
                 />
               ) : (
-                <div className="bg-white border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">
-                          <Checkbox
-                            checked={clients.length > 0 && selectedClientIds.size === clients.length}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedClientIds(new Set(clients.map(c => c.id)));
-                              } else {
-                                setSelectedClientIds(new Set());
-                              }
-                            }}
-                            data-testid="checkbox-select-all-clients"
-                          />
-                        </TableHead>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Apellido</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Teléfono</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead className="text-right">Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clients.map((client) => {
-                        const statusConfig = CLIENT_STATUSES.find(s => s.value === client.status);
-                        const isSelected = selectedClientIds.has(client.id);
-                        return (
-                          <TableRow 
-                            key={client.id} 
-                            data-testid={`row-client-${client.id}`}
-                            className={isSelected ? 'bg-primary/5' : ''}
-                          >
-                            <TableCell>
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={(checked) => {
-                                  const newSelected = new Set(selectedClientIds);
-                                  if (checked) {
-                                    newSelected.add(client.id);
-                                  } else {
-                                    newSelected.delete(client.id);
-                                  }
-                                  setSelectedClientIds(newSelected);
-                                }}
-                                data-testid={`checkbox-client-${client.id}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">{client.name}</TableCell>
-                            <TableCell>{client.surname || '-'}</TableCell>
-                            <TableCell>{client.email}</TableCell>
-                            <TableCell>{client.phone}</TableCell>
-                            <TableCell>
+                <>
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-4">
+                    {clients.map((client) => {
+                      const statusConfig = CLIENT_STATUSES.find(s => s.value === client.status);
+                      const isSelected = selectedClientIds.has(client.id);
+                      return (
+                        <Card 
+                          key={client.id} 
+                          data-testid={`card-client-${client.id}`}
+                          className={isSelected ? 'border-primary bg-primary/5' : ''}
+                        >
+                          <CardContent className="p-4">
+                            {/* Header: Checkbox, Name, Status */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    const newSelected = new Set(selectedClientIds);
+                                    if (checked) {
+                                      newSelected.add(client.id);
+                                    } else {
+                                      newSelected.delete(client.id);
+                                    }
+                                    setSelectedClientIds(newSelected);
+                                  }}
+                                  data-testid={`checkbox-client-mobile-${client.id}`}
+                                />
+                                <div>
+                                  <div className="font-semibold text-lg">
+                                    {client.name} {client.surname || ''}
+                                  </div>
+                                </div>
+                              </div>
                               {statusConfig && (
                                 <Badge className={`${statusConfig.color}`}>
                                   {statusConfig.label}
                                 </Badge>
                               )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditingClient(client)}
-                                  data-testid={`button-edit-client-${client.id}`}
-                                >
-                                  <Pencil className="h-4 w-4 mr-1" />
-                                  Editar
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setClientToDelete(client)}
-                                  data-testid={`button-delete-client-${client.id}`}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-1" />
-                                  Eliminar
-                                </Button>
+                            </div>
+
+                            {/* Contact info with icons */}
+                            <div className="space-y-2 mb-3">
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Mail className="h-4 w-4 flex-shrink-0" />
+                                <span className="truncate">{client.email}</span>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                              {client.phone && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Phone className="h-4 w-4 flex-shrink-0" />
+                                  <span>{client.phone}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex justify-end gap-2 pt-2 border-t">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                onClick={() => setEditingClient(client)}
+                                data-testid={`button-edit-client-mobile-${client.id}`}
+                                title="Editar"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
+                                onClick={() => setClientToDelete(client)}
+                                data-testid={`button-delete-client-mobile-${client.id}`}
+                                title="Eliminar"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block bg-white border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[50px]">
+                            <Checkbox
+                              checked={clients.length > 0 && selectedClientIds.size === clients.length}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedClientIds(new Set(clients.map(c => c.id)));
+                                } else {
+                                  setSelectedClientIds(new Set());
+                                }
+                              }}
+                              data-testid="checkbox-select-all-clients"
+                            />
+                          </TableHead>
+                          <TableHead>Nombre</TableHead>
+                          <TableHead>Apellido</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Teléfono</TableHead>
+                          <TableHead>Estado</TableHead>
+                          <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {clients.map((client) => {
+                          const statusConfig = CLIENT_STATUSES.find(s => s.value === client.status);
+                          const isSelected = selectedClientIds.has(client.id);
+                          return (
+                            <TableRow 
+                              key={client.id} 
+                              data-testid={`row-client-${client.id}`}
+                              className={isSelected ? 'bg-primary/5' : ''}
+                            >
+                              <TableCell>
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    const newSelected = new Set(selectedClientIds);
+                                    if (checked) {
+                                      newSelected.add(client.id);
+                                    } else {
+                                      newSelected.delete(client.id);
+                                    }
+                                    setSelectedClientIds(newSelected);
+                                  }}
+                                  data-testid={`checkbox-client-${client.id}`}
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium">{client.name}</TableCell>
+                              <TableCell>{client.surname || '-'}</TableCell>
+                              <TableCell>{client.email}</TableCell>
+                              <TableCell>{client.phone}</TableCell>
+                              <TableCell>
+                                {statusConfig && (
+                                  <Badge className={`${statusConfig.color}`}>
+                                    {statusConfig.label}
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex gap-2 justify-end">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingClient(client)}
+                                    data-testid={`button-edit-client-${client.id}`}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-1" />
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setClientToDelete(client)}
+                                    data-testid={`button-delete-client-${client.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Eliminar
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
 
               <Dialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
