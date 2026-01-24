@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, Menu, X, Sparkles, Calendar, Users, MessageSquare, UserCircle, Building, Building2, Star, CreditCard } from "lucide-react";
+import { Home, Menu, X, Sparkles, Calendar, Users, MessageSquare, UserCircle, Building, Building2, Star, CreditCard, Briefcase } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import { LanguageSelector } from "./LanguageSelector";
 import { useUser } from "@/contexts/user-context";
@@ -24,13 +24,16 @@ export function Navbar() {
     }
   };
 
+  const isAgent = user && !user.isClient && user.agentUuid;
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
-              {isManagePage && user?.agentUuid && (
+              {/* Hamburger menu for agents on mobile - shows on manage pages OR when agent is logged in */}
+              {isAgent && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -125,8 +128,8 @@ export function Navbar() {
         )}
       </nav>
 
-      {/* Manage sidebar overlay for mobile */}
-      {manageSidebarOpen && isManagePage && user?.agentUuid && (
+      {/* Manage sidebar overlay for mobile - available for agents anywhere */}
+      {manageSidebarOpen && isAgent && (
         <>
           <div 
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -134,6 +137,21 @@ export function Navbar() {
           />
           <div className="fixed top-16 left-0 bottom-0 w-72 bg-white z-50 md:hidden overflow-y-auto border-r shadow-lg">
             <div className="p-4 space-y-1">
+              {/* Quick link to manage page if not already there */}
+              {!isManagePage && (
+                <>
+                  <button
+                    onClick={() => handleManageNavigate("calendario")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors bg-primary text-white"
+                    data-testid="nav-gestionar-todo"
+                  >
+                    <Briefcase className="h-5 w-5" />
+                    <span>Gestionar todo</span>
+                  </button>
+                  <div className="border-t my-3" />
+                </>
+              )}
+
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 py-2">
                 CRM
               </div>
@@ -141,7 +159,7 @@ export function Navbar() {
               <button
                 onClick={() => handleManageNavigate("calendario")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  currentSection === "calendario" 
+                  isManagePage && currentSection === "calendario" 
                     ? "bg-primary text-white" 
                     : "hover:bg-gray-100"
                 }`}
@@ -154,7 +172,7 @@ export function Navbar() {
               <button
                 onClick={() => handleManageNavigate("clientes")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  currentSection === "clientes" 
+                  isManagePage && currentSection === "clientes" 
                     ? "bg-primary text-white" 
                     : "hover:bg-gray-100"
                 }`}
@@ -167,7 +185,7 @@ export function Navbar() {
               <button
                 onClick={() => handleManageNavigate("mensajes")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  currentSection === "mensajes" 
+                  isManagePage && currentSection === "mensajes" 
                     ? "bg-primary text-white" 
                     : "hover:bg-gray-100"
                 }`}
@@ -182,7 +200,7 @@ export function Navbar() {
               <button
                 onClick={() => handleManageNavigate("perfil-agente")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  currentSection === "perfil-agente" 
+                  isManagePage && currentSection === "perfil-agente" 
                     ? "bg-primary text-white" 
                     : "hover:bg-gray-100"
                 }`}
@@ -196,7 +214,7 @@ export function Navbar() {
                 <button
                   onClick={() => handleManageNavigate("perfil-agencia")}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                    currentSection === "perfil-agencia" 
+                    isManagePage && currentSection === "perfil-agencia" 
                       ? "bg-primary text-white" 
                       : "hover:bg-gray-100"
                   }`}
@@ -210,7 +228,7 @@ export function Navbar() {
               <button
                 onClick={() => handleManageNavigate("propiedades")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  currentSection === "propiedades" 
+                  isManagePage && currentSection === "propiedades" 
                     ? "bg-primary text-white" 
                     : "hover:bg-gray-100"
                 }`}
@@ -223,7 +241,7 @@ export function Navbar() {
               <button
                 onClick={() => handleManageNavigate("resenas")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  currentSection === "resenas" 
+                  isManagePage && currentSection === "resenas" 
                     ? "bg-primary text-white" 
                     : "hover:bg-gray-100"
                 }`}
@@ -237,7 +255,7 @@ export function Navbar() {
                 <button
                   onClick={() => handleManageNavigate("equipo")}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                    currentSection === "equipo" 
+                    isManagePage && currentSection === "equipo" 
                       ? "bg-primary text-white" 
                       : "hover:bg-gray-100"
                   }`}
@@ -251,7 +269,7 @@ export function Navbar() {
               <button
                 onClick={() => handleManageNavigate("facturacion")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  currentSection === "facturacion" 
+                  isManagePage && currentSection === "facturacion" 
                     ? "bg-primary text-white" 
                     : "hover:bg-gray-100"
                 }`}
