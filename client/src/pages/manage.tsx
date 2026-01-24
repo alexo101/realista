@@ -1139,7 +1139,7 @@ export default function ManagePage() {
                   </div>
                 </div>
                 <div className="w-full">
-                  <Label htmlFor="influence-neighborhoods">Barrios de influencia</Label>
+                  <Label htmlFor="influence-neighborhoods">Barrios de influencia (tu perfil de agente aparecerá en estos barrios)</Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={influenceNeighborhoods}
@@ -1639,7 +1639,7 @@ export default function ManagePage() {
                     />
                   ) : (
                     /* Use regular form for editing published properties */
-                    <PropertyForm 
+                    (<PropertyForm 
                       onSubmit={async (data) => {
                         await updatePropertyMutation.mutateAsync(data);
                       }}
@@ -1678,7 +1678,7 @@ export default function ManagePage() {
                         mainImageIndex: editingProperty.mainImageIndex || 0
                       } : undefined}
                       isEditing={true}
-                    />
+                    />)
                   )}
                 </>
               ) : (
@@ -1697,7 +1697,7 @@ export default function ManagePage() {
                     </div>
                   ) : propertiesView === 'table' ? (
                     /* Table View */
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                    (<div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -1735,10 +1735,10 @@ export default function ManagePage() {
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
+                    </div>)
                   ) : (
                     /* Grid View */
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                    (<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                       {properties.map((property) => {
                         const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
                           ? property.imageUrls
@@ -1839,7 +1839,7 @@ export default function ManagePage() {
                           </div>
                         );
                       })}
-                    </div>
+                    </div>)
                   )}
                 </>
               )}
@@ -2485,7 +2485,6 @@ export default function ManagePage() {
           
         </main>
       </SidebarProvider>
-
       {/* Review Request Confirmation Dialog */}
       <Dialog open={reviewRequestClient !== null} onOpenChange={(open) => !open && setReviewRequestClient(null)}>
         <DialogContent>
