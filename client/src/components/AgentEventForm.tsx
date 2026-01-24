@@ -23,17 +23,17 @@ const eventFormSchema = z.object({
   eventDate: z.string().min(1, "La fecha es obligatoria"),
   eventTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:MM)"),
   clientId: z.number().optional(),
-  propertyId: z.number().optional(),
+  propertyUuid: z.string().optional(),
   comments: z.string().optional(),
 }).refine((data) => {
   // Property is mandatory for "Visita" events
-  if (data.eventType === "Visita" && !data.propertyId) {
+  if (data.eventType === "Visita" && !data.propertyUuid) {
     return false;
   }
   return true;
 }, {
   message: "La propiedad es obligatoria para eventos de tipo 'Visita'",
-  path: ["propertyId"],
+  path: ["propertyUuid"],
 });
 
 type EventFormData = z.infer<typeof eventFormSchema>;
@@ -58,7 +58,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
       eventDate: event?.eventDate || "",
       eventTime: event?.eventTime || "",
       clientId: event?.clientId || undefined,
-      propertyId: event?.propertyId || undefined,
+      propertyUuid: event?.propertyUuid || undefined,
       comments: event?.comments || "",
     },
   });
@@ -332,7 +332,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
         {/* Property */}
         <FormField
           control={form.control}
-          name="propertyId"
+          name="propertyUuid"
           render={({ field }) => {
             const currentEventType = form.watch("eventType");
             const isPropertyMandatory = currentEventType === "Visita";
