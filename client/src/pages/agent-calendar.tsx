@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus, Pencil, Trash2 } from "lucide-react";
 import { AgentEventForm } from "@/components/AgentEventForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -335,21 +335,25 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                           <td className="p-2">
                             <div className="flex gap-2">
                               <Button 
-                                size="sm" 
-                                variant="outline"
+                                size="icon" 
+                                variant="ghost"
+                                className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                                 onClick={() => {
                                   setSelectedEvent(event);
                                   setShowEventForm(true);
                                 }}
+                                title="Editar"
                               >
-                                Editar
+                                <Pencil className="h-4 w-4" />
                               </Button>
                               <Button 
-                                size="sm" 
-                                variant="destructive"
+                                size="icon" 
+                                variant="ghost"
+                                className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
                                 onClick={() => setEventToDelete(event)}
+                                title="Eliminar"
                               >
-                                Eliminar
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </td>
