@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus, Pencil, Trash2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus, Pencil, Trash2, User } from "lucide-react";
 import { AgentEventForm } from "@/components/AgentEventForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -219,29 +219,39 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Calendario</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold">Calendario</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
             Gestiona tus eventos y citas
           </p>
         </div>
+        {/* Desktop button */}
         <Button onClick={() => {
           setSelectedEvent(null);
           setShowEventForm(true);
-        }} className="flex items-center gap-2">
+        }} className="hidden md:flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Nuevo evento
         </Button>
       </div>
 
+      {/* Mobile full-width button */}
+      <Button onClick={() => {
+        setSelectedEvent(null);
+        setShowEventForm(true);
+      }} className="w-full md:hidden flex items-center justify-center gap-2">
+        <Plus className="h-4 w-4" />
+        Nuevo evento
+      </Button>
+
       {/* View Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         {viewMode !== "all" ? (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="flex items-center gap-1 md:gap-2">
               <Button variant="outline" size="sm" onClick={() => navigateDate("prev")}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -249,16 +259,20 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-sm md:text-xl font-semibold truncate">
               {viewMode === "today" 
-                ? format(currentDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es })
-                : `Semana del ${format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })} al ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })}`
+                ? format(currentDate, "dd/MM/yyyy", { locale: es })
+                : `${format(startOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })} - ${format(endOfWeek(currentDate, { weekStartsOn: 1 }), "dd MMM", { locale: es })}`
               }
             </h2>
+            {/* Full date shown on desktop */}
+            <span className="hidden md:inline text-muted-foreground">
+              {viewMode === "today" && format(currentDate, "EEEE", { locale: es })}
+            </span>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold">Todos los eventos</h2>
+          <div className="flex items-center gap-2 md:gap-4">
+            <h2 className="text-lg md:text-xl font-semibold">Todos los eventos</h2>
             <div className="text-sm text-muted-foreground">
               {totalEvents} eventos en total
             </div>
@@ -266,33 +280,152 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
         )}
         
         <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as "today" | "week" | "all")}>
-          <TabsList>
-            <TabsTrigger value="today">Ver Hoy</TabsTrigger>
-            <TabsTrigger value="week">Ver Semana</TabsTrigger>
-            <TabsTrigger value="all">Todos</TabsTrigger>
+          <TabsList className="w-full md:w-auto">
+            <TabsTrigger value="today" className="flex-1 md:flex-none text-xs md:text-sm">Ver Hoy</TabsTrigger>
+            <TabsTrigger value="week" className="flex-1 md:flex-none text-xs md:text-sm">Ver Semana</TabsTrigger>
+            <TabsTrigger value="all" className="flex-1 md:flex-none text-xs md:text-sm">Todos</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
       {/* Events Display */}
       <div className="space-y-4">
-          <Card>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Fecha y hora</th>
-                      <th className="text-left p-2">Tipo de evento</th>
-                      <th className="text-left p-2">Propiedades</th>
-                      <th className="text-left p-2">Contactos</th>
-                      <th className="text-left p-2">Estado</th>
-                      <th className="text-left p-2">Acciones</th>
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4">
+          {events.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                No hay eventos programados
+              </CardContent>
+            </Card>
+          ) : (
+            events.map((event: AgentEvent) => {
+              const property = properties.find((p: any) => p.uuid === event.propertyUuid);
+              const client = clients.find((c: any) => c.id === event.clientId);
+              return (
+                <Card key={event.id}>
+                  <CardContent className="p-4">
+                    {/* Header row: Date/Time and Status */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="font-semibold text-lg">
+                          {format(new Date(event.eventDate), "dd/MM/yyyy")}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {formatEventTime(event.eventTime)}
+                        </div>
+                      </div>
+                      <Badge variant={event.status === "scheduled" ? "default" : "secondary"}>
+                        {event.status === "scheduled" ? "Programado" : "Completado"}
+                      </Badge>
+                    </div>
+
+                    {/* Event type badge */}
+                    <div className="mb-3">
+                      <Badge className={getEventTypeColor(event.eventType)}>
+                        {event.eventType}
+                      </Badge>
+                    </div>
+
+                    {/* Property with location icon */}
+                    {property && (
+                      <div className="flex items-start gap-2 mb-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <span>{property.address}</span>
+                      </div>
+                    )}
+
+                    {/* Client with user icon */}
+                    {client && (
+                      <div className="flex items-center gap-2 mb-3 text-sm">
+                        <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span>{client.name} {client.surname || ''}</span>
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setShowEventForm(true);
+                        }}
+                        title="Editar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
+                        onClick={() => setEventToDelete(event)}
+                        title="Eliminar"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+          
+          {/* Mobile Pagination */}
+          {viewMode === "all" && totalPages > 1 && (
+            <div className="flex items-center justify-between py-2">
+              <div className="text-sm text-muted-foreground">
+                {currentPage}/{totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigatePage("prev")}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigatePage("next")}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <Card className="hidden md:block">
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Fecha y hora</th>
+                    <th className="text-left p-2">Tipo de evento</th>
+                    <th className="text-left p-2">Propiedades</th>
+                    <th className="text-left p-2">Contactos</th>
+                    <th className="text-left p-2">Estado</th>
+                    <th className="text-left p-2">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                        No hay eventos programados
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {events.map((event: AgentEvent) => {
-                      const property = properties.find((p: any) => p.id === event.propertyId);
+                  ) : (
+                    events.map((event: AgentEvent) => {
+                      const property = properties.find((p: any) => p.uuid === event.propertyUuid);
                       const client = clients.find((c: any) => c.id === event.clientId);
                       return (
                         <tr key={event.id} className="border-b hover:bg-gray-50">
@@ -359,41 +492,42 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                           </td>
                         </tr>
                       );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Pagination for "all" view */}
-              {viewMode === "all" && totalPages > 1 && (
-                <div className="flex items-center justify-between p-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages} ({totalEvents} eventos)
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => navigatePage("prev")}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Anterior
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => navigatePage("next")}
-                      disabled={currentPage === totalPages}
-                    >
-                      Siguiente
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Desktop Pagination for "all" view */}
+            {viewMode === "all" && totalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages} ({totalEvents} eventos)
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigatePage("prev")}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Anterior
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigatePage("next")}
+                    disabled={currentPage === totalPages}
+                  >
+                    Siguiente
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Event Form Dialog */}
