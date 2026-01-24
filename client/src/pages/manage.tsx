@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -175,6 +175,10 @@ export default function ManagePage() {
   const [agentFacebookUrl, setAgentFacebookUrl] = useState("");
   const [agentInstagramUrl, setAgentInstagramUrl] = useState("");
   const [agentLinkedinUrl, setAgentLinkedinUrl] = useState("");
+  
+  // City search state
+  const [citySearchTerm, setCitySearchTerm] = useState("");
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
 
   // Estados para los campos de perfil de agencia
   const [agencyName, setAgencyName] = useState("");
@@ -1053,25 +1057,86 @@ export default function ManagePage() {
                 </div>
                 <div>
                   <Label htmlFor="city">Ciudad donde trabajas</Label>
-                  <Select
-                    value={city}
-                    onValueChange={(value) => {
-                      setCity(value);
-                      setInfluenceNeighborhoods([]); // Clear neighborhoods when city changes
-                      setHasAgentChanges(true);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona tu ciudad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getCities().map((cityOption) => (
-                        <SelectItem key={cityOption} value={cityOption}>
-                          {cityOption}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="city-search"
+                        placeholder="Buscar ciudad..."
+                        value={cityDropdownOpen ? citySearchTerm : city}
+                        onChange={(e) => {
+                          setCitySearchTerm(e.target.value);
+                          if (!cityDropdownOpen) setCityDropdownOpen(true);
+                        }}
+                        onFocus={() => {
+                          setCityDropdownOpen(true);
+                          setCitySearchTerm("");
+                        }}
+                        className="pl-9 pr-8"
+                        data-testid="input-city-search"
+                      />
+                      {city && !cityDropdownOpen && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCity("");
+                            setInfluenceNeighborhoods([]);
+                            setHasAgentChanges(true);
+                            setCityDropdownOpen(true);
+                            setCitySearchTerm("");
+                          }}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    {cityDropdownOpen && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => {
+                            setCityDropdownOpen(false);
+                            setCitySearchTerm("");
+                          }}
+                        />
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                          {getCities()
+                            .filter((cityOption) => 
+                              cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
+                            )
+                            .slice(0, 50) // Limit results for performance
+                            .map((cityOption, index) => (
+                              <button
+                                key={`${cityOption}-${index}`}
+                                type="button"
+                                className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                                  city === cityOption ? 'bg-primary/10 text-primary font-medium' : ''
+                                }`}
+                                onClick={() => {
+                                  setCity(cityOption);
+                                  setInfluenceNeighborhoods([]); // Clear neighborhoods when city changes
+                                  setHasAgentChanges(true);
+                                  setCityDropdownOpen(false);
+                                  setCitySearchTerm("");
+                                }}
+                                data-testid={`city-option-${cityOption}`}
+                              >
+                                {cityOption}
+                              </button>
+                            ))
+                          }
+                          {getCities().filter((cityOption) => 
+                            cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
+                          ).length === 0 && (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                              No se encontraron ciudades
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="w-full">
                   <Label htmlFor="influence-neighborhoods">Barrios de influencia</Label>
