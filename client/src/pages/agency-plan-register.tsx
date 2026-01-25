@@ -284,7 +284,7 @@ export default function AgencyPlanRegister() {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="city-search"
-                        placeholder="Buscar ciudad..."
+                        placeholder="Buscar zona..."
                         value={cityDropdownOpen ? citySearchTerm : (formData.city || "")}
                         onChange={(e) => {
                           setCitySearchTerm(e.target.value);
@@ -348,7 +348,7 @@ export default function AgencyPlanRegister() {
                             cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
                           ).length === 0 && (
                             <div className="px-4 py-2 text-sm text-gray-500">
-                              No se encontraron ciudades
+                              No se encontraron zonas
                             </div>
                           )}
                         </div>
