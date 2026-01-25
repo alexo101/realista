@@ -35,7 +35,7 @@ const agencyPlans = {
       "CRM y gestión de agenda",
       "Hasta 10 propiedades activas a la vez",
       "Gestión ilimitada de clientes",
-      "3 solicitudes de reseñas mensuales",
+      "Solicitudes ilimitadas de reseñas",
       "Ventajas IA"
     ],
     icon: Users,
@@ -51,7 +51,7 @@ const agencyPlans = {
       "CRM y gestión de agenda",
       "Hasta 30 propiedades activas a la vez",
       "Gestión ilimitada de clientes",
-      "7 solicitudes de reseñas mensuales",
+      "Solicitudes ilimitadas de reseñas",
       "Ventajas IA"
     ],
     icon: Star,
