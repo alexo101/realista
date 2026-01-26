@@ -30,7 +30,7 @@ import { Switch } from "@/components/ui/switch";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff, Sparkles, Search, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -179,6 +179,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
+  const [neighborhoodSearchTerm, setNeighborhoodSearchTerm] = useState("");
+  const [neighborhoodDropdownOpen, setNeighborhoodDropdownOpen] = useState(false);
   const [localNeighborhood, setLocalNeighborhood] = useState<string | undefined>(
     initialData?.neighborhood
   );
@@ -713,59 +715,102 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               <FormField
                 control={form.control}
                 name="neighborhood"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Barrio</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className="w-full justify-between"
-                            data-testid="button-neighborhood"
-                          >
-                            {field.value || "Buscar barrio..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput placeholder="Buscar barrio..." />
-                          <CommandList>
-                            <CommandEmpty>No se encontró el barrio.</CommandEmpty>
-                            {ALL_CITIES.map((cityData) => (
-                              cityData.districts.map((district) => (
-                                <CommandGroup key={`${cityData.city}-${district.district}`} heading={`${district.district} (${cityData.city})`}>
-                                  {district.neighborhoods.map((neighborhood) => (
-                                    <CommandItem
-                                      key={`${cityData.city}-${district.district}-${neighborhood}`}
-                                      value={neighborhood}
-                                      onSelect={() => {
-                                        form.setValue("neighborhood", neighborhood);
-                                        setLocalNeighborhood(neighborhood);
-                                      }}
-                                      data-testid={`neighborhood-${neighborhood}`}
-                                    >
-                                      <Check
-                                        className={`mr-2 h-4 w-4 ${
-                                          field.value === neighborhood ? "opacity-100" : "opacity-0"
-                                        }`}
-                                      />
-                                      {neighborhood}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              ))
-                            ))}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const allNeighborhoods = ALL_CITIES.flatMap((cityData) =>
+                    cityData.districts.flatMap((district) =>
+                      district.neighborhoods.map((neighborhood) => ({
+                        neighborhood,
+                        district: district.district,
+                        city: cityData.city,
+                      }))
+                    )
+                  );
+                  
+                  const filteredNeighborhoods = allNeighborhoods.filter((item) =>
+                    item.neighborhood.toLowerCase().includes(neighborhoodSearchTerm.toLowerCase()) ||
+                    item.district.toLowerCase().includes(neighborhoodSearchTerm.toLowerCase()) ||
+                    item.city.toLowerCase().includes(neighborhoodSearchTerm.toLowerCase())
+                  ).slice(0, 50);
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Barrio</FormLabel>
+                      <div className="relative">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            id="neighborhood-search"
+                            placeholder="Buscar barrio..."
+                            value={neighborhoodDropdownOpen ? neighborhoodSearchTerm : (field.value || "")}
+                            onChange={(e) => {
+                              setNeighborhoodSearchTerm(e.target.value);
+                              if (!neighborhoodDropdownOpen) setNeighborhoodDropdownOpen(true);
+                            }}
+                            onFocus={() => {
+                              setNeighborhoodDropdownOpen(true);
+                              setNeighborhoodSearchTerm("");
+                            }}
+                            className="pl-9 pr-8 min-h-[44px] w-full"
+                            data-testid="input-neighborhood-search"
+                          />
+                          {field.value && !neighborhoodDropdownOpen && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                form.setValue("neighborhood", "");
+                                setLocalNeighborhood(undefined);
+                                setNeighborhoodDropdownOpen(true);
+                                setNeighborhoodSearchTerm("");
+                              }}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                        {neighborhoodDropdownOpen && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-40" 
+                              onClick={() => {
+                                setNeighborhoodDropdownOpen(false);
+                                setNeighborhoodSearchTerm("");
+                              }}
+                            />
+                            <div className="absolute left-0 z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                              {filteredNeighborhoods.length > 0 ? (
+                                filteredNeighborhoods.map((item, index) => (
+                                  <button
+                                    key={`${item.city}-${item.district}-${item.neighborhood}-${index}`}
+                                    type="button"
+                                    className={`w-full px-4 py-3 min-h-[44px] text-left text-sm hover:bg-gray-100 ${
+                                      field.value === item.neighborhood ? 'bg-primary/10 text-primary font-medium' : ''
+                                    }`}
+                                    onClick={() => {
+                                      form.setValue("neighborhood", item.neighborhood);
+                                      setLocalNeighborhood(item.neighborhood);
+                                      setNeighborhoodDropdownOpen(false);
+                                      setNeighborhoodSearchTerm("");
+                                    }}
+                                    data-testid={`neighborhood-option-${item.neighborhood}`}
+                                  >
+                                    <div className="font-medium">{item.neighborhood}</div>
+                                    <div className="text-xs text-gray-500">{item.district}, {item.city}</div>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="px-4 py-2 text-sm text-gray-500">
+                                  No se encontraron barrios
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
 
