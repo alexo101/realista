@@ -294,7 +294,7 @@ export default function AgencyPlanRegister() {
                           setCityDropdownOpen(true);
                           setCitySearchTerm("");
                         }}
-                        className="pl-9 pr-8"
+                        className="pl-9 pr-8 w-full"
                         data-testid="input-city-search"
                       />
                       {formData.city && !cityDropdownOpen && (
@@ -320,7 +320,7 @@ export default function AgencyPlanRegister() {
                             setCitySearchTerm("");
                           }}
                         />
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                        <div className="absolute left-0 z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
                           {getCities()
                             .filter((cityOption) => 
                               cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
