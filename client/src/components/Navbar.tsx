@@ -45,7 +45,7 @@ export function Navbar() {
                 </Button>
               )}
               <Link href="/" className="flex items-center space-x-2">
-                <Home className="h-6 w-6 text-primary" />
+                <img src="/logo.png" alt="Realista Logo" className="h-8 w-8 rounded-lg object-cover" />
                 <span className="text-xl font-bold text-primary">Realista</span>
               </Link>
             </div>
