@@ -92,6 +92,55 @@ export default function AgencyPlanRegister() {
     email: "",
     password: ""
   });
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  // Validation functions
+  const validateName = (value: string) => {
+    if (!value.trim()) return "Este campo es obligatorio";
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/.test(value)) return "Solo se permiten letras y espacios";
+    if (value.length > 50) return "Máximo 50 caracteres";
+    return "";
+  };
+
+  const validateEmail = (value: string) => {
+    if (!value.trim()) return "Este campo es obligatorio";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(value)) return "Introduce un email válido (ej: usuario@dominio.com)";
+    return "";
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) return "Este campo es obligatorio";
+    if (value.length < 8) return "La contraseña debe tener al menos 8 caracteres";
+    if (!/\d/.test(value)) return "La contraseña debe incluir al menos un número";
+    return "";
+  };
+
+  const validateRequired = (value: string | undefined) => {
+    if (!value || !value.trim()) return "Este campo es obligatorio";
+    return "";
+  };
+
+  // Get errors for each field
+  const errors = {
+    agencyName: validateRequired(formData.agencyName),
+    city: validateRequired(formData.city),
+    adminName: validateName(formData.adminName),
+    adminSurname: validateName(formData.adminSurname),
+    email: validateEmail(formData.email),
+    password: validatePassword(formData.password)
+  };
+
+  const isFormValid = Object.values(errors).every(error => error === "");
+
+  const shouldShowError = (field: string) => {
+    return (touched[field] || submitAttempted) && errors[field as keyof typeof errors];
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   // Try to get plan from route params first, then fall back to query params
   const routeParams = useParams<{ plan?: string; billing?: string }>();
@@ -116,51 +165,12 @@ export default function AgencyPlanRegister() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitAttempted(true);
     
-    // Validate agency name
-    if (!formData.agencyName || formData.agencyName.trim().length < 2) {
+    if (!isFormValid) {
       toast({
         title: "Error",
-        description: "El nombre de la agencia debe tener al menos 2 caracteres",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate city
-    if (!formData.city) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona una ciudad",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate admin name
-    if (!formData.adminName || formData.adminName.trim().length < 2) {
-      toast({
-        title: "Error",
-        description: "El nombre del agente principal debe tener al menos 2 caracteres",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate admin surname
-    if (!formData.adminSurname || formData.adminSurname.trim().length < 2) {
-      toast({
-        title: "Error",
-        description: "El apellido del agente principal debe tener al menos 2 caracteres",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 8 caracteres",
+        description: "Por favor, completa todos los campos correctamente",
         variant: "destructive"
       });
       return;
@@ -265,20 +275,24 @@ export default function AgencyPlanRegister() {
               {/* Registration Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="agencyName">Nombre de Agencia</Label>
+                  <Label htmlFor="agencyName">Nombre de Agencia *</Label>
                   <Input
                     id="agencyName"
                     type="text"
                     placeholder="Ej: Inmobiliaria Barcelona Centro"
                     value={formData.agencyName}
                     onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
-                    required
+                    onBlur={() => handleBlur('agencyName')}
+                    className={shouldShowError('agencyName') ? 'border-red-500' : ''}
                     data-testid="input-agency-name"
                   />
+                  {shouldShowError('agencyName') && (
+                    <p className="text-sm text-red-500">{errors.agencyName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="city">Zona</Label>
+                  <Label htmlFor="city">Zona *</Label>
                   <div className="relative">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -294,7 +308,8 @@ export default function AgencyPlanRegister() {
                           setCityDropdownOpen(true);
                           setCitySearchTerm("");
                         }}
-                        className="pl-9 pr-8 w-full"
+                        onBlur={() => handleBlur('city')}
+                        className={`pl-9 pr-8 w-full ${shouldShowError('city') ? 'border-red-500' : ''}`}
                         data-testid="input-city-search"
                       />
                       {formData.city && !cityDropdownOpen && (
@@ -355,58 +370,81 @@ export default function AgencyPlanRegister() {
                       </>
                     )}
                   </div>
+                  {shouldShowError('city') && (
+                    <p className="text-sm text-red-500">{errors.city}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="adminName">Nombre del agente principal</Label>
+                  <Label htmlFor="adminName">Nombre del agente principal *</Label>
                   <Input
                     id="adminName"
                     type="text"
                     placeholder="Ej: Juan"
                     value={formData.adminName}
-                    onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
-                    required
+                    onChange={(e) => {
+                      const value = e.target.value.slice(0, 50);
+                      setFormData({ ...formData, adminName: value });
+                    }}
+                    onBlur={() => handleBlur('adminName')}
+                    className={shouldShowError('adminName') ? 'border-red-500' : ''}
+                    maxLength={50}
                     data-testid="input-admin-name"
                   />
+                  {shouldShowError('adminName') && (
+                    <p className="text-sm text-red-500">{errors.adminName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="adminSurname">Apellido del agente principal</Label>
+                  <Label htmlFor="adminSurname">Apellido del agente principal *</Label>
                   <Input
                     id="adminSurname"
                     type="text"
                     placeholder="Ej: García"
                     value={formData.adminSurname}
-                    onChange={(e) => setFormData({ ...formData, adminSurname: e.target.value })}
-                    required
+                    onChange={(e) => {
+                      const value = e.target.value.slice(0, 50);
+                      setFormData({ ...formData, adminSurname: value });
+                    }}
+                    onBlur={() => handleBlur('adminSurname')}
+                    className={shouldShowError('adminSurname') ? 'border-red-500' : ''}
+                    maxLength={50}
                     data-testid="input-admin-surname"
                   />
+                  {shouldShowError('adminSurname') && (
+                    <p className="text-sm text-red-500">{errors.adminSurname}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email corporativo</Label>
+                  <Label htmlFor="email">Email corporativo *</Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="agencia@ejemplo.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
+                    onBlur={() => handleBlur('email')}
+                    className={shouldShowError('email') ? 'border-red-500' : ''}
                     data-testid="input-email"
                   />
+                  {shouldShowError('email') && (
+                    <p className="text-sm text-red-500">{errors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
+                  <Label htmlFor="password">Contraseña *</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder="Mínimo 8 caracteres con un número"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      minLength={8}
+                      onBlur={() => handleBlur('password')}
+                      className={shouldShowError('password') ? 'border-red-500' : ''}
                       data-testid="input-password"
                     />
                     <button
@@ -418,12 +456,15 @@ export default function AgencyPlanRegister() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {shouldShowError('password') && (
+                    <p className="text-sm text-red-500">{errors.password}</p>
+                  )}
                 </div>
 
                 <Button 
                   type="submit" 
                   className="w-full text-lg py-6"
-                  disabled={isLoading}
+                  disabled={isLoading || !isFormValid}
                   data-testid="button-submit-registration"
                 >
                   {isLoading ? "Creando cuenta..." : "Crear cuenta y continuar"}
