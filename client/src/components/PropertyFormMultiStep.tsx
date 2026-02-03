@@ -88,6 +88,7 @@ const step2Schema = step1Schema.extend({
   address: z.string({ required_error: "Campo requerido" }).min(1, "La dirección es obligatoria"),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
+  hideAddress: z.boolean().default(true),
   escalera: z.enum(escaleraOptions).nullable().optional(),
   planta: z.enum(plantaOptions).nullable().optional(),
   puerta: z.enum(puertaOptions).nullable().optional(),
@@ -190,6 +191,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       address: "",
       latitude: null,
       longitude: null,
+      hideAddress: true,
       escalera: undefined,
       planta: undefined,
       puerta: undefined,
@@ -719,6 +721,31 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 initialFormattedAddress={form.getValues("address")}
                 initialLatitude={form.getValues("latitude")}
                 initialLongitude={form.getValues("longitude")}
+              />
+
+              <FormField
+                control={form.control}
+                name="hideAddress"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 bg-gradient-to-r from-amber-50 to-yellow-50">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-hide-address"
+                      />
+                    </FormControl>
+                    <div className="flex items-center gap-2">
+                      <FormLabel className="font-medium cursor-pointer">
+                        No mostrar la dirección
+                      </FormLabel>
+                      <div className="flex items-center gap-1 bg-gradient-to-r from-amber-400 to-yellow-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        <Sparkles className="h-3 w-3" />
+                        <span>gratis</span>
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
               />
 
               <div className="grid grid-cols-3 gap-4">
