@@ -161,6 +161,7 @@ export const properties = pgTable("properties", {
   address: text("address").notNull(), // Formatted address from Google
   latitude: real("latitude"), // Latitude coordinate
   longitude: real("longitude"), // Longitude coordinate
+  hideAddress: boolean("hide_address").default(true).notNull(), // Hide address from public profile (default: hidden)
   // Campos adicionales de dirección (privados, no se muestran públicamente)
   escalera: text("escalera"), // Escalera: A, B, C
   planta: text("planta"), // Planta: 1-20
