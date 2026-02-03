@@ -727,7 +727,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 control={form.control}
                 name="hideAddress"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 bg-gradient-to-r from-amber-50 to-yellow-50">
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
