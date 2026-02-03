@@ -328,7 +328,9 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
                 {property.housingType && <span>{property.housingType}</span>}
                 <span>{property.neighborhood}</span>
               </div>
-              <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
+              {!(property as any).hideAddress && (
+                <p className="mt-2 text-sm text-gray-600 line-clamp-1">{property.address}</p>
+              )}
 
               <div className="flex gap-4 mt-2 text-sm text-gray-500">
                 {property.superficie && (
