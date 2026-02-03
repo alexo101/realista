@@ -488,69 +488,89 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
             <div className="space-y-6">
               <h2 className="text-2xl font-bold">Información básica</h2>
 
-              <FormField
-                control={form.control}
-                name="reference"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Referencia</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Referencia interna para identificar la propiedad"
-                        data-testid="input-reference"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de inmueble</FormLabel>
-                    <Select onValueChange={(value) => {
-                      field.onChange(value);
-                      if (value !== "Vivienda") {
-                        form.setValue("housingType", undefined);
-                      }
-                    }} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-type">
-                          <SelectValue placeholder="Selecciona el tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {propertyTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {form.watch("type") === "Vivienda" && (
+              {/* Row 1: Referencia, Tipo de operación, Precio */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="housingType"
+                  name="reference"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo de vivienda</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                      <FormLabel>Referencia</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Ej: REF-001"
+                          data-testid="input-reference"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="operationType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de operación</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger data-testid="select-housing-type">
-                            <SelectValue placeholder="Selecciona el tipo de vivienda" />
+                          <SelectTrigger data-testid="select-operation-type">
+                            <SelectValue placeholder="Selecciona" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {housingTypes.map((type) => (
+                          <SelectItem value="Venta">Venta</SelectItem>
+                          <SelectItem value="Alquiler">Alquiler</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Precio (€)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          placeholder="Precio"
+                          data-testid="input-price"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Row 2: Tipo de inmueble, Tipo de vivienda (conditional) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de inmueble</FormLabel>
+                      <Select onValueChange={(value) => {
+                        field.onChange(value);
+                        if (value !== "Vivienda") {
+                          form.setValue("housingType", undefined);
+                        }
+                      }} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-type">
+                            <SelectValue placeholder="Selecciona el tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {propertyTypes.map((type) => (
                             <SelectItem key={type} value={type}>
                               {type}
                             </SelectItem>
@@ -561,50 +581,58 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     </FormItem>
                   )}
                 />
-              )}
 
-              <FormField
-                control={form.control}
-                name="operationType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de operación</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                {form.watch("type") === "Vivienda" && (
+                  <FormField
+                    control={form.control}
+                    name="housingType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de vivienda</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-housing-type">
+                              <SelectValue placeholder="Selecciona el tipo de vivienda" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {housingTypes.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              {/* Row 3: Superficie, Habitaciones, Baños */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="superficie"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Superficie (m²)</FormLabel>
                       <FormControl>
-                        <SelectTrigger data-testid="select-operation-type">
-                          <SelectValue placeholder="Selecciona la operación" />
-                        </SelectTrigger>
+                        <Input
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          type="number"
+                          placeholder="m²"
+                          data-testid="input-superficie"
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Venta">Venta</SelectItem>
-                        <SelectItem value="Alquiler">Alquiler</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Precio (€)</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        placeholder="Introduce el precio"
-                        data-testid="input-price"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="bedrooms"
@@ -661,27 +689,6 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="superficie"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Superficie (m²)</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                        type="number"
-                        placeholder="Superficie en m²"
-                        data-testid="input-superficie"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
           )}
 
