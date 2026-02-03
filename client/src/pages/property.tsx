@@ -356,7 +356,11 @@ export default function PropertyPage() {
                   </div>
                   <div className="flex items-center gap-2 mt-2 text-gray-600">
                     <MapPin className="h-4 w-4" />
-                    <span>{property.address} - {property.neighborhood}</span>
+                    <span>
+                      {property.hideAddress 
+                        ? property.neighborhood 
+                        : `${property.address} - ${property.neighborhood}`}
+                    </span>
                   </div>
                   {property.viewCount !== undefined && property.viewCount > 0 && (
                     <div className="mt-2 text-sm text-gray-500">

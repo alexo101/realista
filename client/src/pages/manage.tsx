@@ -1595,7 +1595,8 @@ export default function ManagePage() {
                         features: editingProperty.features || [],
                         availability: editingProperty.availability || "Inmediatamente",
                         availabilityDate: editingProperty.availabilityDate ? new Date(editingProperty.availabilityDate) : undefined,
-                        mainImageIndex: editingProperty.mainImageIndex || 0
+                        mainImageIndex: editingProperty.mainImageIndex || 0,
+                        hideAddress: editingProperty.hideAddress ?? true
                       } : undefined}
                       isEditing={true}
                     />)
