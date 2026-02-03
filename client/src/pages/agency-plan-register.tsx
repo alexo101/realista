@@ -383,7 +383,7 @@ export default function AgencyPlanRegister() {
                     placeholder="Ej: Juan"
                     value={formData.adminName}
                     onChange={(e) => {
-                      const value = e.target.value.slice(0, 50);
+                      const value = e.target.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '').slice(0, 50);
                       setFormData({ ...formData, adminName: value });
                     }}
                     onBlur={() => handleBlur('adminName')}
@@ -404,7 +404,7 @@ export default function AgencyPlanRegister() {
                     placeholder="Ej: García"
                     value={formData.adminSurname}
                     onChange={(e) => {
-                      const value = e.target.value.slice(0, 50);
+                      const value = e.target.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '').slice(0, 50);
                       setFormData({ ...formData, adminSurname: value });
                     }}
                     onBlur={() => handleBlur('adminSurname')}
