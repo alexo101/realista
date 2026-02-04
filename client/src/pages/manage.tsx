@@ -868,23 +868,25 @@ export default function ManagePage() {
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nombre</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Tu nombre" 
-                    value={name}
-                    onChange={(e) => {setName(e.target.value); setHasAgentChanges(true);}} // Added change detection
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="surname">Apellidos</Label>
-                  <Input 
-                    id="surname" 
-                    placeholder="Tus apellidos" 
-                    value={surname}
-                    onChange={(e) => {setSurname(e.target.value); setHasAgentChanges(true);}} // Added change detection
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Nombre</Label>
+                    <Input 
+                      id="name" 
+                      placeholder="Tu nombre" 
+                      value={name}
+                      onChange={(e) => {setName(e.target.value); setHasAgentChanges(true);}}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="surname">Apellidos</Label>
+                    <Input 
+                      id="surname" 
+                      placeholder="Tus apellidos" 
+                      value={surname}
+                      onChange={(e) => {setSurname(e.target.value); setHasAgentChanges(true);}}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="description">Descripción pública</Label>
@@ -893,42 +895,44 @@ export default function ManagePage() {
                     placeholder="Escribe una breve descripción sobre ti que verán tus clientes"
                     className="min-h-[100px]"
                     value={description}
-                    onChange={(e) => {setDescription(e.target.value); setHasAgentChanges(true);}} // Added change detection
+                    onChange={(e) => {setDescription(e.target.value); setHasAgentChanges(true);}}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="yearsOfExperience">Años de experiencia</Label>
-                  <Input 
-                    id="yearsOfExperience" 
-                    type="number"
-                    placeholder="Introduce tus años de experiencia" 
-                    value={yearsOfExperience !== undefined ? yearsOfExperience : ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '') {
-                        setYearsOfExperience(undefined);
-                      } else {
-                        const numValue = parseInt(value, 10);
-                        if (!isNaN(numValue) && numValue >= 0) {
-                          setYearsOfExperience(numValue);
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="agent-phone">Número de teléfono</Label>
+                    <Input 
+                      id="agent-phone" 
+                      placeholder="Teléfono (ej: 612345678)" 
+                      value={phone}
+                      onChange={(e) => {setPhone(e.target.value); setHasAgentChanges(true);}}
+                      data-testid="input-agent-phone"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Formato válido: +34 612 345 678, 612345678, etc.
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="yearsOfExperience">Años de experiencia</Label>
+                    <Input 
+                      id="yearsOfExperience" 
+                      type="number"
+                      placeholder="Años de experiencia" 
+                      value={yearsOfExperience !== undefined ? yearsOfExperience : ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setYearsOfExperience(undefined);
+                        } else {
+                          const numValue = parseInt(value, 10);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setYearsOfExperience(numValue);
+                          }
                         }
-                      }
-                      setHasAgentChanges(true); // Added change detection
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="agent-phone">Número de teléfono</Label>
-                  <Input 
-                    id="agent-phone" 
-                    placeholder="Teléfono de contacto (ej: 612345678)" 
-                    value={phone}
-                    onChange={(e) => {setPhone(e.target.value); setHasAgentChanges(true);}}
-                    data-testid="input-agent-phone"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Formato válido: +34 612 345 678, 612345678, etc.
-                  </p>
+                        setHasAgentChanges(true);
+                      }}
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="languagesSpoken">Idiomas que hablas</Label>
