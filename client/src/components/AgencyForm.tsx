@@ -208,57 +208,58 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               />
             </div>
 
-            <div>
-              <Label htmlFor="agencyPhone">Número de teléfono</Label>
-              <Input
-                id="agencyPhone"
-                value={agencyPhone}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setAgencyPhone(value);
-                  if (value && !validateSpanishPhone(value)) {
-                    setPhoneError("Formato inválido. Ejemplos: +34 600 123 456 o 600123456");
-                  } else {
-                    setPhoneError("");
-                  }
-                }}
-                placeholder="Teléfono de contacto (ej: +34 600 123 456)"
-                className={`min-h-[44px] w-full ${phoneError ? "border-red-500" : ""}`}
-              />
-              {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="yearEstablished">Año de fundación</Label>
-              <Select
-                value={yearEstablished ? yearEstablished.toString() : 'none'}
-                onValueChange={(value) => {
-                  if (value === 'none') {
-                    setYearEstablished(undefined);
-                  } else {
-                    setYearEstablished(parseInt(value, 10));
-                  }
-                }}
-              >
-                <SelectTrigger className="min-h-[44px] w-full">
-                  <SelectValue placeholder="Selecciona el año de fundación" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">-- Seleccionar año --</SelectItem>
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const years = [];
-                    for (let year = currentYear; year >= 1900; year--) {
-                      years.push(year);
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="agencyPhone">Número de teléfono</Label>
+                <Input
+                  id="agencyPhone"
+                  value={agencyPhone}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setAgencyPhone(value);
+                    if (value && !validateSpanishPhone(value)) {
+                      setPhoneError("Formato inválido. Ejemplos: +34 600 123 456 o 600123456");
+                    } else {
+                      setPhoneError("");
                     }
-                    return years.map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ));
-                  })()}
-                </SelectContent>
-              </Select>
+                  }}
+                  placeholder="Teléfono (ej: +34 600 123 456)"
+                  className={`min-h-[44px] w-full ${phoneError ? "border-red-500" : ""}`}
+                />
+                {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
+              </div>
+              <div>
+                <Label htmlFor="yearEstablished">Año de fundación</Label>
+                <Select
+                  value={yearEstablished ? yearEstablished.toString() : 'none'}
+                  onValueChange={(value) => {
+                    if (value === 'none') {
+                      setYearEstablished(undefined);
+                    } else {
+                      setYearEstablished(parseInt(value, 10));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="min-h-[44px] w-full">
+                    <SelectValue placeholder="Selecciona el año" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- Seleccionar año --</SelectItem>
+                    {(() => {
+                      const currentYear = new Date().getFullYear();
+                      const years = [];
+                      for (let year = currentYear; year >= 1900; year--) {
+                        years.push(year);
+                      }
+                      return years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ));
+                    })()}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div>
