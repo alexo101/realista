@@ -1726,6 +1726,7 @@ export class DatabaseStorage implements IStorage {
       streetName: properties.streetName, // Street name input for address editing
       streetNumber: properties.streetNumber, // Street number input for address editing
       address: properties.address,
+      hideAddress: properties.hideAddress, // Hide address from public display
       latitude: properties.latitude, // For map display
       longitude: properties.longitude, // For map display
       escalera: properties.escalera,
@@ -1971,6 +1972,7 @@ export class DatabaseStorage implements IStorage {
       uuid: properties.uuid,
       reference: properties.reference,
       address: properties.address,
+      hideAddress: properties.hideAddress,
       escalera: properties.escalera,
       planta: properties.planta,
       puerta: properties.puerta,
