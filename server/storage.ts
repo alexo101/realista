@@ -1133,7 +1133,6 @@ export class DatabaseStorage implements IStorage {
           agencyAddress: agencies.agencyAddress,
           agencyDescription: agencies.agencyDescription,
           agencyLogo: agencies.agencyLogo,
-          agencyEmailToDisplay: agencies.agencyEmailToDisplay,
           agencyPhone: agencies.agencyPhone,
           agencyActiveSince: agencies.agencyActiveSince,
           city: agencies.city,
@@ -1179,7 +1178,6 @@ export class DatabaseStorage implements IStorage {
           agencyAddress: agencies.agencyAddress,
           agencyDescription: agencies.agencyDescription,
           agencyLogo: agencies.agencyLogo,
-          agencyEmailToDisplay: agencies.agencyEmailToDisplay,
           agencyPhone: agencies.agencyPhone,
           agencyActiveSince: agencies.agencyActiveSince,
           city: agencies.city,
@@ -1242,7 +1240,6 @@ export class DatabaseStorage implements IStorage {
           agencySupportedLanguages: agencyData.agencySupportedLanguages || [],
           agencyWebsite: agencyData.agencyWebsite || null,
           agencySocialMedia: agencyData.agencySocialMedia || null,
-          agencyEmailToDisplay: agencyData.agencyEmailToDisplay || null,
           agencyActiveSince: agencyData.agencyActiveSince || null,
           agencyPhone: agencyData.agencyPhone || null,
           city: agencyData.city || 'Barcelona',
@@ -1277,7 +1274,6 @@ export class DatabaseStorage implements IStorage {
       if (agencyData.agencyAddress !== undefined) updates.agencyAddress = agencyData.agencyAddress;
       if (agencyData.agencyDescription !== undefined) updates.agencyDescription = agencyData.agencyDescription;
       if (agencyData.agencyLogo !== undefined) updates.agencyLogo = agencyData.agencyLogo;
-      if (agencyData.agencyEmailToDisplay !== undefined) updates.agencyEmailToDisplay = agencyData.agencyEmailToDisplay;
       if (agencyData.agencyPhone !== undefined) updates.agencyPhone = agencyData.agencyPhone;
       if (agencyData.city !== undefined) updates.city = agencyData.city;
       if (agencyData.agencyWebsite !== undefined) updates.agencyWebsite = agencyData.agencyWebsite;
@@ -2664,7 +2660,6 @@ export class DatabaseStorage implements IStorage {
         id: agencies.id,
         uuid: agencies.uuid,
         slug: agencies.slug,
-        email: agencies.agencyEmailToDisplay,
         agencyName: agencies.agencyName,
         agencyWebsite: agencies.agencyWebsite,
         agencySocialMedia: agencies.agencySocialMedia,
