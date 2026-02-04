@@ -76,7 +76,6 @@ export const agencies = pgTable("agencies", {
   agencyAddress: text("agency_address"),
   agencyDescription: text("agency_description"),
   agencyLogo: text("agency_logo"),
-  agencyEmailToDisplay: text("agency_email_to_display"),
   agencyPhone: text("agency_phone"),
   agencyActiveSince: text("agency_active_since"),
   city: text("city"),
@@ -455,7 +454,6 @@ export type AgencyDTO = {
   agencyAddress: string | null;
   agencyDescription: string | null;
   agencyLogo: string | null;
-  agencyEmailToDisplay: string | null;
   agencyPhone: string | null;
   phone: string | null; // Alias for agencyPhone
   agencyActiveSince: string | null;

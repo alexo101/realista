@@ -20,7 +20,6 @@ export interface Agency {
   agencyWebsite?: string;
   city?: string;
   agencyInfluenceNeighborhoods?: string[];
-  agencyEmailToDisplay?: string;
   yearEstablished?: number;
   agencySupportedLanguages?: string[];
   agencySocialMedia?: Record<string, string>;
@@ -41,7 +40,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   const [agencyDescription, setAgencyDescription] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
   const [agencyWebsite, setAgencyWebsite] = useState("");
-  const [agencyEmailToDisplay, setAgencyEmailToDisplay] = useState("");
   const [yearEstablished, setYearEstablished] = useState<number | undefined>(undefined);
   const [agencySupportedLanguages, setAgencySupportedLanguages] = useState<string[]>([]);
   const [agencyLogo, setAgencyLogo] = useState<string | undefined>();
@@ -59,7 +57,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
 
   // Estados para errores de validación
   const [phoneError, setPhoneError] = useState<string>("");
-  const [emailError, setEmailError] = useState<string>("");
   const [websiteError, setWebsiteError] = useState<string>("");
 
   // Funciones de validación
@@ -68,12 +65,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     // Formatos válidos: +34 XXX XXX XXX, 34XXXXXXXXX, 9XX XXX XXX, etc.
     const phoneRegex = /^(\+34|0034|34)?[\s\-]?[6789]\d{2}[\s\-]?\d{3}[\s\-]?\d{3}$/;
     return phoneRegex.test(phone.replace(/\s/g, ''));
-  };
-
-  const validateEmail = (email: string): boolean => {
-    if (!email) return true; // Campo opcional
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
   };
 
   const validateWebsite = (website: string): boolean => {
@@ -90,7 +81,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       setAgencyDescription(agency.agencyDescription || "");
       setAgencyPhone(agency.agencyPhone || "");
       setAgencyWebsite(agency.agencyWebsite || "");
-      setAgencyEmailToDisplay(agency.agencyEmailToDisplay || "");
       setYearEstablished(agency.yearEstablished);
       setAgencySupportedLanguages(agency.agencySupportedLanguages || []);
       setAgencyLogo(agency.agencyLogo);
@@ -108,7 +98,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   }, [agency]);
 
   // Validación completa del formulario
-  const isValid = agencyName.trim().length > 0 && !phoneError && !emailError && !websiteError;
+  const isValid = agencyName.trim().length > 0 && !phoneError && !websiteError;
 
   // Manejar el envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,7 +118,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       agencyDescription,
       agencyPhone,
       agencyWebsite,
-      agencyEmailToDisplay,
       yearEstablished,
       agencySupportedLanguages,
       agencyLogo,
@@ -237,27 +226,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 className={`min-h-[44px] w-full ${phoneError ? "border-red-500" : ""}`}
               />
               {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="agencyEmailToDisplay">Email público</Label>
-              <Input
-                id="agencyEmailToDisplay"
-                value={agencyEmailToDisplay}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setAgencyEmailToDisplay(value);
-                  if (value && !validateEmail(value)) {
-                    setEmailError("Formato de email inválido");
-                  } else {
-                    setEmailError("");
-                  }
-                }}
-                placeholder="Email para mostrar en el perfil público"
-                type="email"
-                className={`min-h-[44px] w-full ${emailError ? "border-red-500" : ""}`}
-              />
-              {emailError && <p className="text-sm text-red-500 mt-1">{emailError}</p>}
             </div>
 
             <div>
