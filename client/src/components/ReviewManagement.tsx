@@ -369,6 +369,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isResponseDialogOpen, setIsResponseDialogOpen] = useState(false);
   const [sendingRequestTo, setSendingRequestTo] = useState<number | null>(null);
+  const [reviewConfirmClient, setReviewConfirmClient] = useState<{id: number, name: string} | null>(null);
   
   // Consulta para obtener las reseñas
   const {
@@ -497,10 +498,18 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
     return review.targetType === reviewFilterTab;
   });
   
-  // Handler para enviar solicitud de reseña
-  const handleSendReviewRequest = (clientId: number) => {
-    setSendingRequestTo(clientId);
-    sendReviewRequestMutation.mutate(clientId);
+  // Handler para abrir confirmación de solicitud de reseña
+  const handleOpenReviewConfirm = (clientId: number, clientName: string) => {
+    setReviewConfirmClient({ id: clientId, name: clientName });
+  };
+
+  // Handler para enviar solicitud de reseña (después de confirmar)
+  const handleConfirmReviewRequest = () => {
+    if (reviewConfirmClient) {
+      setSendingRequestTo(reviewConfirmClient.id);
+      sendReviewRequestMutation.mutate(reviewConfirmClient.id);
+      setReviewConfirmClient(null);
+    }
   };
   
   // Traducir el source a español
@@ -722,7 +731,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                           <Button
                             size="sm"
                             className="w-full mt-3"
-                            onClick={() => handleSendReviewRequest(client.id)}
+                            onClick={() => handleOpenReviewConfirm(client.id, `${client.name} ${client.surname || ''}`.trim())}
                             disabled={sendingRequestTo === client.id}
                             data-testid={`button-request-review-mobile-${client.id}`}
                           >
@@ -792,7 +801,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                               <TableCell className="text-right">
                                 <Button
                                   size="sm"
-                                  onClick={() => handleSendReviewRequest(client.id)}
+                                  onClick={() => handleOpenReviewConfirm(client.id, `${client.name} ${client.surname || ''}`.trim())}
                                   disabled={sendingRequestTo === client.id}
                                   data-testid={`button-request-review-${client.id}`}
                                 >
@@ -830,6 +839,30 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
           onSubmit={handleSubmitResponse}
         />
       )}
+
+      <Dialog open={reviewConfirmClient !== null} onOpenChange={(open) => !open && setReviewConfirmClient(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar solicitud de reseña</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres solicitar una reseña a {reviewConfirmClient?.name}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setReviewConfirmClient(null)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmReviewRequest}
+            >
+              Enviar solicitud
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
