@@ -507,8 +507,11 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   const handleConfirmReviewRequest = () => {
     if (reviewConfirmClient) {
       setSendingRequestTo(reviewConfirmClient.id);
-      sendReviewRequestMutation.mutate(reviewConfirmClient.id);
-      setReviewConfirmClient(null);
+      sendReviewRequestMutation.mutate(reviewConfirmClient.id, {
+        onSettled: () => {
+          setReviewConfirmClient(null);
+        }
+      });
     }
   };
   
@@ -840,7 +843,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
         />
       )}
 
-      <Dialog open={reviewConfirmClient !== null} onOpenChange={(open) => !open && setReviewConfirmClient(null)}>
+      <Dialog open={reviewConfirmClient !== null} onOpenChange={(open) => !open && !sendReviewRequestMutation.isPending && setReviewConfirmClient(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar solicitud de reseña</DialogTitle>
@@ -852,13 +855,15 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
             <Button 
               variant="outline" 
               onClick={() => setReviewConfirmClient(null)}
+              disabled={sendReviewRequestMutation.isPending}
             >
               Cancelar
             </Button>
             <Button 
               onClick={handleConfirmReviewRequest}
+              disabled={sendReviewRequestMutation.isPending}
             >
-              Enviar solicitud
+              {sendReviewRequestMutation.isPending ? 'Enviando...' : 'Enviar solicitud'}
             </Button>
           </DialogFooter>
         </DialogContent>
