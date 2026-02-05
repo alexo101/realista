@@ -1487,7 +1487,7 @@ export default function ManagePage() {
                 <>
                   {/* Desktop Header */}
                   <div className="hidden md:flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Gestión de Propiedades</h2>
+                    <h2 className="text-2xl font-bold">Crea y edita tus propiedades</h2>
                     <div className="flex items-center gap-2">
                       {/* View Toggle Buttons */}
                       <div className="flex border rounded-md">
