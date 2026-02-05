@@ -2470,74 +2470,7 @@ export default function ManagePage() {
           {currentSection === "resenas" && (
             <div className="max-w-4xl mx-auto">
               {user ? (
-                <Tabs defaultValue="management" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="management">Gestión de reseñas</TabsTrigger>
-                    <TabsTrigger value="request">Solicitar reseñas</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="management" className="mt-6">
-                    <ReviewManagement userId={user.id} userType={user.isAdmin ? "admin" : "agent"} />
-                  </TabsContent>
-                  
-                  <TabsContent value="request" className="mt-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Solicitar reseñas a clientes</CardTitle>
-                        <CardDescription>
-                          Envía solicitudes de reseña por email a tus clientes
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {isLoadingClients ? (
-                          <div className="text-center py-8">
-                            <p>Cargando clientes...</p>
-                          </div>
-                        ) : !clients?.length ? (
-                          <div className="text-center py-12 bg-gray-50 rounded-lg">
-                            <Users className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-2 text-lg font-medium text-gray-900">Sin clientes</h3>
-                            <p className="mt-1 text-gray-500">
-                              Añade clientes para poder solicitar reseñas
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="grid gap-4">
-                            {clients.map((client) => (
-                              <div
-                                key={client.id}
-                                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-4">
-                                    <div className="flex-1">
-                                      <h3 className="font-medium text-gray-900">
-                                        {client.name} {client.surname || ''}
-                                      </h3>
-                                      <div className="mt-1 text-sm text-gray-500">
-                                        <p>Email: {client.email}</p>
-                                        <p>Teléfono: {client.phone}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleRequestReview(client.id, client.name)}
-                                  className="ml-4"
-                                >
-                                  <Star className="h-4 w-4 mr-2" />
-                                  Solicitar reseña
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
+                <ReviewManagement userId={user.id} userType={user.isAdmin ? "admin" : "agent"} />
               ) : (
                 <div className="text-center py-16 bg-gray-50 rounded-lg">
                   <Star className="mx-auto h-12 w-12 text-gray-400" />
