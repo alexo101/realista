@@ -1728,7 +1728,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let agentId;
       if (isNaN(id)) {
-        // It's a slug, lookup the agent first to get the ID
         const agent = await storage.getAgentBySlug(identifier);
         if (!agent) {
           return res.status(404).json({ message: "Agent not found" });
@@ -1738,8 +1737,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentId = id;
       }
 
-      const clients = await storage.getClientsByAgent(agentId);
-      res.json(clients);
+      const clientsList = await storage.getClientsByAgent(agentId);
+      
+      const allReviews = await storage.getAgentReviews(agentId);
+      const reviewEmails = new Set(allReviews.map((r: any) => r.reviewerEmail?.toLowerCase()).filter(Boolean));
+      
+      const clientsWithStatus = clientsList.map((client: any) => {
+        const hasReview = reviewEmails.has(client.email?.toLowerCase());
+        let reviewStatus = null;
+        
+        if (client.reviewRequestSentAt) {
+          if (hasReview) {
+            reviewStatus = 'realizada';
+          } else {
+            const daysSinceSent = Math.floor((Date.now() - new Date(client.reviewRequestSentAt).getTime()) / (1000 * 60 * 60 * 24));
+            reviewStatus = daysSinceSent >= 30 ? 'abandonada' : 'enviada';
+          }
+        }
+        
+        return { ...client, reviewStatus };
+      });
+      
+      res.json(clientsWithStatus);
     } catch (error) {
       console.error('Error fetching clients for agent:', error);
       res.status(500).json({ message: "Failed to fetch clients" });
@@ -3554,6 +3573,11 @@ Gracias!
 
       if (!emailSent) {
         return res.status(500).json({ message: "Error al enviar la solicitud de reseña" });
+      }
+
+      const { clientId } = req.body;
+      if (clientId) {
+        await storage.updateClientProfile(clientId, { reviewRequestSentAt: new Date() });
       }
 
       res.status(200).json({ success: true, message: "Solicitud de reseña enviada correctamente" });

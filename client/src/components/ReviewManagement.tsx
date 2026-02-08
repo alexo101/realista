@@ -97,7 +97,26 @@ interface EligibleClient {
   phone: string;
   source?: string;
   createdAt: string;
+  reviewRequestSentAt?: string;
+  reviewStatus?: 'enviada' | 'realizada' | 'abandonada' | null;
 }
+
+const ReviewStatusBadge = ({ status }: { status?: 'enviada' | 'realizada' | 'abandonada' | null }) => {
+  if (!status) return <span className="text-xs text-gray-400">--</span>;
+  
+  const config = {
+    enviada: { label: 'Enviada', className: 'bg-orange-100 text-orange-700 border-orange-200' },
+    realizada: { label: 'Realizada', className: 'bg-green-100 text-green-700 border-green-200' },
+    abandonada: { label: 'Abandonada', className: 'bg-red-100 text-red-700 border-red-200' },
+  };
+  
+  const { label, className } = config[status];
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${className}`}>
+      {label}
+    </span>
+  );
+};
 
 // Componente para mostrar las estrellas de calificación
 const StarRating = ({ rating }: { rating: number }) => {
@@ -410,7 +429,8 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
       
       return apiRequest("POST", `/api/agents/${userId}/review-request`, {
         clientEmail: client.email,
-        clientName: `${client.name} ${client.surname || ''}`.trim()
+        clientName: `${client.name} ${client.surname || ''}`.trim(),
+        clientId: client.id
       });
     },
     onSuccess: (_, clientId) => {
@@ -419,6 +439,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
         description: "Se ha enviado una solicitud de reseña al cliente.",
       });
       setSendingRequestTo(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/agents", userId, "clients"] });
     },
     onError: (error: any) => {
       toast({
@@ -731,6 +752,10 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                             )}
                           </div>
                           
+                          <div className="mt-2">
+                            <ReviewStatusBadge status={client.reviewStatus} />
+                          </div>
+                          
                           <Button
                             size="sm"
                             className="w-full mt-3"
@@ -763,6 +788,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                             <TableHead>Contacto</TableHead>
                             <TableHead>Origen</TableHead>
                             <TableHead>Fecha</TableHead>
+                            <TableHead>Estado</TableHead>
                             <TableHead className="text-right">Acción</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -800,6 +826,9 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                               </TableCell>
                               <TableCell className="text-sm text-gray-500">
                                 {new Date(client.createdAt).toLocaleDateString('es-ES')}
+                              </TableCell>
+                              <TableCell>
+                                <ReviewStatusBadge status={client.reviewStatus} />
                               </TableCell>
                               <TableCell className="text-right">
                                 <Button

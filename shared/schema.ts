@@ -244,6 +244,8 @@ export const clients = pgTable("clients", {
   moveInTiming: text("move_in_timing"), // "Lo antes posible", "Tengo flexibilidad", "Fecha exacta"
   moveInDate: timestamp("move_in_date"), // Specific date if "Fecha exacta" is selected
   
+  reviewRequestSentAt: timestamp("review_request_sent_at"),
+
   // Contact history timeline
   contactHistory: jsonb("contact_history").default(sql`'[]'::jsonb`), // Array of {id, status, timestamp, note}
 }, (table) => ({
