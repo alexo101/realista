@@ -399,6 +399,16 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   };
 
   const handleFinalSubmit = async () => {
+    const currentImages = form.getValues("imageUrls") || [];
+    if (currentImages.length === 0) {
+      toast({
+        title: "Imagen requerida",
+        description: "No es posible publicar la propiedad sin al menos una foto. Por favor, añade al menos una imagen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // If availability is "Inmediatamente", set availabilityDate to current date BEFORE validation
     const currentAvailability = form.getValues("availability");
     if (currentAvailability === "Inmediatamente" && !form.getValues("availabilityDate")) {
