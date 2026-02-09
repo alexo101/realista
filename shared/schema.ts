@@ -194,6 +194,7 @@ export const properties = pgTable("properties", {
   isActive: boolean("is_active").default(true).notNull(), // Para activar/desactivar la visibilidad de la propiedad
   isDraft: boolean("is_draft").default(true).notNull(), // Borrador: true hasta completar todos los pasos
   fraudCount: integer("fraud_count").default(0).notNull(), // Contador de reportes de fraude
+  managementStatus: text("management_status").default("Creada").notNull(), // Creada, Activa, Reservada, Alquilada, Inactiva, Vendida, En reforma
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   // Performance indexes for frequent queries
@@ -753,3 +754,101 @@ export const NETWORK_SUBSCRIPTION_LIMITS = {
 
 export type SubscriptionPlan = keyof typeof SUBSCRIPTION_LIMITS;
 export type NetworkSubscriptionPlan = keyof typeof NETWORK_SUBSCRIPTION_LIMITS;
+
+// Property Management Tables
+
+export const propertyContracts = pgTable("property_contracts", {
+  id: serial("id").primaryKey(),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
+  tenantId: integer("tenant_id").references(() => clients.id),
+  tenantName: text("tenant_name"),
+  tenantEmail: text("tenant_email"),
+  tenantPhone: text("tenant_phone"),
+  duration: integer("duration").notNull(), // months
+  startDate: text("start_date").notNull(), // YYYY-MM-DD
+  endDate: text("end_date").notNull(), // YYYY-MM-DD
+  rentPrice: integer("rent_price").notNull(), // monthly rent in cents
+  guarantee: integer("guarantee"), // deposit amount in cents
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPropertyContractSchema = createInsertSchema(propertyContracts).omit({ id: true, createdAt: true });
+export type PropertyContract = typeof propertyContracts.$inferSelect;
+export type InsertPropertyContract = z.infer<typeof insertPropertyContractSchema>;
+
+export const propertyPayments = pgTable("property_payments", {
+  id: serial("id").primaryKey(),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
+  contractId: integer("contract_id").references(() => propertyContracts.id, { onDelete: "cascade" }),
+  concept: text("concept").notNull(),
+  amount: integer("amount").notNull(), // in cents
+  status: text("status").notNull().default("Pendiente"), // Pendiente, Pagado
+  addToHistory: boolean("add_to_history").default(false).notNull(),
+  paymentDate: text("payment_date"), // YYYY-MM-DD
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPropertyPaymentSchema = createInsertSchema(propertyPayments).omit({ id: true, createdAt: true });
+export type PropertyPayment = typeof propertyPayments.$inferSelect;
+export type InsertPropertyPayment = z.infer<typeof insertPropertyPaymentSchema>;
+
+export const propertyDocuments = pgTable("property_documents", {
+  id: serial("id").primaryKey(),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
+  documentType: text("document_type").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: text("file_size"),
+  fileUrl: text("file_url").notNull(),
+  uploadDate: text("upload_date").notNull(), // YYYY-MM-DD
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPropertyDocumentSchema = createInsertSchema(propertyDocuments).omit({ id: true, createdAt: true });
+export type PropertyDocument = typeof propertyDocuments.$inferSelect;
+export type InsertPropertyDocument = z.infer<typeof insertPropertyDocumentSchema>;
+
+export const propertyIncidents = pgTable("property_incidents", {
+  id: serial("id").primaryKey(),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("Nueva"), // Nueva, Asignada, En espera, Resuelta, Verificada, Cerrada
+  priority: text("priority").notNull().default("Media"), // Alta, Media, Baja
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPropertyIncidentSchema = createInsertSchema(propertyIncidents).omit({ id: true, createdAt: true });
+export type PropertyIncident = typeof propertyIncidents.$inferSelect;
+export type InsertPropertyIncident = z.infer<typeof insertPropertyIncidentSchema>;
+
+export const propertyCommunications = pgTable("property_communications", {
+  id: serial("id").primaryKey(),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  communicationType: text("communication_type").notNull(),
+  relevantDate: text("relevant_date").notNull(), // YYYY-MM-DD
+  description: text("description"),
+  addToCalendar: boolean("add_to_calendar").default(false).notNull(),
+  addToHistory: boolean("add_to_history").default(false).notNull(),
+  agentId: integer("agent_id").references(() => agents.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPropertyCommunicationSchema = createInsertSchema(propertyCommunications).omit({ id: true, createdAt: true });
+export type PropertyCommunication = typeof propertyCommunications.$inferSelect;
+export type InsertPropertyCommunication = z.infer<typeof insertPropertyCommunicationSchema>;
+
+export const propertyHistory = pgTable("property_history", {
+  id: serial("id").primaryKey(),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(), // creation, status_change, contract, payment, incident, communication
+  title: text("title").notNull(),
+  description: text("description"),
+  performedBy: text("performed_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPropertyHistorySchema = createInsertSchema(propertyHistory).omit({ id: true, createdAt: true });
+export type PropertyHistoryEntry = typeof propertyHistory.$inferSelect;
+export type InsertPropertyHistory = z.infer<typeof insertPropertyHistorySchema>;

@@ -5516,6 +5516,382 @@ Gracias!
     }
   });
 
+  // ===== Property Management Routes =====
+
+  // 1. Property Management Status
+  app.patch("/api/properties/:uuid/management-status", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const { status } = req.body;
+      const validStatuses = ["Creada", "Activa", "Reservada", "Alquilada", "Inactiva", "Vendida", "En reforma"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Estado no válido" });
+      }
+
+      const property = await storage.getPropertyByUuid(uuid);
+      if (!property) return res.status(404).json({ error: "Propiedad no encontrada" });
+
+      const oldStatus = property.managementStatus;
+      const updated = await storage.updatePropertyManagementStatus(uuid, status);
+
+      await storage.createPropertyHistory({
+        propertyUuid: uuid,
+        eventType: "status_change",
+        title: "Cambio de estado",
+        description: `De "${oldStatus}" a "${status}"`,
+        performedBy: req.user?.name || "Usuario Actual",
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating management status:", error);
+      res.status(500).json({ error: "Error al actualizar el estado" });
+    }
+  });
+
+  // 2. Property Contracts CRUD
+  app.get("/api/properties/:uuid/contracts", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const contracts = await storage.getPropertyContracts(uuid);
+      res.json(contracts);
+    } catch (error) {
+      console.error("Error fetching contracts:", error);
+      res.status(500).json({ error: "Error al obtener los contratos" });
+    }
+  });
+
+  app.get("/api/properties/:uuid/contracts/active", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const contract = await storage.getActivePropertyContract(uuid);
+      res.json(contract || null);
+    } catch (error) {
+      console.error("Error fetching active contract:", error);
+      res.status(500).json({ error: "Error al obtener el contrato activo" });
+    }
+  });
+
+  app.post("/api/properties/:uuid/contracts", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const { tenantName, tenantEmail, tenantPhone, tenantId, duration, startDate, endDate, rentPrice, guarantee } = req.body;
+
+      if (!tenantName || !duration || !startDate || !endDate || rentPrice === undefined) {
+        return res.status(400).json({ error: "Faltan campos obligatorios: tenantName, duration, startDate, endDate, rentPrice" });
+      }
+
+      const contract = await storage.createPropertyContract({
+        propertyUuid: uuid,
+        tenantName,
+        tenantEmail: tenantEmail || null,
+        tenantPhone: tenantPhone || null,
+        tenantId: tenantId || null,
+        duration,
+        startDate,
+        endDate,
+        rentPrice,
+        guarantee: guarantee || null,
+        isActive: true,
+      });
+
+      await storage.createPropertyHistory({
+        propertyUuid: uuid,
+        eventType: "contract",
+        title: "Contrato de alquiler configurado",
+        description: `Inquilino: ${tenantName}, Duración: ${duration}`,
+        performedBy: req.user?.name || "Usuario Actual",
+      });
+
+      res.status(201).json(contract);
+    } catch (error) {
+      console.error("Error creating contract:", error);
+      res.status(500).json({ error: "Error al crear el contrato" });
+    }
+  });
+
+  app.patch("/api/properties/:uuid/contracts/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updatePropertyContract(parseInt(id), req.body);
+      if (!updated) return res.status(404).json({ error: "Contrato no encontrado" });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating contract:", error);
+      res.status(500).json({ error: "Error al actualizar el contrato" });
+    }
+  });
+
+  // 3. Property Payments CRUD
+  app.get("/api/properties/:uuid/payments", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const payments = await storage.getPropertyPayments(uuid);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      res.status(500).json({ error: "Error al obtener los pagos" });
+    }
+  });
+
+  app.post("/api/properties/:uuid/payments", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const { concept, amount, status, addToHistory, paymentDate, contractId } = req.body;
+
+      if (!concept || amount === undefined || !status) {
+        return res.status(400).json({ error: "Faltan campos obligatorios: concept, amount, status" });
+      }
+
+      const payment = await storage.createPropertyPayment({
+        propertyUuid: uuid,
+        concept,
+        amount,
+        status,
+        addToHistory: addToHistory || false,
+        paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+        contractId: contractId || null,
+      });
+
+      if (addToHistory) {
+        await storage.createPropertyHistory({
+          propertyUuid: uuid,
+          eventType: "payment",
+          title: concept,
+          description: `${amount}€ - ${status}`,
+          performedBy: req.user?.name || "Usuario Actual",
+        });
+      }
+
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      res.status(500).json({ error: "Error al crear el pago" });
+    }
+  });
+
+  app.patch("/api/properties/:uuid/payments/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updatePropertyPayment(parseInt(id), req.body);
+      if (!updated) return res.status(404).json({ error: "Pago no encontrado" });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating payment:", error);
+      res.status(500).json({ error: "Error al actualizar el pago" });
+    }
+  });
+
+  app.delete("/api/properties/:uuid/payments/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePropertyPayment(parseInt(id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      res.status(500).json({ error: "Error al eliminar el pago" });
+    }
+  });
+
+  // 4. Property Documents CRUD
+  app.get("/api/properties/:uuid/documents", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const documents = await storage.getPropertyDocuments(uuid);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ error: "Error al obtener los documentos" });
+    }
+  });
+
+  app.post("/api/properties/:uuid/documents", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const { documentType, fileName, fileUrl } = req.body;
+
+      if (!documentType || !fileName || !fileUrl) {
+        return res.status(400).json({ error: "Faltan campos obligatorios: documentType, fileName, fileUrl" });
+      }
+
+      const { fileSize, uploadDate } = req.body;
+      const document = await storage.createPropertyDocument({
+        propertyUuid: uuid,
+        documentType,
+        fileName,
+        fileUrl,
+        fileSize: fileSize || null,
+        uploadDate: uploadDate || new Date().toISOString().split('T')[0],
+      });
+
+      await storage.createPropertyHistory({
+        propertyUuid: uuid,
+        eventType: "document",
+        title: "Documento añadido",
+        description: `${documentType}: ${fileName}`,
+        performedBy: req.user?.name || "Usuario Actual",
+      });
+
+      res.status(201).json(document);
+    } catch (error) {
+      console.error("Error creating document:", error);
+      res.status(500).json({ error: "Error al crear el documento" });
+    }
+  });
+
+  app.delete("/api/properties/:uuid/documents/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deletePropertyDocument(parseInt(id));
+      if (!deleted) return res.status(404).json({ error: "Documento no encontrado" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ error: "Error al eliminar el documento" });
+    }
+  });
+
+  // 5. Property Incidents CRUD
+  app.get("/api/properties/:uuid/incidents", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const incidents = await storage.getPropertyIncidents(uuid);
+      res.json(incidents);
+    } catch (error) {
+      console.error("Error fetching incidents:", error);
+      res.status(500).json({ error: "Error al obtener las incidencias" });
+    }
+  });
+
+  app.post("/api/properties/:uuid/incidents", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const { title, status, priority, description } = req.body;
+
+      if (!title || !status || !priority) {
+        return res.status(400).json({ error: "Faltan campos obligatorios: title, status, priority" });
+      }
+      const incident = await storage.createPropertyIncident({
+        propertyUuid: uuid,
+        title,
+        status,
+        priority,
+        description: description || null,
+      });
+
+      await storage.createPropertyHistory({
+        propertyUuid: uuid,
+        eventType: "incident",
+        title,
+        description: `${status} - Prioridad: ${priority}`,
+        performedBy: req.user?.name || "Usuario Actual",
+      });
+
+      res.status(201).json(incident);
+    } catch (error) {
+      console.error("Error creating incident:", error);
+      res.status(500).json({ error: "Error al crear la incidencia" });
+    }
+  });
+
+  app.patch("/api/properties/:uuid/incidents/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updatePropertyIncident(parseInt(id), req.body);
+      if (!updated) return res.status(404).json({ error: "Incidencia no encontrada" });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating incident:", error);
+      res.status(500).json({ error: "Error al actualizar la incidencia" });
+    }
+  });
+
+  // 6. Property Communications CRUD
+  app.get("/api/properties/:uuid/communications", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const communications = await storage.getPropertyCommunications(uuid);
+      res.json(communications);
+    } catch (error) {
+      console.error("Error fetching communications:", error);
+      res.status(500).json({ error: "Error al obtener las comunicaciones" });
+    }
+  });
+
+  app.post("/api/properties/:uuid/communications", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const { title, communicationType, relevantDate, addToHistory, addToCalendar, description, agentId } = req.body;
+
+      if (!title || !communicationType || !relevantDate) {
+        return res.status(400).json({ error: "Faltan campos obligatorios: title, communicationType, relevantDate" });
+      }
+      const communication = await storage.createPropertyCommunication({
+        propertyUuid: uuid,
+        title,
+        communicationType,
+        relevantDate,
+        description: description || null,
+        addToCalendar: addToCalendar || false,
+        addToHistory: addToHistory || false,
+        agentId: agentId || null,
+      });
+
+      if (addToHistory) {
+        await storage.createPropertyHistory({
+          propertyUuid: uuid,
+          eventType: "communication",
+          title: "Nueva comunicación registrada",
+          description: title,
+          performedBy: req.user?.name || "Usuario Actual",
+        });
+      }
+
+      if (addToCalendar) {
+        const property = await storage.getPropertyByUuid(uuid);
+        if (property) {
+          await storage.createAgentEvent({
+            agentId: property.agentId,
+            eventType: communicationType,
+            eventDate: relevantDate,
+            eventTime: "09:00",
+            comments: `${title}${description ? ' - ' + description : ''}`,
+            propertyUuid: uuid,
+          });
+        }
+      }
+
+      res.status(201).json(communication);
+    } catch (error) {
+      console.error("Error creating communication:", error);
+      res.status(500).json({ error: "Error al crear la comunicación" });
+    }
+  });
+
+  app.patch("/api/properties/:uuid/communications/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updated = await storage.updatePropertyCommunication(parseInt(id), req.body);
+      if (!updated) return res.status(404).json({ error: "Comunicación no encontrada" });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating communication:", error);
+      res.status(500).json({ error: "Error al actualizar la comunicación" });
+    }
+  });
+
+  // 7. Property History
+  app.get("/api/properties/:uuid/history", requireAuth, async (req, res) => {
+    try {
+      const { uuid } = req.params;
+      const history = await storage.getPropertyHistory(uuid);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching property history:", error);
+      res.status(500).json({ error: "Error al obtener el historial" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

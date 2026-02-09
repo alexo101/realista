@@ -37,6 +37,7 @@ import { AgentCalendar } from "@/pages/agent-calendar";
 import { TeamManagement } from "@/components/TeamManagement";
 import { NetworkManagement } from "@/components/NetworkManagement";
 import { BillingTab } from "@/components/BillingTab";
+import { PropertyManagement } from "@/components/PropertyManagement";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -157,6 +158,7 @@ export default function ManagePage() {
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [isRequestingReview, setIsRequestingReview] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [viewingProperty, setViewingProperty] = useState<Property | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
@@ -374,6 +376,15 @@ export default function ManagePage() {
     onSuccess: (fullProperty) => {
       setEditingProperty(fullProperty);
       setIsAddingProperty(false);
+    },
+  });
+
+  const fetchPropertyForViewMutation = useMutation({
+    mutationFn: async (uuid: string) => {
+      return await apiRequest('GET', `/api/properties/${uuid}`, undefined);
+    },
+    onSuccess: (fullProperty) => {
+      setViewingProperty(fullProperty);
     },
   });
 
@@ -1483,6 +1494,20 @@ export default function ManagePage() {
 
           {currentSection === "propiedades" && (
             <div className="space-y-4">
+              {viewingProperty ? (
+                <PropertyManagement
+                  property={viewingProperty}
+                  onBack={() => {
+                    setViewingProperty(null);
+                    queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
+                  }}
+                  onEdit={() => {
+                    fetchPropertyForEditMutation.mutate(viewingProperty.uuid);
+                    setViewingProperty(null);
+                  }}
+                />
+              ) : (
+              <>
               {!(isAddingProperty || editingProperty) && (
                 <>
                   {/* Desktop Header */}
@@ -1608,9 +1633,12 @@ export default function ManagePage() {
                 </>
               ) : (
                 <>
-                  {isLoadingProperties ? (
-                    <div className="text-center py-8">
-                      <p>Cargando propiedades...</p>
+                  {isLoadingProperties || fetchPropertyForViewMutation.isPending ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Cargando propiedades...</p>
+                      </div>
                     </div>
                   ) : !properties?.length ? (
                     <div className="text-center py-12 bg-gray-50 rounded-lg">
@@ -1631,6 +1659,9 @@ export default function ManagePage() {
                                 <TableHead className="w-[120px]">Referencia</TableHead>
                                 <TableHead>Dirección</TableHead>
                                 <TableHead className="w-[120px]">Precio</TableHead>
+                                <TableHead className="w-[100px]">Estado</TableHead>
+                                <TableHead className="w-[120px]">Tipo Operación</TableHead>
+                                <TableHead className="w-[100px]">Inquilino</TableHead>
                                 <TableHead className="w-[100px] text-center">Acciones</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -1647,11 +1678,30 @@ export default function ManagePage() {
                                     €{property.price?.toLocaleString()}
                                   </TableCell>
                                   <TableCell>
+                                    <Badge variant="outline" className={
+                                      property.managementStatus === 'Activa' ? 'bg-green-100 text-green-700 border-green-200' :
+                                      property.managementStatus === 'Alquilada' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                      property.managementStatus === 'Reservada' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                      property.managementStatus === 'Vendida' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                      property.managementStatus === 'En reforma' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                                      property.managementStatus === 'Inactiva' ? 'bg-gray-200 text-gray-700 border-gray-300' :
+                                      'bg-gray-100 text-gray-600 border-gray-200'
+                                    }>
+                                      {property.managementStatus || 'Creada'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {property.operationType || '-'}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-gray-600">
+                                    -
+                                  </TableCell>
+                                  <TableCell>
                                     <div className="flex items-center justify-center">
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => fetchPropertyForEditMutation.mutate(property.uuid)}
+                                        onClick={() => fetchPropertyForViewMutation.mutate(property.uuid)}
                                         data-testid={`button-edit-property-${property.uuid}`}
                                       >
                                         <LogIn className="h-4 w-4" />
@@ -1677,7 +1727,7 @@ export default function ManagePage() {
                             key={property.uuid} 
                             className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
                             onClick={() => {
-                              fetchPropertyForEditMutation.mutate(property.uuid);
+                              fetchPropertyForViewMutation.mutate(property.uuid);
                             }}
                           >
                             <div className="h-48 overflow-hidden relative">
@@ -1771,7 +1821,7 @@ export default function ManagePage() {
                                   className="w-full h-11"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    fetchPropertyForEditMutation.mutate(property.uuid);
+                                    fetchPropertyForViewMutation.mutate(property.uuid);
                                   }}
                                   data-testid={`button-edit-property-mobile-${property.uuid}`}
                                 >
@@ -1787,6 +1837,8 @@ export default function ManagePage() {
                     </>
                   )}
                 </>
+              )}
+              </>
               )}
             </div>
           )}

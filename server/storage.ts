@@ -83,6 +83,24 @@ import {
   agentInvitations,
   type AgentInvitation,
   type InsertAgentInvitation,
+  propertyContracts,
+  type PropertyContract,
+  type InsertPropertyContract,
+  propertyPayments,
+  type PropertyPayment,
+  type InsertPropertyPayment,
+  propertyDocuments,
+  type PropertyDocument,
+  type InsertPropertyDocument,
+  propertyIncidents,
+  type PropertyIncident,
+  type InsertPropertyIncident,
+  propertyCommunications,
+  type PropertyCommunication,
+  type InsertPropertyCommunication,
+  propertyHistory,
+  type PropertyHistoryEntry,
+  type InsertPropertyHistory,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -268,6 +286,34 @@ export interface IStorage {
   getAgencyAgentCount(agencyId: number): Promise<number>;
   getAgencyPropertyCount(agencyId: number): Promise<number>;
   searchAgenciesWithoutNetwork(query: string): Promise<Agency[]>;
+
+  // Property Management
+  getPropertyContracts(propertyUuid: string): Promise<PropertyContract[]>;
+  getActivePropertyContract(propertyUuid: string): Promise<PropertyContract | undefined>;
+  createPropertyContract(contract: InsertPropertyContract): Promise<PropertyContract>;
+  updatePropertyContract(id: number, data: Partial<InsertPropertyContract>): Promise<PropertyContract | undefined>;
+  
+  getPropertyPayments(propertyUuid: string): Promise<PropertyPayment[]>;
+  createPropertyPayment(payment: InsertPropertyPayment): Promise<PropertyPayment>;
+  updatePropertyPayment(id: number, data: Partial<InsertPropertyPayment>): Promise<PropertyPayment | undefined>;
+  deletePropertyPayment(id: number): Promise<void>;
+  
+  getPropertyDocuments(propertyUuid: string): Promise<PropertyDocument[]>;
+  createPropertyDocument(doc: InsertPropertyDocument): Promise<PropertyDocument>;
+  deletePropertyDocument(id: number): Promise<PropertyDocument | undefined>;
+  
+  getPropertyIncidents(propertyUuid: string): Promise<PropertyIncident[]>;
+  createPropertyIncident(incident: InsertPropertyIncident): Promise<PropertyIncident>;
+  updatePropertyIncident(id: number, data: Partial<InsertPropertyIncident>): Promise<PropertyIncident | undefined>;
+  
+  getPropertyCommunications(propertyUuid: string): Promise<PropertyCommunication[]>;
+  createPropertyCommunication(comm: InsertPropertyCommunication): Promise<PropertyCommunication>;
+  updatePropertyCommunication(id: number, data: Partial<InsertPropertyCommunication>): Promise<PropertyCommunication | undefined>;
+  
+  getPropertyHistory(propertyUuid: string): Promise<PropertyHistoryEntry[]>;
+  createPropertyHistory(entry: InsertPropertyHistory): Promise<PropertyHistoryEntry>;
+  
+  updatePropertyManagementStatus(uuid: string, status: string): Promise<Property | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3646,6 +3692,106 @@ export class DatabaseStorage implements IStorage {
       .orderBy(agencies.agencyName)
       .limit(10);
     return result;
+  }
+
+  // Property Management - Contracts
+  async getPropertyContracts(propertyUuid: string): Promise<PropertyContract[]> {
+    return db.select().from(propertyContracts).where(eq(propertyContracts.propertyUuid, propertyUuid)).orderBy(desc(propertyContracts.createdAt));
+  }
+
+  async getActivePropertyContract(propertyUuid: string): Promise<PropertyContract | undefined> {
+    const [contract] = await db.select().from(propertyContracts).where(and(eq(propertyContracts.propertyUuid, propertyUuid), eq(propertyContracts.isActive, true)));
+    return contract;
+  }
+
+  async createPropertyContract(contract: InsertPropertyContract): Promise<PropertyContract> {
+    const [created] = await db.insert(propertyContracts).values(contract).returning();
+    return created;
+  }
+
+  async updatePropertyContract(id: number, data: Partial<InsertPropertyContract>): Promise<PropertyContract | undefined> {
+    const [updated] = await db.update(propertyContracts).set(data).where(eq(propertyContracts.id, id)).returning();
+    return updated;
+  }
+
+  // Property Management - Payments
+  async getPropertyPayments(propertyUuid: string): Promise<PropertyPayment[]> {
+    return db.select().from(propertyPayments).where(eq(propertyPayments.propertyUuid, propertyUuid)).orderBy(desc(propertyPayments.createdAt));
+  }
+
+  async createPropertyPayment(payment: InsertPropertyPayment): Promise<PropertyPayment> {
+    const [created] = await db.insert(propertyPayments).values(payment).returning();
+    return created;
+  }
+
+  async updatePropertyPayment(id: number, data: Partial<InsertPropertyPayment>): Promise<PropertyPayment | undefined> {
+    const [updated] = await db.update(propertyPayments).set(data).where(eq(propertyPayments.id, id)).returning();
+    return updated;
+  }
+
+  async deletePropertyPayment(id: number): Promise<void> {
+    await db.delete(propertyPayments).where(eq(propertyPayments.id, id));
+  }
+
+  // Property Management - Documents
+  async getPropertyDocuments(propertyUuid: string): Promise<PropertyDocument[]> {
+    return db.select().from(propertyDocuments).where(eq(propertyDocuments.propertyUuid, propertyUuid)).orderBy(desc(propertyDocuments.createdAt));
+  }
+
+  async createPropertyDocument(doc: InsertPropertyDocument): Promise<PropertyDocument> {
+    const [created] = await db.insert(propertyDocuments).values(doc).returning();
+    return created;
+  }
+
+  async deletePropertyDocument(id: number): Promise<PropertyDocument | undefined> {
+    const [deleted] = await db.delete(propertyDocuments).where(eq(propertyDocuments.id, id)).returning();
+    return deleted;
+  }
+
+  // Property Management - Incidents
+  async getPropertyIncidents(propertyUuid: string): Promise<PropertyIncident[]> {
+    return db.select().from(propertyIncidents).where(eq(propertyIncidents.propertyUuid, propertyUuid)).orderBy(desc(propertyIncidents.createdAt));
+  }
+
+  async createPropertyIncident(incident: InsertPropertyIncident): Promise<PropertyIncident> {
+    const [created] = await db.insert(propertyIncidents).values(incident).returning();
+    return created;
+  }
+
+  async updatePropertyIncident(id: number, data: Partial<InsertPropertyIncident>): Promise<PropertyIncident | undefined> {
+    const [updated] = await db.update(propertyIncidents).set(data).where(eq(propertyIncidents.id, id)).returning();
+    return updated;
+  }
+
+  // Property Management - Communications
+  async getPropertyCommunications(propertyUuid: string): Promise<PropertyCommunication[]> {
+    return db.select().from(propertyCommunications).where(eq(propertyCommunications.propertyUuid, propertyUuid)).orderBy(desc(propertyCommunications.createdAt));
+  }
+
+  async createPropertyCommunication(comm: InsertPropertyCommunication): Promise<PropertyCommunication> {
+    const [created] = await db.insert(propertyCommunications).values(comm).returning();
+    return created;
+  }
+
+  async updatePropertyCommunication(id: number, data: Partial<InsertPropertyCommunication>): Promise<PropertyCommunication | undefined> {
+    const [updated] = await db.update(propertyCommunications).set(data).where(eq(propertyCommunications.id, id)).returning();
+    return updated;
+  }
+
+  // Property Management - History
+  async getPropertyHistory(propertyUuid: string): Promise<PropertyHistoryEntry[]> {
+    return db.select().from(propertyHistory).where(eq(propertyHistory.propertyUuid, propertyUuid)).orderBy(desc(propertyHistory.createdAt));
+  }
+
+  async createPropertyHistory(entry: InsertPropertyHistory): Promise<PropertyHistoryEntry> {
+    const [created] = await db.insert(propertyHistory).values(entry).returning();
+    return created;
+  }
+
+  // Property Management - Status Update
+  async updatePropertyManagementStatus(uuid: string, status: string): Promise<Property | undefined> {
+    const [updated] = await db.update(properties).set({ managementStatus: status }).where(eq(properties.uuid, uuid)).returning();
+    return updated;
   }
 }
 
