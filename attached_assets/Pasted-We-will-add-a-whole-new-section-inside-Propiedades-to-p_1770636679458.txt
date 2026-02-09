@@ -1,0 +1,140 @@
+We will add a whole new section inside Propiedades to power Property Management.
+In the "Propiedades" table we will have 3 new columns: 
+- "Estado": that will be a new field  associated to the properties that can take the following values: Creada, Activa, Reservada, Alquilada, Inactiva, Vendida, En reforma. Upon clicking "Cambiar estado" a modal will pop-up point current status and the dropdown to change and a button "Confirmar cambio"
+- "Tipo de Operación": Based on the value selected in the field of the same name
+- "Inquilino": showing the name of the selected inquilino, empty with a "-" if none client has been selected
+
+The biggest change comes inside the property profile after clicking the icon to see the details of the property. Inside we will have 7 tabs as in the image. By clicking on "Editar datos" we land in the flow to edit the property. By clicking "Cambiar estado" we change the "estado" of the property as specified above. The price of the property will be displayed also. In the top left the user will see a button to go back to propiedades "Volver a propiedades"
+
+In the tab "Resumen" (image 1) the user will see
+- the next payment date based on the dates settled in the Alquiler section. If the property is a Sale property the card will be empty showing a "-"
+- open incidences. the data will be fetch from the info added in the "Incidencias" tab.
+- details of the property
+- Agenda with a preview of the events from Calendario related to the property and events created in the Comunicaciones tab.
+
+
+In the tab "Alquiler" similar (image 2) to Ventas there will be a button "Configurar alquiler", upon clicking the modal in the image will appear with the fields to fetch the clients from "Clientes" tab, add contract duration, rent price and guarantee delivered by the tenant. After the info is added it will be displayed in the tab as specified in the design.
+This tab will also include the payments section "Historial de pagos recientes" to check all payments done by the tenant that the agent can record.
+
+change this button to a cta "Añadir pago". Upon clicking, a modal will open with a first field "Concepto" with a dropdown and the options:
+
+Renta mensual
+Renta prorrateada (primer o último mes parcial)
+Actualización anual de renta (IPC u otro índice)
+Suministros (agua, luz, gas)
+Regularización de suministros
+Internet / telecomunicaciones
+Gastos de comunidad repercutidos
+Derramas repercutidas
+IBI repercutido
+Tasa de basuras
+Seguro obligatorio del inquilino
+Plaza de parking
+Trastero
+Fianza legal
+Garantías complementarias (depósito adicional)
+Aval bancario
+Seguro de impago
+Provisión de fondos inicial
+Alta de suministros
+Cambio de titularidad de contratos
+Honorarios de gestión / intermediación
+ITP
+IVA
+Retención IRPF (en alquileres no residenciales)
+Penalización por retraso en pago
+Intereses de demora
+Penalización por desistimiento anticipado
+Indemnización por incumplimiento contractual
+Reposición de llaves
+Cambio de cerradura
+Limpieza final
+Reparaciones imputables al inquilino
+Daños al inmueble
+Reposición de mobiliario
+Servicios adicionales (mantenimiento, limpieza periódica etc)
+Cuotas de servicios comunes
+Devolución parcial de fianza
+Otros anexos (jardín, terraza, etc.)
+Compensaciones económicas
+Gastos judiciales repercutidos
+Costes de burofax o notificaciones formales
+
+"Importe" field to input the amount
+
+"Estado" that can take the values "Pendiente" or "Pagado"
+
+A check "Añadir a historial" to select important payments that will appear later in the "Historial" tab
+
+A button "Añadir pago"
+
+Upon clicking the button the record will be added to the payments table
+
+In the tab "Documentación" (image 3) the agent will be able to add all documents related to the property (see design). If the agents clicks on the "Subir documento" tab a modal will open to upload the new document. The first field is "Tipo de documento" with the options
+Cédula de habitabilidad
+Certificado energético
+Contrato de arrendamiento
+Documento identificación propietario
+Escrituras
+Licencia de primera ocupación
+Nota simple
+Certificado de estar al corriente con la comunidad
+Último recibo de IBI
+Referencia catastral / Certificado catastral descriptivo y gráfico
+Recibos de suministros recientes
+Certificado de deuda cero hipotecaria
+Escritura de cancelación de hipoteca
+Estatutos de la comunidad de propietarios
+Actas recientes de la comunidad (últimos 1–2 años)
+Informe ITE / IEE (según antigüedad del edificio)
+Seguro del hogar (póliza)
+Inventario firmado (en alquiler amueblado)
+Acta de entrega de llaves
+Acta de estado del inmueble (check-in / check-out)
+Certificado de instalación eléctrica (boletín)
+Certificado de instalación de gas
+Licencia turística (si aplica)
+Número de registro de alquiler turístico
+Contrato de arras (en venta)
+Contrato de reserva
+Nota de encargo con la agencia
+Poder notarial (si firma un representante)
+Certificado de eficiencia energética registrado (no solo el informe)
+Planos del inmueble
+Memoria de calidades
+Proyecto técnico y licencia de obras (si hubo reforma relevante)
+Certificado final de obra
+Seguro decenal (en obra nueva)
+Libro del edificio (si aplica)
+Certificado de no afección urbanística
+Copia del DNI/NIE del inquilino
+Aval bancario o póliza de seguro de impago
+Justificante de depósito de fianza en organismo autonómico
+
+Upon confirming the document aa confirmation snack bar and the doc will appear will be attached to the table separated by each category as in the design and with the options to see, download, delete represented with icons
+
+In the tab "Incidencias" (image 4) will be recorded the incidences related to the property. Upon clicking "Nueva incidencia" button a modal will open with the fields 
+"Titulo" capped on 50 characters
+"Estado" that can take the values: Nueva, Asignada, En espera, Resuelta, Verificada, Cerrada
+"Prioridad" that can take the values: Alta, Media, Baja
+"Descripción with a text box capped to 500 characters
+Upon clicking "Registrar incidencia" the incidence will be added to the table of incidences as in the image. Upon clicking the button to edit the modal will open and the dropdown arrow will show the description and a confirmation snack bar will appear
+
+In the tab Comunicaciones (image 5) the agent will record the communications sent to the tenant. It will not work to send the communications natively but more like an agenda of Communications
+Upon clicking "Nueva comunicación" a modal will open with the following fields
+"Titulo" capped to 50 characters
+"Tipo de comunicación" that can take the following values: Actualización renta, Desalojo, Devolución de fianza, Entrega de llave, Finalización de contrato, Incidencia en la propiedad, Inclusión en fichero de morosos, Inspección de propiedad, Mantenimiento, Obras, Pago suministro, Reparación, Retraso de pago
+"Fecha relevante" that upon clicking will open a calendar to select a date
+A check "Añadir a calendario" that if checked the Communications event will be 
+displayed in the "Calendario" tab. The calendar must accept this type of event.
+Descripción which would be an optional field
+A check "Añadir a historial" to select important communications that will appear later in the "Historial" tab
+The modal will have buttons to cancel and to proceed " Registrar comunicación". Upon clicking "Registrar comunicación" the Communication will be added to the table and a confirmation snack bar will appear
+
+The last tab is "Historial" (image 6) where will be register chronologically all major events on the property and only the main info but not the detail.
+property creation
+Changes in property status
+After rent configuration
+Payments marked to appear in historic
+All incidences
+Communications marked to appear in historic
