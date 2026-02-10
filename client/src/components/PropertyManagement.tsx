@@ -1193,10 +1193,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <label className="text-sm font-medium">Inquilino</label>
               <Input data-testid="input-tenant-name" value={contractForm.tenantName} onChange={(e) => setContractForm({ ...contractForm, tenantName: e.target.value })} placeholder="Nombre del inquilino" />
             </div>
-            <div>
-              <label className="text-sm font-medium">Teléfono</label>
-              <Input data-testid="input-tenant-phone" value={contractForm.tenantPhone} onChange={(e) => setContractForm({ ...contractForm, tenantPhone: e.target.value })} placeholder="+34 600 000 000" />
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Fecha inicio</label>
