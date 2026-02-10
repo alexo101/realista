@@ -1212,7 +1212,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <Input data-testid="input-contract-rent" type="number" value={contractForm.rentPrice} onChange={(e) => setContractForm({ ...contractForm, rentPrice: parseInt(e.target.value) || 0 })} />
             </div>
             <div>
-              <label className="text-sm font-medium">Fianza (€)</label>
+              <label className="text-sm font-medium">Fianza entregada (€)</label>
               <Input data-testid="input-contract-guarantee" type="number" value={contractForm.guarantee} onChange={(e) => setContractForm({ ...contractForm, guarantee: parseInt(e.target.value) || 0 })} />
             </div>
           </div>
