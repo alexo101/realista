@@ -1218,7 +1218,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               onClick={() => contractMutation.mutate(contractForm)}
               disabled={contractMutation.isPending || !contractForm.tenantName || !contractForm.startDate || !contractForm.endDate}
             >
-              {contractMutation.isPending ? "Guardando..." : "Crear contrato"}
+              {contractMutation.isPending ? "Guardando..." : "Configurar alquiler"}
             </Button>
           </DialogFooter>
         </DialogContent>
