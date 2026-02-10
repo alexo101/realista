@@ -1198,10 +1198,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <Input data-testid="input-tenant-name" value={contractForm.tenantName} onChange={(e) => setContractForm({ ...contractForm, tenantName: e.target.value })} placeholder="Nombre del inquilino" />
             </div>
             <div>
-              <label className="text-sm font-medium">Email</label>
-              <Input data-testid="input-tenant-email" type="email" value={contractForm.tenantEmail} onChange={(e) => setContractForm({ ...contractForm, tenantEmail: e.target.value })} placeholder="email@ejemplo.com" />
-            </div>
-            <div>
               <label className="text-sm font-medium">Teléfono</label>
               <Input data-testid="input-tenant-phone" value={contractForm.tenantPhone} onChange={(e) => setContractForm({ ...contractForm, tenantPhone: e.target.value })} placeholder="+34 600 000 000" />
             </div>
