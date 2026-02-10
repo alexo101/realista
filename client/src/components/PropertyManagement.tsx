@@ -1300,7 +1300,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 inputMode="numeric"
                 value={contractForm.rentPrice || ""}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  const val = e.target.value.replace(/^0+|[^0-9]/g, "");
                   setContractForm({ ...contractForm, rentPrice: val ? parseInt(val, 10) : 0 });
                 }}
                 placeholder="Ej: 1200"
@@ -1315,7 +1315,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 inputMode="numeric"
                 value={contractForm.guarantee || ""}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  const val = e.target.value.replace(/^0+|[^0-9]/g, "");
                   setContractForm({ ...contractForm, guarantee: val ? parseInt(val, 10) : 0 });
                 }}
                 placeholder="Ej: 2400"
