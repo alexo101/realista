@@ -808,10 +808,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                     <p className="text-xs text-gray-400">{activeContract.tenantPhone}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Duración</p>
-                    <p className="text-sm font-medium" data-testid="text-contract-duration">{activeContract.duration} Meses</p>
-                    <p className="text-xs text-gray-400">Inicio: {activeContract.startDate}</p>
-                    <p className="text-xs text-gray-400">Fin: {activeContract.endDate}</p>
+                    <p className="text-xs text-gray-500">Fechas del contrato</p>
+                    <p className="text-sm font-bold" data-testid="text-contract-start">Inicio: {activeContract.startDate}</p>
+                    <p className="text-sm font-bold" data-testid="text-contract-end">Fin: {activeContract.endDate}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Condiciones Económicas</p>
