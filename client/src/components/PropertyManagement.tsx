@@ -1205,10 +1205,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <label className="text-sm font-medium">Teléfono</label>
               <Input data-testid="input-tenant-phone" value={contractForm.tenantPhone} onChange={(e) => setContractForm({ ...contractForm, tenantPhone: e.target.value })} placeholder="+34 600 000 000" />
             </div>
-            <div>
-              <label className="text-sm font-medium">Duración (meses)</label>
-              <Input data-testid="input-contract-duration" type="number" value={contractForm.duration} onChange={(e) => setContractForm({ ...contractForm, duration: parseInt(e.target.value) || 0 })} />
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Fecha inicio</label>
