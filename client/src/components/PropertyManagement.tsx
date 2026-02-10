@@ -1293,19 +1293,41 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Precio  de la renta (€/mes)</label>
-              <Input data-testid="input-contract-rent" type="number" value={contractForm.rentPrice} onChange={(e) => setContractForm({ ...contractForm, rentPrice: parseInt(e.target.value) || 0 })} />
+              <label className="text-sm font-medium">Precio de la renta (€/mes)</label>
+              <Input
+                data-testid="input-contract-rent"
+                type="text"
+                inputMode="numeric"
+                value={contractForm.rentPrice || ""}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setContractForm({ ...contractForm, rentPrice: val ? parseInt(val, 10) : 0 });
+                }}
+                placeholder="Ej: 1200"
+                min={1}
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Fianza entregada (€)</label>
-              <Input data-testid="input-contract-guarantee" type="number" value={contractForm.guarantee} onChange={(e) => setContractForm({ ...contractForm, guarantee: parseInt(e.target.value) || 0 })} />
+              <Input
+                data-testid="input-contract-guarantee"
+                type="text"
+                inputMode="numeric"
+                value={contractForm.guarantee || ""}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, "");
+                  setContractForm({ ...contractForm, guarantee: val ? parseInt(val, 10) : 0 });
+                }}
+                placeholder="Ej: 2400"
+                min={1}
+              />
             </div>
           </div>
           <DialogFooter>
             <Button
               data-testid="button-confirm-contract"
               onClick={() => contractMutation.mutate(contractForm)}
-              disabled={contractMutation.isPending || !contractForm.tenantName || !contractForm.startDate || !contractForm.endDate}
+              disabled={contractMutation.isPending || !contractForm.tenantName || !contractForm.startDate || !contractForm.endDate || contractForm.rentPrice <= 0 || contractForm.guarantee <= 0}
             >
               {contractMutation.isPending ? "Guardando..." : "Configurar alquiler"}
             </Button>
