@@ -800,14 +800,18 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-xs text-gray-500">Inquilino</p>
                     <p className="text-sm font-medium" data-testid="text-contract-tenant">{activeContract.tenantName || "-"}</p>
-                    <div className="mt-1">
-                      <p className="text-xs text-gray-400">Inicio: {activeContract.startDate}</p>
-                      <p className="text-xs text-gray-400">Fin: {activeContract.endDate}</p>
-                    </div>
+                    <p className="text-xs text-gray-400">{activeContract.tenantEmail}</p>
+                    <p className="text-xs text-gray-400">{activeContract.tenantPhone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Duración</p>
+                    <p className="text-sm font-medium" data-testid="text-contract-duration">{activeContract.duration} Meses</p>
+                    <p className="text-xs text-gray-400">Inicio: {activeContract.startDate}</p>
+                    <p className="text-xs text-gray-400">Fin: {activeContract.endDate}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Condiciones Económicas</p>
