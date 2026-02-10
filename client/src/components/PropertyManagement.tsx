@@ -555,7 +555,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         <ChevronLeft className="h-4 w-4 mr-1" />
         Volver a propiedades
       </button>
-
       {/* Header Card */}
       <Card className="border" data-testid="card-property-header">
         <CardContent className="p-4 md:p-6">
@@ -603,7 +602,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </div>
         </CardContent>
       </Card>
-
       {/* Status Change Dialog */}
       <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
@@ -643,7 +641,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Tabs */}
       <Tabs defaultValue="resumen" className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto" data-testid="tabs-property-management">
@@ -1184,7 +1181,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           )}
         </TabsContent>
       </Tabs>
-
       {/* Contract Dialog */}
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
@@ -1212,7 +1208,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Precio mensual (€)</label>
+              <label className="text-sm font-medium">Precio  de la renta (€/mes)</label>
               <Input data-testid="input-contract-rent" type="number" value={contractForm.rentPrice} onChange={(e) => setContractForm({ ...contractForm, rentPrice: parseInt(e.target.value) || 0 })} />
             </div>
             <div>
@@ -1231,7 +1227,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
@@ -1292,7 +1287,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Document Upload Dialog */}
       <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
@@ -1331,7 +1325,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Incident Dialog */}
       <Dialog open={incidentDialogOpen} onOpenChange={(open) => { setIncidentDialogOpen(open); if (!open) setEditingIncident(null); }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
@@ -1400,7 +1393,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Communication Dialog */}
       <Dialog open={communicationDialogOpen} onOpenChange={setCommunicationDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
