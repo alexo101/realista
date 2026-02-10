@@ -1711,9 +1711,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/clients", async (req, res) => {
     try {
-      const agentId = parseInt(req.query.agentId as string);
-      const clients = await storage.getClientsByAgent(agentId);
-      res.json(clients);
+      const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : null;
+      const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : null;
+
+      if (agencyId) {
+        const clients = await storage.getClientsByAgency(agencyId);
+        return res.json(clients);
+      }
+      if (agentId) {
+        const clients = await storage.getClientsByAgent(agentId);
+        return res.json(clients);
+      }
+      return res.status(400).json({ message: "agentId or agencyId is required" });
     } catch (error) {
       console.error('Error fetching clients:', error);
       res.status(500).json({ message: "Failed to fetch clients" });

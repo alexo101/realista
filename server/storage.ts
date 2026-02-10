@@ -161,6 +161,7 @@ export interface IStorage {
   getClient(id: number): Promise<Client | undefined>;
   getClientByEmail(email: string): Promise<Client | undefined>;
   getClientsByAgent(agentId: number): Promise<Client[]>;
+  getClientsByAgency(agencyId: number): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: InsertClient): Promise<Client>;
   updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined>;
@@ -2203,6 +2204,24 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(clients)
       .where(eq(clients.agentId, agentId))
+      .orderBy(clients.name);
+  }
+
+  async getClientsByAgency(agencyId: number): Promise<Client[]> {
+    const agencyAgentsList = await db
+      .select({ agentId: agents.id })
+      .from(agencyAgents)
+      .innerJoin(agents, eq(agencyAgents.agentUuid, agents.uuid))
+      .innerJoin(agencies, eq(agencyAgents.agencyUuid, agencies.uuid))
+      .where(and(eq(agencies.id, agencyId), isNull(agencyAgents.leftAt)));
+
+    const agentIds = agencyAgentsList.map(a => a.agentId);
+    if (agentIds.length === 0) return [];
+
+    return await db
+      .select()
+      .from(clients)
+      .where(inArray(clients.agentId, agentIds))
       .orderBy(clients.name);
   }
 

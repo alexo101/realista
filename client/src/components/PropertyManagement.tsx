@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/user-context";
 import {
   type Property,
+  type Client,
   type PropertyContract,
   type PropertyPayment,
   type PropertyDocument,
@@ -239,13 +241,17 @@ const COMMUNICATION_TYPES = [
 export function PropertyManagement({ property, onBack, onEdit }: PropertyManagementProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { user } = useUser();
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState(property.managementStatus);
 
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [contractForm, setContractForm] = useState({
     tenantName: "",
+    tenantId: null as number | null,
     tenantEmail: "",
     tenantPhone: "",
     duration: 12,
@@ -254,6 +260,34 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     rentPrice: 0,
     guarantee: 0,
   });
+
+  const clientsQueryParam = user?.isAdmin && user?.agencyId
+    ? `agencyId=${user.agencyId}`
+    : user?.id
+    ? `agentId=${user.id}`
+    : null;
+
+  const { data: agencyClients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/clients", clientsQueryParam],
+    queryFn: async () => {
+      if (!clientsQueryParam) return [];
+      const res = await fetch(`/api/clients?${clientsQueryParam}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return await res.json();
+    },
+    enabled: contractDialogOpen && Boolean(clientsQueryParam),
+  });
+
+  const filteredClients = useMemo(() => {
+    if (!clientSearch.trim()) return agencyClients;
+    const search = clientSearch.toLowerCase();
+    return agencyClients.filter(
+      (c) =>
+        c.name?.toLowerCase().includes(search) ||
+        c.surname?.toLowerCase().includes(search) ||
+        c.email?.toLowerCase().includes(search)
+    );
+  }, [agencyClients, clientSearch]);
 
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
@@ -377,6 +411,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     mutationFn: async (data: typeof contractForm) => {
       return apiRequest("POST", `/api/properties/${property.uuid}/contracts`, {
         propertyUuid: property.uuid,
+        tenantId: data.tenantId,
         tenantName: data.tenantName,
         tenantEmail: data.tenantEmail,
         tenantPhone: data.tenantPhone,
@@ -392,7 +427,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
       toast({ title: "Contrato creado", description: "El contrato de alquiler ha sido registrado" });
       setContractDialogOpen(false);
-      setContractForm({ tenantName: "", tenantEmail: "", tenantPhone: "", duration: 12, startDate: "", endDate: "", rentPrice: 0, guarantee: 0 });
+      setClientSearch("");
+      setContractForm({ tenantName: "", tenantId: null, tenantEmail: "", tenantPhone: "", duration: 12, startDate: "", endDate: "", rentPrice: 0, guarantee: 0 });
     },
     onError: () => {
       toast({ title: "Error", description: "No se pudo crear el contrato", variant: "destructive" });
@@ -1189,9 +1225,62 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
             <DialogDescription>Introduce los datos del contrato de alquiler</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
+            <div className="relative">
               <label className="text-sm font-medium">Inquilino</label>
-              <Input data-testid="input-tenant-name" value={contractForm.tenantName} onChange={(e) => setContractForm({ ...contractForm, tenantName: e.target.value })} placeholder="Nombre del inquilino" />
+              <Input
+                data-testid="input-tenant-name"
+                value={contractForm.tenantId ? contractForm.tenantName : clientSearch}
+                onChange={(e) => {
+                  if (contractForm.tenantId) {
+                    setContractForm({ ...contractForm, tenantName: "", tenantId: null });
+                  }
+                  setClientSearch(e.target.value);
+                  setShowClientDropdown(true);
+                }}
+                onFocus={() => setShowClientDropdown(true)}
+                placeholder="Buscar cliente por nombre o email..."
+              />
+              {contractForm.tenantId && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-[30px] text-gray-400 hover:text-gray-600 text-sm"
+                  onClick={() => {
+                    setContractForm({ ...contractForm, tenantName: "", tenantId: null });
+                    setClientSearch("");
+                  }}
+                  data-testid="button-clear-tenant"
+                >
+                  ✕
+                </button>
+              )}
+              {showClientDropdown && !contractForm.tenantId && (
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
+                  {filteredClients.length === 0 ? (
+                    <div className="p-3 text-sm text-gray-500">No se encontraron clientes</div>
+                  ) : (
+                    filteredClients.map((client) => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex flex-col"
+                        data-testid={`option-client-${client.id}`}
+                        onClick={() => {
+                          setContractForm({
+                            ...contractForm,
+                            tenantName: `${client.name}${client.surname ? ` ${client.surname}` : ""}`,
+                            tenantId: client.id,
+                          });
+                          setClientSearch("");
+                          setShowClientDropdown(false);
+                        }}
+                      >
+                        <span className="text-sm font-medium">{client.name}{client.surname ? ` ${client.surname}` : ""}</span>
+                        <span className="text-xs text-gray-400">{client.email}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
