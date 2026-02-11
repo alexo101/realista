@@ -1107,7 +1107,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                         {new Date(incident.createdAt).toLocaleDateString("es-ES")}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-start gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
