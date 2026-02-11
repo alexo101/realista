@@ -278,7 +278,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       if (!res.ok) return [];
       return await res.json();
     },
-    enabled: contractDialogOpen && Boolean(clientsQueryParam),
+    enabled: (contractDialogOpen || communicationDialogOpen) && Boolean(clientsQueryParam),
   });
 
   const filteredClients = useMemo(() => {
