@@ -815,7 +815,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   <div>
                     <p className="text-xs text-gray-500">Condiciones Económicas</p>
                     <p className="text-sm font-medium" data-testid="text-contract-rent">€{activeContract.rentPrice?.toLocaleString()}/mes</p>
-                    <p className="text-xs text-gray-400">Fianza: €{activeContract.guarantee?.toLocaleString()}</p>
+                    <p className="text-xs text-gray-400 font-medium">Fianza: €{activeContract.guarantee?.toLocaleString()}</p>
                   </div>
                 </div>
               </CardContent>
