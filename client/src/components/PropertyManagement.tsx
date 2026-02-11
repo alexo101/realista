@@ -1060,23 +1060,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                             <Button
                               variant="ghost"
                               size="sm"
-                              data-testid={`button-edit-incident-${incident.id}`}
-                              onClick={() => {
-                                setEditingIncident(incident);
-                                setIncidentForm({
-                                  title: incident.title,
-                                  status: incident.status,
-                                  priority: incident.priority,
-                                  description: incident.description || "",
-                                });
-                                setIncidentDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
                               data-testid={`button-expand-incident-${incident.id}`}
                               onClick={() => setExpandedIncidentId(expandedIncidentId === incident.id ? null : incident.id)}
                             >
