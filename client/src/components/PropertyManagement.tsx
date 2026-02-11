@@ -856,7 +856,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Tabs defaultValue="resumen" className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto" data-testid="tabs-property-management">
           <TabsTrigger value="resumen" data-testid="tab-resumen">Resumen</TabsTrigger>
-          <TabsTrigger value="alquiler" data-testid="tab-alquiler">Alquiler</TabsTrigger>
+          <TabsTrigger value="alquiler" data-testid="tab-alquiler">Condiciones y pagos</TabsTrigger>
           <TabsTrigger value="documentacion" data-testid="tab-documentacion">Documentación</TabsTrigger>
           <TabsTrigger value="incidencias" data-testid="tab-incidencias">Incidencias</TabsTrigger>
           <TabsTrigger value="comunicaciones" data-testid="tab-comunicaciones">Comunicaciones</TabsTrigger>
