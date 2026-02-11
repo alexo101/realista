@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -312,6 +312,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   const [deleteDocConfirmName, setDeleteDocConfirmName] = useState("");
 
   const [incidentDialogOpen, setIncidentDialogOpen] = useState(false);
+  const [expandedIncidentId, setExpandedIncidentId] = useState<number | null>(null);
   const [incidentForm, setIncidentForm] = useState({
     title: "",
     status: "Nueva",
@@ -1074,8 +1075,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 </TableHeader>
                 <TableBody>
                   {incidents.map((incident) => (
+                    <Fragment key={incident.id}>
                     <TableRow
-                      key={incident.id}
                       data-testid={`row-incident-${incident.id}`}
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => {
@@ -1115,6 +1116,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                           <Button
                             variant="ghost"
                             size="sm"
+                            data-testid={`button-expand-incident-${incident.id}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedIncidentId(expandedIncidentId === incident.id ? null : incident.id);
+                            }}
+                          >
+                            <ChevronDown className={`h-4 w-4 transition-transform ${expandedIncidentId === incident.id ? "rotate-180" : ""}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
                             data-testid={`button-delete-incident-${incident.id}`}
                             onClick={(e) => {
@@ -1127,6 +1139,16 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                         </div>
                       </TableCell>
                     </TableRow>
+                    {expandedIncidentId === incident.id && (
+                      <TableRow key={`${incident.id}-desc`}>
+                        <TableCell colSpan={5} className="bg-gray-50">
+                          <p className="text-sm text-gray-600 py-2" data-testid={`text-incident-description-${incident.id}`}>
+                            {incident.description || "Sin descripción"}
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                   ))}
                 </TableBody>
               </Table>
