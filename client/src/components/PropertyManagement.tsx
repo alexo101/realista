@@ -1005,6 +1005,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 <Button
                   size="sm"
                   variant="outline"
+                  className="bg-[#0284c5e6] text-[#f7fafd]"
                   data-testid="button-add-payment"
                   onClick={() => setPaymentDialogOpen(true)}
                 >
