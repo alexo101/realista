@@ -846,6 +846,7 @@ export const propertyCommunications = pgTable("property_communications", {
   addToCalendar: boolean("add_to_calendar").default(false).notNull(),
   addToHistory: boolean("add_to_history").default(false).notNull(),
   agentId: integer("agent_id").references(() => agents.id),
+  clientId: integer("client_id").references(() => clients.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -333,7 +333,18 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     addToCalendar: false,
     description: "",
     addToHistory: false,
+    clientId: null as number | null,
+    clientName: "",
   });
+  const [commClientSearch, setCommClientSearch] = useState("");
+  const [showCommClientDropdown, setShowCommClientDropdown] = useState(false);
+  const filteredCommClients = useMemo(() => {
+    if (!commClientSearch.trim()) return agencyClients;
+    const search = commClientSearch.toLowerCase();
+    return agencyClients.filter((c) =>
+      `${c.name} ${c.surname || ""} ${c.email}`.toLowerCase().includes(search)
+    );
+  }, [agencyClients, commClientSearch]);
 
   const [historyTypeFilter, setHistoryTypeFilter] = useState<string | null>(null);
   const [historyTimeFilter, setHistoryTimeFilter] = useState<string>("Todo");
@@ -608,6 +619,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         description: data.description,
         addToCalendar: data.addToCalendar,
         addToHistory: data.addToHistory,
+        ...(data.clientId ? { clientId: data.clientId } : {}),
       });
     },
     onSuccess: () => {
@@ -615,7 +627,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
       toast({ title: "Comunicación registrada" });
       setCommunicationDialogOpen(false);
-      setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false });
+      setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false, clientId: null, clientName: "" });
+      setCommClientSearch("");
     },
     onError: () => {
       toast({ title: "Error", description: "No se pudo registrar la comunicación", variant: "destructive" });
@@ -1208,7 +1221,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               size="sm"
               data-testid="button-new-communication"
               onClick={() => {
-                setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false });
+                setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false, clientId: null, clientName: "" }); setCommClientSearch("");
                 setCommunicationDialogOpen(true);
               }}
             >
@@ -1830,6 +1843,63 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 onChange={(e) => setCommunicationForm({ ...communicationForm, title: e.target.value })}
                 placeholder="Título de la comunicación"
               />
+            </div>
+            <div className="relative">
+              <label className="text-sm font-medium">Cliente</label>
+              <Input
+                data-testid="input-communication-client"
+                value={communicationForm.clientId ? communicationForm.clientName : commClientSearch}
+                onChange={(e) => {
+                  if (communicationForm.clientId) {
+                    setCommunicationForm({ ...communicationForm, clientName: "", clientId: null });
+                  }
+                  setCommClientSearch(e.target.value);
+                  setShowCommClientDropdown(true);
+                }}
+                onFocus={() => setShowCommClientDropdown(true)}
+                placeholder="Buscar cliente por nombre o email..."
+              />
+              {communicationForm.clientId && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-[30px] text-gray-400 hover:text-gray-600 text-sm"
+                  onClick={() => {
+                    setCommunicationForm({ ...communicationForm, clientName: "", clientId: null });
+                    setCommClientSearch("");
+                  }}
+                  data-testid="button-clear-comm-client"
+                >
+                  ✕
+                </button>
+              )}
+              {showCommClientDropdown && !communicationForm.clientId && (
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
+                  {filteredCommClients.length === 0 ? (
+                    <div className="p-3 text-sm text-gray-500">No se encontraron clientes</div>
+                  ) : (
+                    filteredCommClients.map((client) => (
+                      <button
+                        key={client.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 flex flex-col"
+                        data-testid={`option-comm-client-${client.id}`}
+                        onClick={() => {
+                          setCommunicationForm({
+                            ...communicationForm,
+                            clientName: `${client.name}${client.surname ? ` ${client.surname}` : ""}`,
+                            clientId: client.id,
+                          });
+                          setCommClientSearch("");
+                          setShowCommClientDropdown(false);
+                        }}
+                      >
+                        <span className="text-sm font-medium">{client.name}{client.surname ? ` ${client.surname}` : ""}</span>
+                        <span className="text-xs text-gray-400">{client.email}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium">Tipo de comunicación</label>
