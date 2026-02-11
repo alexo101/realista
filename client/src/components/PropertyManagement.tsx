@@ -948,7 +948,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
             <Button
               size="sm"
               variant="outline"
-              className="bg-[#0284c5e6]"
+              className="bg-[#0284c5e6] text-[#f7fafd]"
               data-testid="button-upload-document"
               onClick={() => setDocumentDialogOpen(true)}
             >
