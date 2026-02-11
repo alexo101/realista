@@ -630,7 +630,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl md:text-3xl font-bold text-red-500 mb-3" data-testid="text-property-price">
+              <p className="text-2xl md:text-3xl font-bold mb-3 text-[#1c1917]" data-testid="text-property-price">
                 €{property.price?.toLocaleString()}
               </p>
               <div className="flex gap-2 justify-end">
