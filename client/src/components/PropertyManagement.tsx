@@ -248,6 +248,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
 
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState(property.managementStatus);
+  const [currentManagementStatus, setCurrentManagementStatus] = useState(property.managementStatus);
 
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState("");
@@ -429,7 +430,11 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       return apiRequest("PATCH", `/api/properties/${property.uuid}/management-status`, { status });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/properties"] });
+      setCurrentManagementStatus(newStatus);
+      qc.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === "string" && key.startsWith("/api/properties");
+      }});
       toast({ title: "Estado actualizado", description: `El estado se ha cambiado a "${newStatus}"` });
       setStatusDialogOpen(false);
     },
@@ -776,8 +781,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 <span className="text-lg font-bold" data-testid="text-property-reference">
                   {property.reference || property.uuid.slice(0, 8).toUpperCase()}
                 </span>
-                <Badge className={`${getStatusBadgeClass(property.managementStatus)} border-0`} data-testid="badge-management-status">
-                  {property.managementStatus}
+                <Badge className={`${getStatusBadgeClass(currentManagementStatus)} border-0`} data-testid="badge-management-status">
+                  {currentManagementStatus}
                 </Badge>
               </div>
               <p className="text-sm text-gray-500" data-testid="text-property-city">
@@ -794,7 +799,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   size="sm"
                   data-testid="button-change-status"
                   onClick={() => {
-                    setNewStatus(property.managementStatus);
+                    setNewStatus(currentManagementStatus);
                     setStatusDialogOpen(true);
                   }}
                 >
@@ -824,8 +829,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           <div className="space-y-4 py-4">
             <div>
               <p className="text-sm text-gray-500 mb-1">Estado actual:</p>
-              <Badge className={`${getStatusBadgeClass(property.managementStatus)} border-0`}>
-                {property.managementStatus}
+              <Badge className={`${getStatusBadgeClass(currentManagementStatus)} border-0`}>
+                {currentManagementStatus}
               </Badge>
             </div>
             <div>
