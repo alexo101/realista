@@ -95,6 +95,9 @@ import {
   propertyIncidents,
   type PropertyIncident,
   type InsertPropertyIncident,
+  incidentUpdates,
+  type IncidentUpdate,
+  type InsertIncidentUpdate,
   propertyCommunications,
   type PropertyCommunication,
   type InsertPropertyCommunication,
@@ -306,6 +309,9 @@ export interface IStorage {
   getPropertyIncidents(propertyUuid: string): Promise<PropertyIncident[]>;
   createPropertyIncident(incident: InsertPropertyIncident): Promise<PropertyIncident>;
   updatePropertyIncident(id: number, data: Partial<InsertPropertyIncident>): Promise<PropertyIncident | undefined>;
+  deletePropertyIncident(id: number): Promise<void>;
+  getIncidentUpdates(incidentId: number): Promise<IncidentUpdate[]>;
+  createIncidentUpdate(update: InsertIncidentUpdate): Promise<IncidentUpdate>;
   
   getPropertyCommunications(propertyUuid: string): Promise<PropertyCommunication[]>;
   createPropertyCommunication(comm: InsertPropertyCommunication): Promise<PropertyCommunication>;
@@ -3780,6 +3786,19 @@ export class DatabaseStorage implements IStorage {
   async updatePropertyIncident(id: number, data: Partial<InsertPropertyIncident>): Promise<PropertyIncident | undefined> {
     const [updated] = await db.update(propertyIncidents).set(data).where(eq(propertyIncidents.id, id)).returning();
     return updated;
+  }
+
+  async deletePropertyIncident(id: number): Promise<void> {
+    await db.delete(propertyIncidents).where(eq(propertyIncidents.id, id));
+  }
+
+  async getIncidentUpdates(incidentId: number): Promise<IncidentUpdate[]> {
+    return db.select().from(incidentUpdates).where(eq(incidentUpdates.incidentId, incidentId)).orderBy(desc(incidentUpdates.createdAt));
+  }
+
+  async createIncidentUpdate(update: InsertIncidentUpdate): Promise<IncidentUpdate> {
+    const [created] = await db.insert(incidentUpdates).values(update).returning();
+    return created;
   }
 
   // Property Management - Communications

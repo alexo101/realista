@@ -5808,7 +5808,14 @@ Gracias!
     try {
       const { uuid } = req.params;
       const incidents = await storage.getPropertyIncidents(uuid);
-      res.json(incidents);
+      const incidentsWithLastUpdate = await Promise.all(
+        incidents.map(async (incident) => {
+          const updates = await storage.getIncidentUpdates(incident.id);
+          const lastUpdate = updates.length > 0 ? updates[0] : null;
+          return { ...incident, lastUpdate };
+        })
+      );
+      res.json(incidentsWithLastUpdate);
     } catch (error) {
       console.error("Error fetching incidents:", error);
       res.status(500).json({ error: "Error al obtener las incidencias" });
@@ -5855,6 +5862,61 @@ Gracias!
     } catch (error) {
       console.error("Error updating incident:", error);
       res.status(500).json({ error: "Error al actualizar la incidencia" });
+    }
+  });
+
+  app.delete("/api/properties/:uuid/incidents/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePropertyIncident(parseInt(id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting incident:", error);
+      res.status(500).json({ error: "Error al eliminar la incidencia" });
+    }
+  });
+
+  app.get("/api/incidents/:id/updates", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = await storage.getIncidentUpdates(parseInt(id));
+      res.json(updates);
+    } catch (error) {
+      console.error("Error fetching incident updates:", error);
+      res.status(500).json({ error: "Error al obtener las actualizaciones" });
+    }
+  });
+
+  app.post("/api/incidents/:id/updates", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { comment, newStatus, newPriority } = req.body;
+
+      if (!comment || comment.trim().length < 5) {
+        return res.status(400).json({ error: "El comentario debe tener al menos 5 caracteres" });
+      }
+
+      const updateData: any = {
+        incidentId: parseInt(id),
+        comment: comment.trim(),
+        performedBy: req.user?.name || "Usuario Actual",
+      };
+      if (newStatus) updateData.newStatus = newStatus;
+      if (newPriority) updateData.newPriority = newPriority;
+
+      const update = await storage.createIncidentUpdate(updateData);
+
+      const incidentPatch: any = {};
+      if (newStatus) incidentPatch.status = newStatus;
+      if (newPriority) incidentPatch.priority = newPriority;
+      if (Object.keys(incidentPatch).length > 0) {
+        await storage.updatePropertyIncident(parseInt(id), incidentPatch);
+      }
+
+      res.status(201).json(update);
+    } catch (error) {
+      console.error("Error creating incident update:", error);
+      res.status(500).json({ error: "Error al crear la actualización" });
     }
   });
 

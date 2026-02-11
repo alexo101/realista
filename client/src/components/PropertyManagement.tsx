@@ -12,6 +12,7 @@ import {
   type PropertyIncident,
   type PropertyCommunication,
   type PropertyHistoryEntry,
+  type IncidentUpdate,
 } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +62,7 @@ import {
   Eye,
   ChevronDown,
   Upload,
+  Send,
 } from "lucide-react";
 
 interface PropertyManagementProps {
@@ -310,14 +312,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   const [deleteDocConfirmName, setDeleteDocConfirmName] = useState("");
 
   const [incidentDialogOpen, setIncidentDialogOpen] = useState(false);
-  const [editingIncident, setEditingIncident] = useState<PropertyIncident | null>(null);
   const [incidentForm, setIncidentForm] = useState({
     title: "",
     status: "Nueva",
     priority: "Media",
     description: "",
   });
-  const [expandedIncidentId, setExpandedIncidentId] = useState<number | null>(null);
+  const [viewingIncident, setViewingIncident] = useState<PropertyIncident | null>(null);
+  const [incidentUpdateComment, setIncidentUpdateComment] = useState("");
+  const [incidentUpdateStatus, setIncidentUpdateStatus] = useState("");
+  const [incidentUpdatePriority, setIncidentUpdatePriority] = useState("");
+  const [deleteIncidentConfirmId, setDeleteIncidentConfirmId] = useState<number | null>(null);
 
   const [communicationDialogOpen, setCommunicationDialogOpen] = useState(false);
   const [communicationForm, setCommunicationForm] = useState({
@@ -366,7 +371,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     },
   });
 
-  const { data: incidents = [], isLoading: incidentsLoading } = useQuery<PropertyIncident[]>({
+  type IncidentWithLastUpdate = PropertyIncident & { lastUpdate?: IncidentUpdate | null };
+  const { data: incidents = [], isLoading: incidentsLoading } = useQuery<IncidentWithLastUpdate[]>({
     queryKey: ["/api/properties", property.uuid, "incidents"],
     queryFn: async () => {
       try {
@@ -514,15 +520,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   });
 
   const incidentMutation = useMutation({
-    mutationFn: async (data: { title: string; status: string; priority: string; description: string; id?: number }) => {
-      if (data.id) {
-        return apiRequest("PATCH", `/api/properties/${property.uuid}/incidents/${data.id}`, {
-          title: data.title,
-          status: data.status,
-          priority: data.priority,
-          description: data.description,
-        });
-      }
+    mutationFn: async (data: { title: string; status: string; priority: string; description: string }) => {
       return apiRequest("POST", `/api/properties/${property.uuid}/incidents`, {
         propertyUuid: property.uuid,
         title: data.title,
@@ -534,13 +532,63 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "incidents"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: editingIncident ? "Incidencia actualizada" : "Incidencia registrada" });
+      toast({ title: "Incidencia registrada" });
       setIncidentDialogOpen(false);
-      setEditingIncident(null);
       setIncidentForm({ title: "", status: "Nueva", priority: "Media", description: "" });
     },
     onError: () => {
       toast({ title: "Error", description: "No se pudo guardar la incidencia", variant: "destructive" });
+    },
+  });
+
+  const { data: incidentUpdatesData = [] } = useQuery<IncidentUpdate[]>({
+    queryKey: ["/api/incidents", viewingIncident?.id, "updates"],
+    queryFn: async () => {
+      if (!viewingIncident) return [];
+      const res = await fetch(`/api/incidents/${viewingIncident.id}/updates`, { credentials: "include" });
+      if (!res.ok) throw new Error("Error fetching updates");
+      return res.json();
+    },
+    enabled: !!viewingIncident,
+  });
+
+  const incidentUpdateMutation = useMutation({
+    mutationFn: async (data: { comment: string; newStatus?: string; newPriority?: string }) => {
+      if (!viewingIncident) throw new Error("No incident selected");
+      return apiRequest("POST", `/api/incidents/${viewingIncident.id}/updates`, data);
+    },
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ["/api/incidents", viewingIncident?.id, "updates"] });
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "incidents"] });
+      toast({ title: "Actualización registrada" });
+      setIncidentUpdateComment("");
+      setIncidentUpdateStatus("");
+      setIncidentUpdatePriority("");
+      if (viewingIncident && (variables.newStatus || variables.newPriority)) {
+        setViewingIncident({
+          ...viewingIncident,
+          ...(variables.newStatus ? { status: variables.newStatus } : {}),
+          ...(variables.newPriority ? { priority: variables.newPriority } : {}),
+        });
+      }
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo guardar la actualización", variant: "destructive" });
+    },
+  });
+
+  const deleteIncidentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/properties/${property.uuid}/incidents/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "incidents"] });
+      toast({ title: "Incidencia eliminada" });
+      setDeleteIncidentConfirmId(null);
+      setViewingIncident(null);
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo eliminar la incidencia", variant: "destructive" });
     },
   });
 
@@ -1000,7 +1048,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               size="sm"
               data-testid="button-new-incident"
               onClick={() => {
-                setEditingIncident(null);
                 setIncidentForm({ title: "", status: "Nueva", priority: "Media", description: "" });
                 setIncidentDialogOpen(true);
               }}
@@ -1033,51 +1080,59 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 </TableHeader>
                 <TableBody>
                   {incidents.map((incident) => (
-                    <>
-                      <TableRow key={incident.id} data-testid={`row-incident-${incident.id}`}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {incident.priority === "Alta" && <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />}
-                            {incident.priority === "Media" && <span className="h-2 w-2 rounded-full bg-orange-500 inline-block" />}
-                            <span className="text-sm font-medium">{incident.title}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${getIncidentStatusBadgeClass(incident.status)} border-0`} data-testid={`badge-incident-status-${incident.id}`}>
-                            {incident.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${getPriorityBadgeClass(incident.priority)} border-0`} data-testid={`badge-incident-priority-${incident.id}`}>
-                            {incident.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-500">
-                          {new Date(incident.createdAt).toLocaleDateString("es-ES")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              data-testid={`button-expand-incident-${incident.id}`}
-                              onClick={() => setExpandedIncidentId(expandedIncidentId === incident.id ? null : incident.id)}
-                            >
-                              <ChevronDown className={`h-4 w-4 transition-transform ${expandedIncidentId === incident.id ? "rotate-180" : ""}`} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {expandedIncidentId === incident.id && (
-                        <TableRow key={`${incident.id}-desc`}>
-                          <TableCell colSpan={5} className="bg-gray-50">
-                            <p className="text-sm text-gray-600 py-2" data-testid={`text-incident-description-${incident.id}`}>
-                              {incident.description || "Sin descripción"}
-                            </p>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </>
+                    <TableRow
+                      key={incident.id}
+                      data-testid={`row-incident-${incident.id}`}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => {
+                        setViewingIncident(incident);
+                        setIncidentUpdateComment("");
+                        setIncidentUpdateStatus("");
+                        setIncidentUpdatePriority("");
+                      }}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {incident.priority === "Alta" && <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />}
+                          {incident.priority === "Media" && <span className="h-2 w-2 rounded-full bg-orange-500 inline-block" />}
+                          <span className="text-sm font-medium">{incident.title}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`${getIncidentStatusBadgeClass(incident.status)} border-0`} data-testid={`badge-incident-status-${incident.id}`}>
+                          {incident.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`${getPriorityBadgeClass(incident.priority)} border-0`} data-testid={`badge-incident-priority-${incident.id}`}>
+                          {incident.priority}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {new Date(incident.createdAt).toLocaleDateString("es-ES")}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          {incident.lastUpdate && (
+                            <span className="text-xs text-gray-400 truncate max-w-[150px]" data-testid={`text-incident-last-comment-${incident.id}`}>
+                              {incident.lastUpdate.comment}
+                            </span>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                            data-testid={`button-delete-incident-${incident.id}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteIncidentConfirmId(incident.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -1500,14 +1555,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Incident Dialog */}
-      <Dialog open={incidentDialogOpen} onOpenChange={(open) => { setIncidentDialogOpen(open); if (!open) setEditingIncident(null); }}>
+      {/* New Incident Dialog */}
+      <Dialog open={incidentDialogOpen} onOpenChange={(open) => { setIncidentDialogOpen(open); }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingIncident ? "Editar incidencia" : "Nueva incidencia"}</DialogTitle>
-            <DialogDescription>
-              {editingIncident ? "Modifica los datos de la incidencia" : "Registra una nueva incidencia"}
-            </DialogDescription>
+            <DialogTitle>Nueva incidencia</DialogTitle>
+            <DialogDescription>Registra una nueva incidencia</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -1519,19 +1572,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })}
                 placeholder="Título de la incidencia"
               />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Estado</label>
-              <Select value={incidentForm.status} onValueChange={(v) => setIncidentForm({ ...incidentForm, status: v })}>
-                <SelectTrigger data-testid="select-incident-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["Nueva", "Asignada", "En espera", "Resuelta", "Verificada", "Cerrada"].map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <label className="text-sm font-medium">Prioridad</label>
@@ -1560,10 +1600,160 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           <DialogFooter>
             <Button
               data-testid="button-confirm-incident"
-              onClick={() => incidentMutation.mutate({ ...incidentForm, id: editingIncident?.id })}
+              onClick={() => incidentMutation.mutate({ ...incidentForm })}
               disabled={incidentMutation.isPending || !incidentForm.title}
             >
-              {incidentMutation.isPending ? "Guardando..." : editingIncident ? "Guardar cambios" : "Registrar incidencia"}
+              {incidentMutation.isPending ? "Guardando..." : "Registrar incidencia"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Incident Detail Modal */}
+      <Dialog open={viewingIncident !== null} onOpenChange={(open) => { if (!open) setViewingIncident(null); }}>
+        <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge className={`${getIncidentStatusBadgeClass(viewingIncident?.status || "")} border-0`}>
+                {viewingIncident?.status}
+              </Badge>
+              <Badge className={`${getPriorityBadgeClass(viewingIncident?.priority || "")} border-0`}>
+                {viewingIncident?.priority}
+              </Badge>
+            </div>
+            <DialogTitle data-testid="text-incident-detail-title">{viewingIncident?.title}</DialogTitle>
+            <DialogDescription className="sr-only">Detalles de la incidencia</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Calendar className="h-4 w-4" />
+            <span>Reportada: {viewingIncident ? new Date(viewingIncident.createdAt).toLocaleDateString("es-ES") : ""}</span>
+          </div>
+
+          {viewingIncident?.description && (
+            <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{viewingIncident.description}</p>
+          )}
+
+          <Separator />
+
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Historial de actualizaciones</h4>
+            {incidentUpdatesData.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">Sin actualizaciones registradas</p>
+            ) : (
+              <div className="space-y-3 max-h-[200px] overflow-y-auto">
+                {incidentUpdatesData.map((update) => (
+                  <div key={update.id} className="flex gap-3" data-testid={`row-incident-update-${update.id}`}>
+                    <div className="flex flex-col items-center">
+                      <div className="h-2 w-2 rounded-full bg-blue-500 mt-2" />
+                      <div className="w-px flex-1 bg-gray-200" />
+                    </div>
+                    <div className="flex-1 pb-3">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                        <User className="h-3 w-3" />
+                        <span className="font-medium">{update.performedBy}</span>
+                        <span>•</span>
+                        <Clock className="h-3 w-3" />
+                        <span>{new Date(update.createdAt).toLocaleDateString("es-ES")} {new Date(update.createdAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
+                        {update.comment}
+                      </div>
+                      {(update.newStatus || update.newPriority) && (
+                        <div className="flex gap-2 mt-1">
+                          {update.newStatus && (
+                            <span className="text-xs text-gray-500">Estado → <Badge className={`${getIncidentStatusBadgeClass(update.newStatus)} border-0 text-xs`}>{update.newStatus}</Badge></span>
+                          )}
+                          {update.newPriority && (
+                            <span className="text-xs text-gray-500">Prioridad → <Badge className={`${getPriorityBadgeClass(update.newPriority)} border-0 text-xs`}>{update.newPriority}</Badge></span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div>
+            <h4 className="text-sm font-medium mb-2">Añadir actualización</h4>
+            <Textarea
+              data-testid="textarea-incident-update"
+              value={incidentUpdateComment}
+              onChange={(e) => setIncidentUpdateComment(e.target.value)}
+              placeholder="Describe la actualización..."
+              className="mb-3"
+              maxLength={500}
+            />
+            <div className="flex items-center gap-2">
+              <Select value={incidentUpdateStatus} onValueChange={setIncidentUpdateStatus}>
+                <SelectTrigger data-testid="select-incident-update-status" className="flex-1">
+                  <SelectValue placeholder="Cambiar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["Nueva", "Asignada", "En espera", "Resuelta", "Verificada", "Cerrada"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={incidentUpdatePriority} onValueChange={setIncidentUpdatePriority}>
+                <SelectTrigger data-testid="select-incident-update-priority" className="flex-1">
+                  <SelectValue placeholder="Cambiar prioridad" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["Alta", "Media", "Baja"].map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                data-testid="button-submit-incident-update"
+                disabled={incidentUpdateMutation.isPending || incidentUpdateComment.trim().length < 5}
+                onClick={() => {
+                  incidentUpdateMutation.mutate({
+                    comment: incidentUpdateComment,
+                    ...(incidentUpdateStatus ? { newStatus: incidentUpdateStatus } : {}),
+                    ...(incidentUpdatePriority ? { newPriority: incidentUpdatePriority } : {}),
+                  });
+                }}
+              >
+                <Send className="h-4 w-4 mr-1" />
+                {incidentUpdateMutation.isPending ? "Enviando..." : "Actualizar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Incident Confirmation Dialog */}
+      <Dialog open={deleteIncidentConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteIncidentConfirmId(null); }}>
+        <DialogContent className="w-[95vw] max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar incidencia</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar esta incidencia? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              data-testid="button-cancel-delete-incident"
+              onClick={() => setDeleteIncidentConfirmId(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="button-confirm-delete-incident"
+              disabled={deleteIncidentMutation.isPending}
+              onClick={() => {
+                if (deleteIncidentConfirmId !== null) {
+                  deleteIncidentMutation.mutate(deleteIncidentConfirmId);
+                }
+              }}
+            >
+              {deleteIncidentMutation.isPending ? "Eliminando..." : "Eliminar"}
             </Button>
           </DialogFooter>
         </DialogContent>

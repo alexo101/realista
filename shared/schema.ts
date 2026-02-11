@@ -822,6 +822,20 @@ export const insertPropertyIncidentSchema = createInsertSchema(propertyIncidents
 export type PropertyIncident = typeof propertyIncidents.$inferSelect;
 export type InsertPropertyIncident = z.infer<typeof insertPropertyIncidentSchema>;
 
+export const incidentUpdates = pgTable("incident_updates", {
+  id: serial("id").primaryKey(),
+  incidentId: integer("incident_id").notNull().references(() => propertyIncidents.id, { onDelete: "cascade" }),
+  comment: text("comment").notNull(),
+  newStatus: text("new_status"),
+  newPriority: text("new_priority"),
+  performedBy: text("performed_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertIncidentUpdateSchema = createInsertSchema(incidentUpdates).omit({ id: true, createdAt: true });
+export type IncidentUpdate = typeof incidentUpdates.$inferSelect;
+export type InsertIncidentUpdate = z.infer<typeof insertIncidentUpdateSchema>;
+
 export const propertyCommunications = pgTable("property_communications", {
   id: serial("id").primaryKey(),
   propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
