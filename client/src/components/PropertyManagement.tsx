@@ -1355,7 +1355,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
             </div>
             <div>
               <label className="text-sm font-medium">Importe (€)</label>
-              <Input data-testid="input-payment-amount" type="number" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: parseInt(e.target.value) || 0 })} />
+              <Input
+                data-testid="input-payment-amount"
+                type="text"
+                inputMode="numeric"
+                value={paymentForm.amount || ""}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/^0+|[^0-9]/g, "");
+                  setPaymentForm({ ...paymentForm, amount: val ? parseInt(val, 10) : 0 });
+                }}
+                placeholder="Ej: 1200"
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Estado</label>
