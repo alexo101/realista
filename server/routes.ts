@@ -5994,6 +5994,18 @@ Gracias!
     }
   });
 
+  app.delete("/api/properties/:uuid/communications/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deletePropertyCommunication(parseInt(id));
+      if (!deleted) return res.status(404).json({ error: "Comunicación no encontrada" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting communication:", error);
+      res.status(500).json({ error: "Error al eliminar la comunicación" });
+    }
+  });
+
   // 7. Property History
   app.get("/api/properties/:uuid/history", requireAuth, async (req, res) => {
     try {

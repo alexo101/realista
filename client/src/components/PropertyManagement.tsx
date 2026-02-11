@@ -337,6 +337,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     clientId: null as number | null,
     clientName: "",
   });
+  const [editingCommunication, setEditingCommunication] = useState<any>(null);
+  const [deleteCommConfirmId, setDeleteCommConfirmId] = useState<number | null>(null);
+  const [deleteCommConfirmTitle, setDeleteCommConfirmTitle] = useState("");
   const [commClientSearch, setCommClientSearch] = useState("");
   const [showCommClientDropdown, setShowCommClientDropdown] = useState(false);
   const filteredCommClients = useMemo(() => {
@@ -633,6 +636,47 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     },
     onError: () => {
       toast({ title: "Error", description: "No se pudo registrar la comunicación", variant: "destructive" });
+    },
+  });
+
+  const updateCommunicationMutation = useMutation({
+    mutationFn: async (data: typeof communicationForm & { id: number }) => {
+      return apiRequest("PATCH", `/api/properties/${property.uuid}/communications/${data.id}`, {
+        title: data.title,
+        communicationType: data.communicationType,
+        relevantDate: data.relevantDate,
+        description: data.description,
+        addToCalendar: data.addToCalendar,
+        ...(data.clientId ? { clientId: data.clientId } : {}),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "communications"] });
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
+      toast({ title: "Comunicación actualizada" });
+      setCommunicationDialogOpen(false);
+      setEditingCommunication(null);
+      setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false, clientId: null, clientName: "" });
+      setCommClientSearch("");
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo actualizar la comunicación", variant: "destructive" });
+    },
+  });
+
+  const deleteCommunicationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/properties/${property.uuid}/communications/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "communications"] });
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
+      toast({ title: "Comunicación eliminada" });
+      setDeleteCommConfirmId(null);
+      setDeleteCommConfirmTitle("");
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo eliminar la comunicación", variant: "destructive" });
     },
   });
 
@@ -1259,10 +1303,41 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                         <Badge variant="secondary" className="text-xs">{comm.communicationType}</Badge>
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">{comm.relevantDate}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" data-testid={`button-view-communication-${comm.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                      <TableCell className="text-left">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            data-testid={`button-edit-communication-${comm.id}`}
+                            onClick={() => {
+                              setEditingCommunication(comm);
+                              setCommunicationForm({
+                                title: comm.title,
+                                communicationType: comm.communicationType,
+                                relevantDate: comm.relevantDate || "",
+                                addToCalendar: comm.addToCalendar ?? false,
+                                description: comm.description || "",
+                                addToHistory: comm.addToHistory ?? false,
+                                clientId: comm.clientId || null,
+                                clientName: "",
+                              });
+                              setCommunicationDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            data-testid={`button-delete-communication-${comm.id}`}
+                            onClick={() => {
+                              setDeleteCommConfirmId(comm.id);
+                              setDeleteCommConfirmTitle(comm.title);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1828,11 +1903,18 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         </DialogContent>
       </Dialog>
       {/* Communication Dialog */}
-      <Dialog open={communicationDialogOpen} onOpenChange={setCommunicationDialogOpen}>
+      <Dialog open={communicationDialogOpen} onOpenChange={(open) => {
+        setCommunicationDialogOpen(open);
+        if (!open) {
+          setEditingCommunication(null);
+          setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false, clientId: null, clientName: "" });
+          setCommClientSearch("");
+        }
+      }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nueva comunicación</DialogTitle>
-            <DialogDescription>Registra una nueva comunicación</DialogDescription>
+            <DialogTitle>{editingCommunication ? "Editar comunicación" : "Nueva comunicación"}</DialogTitle>
+            <DialogDescription>{editingCommunication ? "Modifica los datos de la comunicación" : "Registra una nueva comunicación"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -1959,10 +2041,48 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           <DialogFooter>
             <Button
               data-testid="button-confirm-communication"
-              onClick={() => communicationMutation.mutate(communicationForm)}
-              disabled={communicationMutation.isPending || !communicationForm.title || !communicationForm.communicationType || !communicationForm.relevantDate}
+              onClick={() => {
+                if (editingCommunication) {
+                  updateCommunicationMutation.mutate({ ...communicationForm, id: editingCommunication.id });
+                } else {
+                  communicationMutation.mutate(communicationForm);
+                }
+              }}
+              disabled={(communicationMutation.isPending || updateCommunicationMutation.isPending) || !communicationForm.title || !communicationForm.communicationType || !communicationForm.relevantDate}
             >
-              {communicationMutation.isPending ? "Guardando..." : "Registrar comunicación"}
+              {(communicationMutation.isPending || updateCommunicationMutation.isPending) ? "Guardando..." : editingCommunication ? "Guardar cambios" : "Registrar comunicación"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Communication Confirmation Dialog */}
+      <Dialog open={deleteCommConfirmId !== null} onOpenChange={(open) => { if (!open) { setDeleteCommConfirmId(null); setDeleteCommConfirmTitle(""); } }}>
+        <DialogContent className="w-[95vw] max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar comunicación</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar la comunicación <span className="font-semibold">{deleteCommConfirmTitle}</span>? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              data-testid="button-cancel-delete-comm"
+              onClick={() => setDeleteCommConfirmId(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="button-confirm-delete-comm"
+              disabled={deleteCommunicationMutation.isPending}
+              onClick={() => {
+                if (deleteCommConfirmId !== null) {
+                  deleteCommunicationMutation.mutate(deleteCommConfirmId);
+                }
+              }}
+            >
+              {deleteCommunicationMutation.isPending ? "Eliminando..." : "Eliminar"}
             </Button>
           </DialogFooter>
         </DialogContent>

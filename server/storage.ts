@@ -316,6 +316,7 @@ export interface IStorage {
   getPropertyCommunications(propertyUuid: string): Promise<PropertyCommunication[]>;
   createPropertyCommunication(comm: InsertPropertyCommunication): Promise<PropertyCommunication>;
   updatePropertyCommunication(id: number, data: Partial<InsertPropertyCommunication>): Promise<PropertyCommunication | undefined>;
+  deletePropertyCommunication(id: number): Promise<boolean>;
   
   getPropertyHistory(propertyUuid: string): Promise<PropertyHistoryEntry[]>;
   createPropertyHistory(entry: InsertPropertyHistory): Promise<PropertyHistoryEntry>;
@@ -3814,6 +3815,11 @@ export class DatabaseStorage implements IStorage {
   async updatePropertyCommunication(id: number, data: Partial<InsertPropertyCommunication>): Promise<PropertyCommunication | undefined> {
     const [updated] = await db.update(propertyCommunications).set(data).where(eq(propertyCommunications.id, id)).returning();
     return updated;
+  }
+
+  async deletePropertyCommunication(id: number): Promise<boolean> {
+    const result = await db.delete(propertyCommunications).where(eq(propertyCommunications.id, id)).returning();
+    return result.length > 0;
   }
 
   // Property Management - History
