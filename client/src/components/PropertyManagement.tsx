@@ -1343,7 +1343,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                     {getHistoryIcon(entry.eventType)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold" data-testid={`text-history-title-${entry.id}`}>{entry.title}</p>
+                    <p className="text-sm font-medium" data-testid={`text-history-title-${entry.id}`}>{entry.title}</p>
                     <p className="text-xs text-gray-500">{entry.description}</p>
                   </div>
                   <div className="text-right shrink-0">
