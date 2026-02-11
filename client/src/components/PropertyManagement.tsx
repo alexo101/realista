@@ -301,6 +301,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     status: "Pendiente",
     addToHistory: false,
   });
+  const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [deletePaymentConfirmId, setDeletePaymentConfirmId] = useState<number | null>(null);
+  const [deletePaymentConfirmConcept, setDeletePaymentConfirmConcept] = useState("");
 
   const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
   const [documentForm, setDocumentForm] = useState({
@@ -483,6 +486,43 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     },
     onError: () => {
       toast({ title: "Error", description: "No se pudo registrar el pago", variant: "destructive" });
+    },
+  });
+
+  const updatePaymentMutation = useMutation({
+    mutationFn: async (data: typeof paymentForm & { id: number }) => {
+      return apiRequest("PATCH", `/api/properties/${property.uuid}/payments/${data.id}`, {
+        concept: data.concept,
+        amount: data.amount,
+        status: data.status,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
+      toast({ title: "Pago actualizado" });
+      setPaymentDialogOpen(false);
+      setEditingPayment(null);
+      setPaymentForm({ concept: "", amount: 0, status: "Pendiente", addToHistory: false });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo actualizar el pago", variant: "destructive" });
+    },
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/properties/${property.uuid}/payments/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "payments"] });
+      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
+      toast({ title: "Pago eliminado" });
+      setDeletePaymentConfirmId(null);
+      setDeletePaymentConfirmConcept("");
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo eliminar el pago", variant: "destructive" });
     },
   });
 
@@ -987,6 +1027,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                         <TableHead>FECHA</TableHead>
                         <TableHead>ESTADO</TableHead>
                         <TableHead className="text-right">IMPORTE</TableHead>
+                        <TableHead>ACCIONES</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1000,6 +1041,38 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-medium">€{p.amount?.toLocaleString()}</TableCell>
+                          <TableCell className="text-left">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-testid={`button-edit-payment-${p.id}`}
+                                onClick={() => {
+                                  setEditingPayment(p);
+                                  setPaymentForm({
+                                    concept: p.concept,
+                                    amount: p.amount ?? 0,
+                                    status: p.status,
+                                    addToHistory: p.addToHistory ?? false,
+                                  });
+                                  setPaymentDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-testid={`button-delete-payment-${p.id}`}
+                                onClick={() => {
+                                  setDeletePaymentConfirmId(p.id);
+                                  setDeletePaymentConfirmConcept(p.concept);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1563,11 +1636,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         </DialogContent>
       </Dialog>
       {/* Payment Dialog */}
-      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+      <Dialog open={paymentDialogOpen} onOpenChange={(open) => {
+        setPaymentDialogOpen(open);
+        if (!open) {
+          setEditingPayment(null);
+          setPaymentForm({ concept: "", amount: 0, status: "Pendiente", addToHistory: false });
+        }
+      }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Añadir pago</DialogTitle>
-            <DialogDescription>Registra un nuevo pago</DialogDescription>
+            <DialogTitle>{editingPayment ? "Editar pago" : "Añadir pago"}</DialogTitle>
+            <DialogDescription>{editingPayment ? "Modifica los datos del pago" : "Registra un nuevo pago"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -1624,10 +1703,48 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           <DialogFooter>
             <Button
               data-testid="button-confirm-payment"
-              onClick={() => paymentMutation.mutate(paymentForm)}
-              disabled={paymentMutation.isPending || !paymentForm.concept}
+              onClick={() => {
+                if (editingPayment) {
+                  updatePaymentMutation.mutate({ ...paymentForm, id: editingPayment.id });
+                } else {
+                  paymentMutation.mutate(paymentForm);
+                }
+              }}
+              disabled={(paymentMutation.isPending || updatePaymentMutation.isPending) || !paymentForm.concept}
             >
-              {paymentMutation.isPending ? "Guardando..." : "Registrar pago"}
+              {(paymentMutation.isPending || updatePaymentMutation.isPending) ? "Guardando..." : editingPayment ? "Guardar cambios" : "Registrar pago"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Payment Confirmation Dialog */}
+      <Dialog open={deletePaymentConfirmId !== null} onOpenChange={(open) => { if (!open) { setDeletePaymentConfirmId(null); setDeletePaymentConfirmConcept(""); } }}>
+        <DialogContent className="w-[95vw] max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar pago</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar el pago <span className="font-semibold">{deletePaymentConfirmConcept}</span>? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              data-testid="button-cancel-delete-payment"
+              onClick={() => setDeletePaymentConfirmId(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="button-confirm-delete-payment"
+              disabled={deletePaymentMutation.isPending}
+              onClick={() => {
+                if (deletePaymentConfirmId !== null) {
+                  deletePaymentMutation.mutate(deletePaymentConfirmId);
+                }
+              }}
+            >
+              {deletePaymentMutation.isPending ? "Eliminando..." : "Eliminar"}
             </Button>
           </DialogFooter>
         </DialogContent>
