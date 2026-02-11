@@ -270,6 +270,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     ? `agentId=${user.id}`
     : null;
 
+  const [communicationDialogOpen, setCommunicationDialogOpen] = useState(false);
+
   const { data: agencyClients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients", clientsQueryParam],
     queryFn: async () => {
@@ -325,7 +327,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   const [incidentUpdatePriority, setIncidentUpdatePriority] = useState("");
   const [deleteIncidentConfirmId, setDeleteIncidentConfirmId] = useState<number | null>(null);
 
-  const [communicationDialogOpen, setCommunicationDialogOpen] = useState(false);
   const [communicationForm, setCommunicationForm] = useState({
     title: "",
     communicationType: "",
