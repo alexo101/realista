@@ -5732,10 +5732,31 @@ Gracias!
 
   app.patch("/api/properties/:uuid/payments/:id", requireAuth, async (req, res) => {
     try {
-      const { id } = req.params;
-      const updated = await storage.updatePropertyPayment(parseInt(id), req.body);
-      if (!updated) return res.status(404).json({ error: "Pago no encontrado" });
-      res.json(updated);
+      const { uuid, id } = req.params;
+      const { addToHistory, ...updateData } = req.body;
+
+      const existing = await storage.updatePropertyPayment(parseInt(id), updateData);
+      if (!existing) return res.status(404).json({ error: "Pago no encontrado" });
+
+      if (addToHistory) {
+        await storage.createPropertyHistory({
+          propertyUuid: uuid,
+          eventType: "payment",
+          title: `Pago actualizado: ${existing.concept}`,
+          description: `${existing.amount}€ - ${existing.status}`,
+          performedBy: req.user?.name || "Usuario Actual",
+        });
+      } else {
+        const history = await storage.getPropertyHistory(uuid);
+        const relatedEntry = history.find(
+          (h) => h.eventType === "payment" && h.title.includes(existing.concept)
+        );
+        if (relatedEntry) {
+          await storage.deletePropertyHistory(relatedEntry.id);
+        }
+      }
+
+      res.json(existing);
     } catch (error) {
       console.error("Error updating payment:", error);
       res.status(500).json({ error: "Error al actualizar el pago" });

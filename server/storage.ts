@@ -320,6 +320,7 @@ export interface IStorage {
   
   getPropertyHistory(propertyUuid: string): Promise<PropertyHistoryEntry[]>;
   createPropertyHistory(entry: InsertPropertyHistory): Promise<PropertyHistoryEntry>;
+  deletePropertyHistory(id: number): Promise<boolean>;
   
   updatePropertyManagementStatus(uuid: string, status: string): Promise<Property | undefined>;
 }
@@ -3830,6 +3831,11 @@ export class DatabaseStorage implements IStorage {
   async createPropertyHistory(entry: InsertPropertyHistory): Promise<PropertyHistoryEntry> {
     const [created] = await db.insert(propertyHistory).values(entry).returning();
     return created;
+  }
+
+  async deletePropertyHistory(id: number): Promise<boolean> {
+    const result = await db.delete(propertyHistory).where(eq(propertyHistory.id, id)).returning();
+    return result.length > 0;
   }
 
   // Property Management - Status Update

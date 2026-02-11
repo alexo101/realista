@@ -495,6 +495,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         concept: data.concept,
         amount: data.amount,
         status: data.status,
+        addToHistory: data.addToHistory,
       });
     },
     onSuccess: () => {
