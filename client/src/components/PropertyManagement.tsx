@@ -1121,7 +1121,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         <TabsContent value="historial" className="space-y-4">
           <h3 className="text-lg font-semibold">Historial de Actividad</h3>
 
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             <Button
               variant={historyTypeFilter === null ? "default" : "outline"}
               size="sm"
@@ -1170,20 +1170,19 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
             >
               <MessageSquare className="h-3 w-3 mr-1" /> Comunicación
             </Button>
-          </div>
-
-          <div className="flex gap-2 mb-4">
-            {["Todo", "Último mes", "Último año"].map((tf) => (
-              <Button
-                key={tf}
-                variant={historyTimeFilter === tf ? "default" : "outline"}
-                size="sm"
-                data-testid={`filter-history-time-${tf}`}
-                onClick={() => setHistoryTimeFilter(tf)}
-              >
-                {tf}
-              </Button>
-            ))}
+            <div className="flex gap-2 ml-auto">
+              {["Todo", "Último mes", "Último año"].map((tf) => (
+                <Button
+                  key={tf}
+                  variant={historyTimeFilter === tf ? "default" : "outline"}
+                  size="sm"
+                  data-testid={`filter-history-time-${tf}`}
+                  onClick={() => setHistoryTimeFilter(tf)}
+                >
+                  {tf}
+                </Button>
+              ))}
+            </div>
           </div>
 
           {historyLoading ? (
