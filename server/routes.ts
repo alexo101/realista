@@ -5784,14 +5784,6 @@ Gracias!
         uploadDate: uploadDate || new Date().toISOString().split('T')[0],
       });
 
-      await storage.createPropertyHistory({
-        propertyUuid: uuid,
-        eventType: "document",
-        title: "Documento añadido",
-        description: `${documentType}: ${fileName}`,
-        performedBy: req.user?.name || "Usuario Actual",
-      });
-
       res.status(201).json(document);
     } catch (error) {
       console.error("Error creating document:", error);
