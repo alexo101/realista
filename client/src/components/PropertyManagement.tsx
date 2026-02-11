@@ -553,6 +553,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     enabled: !!viewingIncident,
   });
 
+  const { data: expandedIncidentUpdates = [] } = useQuery<IncidentUpdate[]>({
+    queryKey: ["/api/incidents", expandedIncidentId, "updates"],
+    queryFn: async () => {
+      if (!expandedIncidentId) return [];
+      const res = await fetch(`/api/incidents/${expandedIncidentId}/updates`, { credentials: "include" });
+      if (!res.ok) throw new Error("Error fetching updates");
+      return res.json();
+    },
+    enabled: !!expandedIncidentId,
+  });
+
   const incidentUpdateMutation = useMutation({
     mutationFn: async (data: { comment: string; newStatus?: string; newPriority?: string }) => {
       if (!viewingIncident) throw new Error("No incident selected");
@@ -1137,10 +1148,42 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                     </TableRow>
                     {expandedIncidentId === incident.id && (
                       <TableRow key={`${incident.id}-desc`}>
-                        <TableCell colSpan={5} className="bg-gray-50">
-                          <p className="text-sm text-gray-600 py-2" data-testid={`text-incident-description-${incident.id}`}>
-                            {incident.description || "Sin descripción"}
-                          </p>
+                        <TableCell colSpan={5} className="bg-gray-50 py-3">
+                          <div className="space-y-2 max-h-[300px] overflow-y-auto" data-testid={`text-incident-description-${incident.id}`}>
+                            {expandedIncidentUpdates.map((update) => (
+                              <div key={update.id} className="flex gap-2 items-start text-sm">
+                                <div className="flex flex-col items-center pt-1.5">
+                                  <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                  <div className="w-px flex-1 bg-gray-200" />
+                                </div>
+                                <div className="flex-1 pb-1">
+                                  <div className="flex items-center gap-2 text-xs text-gray-400 mb-0.5">
+                                    <span className="font-medium">{update.performedBy}</span>
+                                    <span>•</span>
+                                    <span>{new Date(update.createdAt).toLocaleDateString("es-ES")} {new Date(update.createdAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>
+                                    {update.newStatus && (
+                                      <Badge className={`${getIncidentStatusBadgeClass(update.newStatus)} border-0 text-xs py-0`}>{update.newStatus}</Badge>
+                                    )}
+                                    {update.newPriority && (
+                                      <Badge className={`${getPriorityBadgeClass(update.newPriority)} border-0 text-xs py-0`}>{update.newPriority}</Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-gray-700">{update.comment}</p>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="flex gap-2 items-start text-sm">
+                              <div className="flex flex-col items-center pt-1.5">
+                                <div className="h-2 w-2 rounded-full bg-gray-400" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-xs text-gray-400 mb-0.5">
+                                  Descripción inicial • {new Date(incident.createdAt).toLocaleDateString("es-ES")}
+                                </div>
+                                <p className="text-gray-600">{incident.description || "Sin descripción"}</p>
+                              </div>
+                            </div>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
