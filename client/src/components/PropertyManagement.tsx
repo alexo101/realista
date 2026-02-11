@@ -1107,12 +1107,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                         {new Date(incident.createdAt).toLocaleDateString("es-ES")}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-2">
-                          {incident.lastUpdate && (
-                            <span className="text-xs text-gray-400 truncate max-w-[150px]" data-testid={`text-incident-last-comment-${incident.id}`}>
-                              {incident.lastUpdate.comment}
-                            </span>
-                          )}
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
