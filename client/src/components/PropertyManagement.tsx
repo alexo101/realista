@@ -564,13 +564,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       setIncidentUpdateComment("");
       setIncidentUpdateStatus("");
       setIncidentUpdatePriority("");
-      if (viewingIncident && (variables.newStatus || variables.newPriority)) {
-        setViewingIncident({
-          ...viewingIncident,
-          ...(variables.newStatus ? { status: variables.newStatus } : {}),
-          ...(variables.newPriority ? { priority: variables.newPriority } : {}),
-        });
-      }
+      setViewingIncident(null);
     },
     onError: () => {
       toast({ title: "Error", description: "No se pudo guardar la actualización", variant: "destructive" });
