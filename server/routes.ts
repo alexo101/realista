@@ -79,6 +79,13 @@ const upload = multer({
   },
 });
 
+const documentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024,
+  },
+});
+
 // Server-side image compression utility
 async function compressImageToTarget(
   buffer: Buffer, 
@@ -4757,6 +4764,50 @@ Gracias!
     } catch (error) {
       console.error("Error adding image to property:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Serve property documents (requires authentication)
+  app.get("/property-documents/:filePath(*)", requireAuth, async (req, res) => {
+    const filePath = req.params.filePath;
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const file = await objectStorageService.searchPublicObject(`property-documents/${filePath}`);
+      if (!file) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error serving property document:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Direct upload for property documents
+  app.post("/api/property-documents/upload-direct", requireAuth, documentUpload.single('document'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const fileBuffer = req.file.buffer;
+      const originalFileName = req.file.originalname || `document_${Date.now()}`;
+      const mimeType = req.file.mimetype;
+
+      console.log(`Uploading document: ${originalFileName}, type: ${mimeType}, size: ${fileBuffer.length} bytes`);
+
+      const fileUrl = await objectStorageService.uploadDocumentDirect(fileBuffer, originalFileName, mimeType);
+      const fileSize = fileBuffer.length < 1024 * 1024
+        ? `${(fileBuffer.length / 1024).toFixed(1)} KB`
+        : `${(fileBuffer.length / (1024 * 1024)).toFixed(1)} MB`;
+
+      console.log(`Document uploaded successfully: ${fileUrl}`);
+
+      res.json({ fileUrl, fileName: originalFileName, fileSize });
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      res.status(500).json({ error: "Failed to upload document" });
     }
   });
 

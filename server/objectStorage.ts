@@ -185,6 +185,33 @@ export class ObjectStorageService {
     return `/property-images/${imageId}`;
   }
 
+  async uploadDocumentDirect(fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string> {
+    const publicObjectPaths = this.getPublicObjectSearchPaths();
+    if (!publicObjectPaths || publicObjectPaths.length === 0) {
+      throw new Error(
+        "PUBLIC_OBJECT_SEARCH_PATHS not set. Create a bucket in 'Object Storage' " +
+          "tool and set PUBLIC_OBJECT_SEARCH_PATHS env var."
+      );
+    }
+
+    const publicObjectDir = publicObjectPaths[0];
+    const docId = randomUUID();
+    const ext = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
+    const fullPath = `${publicObjectDir}/property-documents/${docId}${ext}`;
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    await file.save(fileBuffer, {
+      metadata: {
+        contentType: mimeType,
+      },
+    });
+
+    return `/property-documents/${docId}${ext}`;
+  }
+
   // Gets the object entity file from the object path.
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {

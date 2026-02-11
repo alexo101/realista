@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +60,7 @@ import {
   Trash2,
   Eye,
   ChevronDown,
+  Upload,
 } from "lucide-react";
 
 interface PropertyManagementProps {
@@ -301,7 +302,10 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   const [documentForm, setDocumentForm] = useState({
     documentType: "",
     fileName: "",
+    file: null as File | null,
   });
+  const [documentUploading, setDocumentUploading] = useState(false);
+  const documentFileInputRef = useRef<HTMLInputElement>(null);
 
   const [incidentDialogOpen, setIncidentDialogOpen] = useState(false);
   const [editingIncident, setEditingIncident] = useState<PropertyIncident | null>(null);
@@ -460,23 +464,40 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
 
   const documentMutation = useMutation({
     mutationFn: async (data: typeof documentForm) => {
+      if (!data.file) throw new Error("No file selected");
+
+      setDocumentUploading(true);
+      const formData = new FormData();
+      formData.append("document", data.file);
+
+      const uploadRes = await fetch("/api/property-documents/upload-direct", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { fileUrl, fileSize } = await uploadRes.json();
+
       return apiRequest("POST", `/api/properties/${property.uuid}/documents`, {
         propertyUuid: property.uuid,
         documentType: data.documentType,
         fileName: data.fileName,
-        fileUrl: "#",
-        fileSize: "N/A",
+        fileUrl,
+        fileSize: fileSize || "N/A",
         uploadDate: new Date().toISOString().split("T")[0],
       });
     },
     onSuccess: () => {
+      setDocumentUploading(false);
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "documents"] });
-      toast({ title: "Documento registrado", description: "El documento ha sido añadido" });
+      toast({ title: "Documento registrado", description: "El documento ha sido subido y añadido" });
       setDocumentDialogOpen(false);
-      setDocumentForm({ documentType: "", fileName: "" });
+      setDocumentForm({ documentType: "", fileName: "", file: null });
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo registrar el documento", variant: "destructive" });
+      setDocumentUploading(false);
+      toast({ title: "Error", description: "No se pudo subir el documento", variant: "destructive" });
     },
   });
 
@@ -1424,18 +1445,47 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Nombre del archivo</label>
-              <Input data-testid="input-document-filename" value={documentForm.fileName} onChange={(e) => setDocumentForm({ ...documentForm, fileName: e.target.value })} placeholder="documento.pdf" />
+              <label className="text-sm font-medium">Archivo</label>
+              <input
+                ref={documentFileInputRef}
+                type="file"
+                data-testid="input-document-file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setDocumentForm({ ...documentForm, fileName: file.name, file });
+                  }
+                }}
+              />
+              <div
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                data-testid="dropzone-document"
+                onClick={() => documentFileInputRef.current?.click()}
+              >
+                {documentForm.file ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium">{documentForm.fileName}</span>
+                    <span className="text-xs text-gray-400">({(documentForm.file.size / 1024).toFixed(1)} KB)</span>
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">Haz clic para seleccionar un archivo</p>
+                    <p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, imágenes, etc.</p>
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-gray-400">La integración de subida de archivos se añadirá próximamente.</p>
           </div>
           <DialogFooter>
             <Button
               data-testid="button-confirm-document"
               onClick={() => documentMutation.mutate(documentForm)}
-              disabled={documentMutation.isPending || !documentForm.documentType || !documentForm.fileName}
+              disabled={documentMutation.isPending || documentUploading || !documentForm.documentType || !documentForm.file}
             >
-              {documentMutation.isPending ? "Guardando..." : "Registrar documento"}
+              {documentMutation.isPending || documentUploading ? "Subiendo..." : "Subir documento"}
             </Button>
           </DialogFooter>
         </DialogContent>
