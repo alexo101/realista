@@ -306,6 +306,8 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   });
   const [documentUploading, setDocumentUploading] = useState(false);
   const documentFileInputRef = useRef<HTMLInputElement>(null);
+  const [deleteDocConfirmId, setDeleteDocConfirmId] = useState<number | null>(null);
+  const [deleteDocConfirmName, setDeleteDocConfirmName] = useState("");
 
   const [incidentDialogOpen, setIncidentDialogOpen] = useState(false);
   const [editingIncident, setEditingIncident] = useState<PropertyIncident | null>(null);
@@ -932,22 +934,47 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 <CardContent className="space-y-2">
                   {docs.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between py-2 border-b last:border-0" data-testid={`row-document-${doc.id}`}>
-                      <div className="flex items-center gap-3">
+                      <div
+                        className="flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity"
+                        onClick={() => {
+                          if (doc.fileUrl && doc.fileUrl !== "#") {
+                            window.open(doc.fileUrl, "_blank");
+                          }
+                        }}
+                        data-testid={`link-open-doc-${doc.id}`}
+                      >
                         <FileText className="h-5 w-5 text-red-500" />
                         <div>
-                          <p className="text-sm font-medium">{doc.fileName}</p>
+                          <p className="text-sm font-medium text-primary underline-offset-2 hover:underline">{doc.fileName}</p>
                           <p className="text-xs text-gray-400">{doc.uploadDate} · {doc.fileSize}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" data-testid={`button-download-doc-${doc.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          data-testid={`button-download-doc-${doc.id}`}
+                          onClick={() => {
+                            if (doc.fileUrl && doc.fileUrl !== "#") {
+                              const link = document.createElement("a");
+                              link.href = doc.fileUrl;
+                              link.download = doc.fileName;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }
+                          }}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           data-testid={`button-delete-doc-${doc.id}`}
-                          onClick={() => deleteDocumentMutation.mutate(doc.id)}
+                          onClick={() => {
+                            setDeleteDocConfirmId(doc.id);
+                            setDeleteDocConfirmName(doc.fileName);
+                          }}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -1637,6 +1664,40 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               disabled={communicationMutation.isPending || !communicationForm.title || !communicationForm.communicationType || !communicationForm.relevantDate}
             >
               {communicationMutation.isPending ? "Guardando..." : "Registrar comunicación"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Document Confirmation Dialog */}
+      <Dialog open={deleteDocConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteDocConfirmId(null); }}>
+        <DialogContent className="w-[95vw] max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar documento</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar el documento <span className="font-semibold">{deleteDocConfirmName}</span>? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              data-testid="button-cancel-delete-doc"
+              onClick={() => setDeleteDocConfirmId(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="button-confirm-delete-doc"
+              disabled={deleteDocumentMutation.isPending}
+              onClick={() => {
+                if (deleteDocConfirmId !== null) {
+                  deleteDocumentMutation.mutate(deleteDocConfirmId, {
+                    onSuccess: () => setDeleteDocConfirmId(null),
+                  });
+                }
+              }}
+            >
+              {deleteDocumentMutation.isPending ? "Eliminando..." : "Eliminar"}
             </Button>
           </DialogFooter>
         </DialogContent>
