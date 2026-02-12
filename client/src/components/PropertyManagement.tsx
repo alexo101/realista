@@ -1782,11 +1782,26 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <input
                 ref={documentFileInputRef}
                 type="file"
+                accept=".pdf,.png,.jpg,.jpeg"
                 data-testid="input-document-file"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    const maxSize = 5 * 1024 * 1024;
+                    const allowedTypes = ["application/pdf", "image/png", "image/jpeg"];
+                    const allowedExtensions = [".pdf", ".png", ".jpg", ".jpeg"];
+                    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+                    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                      toast({ title: "Formato no permitido", description: "Solo se permiten archivos PDF, PNG y JPG.", variant: "destructive" });
+                      e.target.value = "";
+                      return;
+                    }
+                    if (file.size > maxSize) {
+                      toast({ title: "Archivo demasiado grande", description: "El tamaño máximo permitido es 5 MB.", variant: "destructive" });
+                      e.target.value = "";
+                      return;
+                    }
                     setDocumentForm({ ...documentForm, fileName: file.name, file });
                   }
                 }}
@@ -1800,13 +1815,14 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   <div className="flex items-center justify-center gap-2">
                     <FileText className="h-5 w-5 text-primary" />
                     <span className="text-sm font-medium">{documentForm.fileName}</span>
-                    <span className="text-xs text-gray-400">({(documentForm.file.size / 1024).toFixed(1)} KB)</span>
+                    <span className="text-xs text-gray-400">({(documentForm.file.size / 1024 / 1024).toFixed(2)} MB)</span>
                   </div>
                 ) : (
                   <div>
                     <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                     <p className="text-sm text-gray-500">Haz clic para seleccionar un archivo</p>
-                    <p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, imágenes, etc.</p>
+                    <p className="text-xs text-gray-400 mt-1">Formatos permitidos: PDF, PNG, JPG</p>
+                    <p className="text-xs text-gray-400">Tamaño máximo: 5 MB</p>
                   </div>
                 )}
               </div>
