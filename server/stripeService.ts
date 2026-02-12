@@ -48,6 +48,7 @@ export class StripeService {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
+      locale: 'es',
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
