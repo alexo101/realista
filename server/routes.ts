@@ -5133,7 +5133,7 @@ Gracias!
         stripeCustomerId: entity.stripeCustomerId || null,
         stripeSubscriptionId: entity.stripeSubscriptionId || null,
         seatsLimit: entity.seatsLimit || (entityType === 'agency' ? 1 : undefined),
-        activePropertiesLimit: entity.activePropertiesLimit || 5,
+        activePropertiesLimit: entity.activePropertiesLimit ?? 2,
         subscriptionStartDate: entity.subscriptionStartDate || null,
         subscription,
       });
