@@ -48,3 +48,6 @@ defaultBucketID = "replit-objstore-60a5ea22-e602-42f2-948c-b43002a405a1"
 [userenv]
 
 [userenv.shared]
+
+[userenv.production]
+PUBLIC_BASE_URL = "https://realista.homes"

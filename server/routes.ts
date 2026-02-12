@@ -13,6 +13,32 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { requireAuth, requireRole, authorize, isAgencyAdmin, isResourceOwner } from "./middleware/auth";
+import type { Request } from "express";
+
+function getPublicBaseUrl(req?: Request): string {
+  if (process.env.PUBLIC_BASE_URL) {
+    return process.env.PUBLIC_BASE_URL.replace(/\/$/, '');
+  }
+  const replitDomains = process.env.REPLIT_DOMAINS;
+  if (replitDomains) {
+    return `https://${replitDomains.split(',')[0]}`;
+  }
+  const replitDevDomain = process.env.REPLIT_DEV_DOMAIN;
+  if (replitDevDomain) {
+    return `https://${replitDevDomain}`;
+  }
+  if (req) {
+    const forwardedHost = req.get('x-forwarded-host');
+    if (forwardedHost && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
+      return `https://${forwardedHost}`;
+    }
+    const origin = req.get('origin');
+    if (origin && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+      return origin.replace(/\/$/, '');
+    }
+  }
+  return 'https://realista.homes';
+}
 
 // Client profile update schema - only allow specific fields
 const updateClientProfileSchema = insertClientSchema.pick({
@@ -545,20 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Save customer ID to agency
           await stripeService.updateCustomerId('agency', agency.id, customer.id);
           
-          // Build base URL - always use https for Stripe callbacks
-          const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-          const forwardedHost = req.get('x-forwarded-host');
-          
-          let baseUrl: string;
-          if (replitDomain) {
-            baseUrl = `https://${replitDomain}`;
-          } else if (forwardedHost && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
-            baseUrl = `https://${forwardedHost}`;
-          } else {
-            console.error('Cannot determine valid public URL for Stripe callback');
-            stripeError = 'No se pudo configurar el pago. Contacta con soporte.';
-            throw new Error('No valid public URL for Stripe');
-          }
+          const baseUrl = getPublicBaseUrl(req);
           
           const session = await stripeService.createCheckoutSession(
             customer.id,
@@ -1042,23 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Save customer ID to agent
           await stripeService.updateCustomerId('agent', agent.id, customer.id);
           
-          // Build base URL - always use https for Stripe callbacks
-          // Priority: REPLIT_DOMAINS > x-forwarded-host > fallback to error
-          const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-          const forwardedHost = req.get('x-forwarded-host');
-          
-          let baseUrl: string;
-          if (replitDomain) {
-            baseUrl = `https://${replitDomain}`;
-          } else if (forwardedHost && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
-            // Always use https for Stripe (force even if forwarded as http)
-            baseUrl = `https://${forwardedHost}`;
-          } else {
-            // Fallback: can't determine valid public URL
-            console.error('Cannot determine valid public URL for Stripe callback');
-            stripeError = 'No se pudo configurar el pago. Contacta con soporte.';
-            throw new Error('No valid public URL for Stripe');
-          }
+          const baseUrl = getPublicBaseUrl(req);
           
           const session = await stripeService.createCheckoutSession(
             customer.id,
@@ -3570,10 +3567,7 @@ Gracias!
         }
       }
       
-      // Build profile URLs
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : 'https://realista.homes';
+      const baseUrl = getPublicBaseUrl(req);
       const agentProfileUrl = `${baseUrl}/agentes/${agent.slug || agent.uuid}`;
       const agencyProfileUrl = agencySlug ? `${baseUrl}/agencias/${agencySlug}` : baseUrl;
 
@@ -4057,23 +4051,7 @@ Gracias!
 
       const { stripeService } = await import("./stripeService");
 
-      // Helper function to get base URL with reliable fallback
-      const getBaseUrl = (): string => {
-        const replitDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
-        if (replitDomain) return `https://${replitDomain}`;
-        
-        const forwardedHost = req.get('x-forwarded-host');
-        if (forwardedHost && !forwardedHost.includes('localhost') && !forwardedHost.includes('127.0.0.1')) {
-          return `https://${forwardedHost}`;
-        }
-        
-        // Fallback for development: use request host with protocol
-        const host = req.get('host') || 'localhost:5000';
-        const protocol = req.protocol || 'http';
-        return `${protocol}://${host}`;
-      };
-
-      const baseUrl = getBaseUrl();
+      const baseUrl = getPublicBaseUrl(req);
 
       // If agency already has an active Stripe subscription, redirect to Customer Portal
       if (agency.stripeSubscriptionId && agency.stripeCustomerId) {
@@ -4225,10 +4203,7 @@ Gracias!
         }
       }
       
-      // Build profile URLs
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : 'https://realista.homes';
+      const baseUrl = getPublicBaseUrl(req);
       const agentProfileUrl = `${baseUrl}/agentes/${agent.slug || agent.uuid}`;
       const agencyProfileUrl = agencySlug ? `${baseUrl}/agencias/${agencySlug}` : baseUrl;
       
@@ -4918,8 +4893,7 @@ Gracias!
         await stripeService.updateCustomerId(entityType, entityId, customerId);
       }
       
-      // Create checkout session
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const baseUrl = getPublicBaseUrl(req);
       const session = await stripeService.createCheckoutSession(
         customerId,
         priceId,
@@ -4950,7 +4924,7 @@ Gracias!
       }
 
       const { stripeService } = await import("./stripeService");
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const baseUrl = getPublicBaseUrl(req);
       
       const session = await stripeService.createCustomerPortalSession(
         customerId,
@@ -5087,8 +5061,7 @@ Gracias!
         await stripeService.updateCustomerId(entityType, entityId, customerId);
       }
       
-      // Build return URL
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      const baseUrl = getPublicBaseUrl(req);
       
       // Create checkout session with metadata for the intended plan
       const session = await stripeService.createCheckoutSession(
