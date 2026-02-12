@@ -532,19 +532,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let checkoutUrl: string | null = null;
       let stripeError: string | null = null;
       
-      // Hardcoded fallback price IDs for Agency plans (from Stripe)
       const AGENCY_PRICES = {
         'pequeña': {
-          monthly: 'price_1SXWwjLUOluRoTfmCcc8t3Zi', // 29€/month
-          yearly: 'price_1SXWwjLUOluRoTfmgw3QbEg3'   // 290€/year
+          monthly: 'price_1SmuvAF01XuhPG031pkdpd2h', // 29€/month
+          yearly: 'price_1SmuvAF01XuhPG03xX6ZFcDQ'   // 290€/year
         },
         'mediana': {
-          monthly: 'price_1SXWwkLUOluRoTfmEJilorxX', // 79€/month
-          yearly: 'price_1SXWwkLUOluRoTfm27nDYDzB'   // 790€/year
+          monthly: 'price_1Smuv9F01XuhPG03ZAdFBjKQ', // 79€/month
+          yearly: 'price_1Smuv9F01XuhPG030rAFcsSD'   // 790€/year
         },
         'lider': {
-          monthly: 'price_1SXWwkLUOluRoTfmeva2XNzr', // 249€/month
-          yearly: 'price_1SXWwkLUOluRoTfmrqNVpOwU'   // 2490€/year
+          monthly: 'price_1Smuv9F01XuhPG03N39qsBO3', // 249€/month
+          yearly: 'price_1Smuv9F01XuhPG03cZs41geg'   // 2490€/year
         }
       };
       
@@ -1006,10 +1005,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let checkoutUrl: string | null = null;
       let stripeError: string | null = null;
       
-      // Hardcoded fallback price IDs for Agent Líder (from Stripe)
       const AGENT_LIDER_PRICES = {
-        monthly: 'price_1SXWwlLUOluRoTfmxmnVsmc0', // 20€/month
-        yearly: 'price_1SXWwlLUOluRoTfmhzd9sYvp'   // 200€/year
+        monthly: 'price_1Smuv8F01XuhPG03V6oVT7uI', // 20€/month
+        yearly: 'price_1Smuv8F01XuhPG03Zt7dTwYB'   // 200€/year
       };
       
       if (subscriptionPlan === 'lider') {
@@ -4069,19 +4067,18 @@ Gracias!
         });
       }
 
-      // Price IDs for Agency plans
       const AGENCY_PRICES: Record<string, { monthly: string; yearly: string }> = {
         'pequeña': {
-          monthly: 'price_1SXWwjLUOluRoTfmCcc8t3Zi',
-          yearly: 'price_1SXWwjLUOluRoTfmgw3QbEg3'
+          monthly: 'price_1SmuvAF01XuhPG031pkdpd2h',
+          yearly: 'price_1SmuvAF01XuhPG03xX6ZFcDQ'
         },
         'mediana': {
-          monthly: 'price_1SXWwjLUOluRoTfmpEjIb3YL',
-          yearly: 'price_1SXWwjLUOluRoTfmoXkDt8Ft'
+          monthly: 'price_1Smuv9F01XuhPG03ZAdFBjKQ',
+          yearly: 'price_1Smuv9F01XuhPG030rAFcsSD'
         },
         'lider': {
-          monthly: 'price_1SXWwkLUOluRoTfmeva2XNzr',
-          yearly: 'price_1SXWwkLUOluRoTfmnYJ35KxC'
+          monthly: 'price_1Smuv9F01XuhPG03N39qsBO3',
+          yearly: 'price_1Smuv9F01XuhPG03cZs41geg'
         }
       };
 
@@ -4998,23 +4995,23 @@ Gracias!
       // Price mappings
       const AGENCY_PRICES: Record<string, { monthly: string; yearly: string }> = {
         'pequeña': {
-          monthly: 'price_1SXWwjLUOluRoTfmCcc8t3Zi',
-          yearly: 'price_1SXWwjLUOluRoTfmgw3QbEg3'
+          monthly: 'price_1SmuvAF01XuhPG031pkdpd2h',
+          yearly: 'price_1SmuvAF01XuhPG03xX6ZFcDQ'
         },
         'mediana': {
-          monthly: 'price_1SXWwkLUOluRoTfmEJilorxX',
-          yearly: 'price_1SXWwkLUOluRoTfm27nDYDzB'
+          monthly: 'price_1Smuv9F01XuhPG03ZAdFBjKQ',
+          yearly: 'price_1Smuv9F01XuhPG030rAFcsSD'
         },
         'lider': {
-          monthly: 'price_1SXWwkLUOluRoTfmeva2XNzr',
-          yearly: 'price_1SXWwkLUOluRoTfmrqNVpOwU'
+          monthly: 'price_1Smuv9F01XuhPG03N39qsBO3',
+          yearly: 'price_1Smuv9F01XuhPG03cZs41geg'
         }
       };
 
       const AGENT_PRICES: Record<string, { monthly: string; yearly: string }> = {
         'lider': {
-          monthly: 'price_1SXWwkLUOluRoTfmsG0VnAfx', // Agent Líder 20€/month
-          yearly: 'price_1SXWwkLUOluRoTfmPpDrXNtN'   // Agent Líder 200€/year
+          monthly: 'price_1Smuv8F01XuhPG03V6oVT7uI', // Agent Líder 20€/month
+          yearly: 'price_1Smuv8F01XuhPG03Zt7dTwYB'   // Agent Líder 200€/year
         }
       };
 
