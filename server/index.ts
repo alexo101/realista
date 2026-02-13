@@ -151,7 +151,11 @@ app.use((req, res, next) => {
 
         // Sync all existing Stripe data in the background
         stripeSync.syncBackfill()
-          .then(() => console.log('Stripe data synced'))
+          .then(async () => {
+            console.log('Stripe data synced');
+            const { stripeService } = await import('./stripeService');
+            await stripeService.syncProductDescriptions();
+          })
           .catch((err: any) => console.error('Error syncing Stripe data:', err));
       } catch (stripeError) {
         console.error('Warning: Could not initialize Stripe:', stripeError);

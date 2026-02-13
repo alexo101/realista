@@ -532,30 +532,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let checkoutUrl: string | null = null;
       let stripeError: string | null = null;
       
-      const AGENCY_PRICES = {
-        'pequeña': {
-          monthly: 'price_1SmuvAF01XuhPG031pkdpd2h', // 29€/month
-          yearly: 'price_1SmuvAF01XuhPG03xX6ZFcDQ'   // 290€/year
-        },
-        'mediana': {
-          monthly: 'price_1Smuv9F01XuhPG03ZAdFBjKQ', // 79€/month
-          yearly: 'price_1Smuv9F01XuhPG030rAFcsSD'   // 790€/year
-        },
-        'lider': {
-          monthly: 'price_1Smuv9F01XuhPG03N39qsBO3', // 249€/month
-          yearly: 'price_1Smuv9F01XuhPG03cZs41geg'   // 2490€/year
-        }
-      };
-      
       const isPaidPlan = ['pequeña', 'mediana', 'lider'].includes(subscriptionPlan);
       
       if (isPaidPlan) {
         try {
           const { stripeService } = await import("./stripeService");
           
-          // Get price ID - use hardcoded fallback for reliability
-          const planPrices = AGENCY_PRICES[subscriptionPlan as keyof typeof AGENCY_PRICES];
-          const priceId = isYearlyBilling ? planPrices.yearly : planPrices.monthly;
+          const priceId = await stripeService.getPriceIdForPlan(subscriptionPlan, 'agency', isYearlyBilling);
+          if (!priceId) {
+            throw new Error(`No price found for agency plan: ${subscriptionPlan}`);
+          }
           
           console.log('Using price ID for agency:', priceId, 'plan:', subscriptionPlan);
           
@@ -1005,41 +991,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let checkoutUrl: string | null = null;
       let stripeError: string | null = null;
       
-      const AGENT_LIDER_PRICES = {
-        monthly: 'price_1Smuv8F01XuhPG03V6oVT7uI', // 20€/month
-        yearly: 'price_1Smuv8F01XuhPG03Zt7dTwYB'   // 200€/year
-      };
-      
       if (subscriptionPlan === 'lider') {
         try {
           const { stripeService } = await import("./stripeService");
           
-          // Try to get price ID dynamically, fallback to hardcoded
-          let priceId: string | null = null;
-          
-          try {
-            const products = await stripeService.listProductsWithPrices('agent');
-            const agentLiderProduct = products.find((p: any) => 
-              p.name?.includes('Agente') && p.name?.includes('Líder')
-            );
-            
-            if (agentLiderProduct && agentLiderProduct.prices.length > 0) {
-              const price = agentLiderProduct.prices.find((p: any) => {
-                const interval = p.recurring?.interval;
-                return isYearlyBilling ? interval === 'year' : interval === 'month';
-              });
-              if (price?.id) {
-                priceId = price.id;
-              }
-            }
-          } catch (lookupError) {
-            console.warn('Dynamic price lookup failed, using fallback:', lookupError);
-          }
-          
-          // Use fallback if dynamic lookup failed
+          const priceId = await stripeService.getPriceIdForPlan('lider', 'agent', isYearlyBilling);
           if (!priceId) {
-            priceId = isYearlyBilling ? AGENT_LIDER_PRICES.yearly : AGENT_LIDER_PRICES.monthly;
-            console.log('Using fallback price ID:', priceId);
+            throw new Error('No price found for agent lider plan');
           }
           
           // Create Stripe customer
@@ -4067,23 +4025,10 @@ Gracias!
         });
       }
 
-      const AGENCY_PRICES: Record<string, { monthly: string; yearly: string }> = {
-        'pequeña': {
-          monthly: 'price_1SmuvAF01XuhPG031pkdpd2h',
-          yearly: 'price_1SmuvAF01XuhPG03xX6ZFcDQ'
-        },
-        'mediana': {
-          monthly: 'price_1Smuv9F01XuhPG03ZAdFBjKQ',
-          yearly: 'price_1Smuv9F01XuhPG030rAFcsSD'
-        },
-        'lider': {
-          monthly: 'price_1Smuv9F01XuhPG03N39qsBO3',
-          yearly: 'price_1Smuv9F01XuhPG03cZs41geg'
-        }
-      };
-
-      const planPrices = AGENCY_PRICES[plan];
-      const priceId = isYearlyBilling ? planPrices.yearly : planPrices.monthly;
+      const priceId = await stripeService.getPriceIdForPlan(plan, 'agency', isYearlyBilling);
+      if (!priceId) {
+        return res.status(400).json({ message: `No se encontró precio para el plan: ${plan}` });
+      }
 
       // Create or get Stripe customer for the agency
       let customerId = agency.stripeCustomerId;
@@ -4992,38 +4937,12 @@ Gracias!
         return res.status(400).json({ error: "entityType, entityId, and planId are required" });
       }
 
-      // Price mappings
-      const AGENCY_PRICES: Record<string, { monthly: string; yearly: string }> = {
-        'pequeña': {
-          monthly: 'price_1SmuvAF01XuhPG031pkdpd2h',
-          yearly: 'price_1SmuvAF01XuhPG03xX6ZFcDQ'
-        },
-        'mediana': {
-          monthly: 'price_1Smuv9F01XuhPG03ZAdFBjKQ',
-          yearly: 'price_1Smuv9F01XuhPG030rAFcsSD'
-        },
-        'lider': {
-          monthly: 'price_1Smuv9F01XuhPG03N39qsBO3',
-          yearly: 'price_1Smuv9F01XuhPG03cZs41geg'
-        }
-      };
-
-      const AGENT_PRICES: Record<string, { monthly: string; yearly: string }> = {
-        'lider': {
-          monthly: 'price_1Smuv8F01XuhPG03V6oVT7uI', // Agent Líder 20€/month
-          yearly: 'price_1Smuv8F01XuhPG03Zt7dTwYB'   // Agent Líder 200€/year
-        }
-      };
-
-      const priceMapping = entityType === 'agency' ? AGENCY_PRICES : AGENT_PRICES;
-      const planPrices = priceMapping[planId];
-
-      if (!planPrices) {
+      const { stripeService } = await import("./stripeService");
+      
+      const priceId = await stripeService.getPriceIdForPlan(planId, entityType as 'agency' | 'agent', isYearly);
+      if (!priceId) {
         return res.status(400).json({ error: `Invalid plan: ${planId}` });
       }
-
-      const priceId = isYearly ? planPrices.yearly : planPrices.monthly;
-      const { stripeService } = await import("./stripeService");
 
       // Get entity info for customer creation
       let email: string;

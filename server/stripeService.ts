@@ -186,6 +186,87 @@ export class StripeService {
     return Array.from(productsMap.values());
   }
 
+  async getPriceIdForPlan(planKey: string, entityType: 'agency' | 'agent', isYearly: boolean): Promise<string | null> {
+    const productNameMap: Record<string, string> = {
+      'agency_pequeña': 'Agencia Pequeña',
+      'agency_mediana': 'Agencia Mediana',
+      'agency_lider': 'Agencia Líder',
+      'agent_lider': 'Agente Líder',
+    };
+
+    const lookupKey = `${entityType}_${planKey}`;
+    const productNameSuffix = productNameMap[lookupKey];
+    if (!productNameSuffix) return null;
+
+    const result = await db.execute(
+      sql`
+        SELECT pr.id as price_id, pr.unit_amount
+        FROM stripe.products p
+        JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
+        WHERE p.active = true
+        AND p.name LIKE ${'%' + productNameSuffix}
+        ORDER BY pr.unit_amount ASC
+      `
+    );
+
+    const rows = result.rows as any[];
+    if (rows.length === 0) return null;
+
+    if (isYearly) {
+      return rows.length > 1 ? rows[rows.length - 1].price_id : rows[0].price_id;
+    }
+    return rows[0].price_id;
+  }
+
+  async getAgencyPriceMap(): Promise<Record<string, { monthly: string; yearly: string }>> {
+    const plans = ['pequeña', 'mediana', 'lider'];
+    const result: Record<string, { monthly: string; yearly: string }> = {};
+    
+    for (const plan of plans) {
+      const monthlyId = await this.getPriceIdForPlan(plan, 'agency', false);
+      const yearlyId = await this.getPriceIdForPlan(plan, 'agency', true);
+      if (monthlyId && yearlyId) {
+        result[plan] = { monthly: monthlyId, yearly: yearlyId };
+      }
+    }
+    return result;
+  }
+
+  async getAgentPriceMap(): Promise<Record<string, { monthly: string; yearly: string }>> {
+    const monthlyId = await this.getPriceIdForPlan('lider', 'agent', false);
+    const yearlyId = await this.getPriceIdForPlan('lider', 'agent', true);
+    const result: Record<string, { monthly: string; yearly: string }> = {};
+    if (monthlyId && yearlyId) {
+      result['lider'] = { monthly: monthlyId, yearly: yearlyId };
+    }
+    return result;
+  }
+
+  async syncProductDescriptions(): Promise<void> {
+    try {
+      const stripe = await getUncachableStripeClient();
+      const products = await stripe.products.list({ active: true });
+      
+      const correctDescriptions: Record<string, string> = {
+        'Agencia Pequeña': 'Plan para agencias pequeñas con hasta 2 agentes y 10 propiedades activas',
+        'Agencia Mediana': 'Plan para agencias medianas con hasta 6 agentes y 30 propiedades activas',
+        'Agencia Líder': 'Plan premium para agencias líderes con agentes ilimitados y propiedades ilimitadas',
+        'Agente Líder': 'Plan premium para agentes independientes con propiedades ilimitadas',
+      };
+
+      for (const product of products.data) {
+        for (const [nameSuffix, description] of Object.entries(correctDescriptions)) {
+          if (product.name?.includes(nameSuffix) && product.description !== description) {
+            await stripe.products.update(product.id, { description });
+            console.log(`Updated Stripe product description: ${product.name}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to sync product descriptions:', error);
+    }
+  }
+
   // Map Stripe product name to subscription plan name
   private mapProductToSubscriptionPlan(productName: string): string {
     const nameMap: Record<string, string> = {
