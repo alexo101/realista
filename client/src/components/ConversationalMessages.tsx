@@ -485,7 +485,7 @@ export function ConversationalMessages() {
                   >
                     <div className="flex items-start gap-2 md:gap-3">
                       <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarFallback className="bg-blue-500 text-white text-sm">
+                        <AvatarFallback className="bg-[#0284c5] text-white text-sm">
                           {getInitials(conversation.clientName)}
                         </AvatarFallback>
                       </Avatar>
@@ -545,7 +545,7 @@ export function ConversationalMessages() {
                         <ArrowLeft className="h-5 w-5" />
                       </Button>
                       <Avatar className="h-9 w-9 md:h-10 md:w-10 flex-shrink-0">
-                        <AvatarFallback className="bg-blue-500 text-white text-sm">
+                        <AvatarFallback className="bg-[#0284c5] text-white text-sm">
                           {getInitials(selectedConversation.clientName)}
                         </AvatarFallback>
                       </Avatar>
@@ -673,7 +673,7 @@ export function ConversationalMessages() {
               <div className="flex items-center gap-4 pb-4 border-b">
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={clientDetails.avatar} />
-                  <AvatarFallback className="bg-blue-500 text-white text-lg">
+                  <AvatarFallback className="bg-[#0284c5] text-white text-lg">
                     {getInitials(`${clientDetails.name} ${clientDetails.surname}`)}
                   </AvatarFallback>
                 </Avatar>
