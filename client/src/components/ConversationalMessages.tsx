@@ -557,7 +557,7 @@ export function ConversationalMessages() {
                           title="Ver información del cliente"
                         >
                           <User className="h-4 w-4 flex-shrink-0" />
-                          <span className="truncate">{selectedConversation.clientName}</span>
+                          <span className="truncate text-[#0284c5]">{selectedConversation.clientName}</span>
                         </h3>
                         <div className="flex items-center gap-1 text-xs md:text-sm text-gray-600">
                           <Home className="h-3 w-3 flex-shrink-0" />
