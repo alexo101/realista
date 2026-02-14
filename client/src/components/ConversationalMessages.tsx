@@ -498,7 +498,7 @@ export function ConversationalMessages() {
                             title="Ver información del cliente"
                           >
                             <User className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">{conversation.clientName}</span>
+                            <span className="truncate text-[#0284c5]">{conversation.clientName}</span>
                           </h3>
                           <span className="text-xs text-gray-500 flex-shrink-0">
                             {formatTime(conversation.lastMessageTime)}
