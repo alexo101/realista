@@ -36,7 +36,7 @@ export function Footer() {
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
-                <span>info@realista.es</span>
+                <span>contacto@realista.homes</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
