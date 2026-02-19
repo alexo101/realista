@@ -113,6 +113,12 @@ export default function ManagePage() {
       return;
     }
 
+    // Super admins have a dedicated back office
+    if (user.agentType === 'super_admin') {
+      navigate("/super-admin");
+      return;
+    }
+
     if (!user.agentUuid) {
       // Agent without UUID - something is wrong
       toast({

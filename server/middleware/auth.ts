@@ -25,7 +25,7 @@ declare global {
   }
 }
 
-export type UserRole = 'agent' | 'admin' | 'client';
+export type UserRole = 'agent' | 'admin' | 'client' | 'super_admin';
 
 export interface AuthorizeOptions {
   allowSelf?: (user: SessionUser, req: Request) => boolean;
@@ -69,6 +69,10 @@ export const requireRole = (...roles: UserRole[]) => {
       userRoles.push('admin');
     }
 
+    if (req.user.agentType === 'super_admin') {
+      userRoles.push('super_admin');
+    }
+
     const hasRequiredRole = roles.some(role => userRoles.includes(role));
 
     if (!hasRequiredRole) {
@@ -91,7 +95,7 @@ export const authorize = (options: AuthorizeOptions) => {
 
     let isAuthorized = false;
 
-    if (options.allowAdmin && req.user.isAdmin) {
+    if (options.allowAdmin && (req.user.isAdmin || req.user.agentType === 'super_admin')) {
       isAuthorized = true;
     }
 
@@ -108,15 +112,17 @@ export const authorize = (options: AuthorizeOptions) => {
         userRoles.push('admin');
       }
 
+      if (req.user.agentType === 'super_admin') {
+        userRoles.push('super_admin');
+      }
+
       isAuthorized = options.allowRoles.some(role => userRoles.includes(role));
     }
 
     if (!isAuthorized && options.allowSelf) {
       try {
         const result = options.allowSelf(req.user, req);
-        isAuthorized = result && typeof (result as any).then === 'function' 
-          ? await (result as Promise<boolean>) 
-          : result as boolean;
+        isAuthorized = await Promise.resolve(result);
       } catch (error) {
         console.error('Error in allowSelf check:', error);
         isAuthorized = false;
@@ -126,9 +132,7 @@ export const authorize = (options: AuthorizeOptions) => {
     if (!isAuthorized && options.custom) {
       try {
         const result = options.custom(req.user, req);
-        isAuthorized = result && typeof (result as any).then === 'function' 
-          ? await (result as Promise<boolean>) 
-          : result as boolean;
+        isAuthorized = await Promise.resolve(result);
       } catch (error) {
         console.error('Error in custom authorization check:', error);
         isAuthorized = false;
@@ -152,4 +156,22 @@ export const isAgencyAdmin = (user: SessionUser, agencyId: number): boolean => {
 
 export const isResourceOwner = (user: SessionUser, resourceUserId: number): boolean => {
   return user.id === resourceUserId;
+};
+
+export const requireSuperAdmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  if (!req.user) {
+    res.status(401).json({ message: "Autenticación requerida" });
+    return;
+  }
+
+  if (req.user.agentType !== "super_admin") {
+    res.status(403).json({ message: "Acceso restringido a SuperAdmin" });
+    return;
+  }
+
+  next();
 };

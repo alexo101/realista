@@ -18,9 +18,15 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<any> {
+  const csrfToken = typeof window !== "undefined" ? localStorage.getItem("csrfToken") : null;
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

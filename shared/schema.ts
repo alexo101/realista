@@ -142,11 +142,15 @@ export const agents = pgTable("agents", {
   invitationStatus: text("invitation_status"), // "pending" or "active" (null for non-invited agents)
   invitationToken: text("invitation_token"), // Token for validating invitation acceptance
   invitationExpiresAt: timestamp("invitation_expires_at"), // When the invitation expires
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at"),
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   networkIdIdx: index("agents_network_id_idx").on(table.networkId),
+  isActiveIdx: index("agents_is_active_idx").on(table.isActive),
+  lastLoginAtIdx: index("agents_last_login_at_idx").on(table.lastLoginAt),
 }));
 
 export const properties = pgTable("properties", {
@@ -194,6 +198,11 @@ export const properties = pgTable("properties", {
   isActive: boolean("is_active").default(true).notNull(), // Para activar/desactivar la visibilidad de la propiedad
   isDraft: boolean("is_draft").default(true).notNull(), // Borrador: true hasta completar todos los pasos
   fraudCount: integer("fraud_count").default(0).notNull(), // Contador de reportes de fraude
+  moderationStatus: text("moderation_status").default("pending").notNull(), // pending, approved, rejected
+  moderatedBy: integer("moderated_by").references(() => agents.id, { onDelete: "set null" }),
+  moderatedAt: timestamp("moderated_at"),
+  moderationReason: text("moderation_reason"),
+  expiresAt: timestamp("expires_at"),
   managementStatus: text("management_status").default("Creada").notNull(), // Creada, Activa, Reservada, Alquilada, Inactiva, Vendida, En reforma
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
@@ -208,6 +217,8 @@ export const properties = pgTable("properties", {
   neighborhoodOperationIdx: index("properties_neighborhood_operation_idx").on(table.neighborhood, table.operationType),
   agentActiveIdx: index("properties_agent_active_idx").on(table.agentId, table.isActive),
   agencyActiveIdx: index("properties_agency_active_idx").on(table.agencyId, table.isActive),
+  moderationStatusIdx: index("properties_moderation_status_idx").on(table.moderationStatus),
+  expiresAtIdx: index("properties_expires_at_idx").on(table.expiresAt),
   // Index for sorting by view count (most viewed properties)
   viewCountIdx: index("properties_view_count_idx").on(table.viewCount),
 }));
@@ -246,6 +257,8 @@ export const clients = pgTable("clients", {
   moveInDate: timestamp("move_in_date"), // Specific date if "Fecha exacta" is selected
   
   reviewRequestSentAt: timestamp("review_request_sent_at"),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at"),
 
   // Contact history timeline
   contactHistory: jsonb("contact_history").default(sql`'[]'::jsonb`), // Array of {id, status, timestamp, note}
@@ -254,6 +267,8 @@ export const clients = pgTable("clients", {
   agentIdIdx: index("clients_agent_id_idx").on(table.agentId),
   // Index for email lookups (login, etc)
   emailIdx: index("clients_email_idx").on(table.email),
+  isActiveIdx: index("clients_is_active_idx").on(table.isActive),
+  lastLoginAtIdx: index("clients_last_login_at_idx").on(table.lastLoginAt),
 }));
 
 export const neighborhoodRatings = pgTable("neighborhood_ratings", {
@@ -671,6 +686,53 @@ export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEven
 });
 export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
 export type InsertSubscriptionEvent = z.infer<typeof insertSubscriptionEventSchema>;
+
+// App settings table - key/value config storage for platform-wide settings
+export const appSettings = pgTable("app_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: jsonb("value").notNull(),
+  updatedBy: integer("updated_by").references(() => agents.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  keyIdx: index("app_settings_key_idx").on(table.key),
+}));
+
+export const insertAppSettingSchema = createInsertSchema(appSettings).omit({
+  id: true,
+  updatedAt: true,
+  createdAt: true,
+});
+export type AppSetting = typeof appSettings.$inferSelect;
+export type InsertAppSetting = z.infer<typeof insertAppSettingSchema>;
+
+// Administrative audit logs for privileged actions
+export const adminAuditLogs = pgTable("admin_audit_logs", {
+  id: serial("id").primaryKey(),
+  actorId: integer("actor_id").references(() => agents.id, { onDelete: "set null" }),
+  actorEmail: text("actor_email"),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: text("target_id"),
+  beforeState: jsonb("before_state"),
+  afterState: jsonb("after_state"),
+  metadata: jsonb("metadata"),
+  requestId: text("request_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  actorIdIdx: index("admin_audit_logs_actor_id_idx").on(table.actorId),
+  actionIdx: index("admin_audit_logs_action_idx").on(table.action),
+  targetTypeIdx: index("admin_audit_logs_target_type_idx").on(table.targetType),
+  createdAtIdx: index("admin_audit_logs_created_at_idx").on(table.createdAt),
+}));
+
+export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type AdminAuditLog = typeof adminAuditLogs.$inferSelect;
+export type InsertAdminAuditLog = z.infer<typeof insertAdminAuditLogSchema>;
 
 // Saved searches table for clients
 export const savedSearches = pgTable("saved_searches", {

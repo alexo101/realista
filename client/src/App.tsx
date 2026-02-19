@@ -26,6 +26,7 @@ import NetworkPlanRegister from "@/pages/network-plan-register";
 import NetworkAdmin from "@/pages/network-admin";
 import UpgradePlan from "@/pages/upgrade-plan";
 import ConfirmReview from "@/pages/confirm-review";
+import SuperAdminPage from "@/pages/super-admin";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/registro-plan-agente" component={AgentPlanRegister} />
       <Route path="/registro-plan-red" component={NetworkPlanRegister} />
       <Route path="/admin-red" component={NetworkAdmin} />
+      <Route path="/super-admin" component={SuperAdminPage} />
       <Route path="/registro-cliente" component={ClientRegisterPage} />
       <Route path="/perfil-cliente/:clientUuid/:section" component={ClientProfile} />
       <Route path="/perfil-cliente" component={ClientProfile} />

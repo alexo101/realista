@@ -11,8 +11,8 @@ interface User {
   agentUuid?: string;
   clientUuid?: string;
   
-  // Agent type (standard, agency_admin, network_admin)
-  agentType?: 'standard' | 'agency_admin' | 'network_admin';
+  // Agent type (standard, agency_admin, network_admin, super_admin)
+  agentType?: 'standard' | 'agency_admin' | 'network_admin' | 'super_admin';
   
   // Network relationship (for network admins)
   networkId?: number | null;
@@ -90,10 +90,28 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         if (response.ok) {
           const sessionUser = await response.json();
           setUser(sessionUser);
+
+          try {
+            const csrfResponse = await fetch("/api/auth/csrf-token", {
+              method: "GET",
+              credentials: "include",
+            });
+            if (csrfResponse.ok) {
+              const payload = await csrfResponse.json();
+              if (payload?.csrfToken) {
+                localStorage.setItem("csrfToken", payload.csrfToken);
+              }
+            }
+          } catch {
+            // Ignore CSRF bootstrap errors; protected routes will request it on demand.
+          }
+        } else {
+          localStorage.removeItem("csrfToken");
         }
       } catch (error) {
         // No active session, user remains null
         console.log("No active session found");
+        localStorage.removeItem("csrfToken");
       } finally {
         setIsLoading(false);
       }
@@ -106,10 +124,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       await apiRequest("POST", "/api/auth/logout");
       setUser(null);
+      localStorage.removeItem("csrfToken");
     } catch (error) {
       console.error("Error logging out:", error);
       // Clear user state even if logout request fails
       setUser(null);
+      localStorage.removeItem("csrfToken");
     }
   };
 

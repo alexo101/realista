@@ -8,6 +8,8 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initEmailService } from "./emailService";
 import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
+import { ensureSuperAdminUser } from "./bootstrap/superAdmin";
+import { migrateLegacyPlaintextPasswords } from "./bootstrap/passwordMigration";
 
 const app = express();
 
@@ -45,6 +47,55 @@ app.post(
 // Now apply JSON middleware for all other routes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+const allowedOrigins = new Set<string>();
+if (process.env.PUBLIC_BASE_URL) {
+  allowedOrigins.add(process.env.PUBLIC_BASE_URL.replace(/\/$/, ""));
+}
+if (process.env.ALLOWED_ORIGINS) {
+  for (const origin of process.env.ALLOWED_ORIGINS.split(",")) {
+    const trimmed = origin.trim().replace(/\/$/, "");
+    if (trimmed) {
+      allowedOrigins.add(trimmed);
+    }
+  }
+}
+if (process.env.REPLIT_DEV_DOMAIN) {
+  allowedOrigins.add(`https://${process.env.REPLIT_DEV_DOMAIN}`);
+}
+if (process.env.REPLIT_DOMAINS) {
+  const [firstDomain] = process.env.REPLIT_DOMAINS.split(",");
+  if (firstDomain) {
+    allowedOrigins.add(`https://${firstDomain}`);
+  }
+}
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin?.replace(/\/$/, "");
+  const isApiRequest = req.path.startsWith("/api");
+  const hasOrigin = Boolean(origin);
+
+  if (isApiRequest && hasOrigin && allowedOrigins.size > 0 && !allowedOrigins.has(origin!)) {
+    return res.status(403).json({ message: "Origin no permitido" });
+  }
+
+  if (hasOrigin && allowedOrigins.has(origin!)) {
+    res.setHeader("Access-Control-Allow-Origin", origin!);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, X-CSRF-Token, X-Requested-With",
+    );
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  next();
+});
 
 // Session configuration with PostgreSQL store
 const PgSession = connectPgSimple(session);
@@ -117,15 +168,18 @@ app.use((req, res, next) => {
     // Inicializar el servicio de email
     await initEmailService();
 
+    // One-time safety migration for legacy plaintext passwords
+    await migrateLegacyPlaintextPasswords();
+
+    // Ensure privileged account exists before serving traffic
+    await ensureSuperAdminUser();
+
     // Initialize Stripe schema and sync data
     const databaseUrl = process.env.DATABASE_URL;
     if (databaseUrl) {
       try {
         console.log('Initializing Stripe schema...');
-        await runMigrations({ 
-          databaseUrl,
-          schema: 'stripe'
-        });
+        await runMigrations({ databaseUrl });
         console.log('Stripe schema ready');
 
         // Get StripeSync instance and set up managed webhook

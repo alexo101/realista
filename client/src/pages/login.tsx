@@ -52,11 +52,23 @@ export default function LoginPage() {
       
       // Update user context FIRST so destination route has access to it
       setUser(userData);
+      if (userData?.csrfToken) {
+        localStorage.setItem("csrfToken", userData.csrfToken);
+      }
       
       // CRITICAL: Use setTimeout to defer navigation until next event loop tick
       // This ensures React finishes batching the setUser() state update before navigate() runs.
       // Without this, ManagePage's auth guard would see undefined user and redirect back to login.
       setTimeout(() => {
+        if (userData.agentType === "super_admin") {
+          navigate("/super-admin");
+          toast({
+            title: "Acceso de SuperAdmin",
+            duration: 3000,
+          });
+          return;
+        }
+
         // For agents, always redirect to their calendar dashboard
         if (!userData.isClient && userData.agentUuid) {
           sessionStorage.removeItem('pendingSavedSearch');

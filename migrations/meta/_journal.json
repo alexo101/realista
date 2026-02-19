@@ -8,6 +8,13 @@
       "when": 1762968300181,
       "tag": "0000_slow_rocket_raccoon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762968301181,
+      "tag": "0001_super_admin_foundation",
+      "breakpoints": true
     }
   ]
 }

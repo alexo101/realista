@@ -24,7 +24,7 @@ export function Navbar() {
     }
   };
 
-  const isAgent = user && !user.isClient && user.agentUuid;
+  const isAgent = user && !user.isClient && user.agentUuid && user.agentType !== "super_admin";
 
   return (
     <>
@@ -64,7 +64,13 @@ export function Navbar() {
               
               {user ? (
                 <>
-                  {user.isClient && user.clientUuid ? (
+                  {user.agentType === "super_admin" ? (
+                    <Link href="/super-admin">
+                      <Button variant="outline">
+                        SuperAdmin
+                      </Button>
+                    </Link>
+                  ) : user.isClient && user.clientUuid ? (
                     <Link href={`/perfil-cliente/${user.clientUuid}/perfil`}>
                       <Button variant="outline">
                         {t('nav.profile')}

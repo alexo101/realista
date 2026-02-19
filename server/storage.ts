@@ -104,7 +104,14 @@ import {
   propertyHistory,
   type PropertyHistoryEntry,
   type InsertPropertyHistory,
+  appSettings,
+  type AppSetting,
+  type InsertAppSetting,
+  adminAuditLogs,
+  type AdminAuditLog,
+  type InsertAdminAuditLog,
 } from "@shared/schema";
+import { hashPassword, isPasswordHashed } from "./security/password";
 
 export interface IStorage {
   // Users/Agents
@@ -323,6 +330,90 @@ export interface IStorage {
   deletePropertyHistory(id: number): Promise<boolean>;
   
   updatePropertyManagementStatus(uuid: string, status: string): Promise<Property | undefined>;
+
+  // Super admin back office
+  getSuperAdminDashboardStats(): Promise<{
+    totalUsers: number;
+    totalAgents: number;
+    totalClients: number;
+    totalAgencies: number;
+    totalListings: number;
+    pendingListings: number;
+    flaggedListings: number;
+  }>;
+  getSuperAdminUsers(filters: {
+    role?: string;
+    status?: string;
+    query?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<{
+      id: number;
+      name: string | null;
+      email: string;
+      role: string;
+      agency: string | null;
+      status: "active" | "inactive";
+      lastLoginAt: Date | null;
+      kind: "agent" | "client";
+    }>;
+    total: number;
+  }>;
+  setUserActiveStatus(params: { kind: "agent" | "client"; id: number; isActive: boolean }): Promise<void>;
+  updateAgentRole(agentId: number, agentType: string): Promise<User | undefined>;
+  getSuperAdminListings(filters: {
+    moderationStatus?: string;
+    operationType?: string;
+    location?: string;
+    query?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<Property & {
+      agentName: string | null;
+      agencyName: string | null;
+    }>;
+    total: number;
+  }>;
+  updatePropertyModeration(params: {
+    propertyUuid: string;
+    moderationStatus: "pending" | "approved" | "rejected";
+    moderationReason?: string | null;
+    moderatorId: number;
+  }): Promise<Property | undefined>;
+  getSuperAdminAgencies(filters: {
+    query?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<Agency & { adminEmail: string | null; agentCount: number; activeProperties: number }>;
+    total: number;
+  }>;
+  updateSuperAdminAgencyPlan(params: {
+    agencyId: number;
+    plan: "basica" | "pequeña" | "mediana" | "lider";
+  }): Promise<Agency>;
+  getAppSettings(): Promise<AppSetting[]>;
+  upsertAppSetting(params: {
+    key: string;
+    value: any;
+    updatedBy: number | null;
+  }): Promise<AppSetting>;
+  createAdminAuditLog(logData: InsertAdminAuditLog): Promise<AdminAuditLog>;
+  superAdminGlobalSearch(params: {
+    query: string;
+    entity?: "users" | "listings" | "agencies";
+    role?: string;
+    status?: string;
+    location?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    users: Array<{ id: number; name: string | null; email: string; role: string; status: string; kind: "agent" | "client" }>;
+    listings: Array<{ uuid: string; title: string; moderationStatus: string; city: string | null; agencyName: string | null; agentName: string | null }>;
+    agencies: Array<{ id: number; agencyName: string; city: string | null; subscriptionPlan: string | null }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -341,8 +432,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertAgent): Promise<User> {
+    const normalizedPassword =
+      user.password && !isPasswordHashed(user.password)
+        ? await hashPassword(user.password)
+        : user.password;
+
     const userWithSlug = {
       ...user,
+      password: normalizedPassword,
       slug: user.name && user.surname ? generateAgentSlug(user.name, user.surname) : undefined
     };
     
@@ -380,6 +477,10 @@ export class DatabaseStorage implements IStorage {
         ) {
           cleanedUserData[key] = userData[key as keyof typeof userData];
         }
+      }
+
+      if (cleanedUserData.password && !isPasswordHashed(cleanedUserData.password)) {
+        cleanedUserData.password = await hashPassword(cleanedUserData.password);
       }
 
       console.log(
@@ -2234,14 +2335,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createClient(client: InsertClient): Promise<Client> {
-    const [newClient] = await db.insert(clients).values(client).returning();
+    const normalizedPassword =
+      client.password && !isPasswordHashed(client.password)
+        ? await hashPassword(client.password)
+        : client.password;
+
+    const [newClient] = await db
+      .insert(clients)
+      .values({ ...client, password: normalizedPassword })
+      .returning();
     return newClient;
   }
 
   async updateClient(id: number, client: InsertClient): Promise<Client> {
+    const normalizedPassword =
+      client.password && !isPasswordHashed(client.password)
+        ? await hashPassword(client.password)
+        : client.password;
+
     const [updatedClient] = await db
       .update(clients)
-      .set(client)
+      .set({ ...client, password: normalizedPassword })
       .where(eq(clients.id, id))
       .returning();
     return updatedClient;
@@ -2249,9 +2363,17 @@ export class DatabaseStorage implements IStorage {
 
   async updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined> {
     try {
+      const normalizedProfileData = { ...profileData };
+      if (
+        normalizedProfileData.password &&
+        !isPasswordHashed(normalizedProfileData.password)
+      ) {
+        normalizedProfileData.password = await hashPassword(normalizedProfileData.password);
+      }
+
       const [updatedClient] = await db
         .update(clients)
-        .set(profileData)
+        .set(normalizedProfileData)
         .where(eq(clients.id, id))
         .returning();
       return updatedClient;
@@ -3842,6 +3964,518 @@ export class DatabaseStorage implements IStorage {
   async updatePropertyManagementStatus(uuid: string, status: string): Promise<Property | undefined> {
     const [updated] = await db.update(properties).set({ managementStatus: status }).where(eq(properties.uuid, uuid)).returning();
     return updated;
+  }
+
+  // Super admin back office
+  async getSuperAdminDashboardStats(): Promise<{
+    totalUsers: number;
+    totalAgents: number;
+    totalClients: number;
+    totalAgencies: number;
+    totalListings: number;
+    pendingListings: number;
+    flaggedListings: number;
+  }> {
+    const [[agentTotals], [clientTotals], [agencyTotals], [listingTotals], [pendingTotals], [flaggedTotals]] = await Promise.all([
+      db
+        .select({ count: count() })
+        .from(agents)
+        .where(isNull(agents.deletedAt)),
+      db.select({ count: count() }).from(clients),
+      db
+        .select({ count: count() })
+        .from(agencies)
+        .where(isNull(agencies.deletedAt)),
+      db
+        .select({ count: count() })
+        .from(properties)
+        .where(eq(properties.isDraft, false)),
+      db
+        .select({ count: count() })
+        .from(properties)
+        .where(and(eq(properties.isDraft, false), eq(properties.moderationStatus, "pending"))),
+      db
+        .select({ count: count() })
+        .from(properties)
+        .where(and(eq(properties.isDraft, false), sql`${properties.fraudCount} > 0`)),
+    ]);
+
+    const totalAgents = Number(agentTotals?.count || 0);
+    const totalClients = Number(clientTotals?.count || 0);
+    return {
+      totalUsers: totalAgents + totalClients,
+      totalAgents,
+      totalClients,
+      totalAgencies: Number(agencyTotals?.count || 0),
+      totalListings: Number(listingTotals?.count || 0),
+      pendingListings: Number(pendingTotals?.count || 0),
+      flaggedListings: Number(flaggedTotals?.count || 0),
+    };
+  }
+
+  async getSuperAdminUsers(filters: {
+    role?: string;
+    status?: string;
+    query?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<{
+      id: number;
+      name: string | null;
+      email: string;
+      role: string;
+      agency: string | null;
+      status: "active" | "inactive";
+      lastLoginAt: Date | null;
+      kind: "agent" | "client";
+    }>;
+    total: number;
+  }> {
+    const page = Math.max(1, Number(filters.page || 1));
+    const pageSize = Math.max(1, Math.min(100, Number(filters.pageSize || 25)));
+    const normalizedQuery = (filters.query || "").trim().toLowerCase();
+    const roleFilter = (filters.role || "").trim().toLowerCase();
+    const statusFilter = (filters.status || "").trim().toLowerCase();
+
+    const activeAgencyRows = await db
+      .select({
+        agentId: agencyAgents.agentId,
+        agencyName: agencies.agencyName,
+        agencyRole: agencyAgents.role,
+      })
+      .from(agencyAgents)
+      .innerJoin(agencies, eq(agencyAgents.agencyId, agencies.id))
+      .where(and(isNull(agencyAgents.leftAt), isNull(agencies.deletedAt)));
+
+    const agencyByAgent = new Map<number, { name: string; role: string }>();
+    for (const row of activeAgencyRows) {
+      if (row.agentId) {
+        agencyByAgent.set(row.agentId, {
+          name: row.agencyName,
+          role: row.agencyRole,
+        });
+      }
+    }
+
+    const rawAgents = await db
+      .select({
+        id: agents.id,
+        email: agents.email,
+        name: agents.name,
+        surname: agents.surname,
+        agentType: agents.agentType,
+        isActive: agents.isActive,
+        lastLoginAt: agents.lastLoginAt,
+      })
+      .from(agents)
+      .where(isNull(agents.deletedAt));
+
+    const rawClients = await db
+      .select({
+        id: clients.id,
+        email: clients.email,
+        name: clients.name,
+        surname: clients.surname,
+        agentId: clients.agentId,
+        isActive: clients.isActive,
+        lastLoginAt: clients.lastLoginAt,
+      })
+      .from(clients);
+
+    const users = [
+      ...rawAgents.map((agent) => {
+        const agencyData = agencyByAgent.get(agent.id);
+        const role =
+          agent.agentType === "super_admin"
+            ? "super_admin"
+            : agent.agentType === "network_admin"
+              ? "network_admin"
+              : agencyData?.role === "admin"
+                ? "agency_admin"
+                : "agent";
+        return {
+          id: agent.id,
+          name: [agent.name, agent.surname].filter(Boolean).join(" ") || agent.name || null,
+          email: agent.email,
+          role,
+          agency: agencyData?.name || null,
+          status: (agent.isActive ? "active" : "inactive") as "active" | "inactive",
+          lastLoginAt: agent.lastLoginAt ?? null,
+          kind: "agent" as const,
+        };
+      }),
+      ...rawClients.map((client) => {
+        const agencyData = client.agentId ? agencyByAgent.get(client.agentId) : undefined;
+        return {
+          id: client.id,
+          name: [client.name, client.surname].filter(Boolean).join(" ") || client.name || null,
+          email: client.email,
+          role: "client",
+          agency: agencyData?.name || null,
+          status: (client.isActive ? "active" : "inactive") as "active" | "inactive",
+          lastLoginAt: client.lastLoginAt ?? null,
+          kind: "client" as const,
+        };
+      }),
+    ];
+
+    const filtered = users.filter((user) => {
+      if (roleFilter && user.role !== roleFilter) return false;
+      if (statusFilter && user.status !== statusFilter) return false;
+      if (normalizedQuery) {
+        const haystack = `${user.name || ""} ${user.email} ${user.role} ${user.agency || ""}`.toLowerCase();
+        if (!haystack.includes(normalizedQuery)) return false;
+      }
+      return true;
+    });
+
+    filtered.sort((a, b) => {
+      const aLogin = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0;
+      const bLogin = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0;
+      if (aLogin !== bLogin) return bLogin - aLogin;
+      return a.email.localeCompare(b.email);
+    });
+
+    const offset = (page - 1) * pageSize;
+    return {
+      items: filtered.slice(offset, offset + pageSize),
+      total: filtered.length,
+    };
+  }
+
+  async setUserActiveStatus(params: { kind: "agent" | "client"; id: number; isActive: boolean }): Promise<void> {
+    if (params.kind === "agent") {
+      await db
+        .update(agents)
+        .set({ isActive: params.isActive })
+        .where(eq(agents.id, params.id));
+      return;
+    }
+
+    await db
+      .update(clients)
+      .set({ isActive: params.isActive })
+      .where(eq(clients.id, params.id));
+  }
+
+  async updateAgentRole(agentId: number, agentType: string): Promise<User | undefined> {
+    const [updated] = await db
+      .update(agents)
+      .set({ agentType })
+      .where(eq(agents.id, agentId))
+      .returning();
+    return updated;
+  }
+
+  async getSuperAdminListings(filters: {
+    moderationStatus?: string;
+    operationType?: string;
+    location?: string;
+    query?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<Property & {
+      agentName: string | null;
+      agencyName: string | null;
+    }>;
+    total: number;
+  }> {
+    const page = Math.max(1, Number(filters.page || 1));
+    const pageSize = Math.max(1, Math.min(100, Number(filters.pageSize || 25)));
+    const offset = (page - 1) * pageSize;
+
+    const conditions = [eq(properties.isDraft, false)];
+    if (filters.moderationStatus) {
+      conditions.push(eq(properties.moderationStatus, filters.moderationStatus));
+    }
+    if (filters.operationType) {
+      conditions.push(eq(properties.operationType, filters.operationType));
+    }
+    if (filters.location) {
+      const locationQuery = `%${filters.location.toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(COALESCE(${properties.city}, '')) LIKE ${locationQuery}`,
+          sql`LOWER(COALESCE(${properties.district}, '')) LIKE ${locationQuery}`,
+          sql`LOWER(COALESCE(${properties.neighborhood}, '')) LIKE ${locationQuery}`,
+        )!,
+      );
+    }
+    if (filters.query) {
+      const textQuery = `%${filters.query.toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(COALESCE(${properties.title}, '')) LIKE ${textQuery}`,
+          sql`LOWER(COALESCE(${properties.reference}, '')) LIKE ${textQuery}`,
+          sql`LOWER(COALESCE(${properties.address}, '')) LIKE ${textQuery}`,
+        )!,
+      );
+    }
+
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+    const [rows, [totalRow]] = await Promise.all([
+      db
+        .select({
+          property: properties,
+          agentName: sql<string | null>`NULLIF(TRIM(COALESCE(${agents.name}, '') || ' ' || COALESCE(${agents.surname}, '')), '')`,
+          agencyName: agencies.agencyName,
+        })
+        .from(properties)
+        .leftJoin(agents, eq(properties.agentId, agents.id))
+        .leftJoin(agencies, eq(properties.agencyId, agencies.id))
+        .where(whereClause)
+        .orderBy(desc(properties.createdAt))
+        .limit(pageSize)
+        .offset(offset),
+      db
+        .select({ count: count() })
+        .from(properties)
+        .where(whereClause),
+    ]);
+
+    return {
+      items: rows.map((row) => ({
+        ...row.property,
+        agentName: row.agentName || null,
+        agencyName: row.agencyName || null,
+      })),
+      total: Number(totalRow?.count || 0),
+    };
+  }
+
+  async updatePropertyModeration(params: {
+    propertyUuid: string;
+    moderationStatus: "pending" | "approved" | "rejected";
+    moderationReason?: string | null;
+    moderatorId: number;
+  }): Promise<Property | undefined> {
+    const updates: Partial<Property> = {
+      moderationStatus: params.moderationStatus,
+      moderatedBy: params.moderatorId,
+      moderatedAt: new Date(),
+      moderationReason: params.moderationReason || null,
+    };
+
+    if (params.moderationStatus === "approved") {
+      updates.isActive = true;
+    }
+    if (params.moderationStatus === "rejected") {
+      updates.isActive = false;
+    }
+
+    const [updated] = await db
+      .update(properties)
+      .set(updates)
+      .where(eq(properties.uuid, params.propertyUuid))
+      .returning();
+
+    return updated;
+  }
+
+  async getSuperAdminAgencies(filters: {
+    query?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: Array<Agency & { adminEmail: string | null; agentCount: number; activeProperties: number }>;
+    total: number;
+  }> {
+    const page = Math.max(1, Number(filters.page || 1));
+    const pageSize = Math.max(1, Math.min(100, Number(filters.pageSize || 25)));
+    const offset = (page - 1) * pageSize;
+
+    const conditions = [isNull(agencies.deletedAt)];
+    if (filters.query) {
+      const searchQuery = `%${filters.query.toLowerCase()}%`;
+      conditions.push(
+        or(
+          sql`LOWER(COALESCE(${agencies.agencyName}, '')) LIKE ${searchQuery}`,
+          sql`LOWER(COALESCE(${agencies.city}, '')) LIKE ${searchQuery}`,
+        )!,
+      );
+    }
+
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+    const [agencyRows, [totalRow]] = await Promise.all([
+      db
+        .select()
+        .from(agencies)
+        .where(whereClause)
+        .orderBy(desc(agencies.createdAt))
+        .limit(pageSize)
+        .offset(offset),
+      db.select({ count: count() }).from(agencies).where(whereClause),
+    ]);
+
+    const enriched = await Promise.all(
+      agencyRows.map(async (agency) => {
+        const [adminRow] = await db
+          .select({ email: agents.email })
+          .from(agencyAgents)
+          .innerJoin(agents, eq(agencyAgents.agentId, agents.id))
+          .where(
+            and(
+              eq(agencyAgents.agencyId, agency.id),
+              eq(agencyAgents.role, "admin"),
+              isNull(agencyAgents.leftAt),
+            ),
+          );
+
+        const [agentCountRow] = await db
+          .select({ count: count() })
+          .from(agencyAgents)
+          .where(and(eq(agencyAgents.agencyId, agency.id), isNull(agencyAgents.leftAt)));
+
+        const [propertyCountRow] = await db
+          .select({ count: count() })
+          .from(properties)
+          .where(
+            and(
+              eq(properties.agencyId, agency.id),
+              eq(properties.isDraft, false),
+              eq(properties.isActive, true),
+            ),
+          );
+
+        return {
+          ...agency,
+          adminEmail: adminRow?.email || null,
+          agentCount: Number(agentCountRow?.count || 0),
+          activeProperties: Number(propertyCountRow?.count || 0),
+        };
+      }),
+    );
+
+    return {
+      items: enriched,
+      total: Number(totalRow?.count || 0),
+    };
+  }
+
+  async updateSuperAdminAgencyPlan(params: {
+    agencyId: number;
+    plan: "basica" | "pequeña" | "mediana" | "lider";
+  }): Promise<Agency> {
+    return this.updateAgencyPlan(params.agencyId, params.plan);
+  }
+
+  async getAppSettings(): Promise<AppSetting[]> {
+    return db.select().from(appSettings).orderBy(appSettings.key);
+  }
+
+  async upsertAppSetting(params: {
+    key: string;
+    value: any;
+    updatedBy: number | null;
+  }): Promise<AppSetting> {
+    const [saved] = await db
+      .insert(appSettings)
+      .values({
+        key: params.key,
+        value: params.value,
+        updatedBy: params.updatedBy,
+      })
+      .onConflictDoUpdate({
+        target: appSettings.key,
+        set: {
+          value: params.value,
+          updatedBy: params.updatedBy,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return saved;
+  }
+
+  async createAdminAuditLog(logData: InsertAdminAuditLog): Promise<AdminAuditLog> {
+    const [log] = await db.insert(adminAuditLogs).values(logData).returning();
+    return log;
+  }
+
+  async superAdminGlobalSearch(params: {
+    query: string;
+    entity?: "users" | "listings" | "agencies";
+    role?: string;
+    status?: string;
+    location?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    users: Array<{ id: number; name: string | null; email: string; role: string; status: string; kind: "agent" | "client" }>;
+    listings: Array<{ uuid: string; title: string; moderationStatus: string; city: string | null; agencyName: string | null; agentName: string | null }>;
+    agencies: Array<{ id: number; agencyName: string; city: string | null; subscriptionPlan: string | null }>;
+  }> {
+    const scope = params.entity;
+    const includeUsers = !scope || scope === "users";
+    const includeListings = !scope || scope === "listings";
+    const includeAgencies = !scope || scope === "agencies";
+    const page = Math.max(1, Number(params.page || 1));
+    const pageSize = Math.max(1, Math.min(100, Number(params.pageSize || 10)));
+
+    const [usersResult, listingResult, agenciesResult] = await Promise.all([
+      includeUsers
+        ? this.getSuperAdminUsers({
+            role: params.role,
+            status: params.status,
+            query: params.query,
+            page,
+            pageSize,
+          })
+        : Promise.resolve({ items: [], total: 0 }),
+      includeListings
+        ? this.getSuperAdminListings({
+            query: params.query,
+            location: params.location,
+            page,
+            pageSize,
+          })
+        : Promise.resolve({ items: [], total: 0 }),
+      includeAgencies
+        ? db
+            .select({
+              id: agencies.id,
+              agencyName: agencies.agencyName,
+              city: agencies.city,
+              subscriptionPlan: agencies.subscriptionPlan,
+            })
+            .from(agencies)
+            .where(
+              and(
+                isNull(agencies.deletedAt),
+                or(
+                  sql`LOWER(COALESCE(${agencies.agencyName}, '')) LIKE ${`%${params.query.toLowerCase()}%`}`,
+                  sql`LOWER(COALESCE(${agencies.city}, '')) LIKE ${`%${params.query.toLowerCase()}%`}`,
+                )!,
+              ),
+            )
+            .orderBy(agencies.agencyName)
+            .limit(pageSize)
+        : Promise.resolve([]),
+    ]);
+
+    return {
+      users: usersResult.items.map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        kind: user.kind,
+      })),
+      listings: listingResult.items.map((listing) => ({
+        uuid: listing.uuid,
+        title: listing.title,
+        moderationStatus: listing.moderationStatus,
+        city: listing.city,
+        agencyName: listing.agencyName || null,
+        agentName: listing.agentName || null,
+      })),
+      agencies: agenciesResult,
+    };
   }
 }
 

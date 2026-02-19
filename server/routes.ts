@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -12,8 +12,7 @@ import {
   insertPropertyVisitRequestSchema
 } from "@shared/schema";
 import { z } from "zod";
-import { requireAuth, requireRole, authorize, isAgencyAdmin, isResourceOwner } from "./middleware/auth";
-import type { Request } from "express";
+import { requireAuth, requireRole, authorize, isAgencyAdmin, isResourceOwner, requireSuperAdmin } from "./middleware/auth";
 
 function getPublicBaseUrl(req?: Request): string {
   if (process.env.PUBLIC_BASE_URL) {
@@ -60,29 +59,8 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInDate: true,
 }).partial();
 import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail } from "./emailService";
-import { randomUUID, scrypt, randomBytes, timingSafeEqual } from 'crypto';
-import { promisify } from 'util';
-
-const scryptAsync = promisify(scrypt);
-
-// Password hashing utilities
-async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString('hex');
-  const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
-  return `${salt}:${derivedKey.toString('hex')}`;
-}
-
-async function comparePassword(password: string, storedPassword: string): Promise<boolean> {
-  // Check if password is hashed (contains salt separator)
-  if (storedPassword.includes(':')) {
-    const [salt, hash] = storedPassword.split(':');
-    const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
-    const storedHash = Buffer.from(hash, 'hex');
-    return timingSafeEqual(derivedKey, storedHash);
-  }
-  // Legacy plain text comparison (for existing users)
-  return password === storedPassword;
-}
+import { randomUUID } from 'crypto';
+import { comparePassword, hashPassword } from "./security/password";
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
@@ -111,6 +89,83 @@ const documentUpload = multer({
     fileSize: 50 * 1024 * 1024,
   },
 });
+
+type LoginAttemptState = {
+  attempts: number;
+  firstAttemptAt: number;
+  blockedUntil?: number;
+};
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_BLOCK_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 8;
+const loginAttempts = new Map<string, LoginAttemptState>();
+
+function getLoginAttemptKey(email: string, req: Request): string {
+  const rawIp =
+    req.ip ||
+    req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+    "unknown-ip";
+  return `${email.trim().toLowerCase()}::${rawIp}`;
+}
+
+function getLoginBlockTimeRemainingMs(key: string): number {
+  const state = loginAttempts.get(key);
+  if (!state?.blockedUntil) {
+    return 0;
+  }
+  return Math.max(0, state.blockedUntil - Date.now());
+}
+
+function recordLoginFailure(key: string): void {
+  const now = Date.now();
+  const previous = loginAttempts.get(key);
+
+  if (!previous || now - previous.firstAttemptAt > LOGIN_WINDOW_MS) {
+    loginAttempts.set(key, {
+      attempts: 1,
+      firstAttemptAt: now,
+    });
+    return;
+  }
+
+  const nextAttempts = previous.attempts + 1;
+  const nextState: LoginAttemptState = {
+    ...previous,
+    attempts: nextAttempts,
+  };
+  if (nextAttempts >= LOGIN_MAX_ATTEMPTS) {
+    nextState.blockedUntil = now + LOGIN_BLOCK_MS;
+  }
+  loginAttempts.set(key, nextState);
+}
+
+function clearLoginFailures(key: string): void {
+  loginAttempts.delete(key);
+}
+
+function ensureCsrfToken(req: Request): string {
+  const session = (req as any).session;
+  if (!session.csrfToken) {
+    session.csrfToken = randomUUID();
+  }
+  return session.csrfToken;
+}
+
+function requireCsrfForStateChange(req: Request, res: Response, next: NextFunction): void {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    next();
+    return;
+  }
+
+  const expected = (req as any).session?.csrfToken;
+  const provided = req.header("x-csrf-token");
+  if (!expected || !provided || expected !== provided) {
+    res.status(403).json({ message: "CSRF token inválido" });
+    return;
+  }
+  next();
+}
 
 // Server-side image compression utility
 async function compressImageToTarget(
@@ -210,6 +265,14 @@ async function compressImageToTarget(
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
+
+  const SUPER_ADMIN_PERMISSION_MATRIX = {
+    super_admin: ["users", "roles", "listings", "moderation", "settings", "search", "audit"],
+    network_admin: ["network_overview", "agencies", "billing"],
+    agency_admin: ["team", "agency_profile", "billing", "properties", "clients"],
+    agent: ["profile", "properties", "clients", "messages"],
+    client: ["profile", "favorites", "saved_searches"],
+  } as const;
 
   // Client metrics configuration endpoint
   app.get("/api/client-metrics-config", async (req, res) => {
@@ -1125,72 +1188,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      console.log('Login - Datos recibidos:', req.body);
-      const { email, password } = req.body;
+      const { email, password } = req.body || {};
+      const normalizedEmail = String(email || "").trim().toLowerCase();
+      const normalizedPassword = String(password || "");
 
-      // Primero intentar encontrar en la tabla de agentes/usuarios
-      let user = await storage.getUserByEmail(email);
-      console.log('Login - User object from getUserByEmail:', JSON.stringify(user, null, 2));
+      if (!normalizedEmail || !normalizedPassword) {
+        return res.status(400).json({
+          message: "Email y contraseña son obligatorios",
+        });
+      }
+
+      const loginKey = getLoginAttemptKey(normalizedEmail, req);
+      const blockedForMs = getLoginBlockTimeRemainingMs(loginKey);
+      if (blockedForMs > 0) {
+        return res.status(429).json({
+          message: "Demasiados intentos de inicio de sesión. Inténtalo más tarde.",
+          retryAfterSeconds: Math.ceil(blockedForMs / 1000),
+        });
+      }
+
+      const authErrorMessage =
+        "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo";
+
+      let user = await storage.getUserByEmail(normalizedEmail);
       let isClient = false;
 
-      // Si no se encuentra en agentes, buscar en clientes
       if (!user) {
-        const clients = await storage.getClients();
-        const client = clients.find(c => c.email === email);
-
-        if (client && client.password) {
-          const clientPasswordValid = await comparePassword(password, client.password);
-          if (clientPasswordValid) {
-            // Convertir cliente a formato de usuario para compatibilidad
-            user = {
-              id: client.id,
-              uuid: client.uuid, // Include client UUID
-              email: client.email,
-              password: client.password,
-              name: client.name,
-              surname: client.surname,
-              description: null,
-              avatar: null,
-              createdAt: client.createdAt,
-              influence_neighborhoods: null,
-              yearsOfExperience: null,
-              languagesSpoken: null,
-              agencyId: null,
-              isAdmin: false,
-              phone: client.phone
-            };
-            isClient = true;
-          }
+        const client = await storage.getClientByEmail(normalizedEmail);
+        if (!client || !client.password) {
+          recordLoginFailure(loginKey);
+          return res.status(401).json({ message: authErrorMessage });
         }
-      }
 
-      console.log('Login - Usuario encontrado:', user ? 'Sí' : 'No', isClient ? '(Cliente)' : '(Agente)');
+        const clientPasswordValid = await comparePassword(normalizedPassword, client.password);
+        if (!clientPasswordValid) {
+          recordLoginFailure(loginKey);
+          return res.status(401).json({ message: authErrorMessage });
+        }
 
-      // Verify password for agents (clients already verified above)
-      if (!user) {
-        console.log('Login - Usuario no encontrado');
-        return res.status(401).json({ message: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo" });
-      }
-      
-      if (!isClient && user.password) {
-        const agentPasswordValid = await comparePassword(password, user.password);
+        if (client.isActive === false) {
+          return res.status(403).json({ message: "Tu cuenta está desactivada. Contacta con soporte." });
+        }
+
+        user = {
+          id: client.id,
+          uuid: client.uuid,
+          email: client.email,
+          password: client.password,
+          name: client.name,
+          surname: client.surname,
+          description: null,
+          avatar: null,
+          createdAt: client.createdAt,
+          influence_neighborhoods: null,
+          yearsOfExperience: null,
+          languagesSpoken: null,
+          agencyId: null,
+          isAdmin: false,
+          phone: client.phone,
+          isActive: client.isActive,
+          lastLoginAt: client.lastLoginAt,
+          agentType: null,
+          networkId: null,
+        } as any;
+        isClient = true;
+      } else {
+        const agentPasswordValid = await comparePassword(normalizedPassword, user.password);
         if (!agentPasswordValid) {
-          console.log('Login - Credenciales inválidas');
-          return res.status(401).json({ message: "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo" });
+          recordLoginFailure(loginKey);
+          return res.status(401).json({ message: authErrorMessage });
+        }
+
+        if (user.isActive === false) {
+          return res.status(403).json({ message: "Tu cuenta está desactivada. Contacta con soporte." });
         }
       }
+
+      if (!user) {
+        recordLoginFailure(loginKey);
+        return res.status(401).json({ message: authErrorMessage });
+      }
+
+      const authenticatedUser = user;
 
       // For agents, check if they're an admin of an agency
       let isAdmin = false;
       let agencyId = null;
       let agencyName = null;
       let subscriptionPlan = null;
-      
+
       if (!isClient) {
-        const agentRole = await storage.getAgentRole(user.id);
-        isAdmin = agentRole.role === 'admin';
+        const agentRole = await storage.getAgentRole(authenticatedUser.id);
+        isAdmin =
+          agentRole.role === "admin" ||
+          authenticatedUser.agentType === "network_admin" ||
+          authenticatedUser.agentType === "super_admin";
         agencyId = agentRole.agencyId;
-        
+
         // Get agency name and subscription plan if agent belongs to one
         if (agencyId) {
           const agency = await storage.getAgencyById(agencyId);
@@ -1199,40 +1293,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subscriptionPlan = agency.subscriptionPlan;
           }
         } else {
-          // For independent agents, get their personal subscription plan
-          subscriptionPlan = user.subscriptionPlan || null;
+          // For independent agents and privileged roles, use personal subscription
+          subscriptionPlan = authenticatedUser.subscriptionPlan || null;
         }
+
+        await storage.updateUser(authenticatedUser.id, {
+          lastLoginAt: new Date(),
+        });
+      } else {
+        await storage.updateClientProfile(authenticatedUser.id, {
+          lastLoginAt: new Date(),
+        });
       }
 
-      console.log('Login - Éxito, devolviendo usuario:', {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: isAdmin,
-        isClient: isClient,
-        agencyId: agencyId,
-        subscriptionPlan: subscriptionPlan,
-        agentType: user.agentType,
-        networkId: user.networkId
-      });
+      clearLoginFailures(loginKey);
 
       // Store user data in session
       (req as any).session.user = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        surname: user.surname,
-        isAdmin: isAdmin,
-        isClient: isClient,
-        phone: user.phone,
-        agencyId: agencyId,
-        agencyName: agencyName,
-        subscriptionPlan: subscriptionPlan,
-        agentType: user.agentType || null,
-        networkId: user.networkId || null,
-        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
-        ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
+        id: authenticatedUser.id,
+        email: authenticatedUser.email,
+        name: authenticatedUser.name,
+        surname: authenticatedUser.surname,
+        isAdmin,
+        isClient,
+        phone: authenticatedUser.phone,
+        agencyId,
+        agencyName,
+        subscriptionPlan,
+        agentType: authenticatedUser.agentType || null,
+        networkId: authenticatedUser.networkId || null,
+        ...((!isClient && authenticatedUser.uuid) ? { agentUuid: authenticatedUser.uuid } : {}),
+        ...((isClient && authenticatedUser.uuid) ? { clientUuid: authenticatedUser.uuid } : {}),
       };
+      const csrfToken = ensureCsrfToken(req);
 
       // Save session to database
       await new Promise((resolve, reject) => {
@@ -1241,14 +1334,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error('Error saving session:', err);
             reject(err);
           } else {
-            console.log('Session saved successfully for user:', user.email);
+            console.log('Session saved successfully for user:', authenticatedUser.email);
             resolve(true);
           }
         });
       });
 
       // Remover la contraseña antes de enviar la respuesta
-      const { password: _, ...userResponse } = user;
+      const { password: _, ...userResponse } = authenticatedUser;
       res.json({ 
         ...userResponse, 
         isClient,
@@ -1256,10 +1349,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agencyId,
         agencyName,
         subscriptionPlan,
-        agentType: user.agentType || null,
-        networkId: user.networkId || null,
-        ...((!isClient && user.uuid) ? { agentUuid: user.uuid } : {}),
-        ...((isClient && user.uuid) ? { clientUuid: user.uuid } : {})
+        agentType: authenticatedUser.agentType || null,
+        networkId: authenticatedUser.networkId || null,
+        csrfToken,
+        ...((!isClient && authenticatedUser.uuid) ? { agentUuid: authenticatedUser.uuid } : {}),
+        ...((isClient && authenticatedUser.uuid) ? { clientUuid: authenticatedUser.uuid } : {})
       });
     } catch (error) {
       console.error('Error during login:', error);
@@ -1289,6 +1383,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error getting current user:', error);
       res.status(500).json({ message: "Error al obtener información del usuario" });
+    }
+  });
+
+  app.get("/api/auth/csrf-token", requireAuth, async (req, res) => {
+    try {
+      const csrfToken = ensureCsrfToken(req);
+      await new Promise((resolve, reject) => {
+        (req as any).session.save((err: any) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+      res.json({ csrfToken });
+    } catch (error) {
+      console.error("Error generating CSRF token:", error);
+      res.status(500).json({ message: "Error generando token CSRF" });
     }
   });
 
@@ -5086,6 +5196,373 @@ Gracias!
     } catch (error) {
       console.error("Error getting invoices:", error);
       res.status(500).json({ error: "Failed to get invoices" });
+    }
+  });
+
+  // =============================================================================
+  // SUPER ADMIN ROUTES
+  // =============================================================================
+  app.get("/api/super-admin/health", requireAuth, requireSuperAdmin, async (req, res) => {
+    const csrfToken = ensureCsrfToken(req);
+    res.json({
+      ok: true,
+      role: req.user?.agentType,
+      csrfToken,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.get("/api/super-admin/dashboard", requireAuth, requireSuperAdmin, async (_req, res) => {
+    try {
+      const stats = await storage.getSuperAdminDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching super admin dashboard:", error);
+      res.status(500).json({ message: "Error al obtener el dashboard" });
+    }
+  });
+
+  app.get("/api/super-admin/users", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const result = await storage.getSuperAdminUsers({
+        role: req.query.role as string | undefined,
+        status: req.query.status as string | undefined,
+        query: req.query.query as string | undefined,
+        page: req.query.page ? Number(req.query.page) : undefined,
+        pageSize: req.query.pageSize ? Number(req.query.pageSize) : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching super admin users:", error);
+      res.status(500).json({ message: "Error al obtener usuarios" });
+    }
+  });
+
+  app.patch(
+    "/api/super-admin/users/:kind/:id/status",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const kind = req.params.kind === "client" ? "client" : "agent";
+        const id = Number(req.params.id);
+        const isActive = Boolean(req.body?.isActive);
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ message: "ID inválido" });
+        }
+
+        if (kind === "agent" && id === req.user!.id) {
+          return res.status(400).json({ message: "No puedes desactivar tu propio usuario" });
+        }
+
+        await storage.setUserActiveStatus({ kind, id, isActive });
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "user_status_update",
+          targetType: kind,
+          targetId: String(id),
+          afterState: { isActive },
+          metadata: { source: "super_admin" },
+        });
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({ message: "Error al actualizar estado del usuario" });
+      }
+    },
+  );
+
+  app.post(
+    "/api/super-admin/users/:id/suspend",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ message: "ID inválido" });
+        }
+        if (id === req.user!.id) {
+          return res.status(400).json({ message: "No puedes suspender tu propio usuario" });
+        }
+
+        await storage.setUserActiveStatus({ kind: "agent", id, isActive: false });
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "user_suspended",
+          targetType: "agent",
+          targetId: String(id),
+          metadata: { source: "super_admin" },
+        });
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Error suspending user:", error);
+        res.status(500).json({ message: "Error al suspender usuario" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/super-admin/users/:id/role",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        const role = String(req.body?.role || "").trim().toLowerCase();
+        const allowedRoles = new Set(["agent", "agency_member", "network_admin", "super_admin"]);
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ message: "ID inválido" });
+        }
+        if (!allowedRoles.has(role)) {
+          return res.status(400).json({ message: "Rol inválido" });
+        }
+        if (id === req.user!.id && role !== "super_admin") {
+          return res.status(400).json({ message: "No puedes degradar tu propio rol de SuperAdmin" });
+        }
+
+        const normalizedRole = role === "agent" ? "independent" : role;
+        const updated = await storage.updateAgentRole(id, normalizedRole);
+        if (!updated) {
+          return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "user_role_update",
+          targetType: "agent",
+          targetId: String(id),
+          afterState: { agentType: normalizedRole },
+          metadata: { source: "super_admin" },
+        });
+        res.json({ success: true, user: updated });
+      } catch (error) {
+        console.error("Error updating user role:", error);
+        res.status(500).json({ message: "Error al actualizar rol" });
+      }
+    },
+  );
+
+  app.get("/api/super-admin/roles", requireAuth, requireSuperAdmin, async (_req, res) => {
+    res.json([
+      { id: "super_admin", label: "Super Admin" },
+      { id: "network_admin", label: "Network Admin" },
+      { id: "agency_admin", label: "Agency Admin" },
+      { id: "agent", label: "Agent" },
+      { id: "client", label: "Client" },
+    ]);
+  });
+
+  app.get("/api/super-admin/permissions/matrix", requireAuth, requireSuperAdmin, async (_req, res) => {
+    res.json(SUPER_ADMIN_PERMISSION_MATRIX);
+  });
+
+  app.get("/api/super-admin/agencies", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const agenciesData = await storage.getSuperAdminAgencies({
+        query: req.query.query as string | undefined,
+        page: req.query.page ? Number(req.query.page) : undefined,
+        pageSize: req.query.pageSize ? Number(req.query.pageSize) : undefined,
+      });
+      res.json(agenciesData);
+    } catch (error) {
+      console.error("Error fetching agencies for super admin:", error);
+      res.status(500).json({ message: "Error al obtener agencias" });
+    }
+  });
+
+  app.patch(
+    "/api/super-admin/agencies/:id/subscription",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        const plan = String(req.body?.plan || "").trim().toLowerCase();
+        if (!Number.isFinite(id)) {
+          return res.status(400).json({ message: "ID inválido" });
+        }
+        if (!["basica", "pequeña", "mediana", "lider"].includes(plan)) {
+          return res.status(400).json({ message: "Plan inválido" });
+        }
+
+        const updated = await storage.updateSuperAdminAgencyPlan({
+          agencyId: id,
+          plan: plan as "basica" | "pequeña" | "mediana" | "lider",
+        });
+
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "agency_plan_update",
+          targetType: "agency",
+          targetId: String(id),
+          afterState: { plan },
+          metadata: { source: "super_admin" },
+        });
+
+        res.json(updated);
+      } catch (error) {
+        console.error("Error updating agency plan for super admin:", error);
+        res.status(500).json({ message: "Error al actualizar plan de agencia" });
+      }
+    },
+  );
+
+  app.get("/api/super-admin/listings", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const result = await storage.getSuperAdminListings({
+        moderationStatus: req.query.moderationStatus as string | undefined,
+        operationType: req.query.operationType as string | undefined,
+        location: req.query.location as string | undefined,
+        query: req.query.query as string | undefined,
+        page: req.query.page ? Number(req.query.page) : undefined,
+        pageSize: req.query.pageSize ? Number(req.query.pageSize) : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching listings for super admin:", error);
+      res.status(500).json({ message: "Error al obtener listados" });
+    }
+  });
+
+  app.get("/api/super-admin/moderation/queue", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const pending = await storage.getSuperAdminListings({
+        moderationStatus: "pending",
+        query: req.query.query as string | undefined,
+        page: 1,
+        pageSize: 100,
+      });
+
+      const flagged = pending.items.filter((listing) => listing.fraudCount > 0);
+      res.json({
+        pending: pending.items,
+        flagged,
+      });
+    } catch (error) {
+      console.error("Error fetching moderation queue:", error);
+      res.status(500).json({ message: "Error al obtener cola de moderación" });
+    }
+  });
+
+  app.patch(
+    "/api/super-admin/listings/:uuid/moderation",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const uuid = req.params.uuid;
+        const moderationStatus = String(req.body?.moderationStatus || "").trim().toLowerCase();
+        const moderationReason = req.body?.moderationReason ?? null;
+        if (!["pending", "approved", "rejected"].includes(moderationStatus)) {
+          return res.status(400).json({ message: "Estado de moderación inválido" });
+        }
+
+        const updated = await storage.updatePropertyModeration({
+          propertyUuid: uuid,
+          moderationStatus: moderationStatus as "pending" | "approved" | "rejected",
+          moderationReason,
+          moderatorId: req.user!.id,
+        });
+        if (!updated) {
+          return res.status(404).json({ message: "Listado no encontrado" });
+        }
+
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "listing_moderation_update",
+          targetType: "property",
+          targetId: uuid,
+          afterState: {
+            moderationStatus,
+            moderationReason,
+          },
+          metadata: { source: "super_admin" },
+        });
+        res.json(updated);
+      } catch (error) {
+        console.error("Error moderating listing:", error);
+        res.status(500).json({ message: "Error al actualizar moderación" });
+      }
+    },
+  );
+
+  app.get("/api/super-admin/settings", requireAuth, requireSuperAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getAppSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching app settings:", error);
+      res.status(500).json({ message: "Error al obtener configuración" });
+    }
+  });
+
+  app.patch(
+    "/api/super-admin/settings/:key",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const key = String(req.params.key || "").trim();
+        if (!key) {
+          return res.status(400).json({ message: "Clave inválida" });
+        }
+
+        const saved = await storage.upsertAppSetting({
+          key,
+          value: req.body?.value ?? null,
+          updatedBy: req.user!.id,
+        });
+
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "setting_upsert",
+          targetType: "app_setting",
+          targetId: key,
+          afterState: { value: req.body?.value ?? null },
+          metadata: { source: "super_admin" },
+        });
+
+        res.json(saved);
+      } catch (error) {
+        console.error("Error updating app settings:", error);
+        res.status(500).json({ message: "Error al actualizar configuración" });
+      }
+    },
+  );
+
+  app.get("/api/super-admin/search", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const query = String(req.query.q || "").trim();
+      if (!query) {
+        return res.json({ users: [], listings: [], agencies: [] });
+      }
+
+      const result = await storage.superAdminGlobalSearch({
+        query,
+        entity: req.query.entity as "users" | "listings" | "agencies" | undefined,
+        role: req.query.role as string | undefined,
+        status: req.query.status as string | undefined,
+        location: req.query.location as string | undefined,
+        page: req.query.page ? Number(req.query.page) : undefined,
+        pageSize: req.query.pageSize ? Number(req.query.pageSize) : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Error performing super admin search:", error);
+      res.status(500).json({ message: "Error en búsqueda global" });
     }
   });
 
