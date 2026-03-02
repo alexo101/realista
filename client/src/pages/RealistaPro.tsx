@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Footer } from "@/components/Footer";
 
 const agencyPlans = [
   {
@@ -354,7 +355,8 @@ export default function RealistaPro() {
   const billing = billingData;
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-green-50">
+      <div className="flex-1">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-green-600 text-white">
         <div className="absolute inset-0 bg-black/20"></div>
@@ -634,6 +636,10 @@ export default function RealistaPro() {
           </div>
         </div>
       </div>
+      </div>
+      <footer className="mt-auto">
+        <Footer />
+      </footer>
     </div>
   );
 }

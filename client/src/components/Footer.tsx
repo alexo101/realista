@@ -96,8 +96,8 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link 
-                  href="#"
-                  className="text-gray-500 cursor-not-allowed"
+                  href="/politica-privacidad"
+                  className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-privacy"
                 >
                   Política de Privacidad
@@ -105,8 +105,8 @@ export function Footer() {
               </li>
               <li>
                 <Link 
-                  href="#"
-                  className="text-gray-500 cursor-not-allowed"
+                  href="/terminos-condiciones"
+                  className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-terms"
                 >
                   Términos y Condiciones
@@ -114,8 +114,8 @@ export function Footer() {
               </li>
               <li>
                 <Link 
-                  href="#"
-                  className="text-gray-500 cursor-not-allowed"
+                  href="/politica-cookies"
+                  className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-cookies"
                 >
                   Política de Cookies
@@ -123,8 +123,8 @@ export function Footer() {
               </li>
               <li>
                 <Link 
-                  href="#"
-                  className="text-gray-500 cursor-not-allowed"
+                  href="/aviso-legal"
+                  className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-legal"
                 >
                   Aviso Legal

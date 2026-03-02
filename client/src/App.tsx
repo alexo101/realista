@@ -27,6 +27,10 @@ import NetworkAdmin from "@/pages/network-admin";
 import UpgradePlan from "@/pages/upgrade-plan";
 import ConfirmReview from "@/pages/confirm-review";
 import SuperAdminPage from "@/pages/super-admin";
+import AvisoLegal from "@/pages/aviso-legal";
+import PoliticaPrivacidad from "@/pages/politica-privacidad";
+import PoliticaCookies from "@/pages/politica-cookies";
+import TerminosCondiciones from "@/pages/terminos-condiciones";
 
 function Router() {
   return (
@@ -60,6 +64,10 @@ function Router() {
       <Route path="/gestionar" component={Manage} />
       <Route path="/app/mejora-tu-plan" component={UpgradePlan} />
       <Route path="/confirmar-resena/:token" component={ConfirmReview} />
+      <Route path="/aviso-legal" component={AvisoLegal} />
+      <Route path="/politica-privacidad" component={PoliticaPrivacidad} />
+      <Route path="/politica-cookies" component={PoliticaCookies} />
+      <Route path="/terminos-condiciones" component={TerminosCondiciones} />
       
       {/* Backwards compatibility routes - redirect to Spanish */}
       <Route path="/login" component={LoginPage} />
