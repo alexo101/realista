@@ -132,15 +132,6 @@ export function Footer() {
               </li>
               <li>
                 <Link 
-                  href="#"
-                  className="text-gray-500 cursor-not-allowed"
-                  data-testid="link-contact"
-                >
-                  Contacto
-                </Link>
-              </li>
-              <li>
-                <Link 
                   href="/realista-pro"
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
                   data-testid="link-realista-pro"
