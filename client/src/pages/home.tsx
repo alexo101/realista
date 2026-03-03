@@ -6,8 +6,10 @@ import { NeighborhoodRating } from "@/components/NeighborhoodRating";
 import { MessageCarousel } from "@/components/MessageCarousel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Footer } from "@/components/Footer";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function Home() {
+  const { t } = useLanguage();
   // Consulta para propiedades más vistas en venta
   const { data: mostViewedSaleProperties, isLoading: isLoadingSales } = useQuery<Property[]>({
     queryKey: ["/api/properties?mostViewed=true&operationType=Venta"],
@@ -31,7 +33,7 @@ export default function Home() {
       <section className="bg-primary/5 py-8 md:py-16 flex flex-col justify-start md:justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto w-full">
           <h1 className="text-2xl md:text-4xl font-bold text-center mb-4">
-            Encuentra tu hogar ideal con toda la información
+            {t("home.hero_title")}
           </h1>
           <div className="mb-6 md:mb-8">
             <MessageCarousel />
@@ -45,12 +47,12 @@ export default function Home() {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <h2 className="text-xl md:text-2xl font-semibold mb-6">Las más vistas</h2>
+        <h2 className="text-xl md:text-2xl font-semibold mb-6">{t("home.most_viewed")}</h2>
         
         <Tabs defaultValue="venta" className="mt-4">
           <TabsList className="mb-4">
-            <TabsTrigger value="venta">En Venta</TabsTrigger>
-            <TabsTrigger value="alquiler">En Alquiler</TabsTrigger>
+            <TabsTrigger value="venta">{t("home.tab_sale")}</TabsTrigger>
+            <TabsTrigger value="alquiler">{t("home.tab_rent")}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="venta" className="min-h-[400px]">
@@ -78,10 +80,10 @@ export default function Home() {
                 ) : (
                   <div className="py-8 text-left">
                     <p className="text-gray-500 text-lg">
-                      No hay propiedades en venta disponibles en este momento.
+                      {t("home.no_sale_title")}
                     </p>
                     <p className="text-gray-400 text-sm mt-2">
-                      Vuelve pronto para ver nuevas oportunidades.
+                      {t("home.no_results_subtitle")}
                     </p>
                   </div>
                 )}
@@ -114,10 +116,10 @@ export default function Home() {
                 ) : (
                   <div className="py-8 text-left">
                     <p className="text-gray-500 text-lg">
-                      No hay propiedades en alquiler disponibles en este momento.
+                      {t("home.no_rent_title")}
                     </p>
                     <p className="text-gray-400 text-sm mt-2">
-                      Vuelve pronto para ver nuevas oportunidades.
+                      {t("home.no_results_subtitle")}
                     </p>
                   </div>
                 )}

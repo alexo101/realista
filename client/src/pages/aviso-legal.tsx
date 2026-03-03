@@ -1,66 +1,60 @@
 import { Footer } from "@/components/Footer";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function AvisoLegal() {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen flex flex-col pt-16 bg-white">
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
-        <h1 className="text-3xl font-bold mb-8">AVISO LEGAL</h1>
+        <h1 className="text-3xl font-bold mb-8">{t("legal.notice.title")}</h1>
 
         <section className="space-y-4 mb-8">
-          <h2 className="text-xl font-semibold">Titular del sitio web</h2>
+          <h2 className="text-xl font-semibold">{t("legal.notice.web_owner")}</h2>
           <p>
-            En cumplimiento de lo dispuesto en la normativa española de servicios digitales, se informa que el presente
-            sitio web, realista.homes, es titularidad de:
+            {t("legal.notice.web_owner_text")}
           </p>
           <p>
-            Titular: [Nombre y Apellidos del promotor]
+            {t("legal.notice.owner")}
             <br />
-            NIF: [NIF]
+            {t("legal.notice.nif")}
             <br />
-            Domicilio: [Dirección completa]
+            {t("legal.notice.address")}
             <br />
-            Correo electrónico de contacto: [contacto@realista.homes]
+            {t("legal.notice.contact")}
           </p>
           <p>
-            En caso de que la actividad pase a ser desarrollada por una sociedad mercantil, los datos anteriores serán
-            actualizados conforme a su inscripción registral.
+            {t("legal.notice.company_update")}
           </p>
         </section>
 
         <section className="space-y-4 mb-8">
-          <h2 className="text-xl font-semibold">Objeto</h2>
+          <h2 className="text-xl font-semibold">{t("legal.notice.object")}</h2>
           <p>
-            El presente sitio web tiene por objeto ofrecer una plataforma digital de intermediación inmobiliaria que permite
-            a usuarios publicar, buscar y contratar servicios relacionados con inmuebles.
+            {t("legal.notice.object_text")}
           </p>
         </section>
 
         <section className="space-y-4 mb-8">
-          <h2 className="text-xl font-semibold">Condiciones de uso</h2>
-          <p>El acceso y uso del sitio web atribuye la condición de usuario e implica la aceptación plena de las presentes condiciones.</p>
-          <p>El usuario se compromete a:</p>
+          <h2 className="text-xl font-semibold">{t("legal.notice.terms")}</h2>
+          <p>{t("legal.notice.terms_text")}</p>
+          <p>{t("legal.notice.user_commitment")}</p>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Hacer un uso adecuado y lícito del sitio.</li>
-            <li>No realizar actividades fraudulentas.</li>
-            <li>No introducir contenidos ilícitos o lesivos.</li>
+            <li>{t("legal.notice.use_1")}</li>
+            <li>{t("legal.notice.use_2")}</li>
+            <li>{t("legal.notice.use_3")}</li>
           </ul>
         </section>
 
         <section className="space-y-4 mb-8">
-          <h2 className="text-xl font-semibold">Propiedad intelectual</h2>
-          <p>
-            Todos los contenidos del sitio (textos, diseños, logotipos, software) son titularidad del titular o cuentan con
-            licencia legítima.
-          </p>
-          <p>Queda prohibida su reproducción sin autorización expresa.</p>
+          <h2 className="text-xl font-semibold">{t("legal.notice.ip")}</h2>
+          <p>{t("legal.notice.ip_text")}</p>
+          <p>{t("legal.notice.ip_text_2")}</p>
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Responsabilidad</h2>
-          <p>
-            El titular no garantiza la disponibilidad continua del sitio ni se responsabiliza de daños derivados del uso
-            indebido del mismo.
-          </p>
+          <h2 className="text-xl font-semibold">{t("legal.notice.liability")}</h2>
+          <p>{t("legal.notice.liability_text")}</p>
         </section>
       </main>
 

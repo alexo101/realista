@@ -13,132 +13,132 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Footer } from "@/components/Footer";
 
-const agencyPlans = [
+const agencyPlanDefs = [
   {
     id: "basica",
-    name: "Agencia Básica",
+    nameKey: "plan.basic_agency",
     monthlyPrice: 0,
     yearlyPrice: 0,
-    description: "Perfil básico para empezar",
+    descriptionKey: "plan.basic_agency_desc",
     features: [
-      "Perfil básico con solo el Agente principal",
-      "CRM y gestión de agenda",
-      "2 propiedades activas a la vez",
-      "No posibilidad de solicitar reseñas"
+      "plan.feature.basic_main_agent",
+      "plan.feature.crm",
+      "plan.feature.2_properties",
+      "plan.feature.no_reviews"
     ],
     icon: Building,
     color: "bg-gray-50 border-gray-200"
   },
   {
     id: "pequeña",
-    name: "Agencia Pequeña", 
+    nameKey: "plan.small_agency",
     monthlyPrice: 29,
     yearlyPrice: 290,
-    description: "Para pequeños equipos",
+    descriptionKey: "plan.small_agency_desc",
     features: [
-      "Hasta 2 perfiles públicos de agentes",
-      "CRM y gestión de agenda",
-      "Hasta 10 propiedades activas a la vez",
-      "Gestión ilimitada de clientes",
-      "Solicitudes ilimitadas de reseñas",
-      "Ventajas IA"
+      "plan.feature.2_public_profiles",
+      "plan.feature.crm",
+      "plan.feature.10_properties",
+      "plan.feature.unlimited_clients",
+      "plan.feature.unlimited_reviews",
+      "plan.feature.ai_benefits"
     ],
     icon: Users,
     color: "bg-blue-50 border-blue-200"
   },
   {
     id: "mediana",
-    name: "Agencia Mediana",
+    nameKey: "plan.medium_agency",
     monthlyPrice: 79,
     yearlyPrice: 790,
-    description: "Para equipos en crecimiento",
+    descriptionKey: "plan.medium_agency_desc",
     features: [
-      "Hasta 6 agentes",
-      "CRM y gestión de agenda", 
-      "Hasta 30 propiedades activas a la vez",
-      "Gestión ilimitada de clientes",
-      "Solicitudes ilimitadas de reseñas",
-      "Ventajas IA"
+      "plan.feature.6_agents",
+      "plan.feature.crm",
+      "plan.feature.30_properties",
+      "plan.feature.unlimited_clients",
+      "plan.feature.unlimited_reviews",
+      "plan.feature.ai_benefits"
     ],
     icon: Star,
     color: "bg-green-50 border-green-200"
   },
   {
     id: "lider",
-    name: "Agencia Líder",
+    nameKey: "plan.leader_agency",
     monthlyPrice: 249,
     yearlyPrice: 2490,
-    description: "Para grandes agencias",
+    descriptionKey: "plan.leader_agency_desc",
     features: [
-      "Agentes ilimitados",
-      "CRM y gestión de agenda",
-      "Propiedades ilimitadas",
-      "Gestión ilimitada de clientes",
-      "Solicitudes ilimitadas de reseñas",
-      "Ventajas IA"
+      "plan.feature.unlimited_agents",
+      "plan.feature.crm",
+      "plan.feature.unlimited_properties",
+      "plan.feature.unlimited_clients",
+      "plan.feature.unlimited_reviews",
+      "plan.feature.ai_benefits"
     ],
     icon: Sparkles,
     color: "bg-purple-50 border-purple-200"
   }
 ];
 
-const agentPlans = [
+const agentPlanDefs = [
   {
     id: "basico",
-    name: "Agente Básico",
+    nameKey: "plan.basic_agent",
     monthlyPrice: 0,
     yearlyPrice: 0,
-    description: "Perfil básico individual",
+    descriptionKey: "plan.basic_agent_desc",
     features: [
-      "Perfil básico de agente individual",
-      "CRM y gestión de agenda",
-      "2 propiedades activas a la vez",
-      "No posibilidad de solicitar reseñas"
+      "plan.feature.agent_basic_profile",
+      "plan.feature.crm",
+      "plan.feature.2_properties",
+      "plan.feature.no_reviews"
     ],
     icon: User,
     color: "bg-gray-50 border-gray-200"
   },
   {
     id: "lider",
-    name: "Agente Líder",
+    nameKey: "plan.leader_agent",
     monthlyPrice: 20,
     yearlyPrice: 200,
-    description: "Para agentes profesionales",
+    descriptionKey: "plan.leader_agent_desc",
     features: [
-      "Perfil profesional de agente",
-      "CRM y gestión de agenda",
-      "Hasta 10 propiedades activas a la vez",
-      "Gestión ilimitada de clientes",
-      "Solicitudes ilimitadas de reseñas",
-      "Ventajas IA"
+      "plan.feature.agent_pro_profile",
+      "plan.feature.crm",
+      "plan.feature.10_properties",
+      "plan.feature.unlimited_clients",
+      "plan.feature.unlimited_reviews",
+      "plan.feature.ai_benefits"
     ],
     icon: Sparkles,
     color: "bg-blue-50 border-blue-200"
   }
 ];
 
-const networkPlans = [
+const networkPlanDefs = [
   {
     id: "red_agencias",
-    name: "Red de Agencias",
+    nameKey: "plan.network",
     monthlyPrice: 0,
     yearlyPrice: 0,
     isUsageBased: true,
-    description: "Para franquicias y redes inmobiliarias",
-    pricingModel: "Facturación según agencias y sus planes",
+    descriptionKey: "plan.network_desc",
+    pricingModelKey: "realista_pro.network_pricing",
     pricingDetails: [
-      { plan: "Pequeña", price: 29 },
-      { plan: "Mediana", price: 79 },
-      { plan: "Líder", price: 249 }
+      { planKey: "plan.small_label", price: 29 },
+      { planKey: "plan.medium_label", price: 79 },
+      { planKey: "plan.leader_label", price: 249 }
     ],
     features: [
-      "Agencias ilimitadas bajo tu marca",
-      "Panel de control centralizado de toda la red",
-      "Estadísticas consolidadas de rendimiento",
-      "Branding corporativo en todos los perfiles",
-      "Gestión centralizada o facturación individual por agencia",
-      "Soporte prioritario dedicado",
-      "API de integración disponible"
+      "plan.feature.network_unlimited_agencies",
+      "plan.feature.network_central_panel",
+      "plan.feature.network_consolidated_stats",
+      "plan.feature.network_branding",
+      "plan.feature.network_billing",
+      "plan.feature.network_priority_support",
+      "plan.feature.network_api"
     ],
     icon: Network,
     color: "bg-orange-50 border-orange-300"
@@ -183,20 +183,20 @@ export default function RealistaPro() {
   useEffect(() => {
     if (isSuccess) {
       toast({
-        title: "¡Suscripción activada!",
-        description: "Tu plan ha sido activado correctamente. Gracias por confiar en Realista.",
+        title: t("realista_pro.subscription_activated_title"),
+        description: t("realista_pro.subscription_activated_desc"),
       });
       window.history.replaceState({}, '', '/realista-pro');
     }
     if (isCancelled) {
       toast({
-        title: "Suscripción cancelada",
-        description: "El proceso de pago fue cancelado. Puedes intentarlo de nuevo cuando quieras.",
+        title: t("realista_pro.subscription_cancelled_title"),
+        description: t("realista_pro.subscription_cancelled_desc"),
         variant: "destructive",
       });
       window.history.replaceState({}, '', '/realista-pro');
     }
-  }, [isSuccess, isCancelled, toast]);
+  }, [isSuccess, isCancelled, t, toast]);
 
   const entityType = user?.isAdmin ? 'agency' : 
                      (user?.isAgent ? 'agent' : null);
@@ -227,8 +227,8 @@ export default function RealistaPro() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudo iniciar el proceso de pago",
+        title: t("realista_pro.error_title"),
+        description: error.message || t("realista_pro.error_checkout"),
         variant: "destructive",
       });
     },
@@ -241,15 +241,15 @@ export default function RealistaPro() {
     },
     onSuccess: () => {
       toast({
-        title: "¡Plan activado!",
-        description: "Tu plan gratuito ha sido activado correctamente.",
+        title: t("realista_pro.free_plan_activated_title"),
+        description: t("realista_pro.free_plan_activated_desc"),
       });
       refetchBilling();
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudo activar el plan gratuito",
+        title: t("realista_pro.error_title"),
+        description: error.message || t("realista_pro.error_free_plan"),
         variant: "destructive",
       });
     },
@@ -267,20 +267,31 @@ export default function RealistaPro() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudo abrir el portal de facturación",
+        title: t("realista_pro.error_title"),
+        description: error.message || t("realista_pro.error_billing_portal"),
         variant: "destructive",
       });
     },
   });
   
-  const currentPlans = profileType === "agencies" ? agencyPlans : 
-                       profileType === "agents" ? agentPlans : networkPlans;
+  const currentPlanDefs = profileType === "agencies" ? agencyPlanDefs :
+                          profileType === "agents" ? agentPlanDefs : networkPlanDefs;
+  const currentPlans = currentPlanDefs.map((plan) => ({
+    ...plan,
+    name: t((plan as any).nameKey),
+    description: t((plan as any).descriptionKey),
+    pricingModel: (plan as any).pricingModelKey ? t((plan as any).pricingModelKey) : undefined,
+    pricingDetails: (plan as any).pricingDetails?.map((detail: any) => ({
+      ...detail,
+      plan: t(detail.planKey),
+    })),
+    features: plan.features.map((feature) => t(feature)),
+  }));
   const products = profileType === "agencies" ? agencyProducts?.products : 
                    profileType === "agents" ? agentProducts?.products : null;
   
   const getDisplayPrice = (plan: any) => {
-    if (plan.monthlyPrice === 0) return "Gratis";
+    if (plan.monthlyPrice === 0) return t("realista_pro.free");
     
     if (isYearly) {
       const monthlyEquivalent = Math.floor(plan.yearlyPrice / 12);
@@ -321,8 +332,8 @@ export default function RealistaPro() {
 
     if (!entityType || !entityId) {
       toast({
-        title: "Error",
-        description: "No se pudo determinar tu perfil. Por favor, inicia sesión de nuevo.",
+        title: t("realista_pro.error_title"),
+        description: t("realista_pro.error_profile"),
         variant: "destructive",
       });
       return;
@@ -336,8 +347,8 @@ export default function RealistaPro() {
     const priceId = findPriceId(plan.id);
     if (!priceId) {
       toast({
-        title: "Error",
-        description: "No se encontró el precio para este plan. Inténtalo de nuevo.",
+        title: t("realista_pro.error_title"),
+        description: t("realista_pro.error_price"),
         variant: "destructive",
       });
       return;
@@ -393,7 +404,7 @@ export default function RealistaPro() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Tu suscripción actual
+                {t("realista_pro.current_subscription")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -401,17 +412,17 @@ export default function RealistaPro() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant="default" className="text-lg px-3 py-1">
-                      {billing.currentPlan?.charAt(0).toUpperCase() + billing.currentPlan?.slice(1) || 'Básico'}
+                      {billing.currentPlan?.charAt(0).toUpperCase() + billing.currentPlan?.slice(1) || t("plan.basic_agent")}
                     </Badge>
                     {billing.isYearlyBilling && (
-                      <Badge variant="outline">Anual</Badge>
+                      <Badge variant="outline">{t("realista_pro.annual")}</Badge>
                     )}
                   </div>
                   <p className="text-muted-foreground">
                     {entityType === 'agency' && billing.seatsLimit && (
-                      <span>Hasta {billing.seatsLimit === 999 ? 'ilimitados' : billing.seatsLimit} agentes • </span>
+                      <span>{t("realista_pro.up_to")} {billing.seatsLimit === 999 ? t("realista_pro.unlimited") : billing.seatsLimit} {t("realista_pro.agents_label")} • </span>
                     )}
-                    Hasta {billing.activePropertiesLimit === 999 ? 'ilimitadas' : billing.activePropertiesLimit} propiedades
+                    {t("realista_pro.up_to")} {billing.activePropertiesLimit === 999 ? t("realista_pro.unlimited") : billing.activePropertiesLimit} {t("realista_pro.properties")}
                   </p>
                 </div>
                 {billing.stripeCustomerId && (
@@ -426,7 +437,7 @@ export default function RealistaPro() {
                     ) : (
                       <ExternalLink className="h-4 w-4 mr-2" />
                     )}
-                    Gestionar facturación
+                    {t("realista_pro.manage_billing")}
                   </Button>
                 )}
               </div>
@@ -472,7 +483,7 @@ export default function RealistaPro() {
               data-testid="button-profile-networks"
             >
               <Network className="h-4 w-4 mr-2" />
-              Redes
+              {t("realista_pro.networks")}
             </Button>
           </div>
         </div>
@@ -493,7 +504,7 @@ export default function RealistaPro() {
               {t('realista_pro.yearly')}
             </span>
             {isYearly && (
-              <Badge variant="secondary" className="ml-2">2 meses gratis</Badge>
+              <Badge variant="secondary" className="ml-2">{t("realista_pro.two_months_free")}</Badge>
             )}
           </div>
         )}
@@ -517,7 +528,7 @@ export default function RealistaPro() {
               >
                 {isCurrentPlan && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
-                    Plan actual
+                    {t("realista_pro.current_plan")}
                   </Badge>
                 )}
                 <CardHeader className="text-center pb-4">
@@ -547,12 +558,12 @@ export default function RealistaPro() {
                         <div className="mt-3 space-y-1 text-sm">
                           {'pricingDetails' in plan && (plan.pricingDetails as { plan: string; price: number }[]).map((detail, idx) => (
                             <div key={idx} className="flex justify-between px-4">
-                              <span className="text-muted-foreground">Agencia {detail.plan}:</span>
-                              <span className="font-semibold">{detail.price}€/mes</span>
+                              <span className="text-muted-foreground">{t("realista_pro.agency_label")} {detail.plan}:</span>
+                              <span className="font-semibold">{detail.price}€{t("realista_pro.per_month")}</span>
                             </div>
                           ))}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">Solo facturación mensual</p>
+                        <p className="text-xs text-muted-foreground mt-2">{t("realista_pro.monthly_only")}</p>
                       </>
                     ) : (
                       <>
@@ -560,7 +571,7 @@ export default function RealistaPro() {
                         <span className="text-muted-foreground">{t('realista_pro.per_month')}</span>
                         {isYearly && plan.monthlyPrice > 0 && (
                           <div className="text-sm text-muted-foreground mt-1">
-                            Facturado anualmente: {plan.yearlyPrice}€
+                            {t("realista_pro.billed_annually_prefix")} {plan.yearlyPrice}€
                           </div>
                         )}
                       </>
@@ -587,7 +598,7 @@ export default function RealistaPro() {
                       onClick={() => navigate('/registro-plan-red')}
                       data-testid={`button-select-plan-${plan.id}`}
                     >
-                      Registrar mi red
+                      {t("realista_pro.network_register")}
                       <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
                   ) : (
@@ -601,7 +612,7 @@ export default function RealistaPro() {
                       {isPending ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : isCurrentPlan ? (
-                        "Plan actual"
+                        t("realista_pro.current_plan")
                       ) : plan.monthlyPrice === 0 ? (
                         t('realista_pro.start_free')
                       ) : (

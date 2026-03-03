@@ -1,9 +1,11 @@
 import { Link } from "wouter";
 import { Home, Mail, Phone, MapPin } from "lucide-react";
 import { BARCELONA_DISTRICTS } from "@/utils/neighborhoods";
+import { useLanguage } from "@/contexts/language-context";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const { t } = useLanguage();
 
   // Popular neighborhoods for featured links
   const featuredNeighborhoods = [
@@ -28,11 +30,11 @@ export function Footer() {
               <Home className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold text-primary">Realista</span>
             </div>
-            <p className="text-gray-300 text-sm">Tu plataforma de confianza para encontrar las mejores propiedades en España. Conectamos agentes, agencias y clientes de manera profesional y eficiente.</p>
+            <p className="text-gray-300 text-sm">{t("footer.company_description")}</p>
             <div className="space-y-2 text-sm text-gray-300">
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
-                <span>Barcelona, España</span>
+                <span>{t("footer.location")}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
@@ -47,7 +49,7 @@ export function Footer() {
 
           {/* Distritos de Barcelona */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Distritos de Barcelona</h3>
+            <h3 className="text-lg font-semibold">{t("footer.districts")}</h3>
             <ul className="space-y-2 text-sm">
               {BARCELONA_DISTRICTS.slice(0, 6).map((district) => (
                 <li key={district}>
@@ -66,7 +68,7 @@ export function Footer() {
                   className="text-primary hover:text-primary/80 transition-colors"
                   data-testid="link-all-districts"
                 >
-                  Ver todos los distritos →
+                  {t("footer.all_districts")}
                 </Link>
               </li>
             </ul>
@@ -74,7 +76,7 @@ export function Footer() {
 
           {/* Barrios Populares */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Barrios Populares</h3>
+            <h3 className="text-lg font-semibold">{t("footer.popular_neighborhoods")}</h3>
             <ul className="space-y-2 text-sm">
               {featuredNeighborhoods.map((neighborhood) => (
                 <li key={neighborhood}>
@@ -92,7 +94,7 @@ export function Footer() {
 
           {/* Información Legal y Enlaces */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información Legal</h3>
+            <h3 className="text-lg font-semibold">{t("footer.legal_info")}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link 
@@ -100,7 +102,7 @@ export function Footer() {
                   className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-privacy"
                 >
-                  Política de Privacidad
+                  {t("footer.privacy")}
                 </Link>
               </li>
               <li>
@@ -109,7 +111,7 @@ export function Footer() {
                   className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-terms"
                 >
-                  Términos y Condiciones
+                  {t("footer.terms")}
                 </Link>
               </li>
               <li>
@@ -118,7 +120,7 @@ export function Footer() {
                   className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-cookies"
                 >
-                  Política de Cookies
+                  {t("footer.cookies")}
                 </Link>
               </li>
               <li>
@@ -127,7 +129,7 @@ export function Footer() {
                   className="text-gray-300 hover:text-primary transition-colors"
                   data-testid="link-legal"
                 >
-                  Aviso Legal
+                  {t("footer.legal_notice")}
                 </Link>
               </li>
               <li>
@@ -147,11 +149,11 @@ export function Footer() {
         <div className="border-t border-gray-700 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-sm text-gray-400">
-              © {currentYear} Realista. Todos los derechos reservados.
+              © {currentYear} Realista. {t("footer.copyright")}
             </div>
             <div className="flex items-center space-x-6 text-sm text-gray-400">
-              <span>Inmobiliaria Digital</span>
-              <span>Barcelona, España</span>
+              <span>{t("footer.digital_real_estate")}</span>
+              <span>{t("footer.location")}</span>
               <span>CIF: B-12345678</span>
             </div>
           </div>
@@ -159,9 +161,7 @@ export function Footer() {
           {/* Legal Disclaimer */}
           <div className="mt-4 text-xs text-gray-500 text-center">
             <p>
-              Realista es una plataforma digital que conecta profesionales inmobiliarios con clientes. 
-              No somos responsables de las transacciones realizadas entre usuarios. 
-              Toda la información mostrada es proporcionada por los agentes y agencias registrados.
+              {t("footer.disclaimer")}
             </p>
           </div>
         </div>
