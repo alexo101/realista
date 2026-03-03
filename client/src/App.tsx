@@ -7,6 +7,7 @@ import { UserProvider } from "@/contexts/user-context";
 import { LanguageProvider } from "@/contexts/language-context";
 import { RouteTransitionProvider } from "@/contexts/route-transition-context";
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
+import { CookieBanner } from "@/components/CookieBanner";
 import Home from "@/pages/home";
 import Search from "@/pages/search";
 import Property from "@/pages/property";
@@ -113,6 +114,7 @@ function App() {
           <RouteTransitionProvider>
             <Navbar />
             <Router />
+            <CookieBanner />
             <GlobalLoadingOverlay />
             <Toaster />
           </RouteTransitionProvider>
