@@ -379,9 +379,14 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
   housingType: z.string().optional().nullable(),
   floor: z.string().optional().nullable(),
 });
+const dateCoerce = z.union([z.date(), z.string().transform((s) => new Date(s))]).optional().nullable();
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
+}).extend({
+  reviewRequestSentAt: dateCoerce,
+  moveInDate: dateCoerce,
+  lastLoginAt: dateCoerce,
 });
 // Para valoraciones, usamos un esquema personalizado para asegurar que los valores sean numéricos
 export const insertNeighborhoodRatingSchema = z.object({
