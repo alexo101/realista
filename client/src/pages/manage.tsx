@@ -417,9 +417,26 @@ export default function ManagePage() {
         agentId: user!.id,
       });
     },
+    onMutate: async (data: any) => {
+      const queryKey = `/api/clients?agentId=${user?.id}`;
+      await queryClient.cancelQueries({ queryKey: [queryKey] });
+      const previousClients = queryClient.getQueryData([queryKey]);
+      queryClient.setQueryData([queryKey], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((c: any) => c.id === data.id ? { ...c, ...data } : c);
+      });
+      return { previousClients, queryKey };
+    },
+    onError: (_err: any, _data: any, context: any) => {
+      if (context?.previousClients !== undefined) {
+        queryClient.setQueryData([context.queryKey], context.previousClients);
+      }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
       setEditingClient(null);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
     },
   });
 
