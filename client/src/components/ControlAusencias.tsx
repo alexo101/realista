@@ -638,14 +638,15 @@ function NewRequestDialog({
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      if (!range?.from || !range?.to || !reason) {
-        throw new Error("Debes seleccionar fechas y un motivo");
+      if (!range?.from || !reason) {
+        throw new Error("Debes seleccionar al menos una fecha y un motivo");
       }
       const fmt = (d: Date) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const end = range.to ?? range.from;
       return apiRequest("POST", "/api/absence-requests", {
         startDate: fmt(range.from),
-        endDate: fmt(range.to),
+        endDate: fmt(end),
         reason,
       });
     },
@@ -663,11 +664,10 @@ function NewRequestDialog({
     },
   });
 
-  const canSubmit = Boolean(range?.from && range?.to && reason) && !submitMutation.isPending;
-  const dayCount =
-    range?.from && range?.to
-      ? eachDayOfInterval({ start: range.from, end: range.to }).length
-      : 0;
+  const canSubmit = Boolean(range?.from && reason) && !submitMutation.isPending;
+  const dayCount = range?.from
+    ? eachDayOfInterval({ start: range.from, end: range.to ?? range.from }).length
+    : 0;
 
   return (
     <Dialog
@@ -681,7 +681,7 @@ function NewRequestDialog({
         <DialogHeader>
           <DialogTitle>Nueva solicitud de ausencia</DialogTitle>
           <DialogDescription>
-            Selecciona el rango de fechas y el motivo. La solicitud quedará pendiente de aprobación.
+            Selecciona uno o varios días y el motivo. La solicitud quedará pendiente de aprobación.
           </DialogDescription>
         </DialogHeader>
 
@@ -712,10 +712,12 @@ function NewRequestDialog({
             </Select>
           </div>
 
-          {range?.from && range?.to && (
+          {range?.from && (
             <p className="text-sm text-muted-foreground" data-testid="text-range-summary">
               {dayCount} {dayCount === 1 ? "día" : "días"} —{" "}
-              {format(range.from, "d MMM", { locale: es })} a {format(range.to, "d MMM yyyy", { locale: es })}
+              {range.to && range.to.getTime() !== range.from.getTime()
+                ? `${format(range.from, "d MMM", { locale: es })} a ${format(range.to, "d MMM yyyy", { locale: es })}`
+                : format(range.from, "d MMM yyyy", { locale: es })}
             </p>
           )}
         </div>
