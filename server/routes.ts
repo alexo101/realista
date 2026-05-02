@@ -6608,6 +6608,10 @@ Gracias!
       if (existing.agencyId !== agencyId) {
         return res.status(403).json({ message: "No puedes revisar solicitudes de otra agencia" });
       }
+      // Workflow invariant: only pending requests can be reviewed
+      if (existing.status !== "pending") {
+        return res.status(409).json({ message: "Esta solicitud ya ha sido revisada" });
+      }
       const updated = await storage.updateAbsenceRequestStatus(id, parsed.data.status, req.user!.id);
       res.json(updated);
     } catch (error: unknown) {

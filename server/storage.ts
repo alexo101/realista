@@ -4642,7 +4642,12 @@ export class DatabaseStorage implements IStorage {
           isNull(agencyAgents.leftAt),
         ),
       )
-      .where(eq(absenceRequests.status, "pending"))
+      .where(
+        and(
+          eq(absenceRequests.status, "pending"),
+          eq(absenceRequests.agencyId, agencyId),
+        ),
+      )
       .orderBy(desc(absenceRequests.createdAt));
     return rows;
   }
@@ -4678,6 +4683,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(absenceRequests.status, "approved"),
+          eq(absenceRequests.agencyId, agencyId),
           // Overlap: request.start <= toDate AND request.end >= fromDate
           lte(absenceRequests.startDate, toDate),
           gte(absenceRequests.endDate, fromDate),
