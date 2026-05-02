@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound, CalendarDays } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -36,6 +36,7 @@ import { ReviewManagement } from "@/components/ReviewManagement";
 import { AgentCalendar } from "@/pages/agent-calendar";
 import { TeamManagement } from "@/components/TeamManagement";
 import { ControlJornada } from "@/components/ControlJornada";
+import { ControlAusencias } from "@/components/ControlAusencias";
 import { NetworkManagement } from "@/components/NetworkManagement";
 import { BillingTab } from "@/components/BillingTab";
 import { PropertyManagement } from "@/components/PropertyManagement";
@@ -63,6 +64,7 @@ const VALID_SECTIONS = [
   'resenas', 
   'equipo',
   'control-jornada',
+  'control-ausencias',
   'red',
   'facturacion'
 ] as const;
@@ -804,6 +806,25 @@ export default function ManagePage() {
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
+                  {/* Child: Control de ausencias */}
+                  <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                    <SidebarMenuButton
+                      isActive={currentSection === "control-ausencias"}
+                      onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
+                      className="relative group"
+                      title={sidebarCollapsed ? "Control de ausencias" : ""}
+                      data-testid="sidebar-link-control-ausencias-admin"
+                    >
+                      <CalendarDays className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Control de ausencias</span>}
+                      {sidebarCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                          Control de ausencias
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </>
               )}
 
@@ -822,6 +843,27 @@ export default function ManagePage() {
                     {sidebarCollapsed && (
                       <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                         Control de jornada
+                      </div>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* Non-admin agents get Control de ausencias as a top-level item */}
+              {!user?.isAdmin && user?.agentType !== "network_admin" && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={currentSection === "control-ausencias"}
+                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
+                    className="relative group"
+                    title={sidebarCollapsed ? "Control de ausencias" : ""}
+                    data-testid="sidebar-link-control-ausencias"
+                  >
+                    <CalendarDays className="h-4 w-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>Control de ausencias</span>}
+                    {sidebarCollapsed && (
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                        Control de ausencias
                       </div>
                     )}
                   </SidebarMenuButton>
@@ -2636,6 +2678,12 @@ export default function ManagePage() {
           {currentSection === "control-jornada" && (
             <div className="max-w-6xl mx-auto">
               <ControlJornada />
+            </div>
+          )}
+
+          {currentSection === "control-ausencias" && (
+            <div className="max-w-6xl mx-auto">
+              <ControlAusencias />
             </div>
           )}
 

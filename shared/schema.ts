@@ -962,3 +962,56 @@ export const insertWorkSessionSchema = createInsertSchema(workSessions).omit({
 });
 export type WorkSession = typeof workSessions.$inferSelect;
 export type InsertWorkSession = z.infer<typeof insertWorkSessionSchema>;
+
+// Absence requests for "Control de ausencias"
+// Whole-day absences with reason and approval workflow.
+export const ABSENCE_REASONS = ["vacaciones", "remoto", "baja_laboral"] as const;
+export const ABSENCE_STATUSES = ["pending", "approved", "rejected"] as const;
+export type AbsenceReason = (typeof ABSENCE_REASONS)[number];
+export type AbsenceStatus = (typeof ABSENCE_STATUSES)[number];
+
+export const absenceRequests = pgTable(
+  "absence_requests",
+  {
+    id: serial("id").primaryKey(),
+    agentId: integer("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    agencyId: integer("agency_id").references(() => agencies.id, { onDelete: "set null" }),
+    startDate: text("start_date").notNull(), // YYYY-MM-DD
+    endDate: text("end_date").notNull(), // YYYY-MM-DD (inclusive)
+    reason: text("reason").notNull(), // vacaciones | remoto | baja_laboral
+    status: text("status").notNull().default("pending"), // pending | approved | rejected
+    reviewedBy: integer("reviewed_by").references(() => agents.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    reasonCheck: check(
+      "absence_requests_reason_check",
+      sql`${table.reason} IN ('vacaciones', 'remoto', 'baja_laboral')`,
+    ),
+    statusCheck: check(
+      "absence_requests_status_check",
+      sql`${table.status} IN ('pending', 'approved', 'rejected')`,
+    ),
+    rangeCheck: check(
+      "absence_requests_range_check",
+      sql`${table.startDate} <= ${table.endDate}`,
+    ),
+    agentIdx: index("absence_requests_agent_idx").on(table.agentId),
+    agencyIdx: index("absence_requests_agency_idx").on(table.agencyId),
+    statusIdx: index("absence_requests_status_idx").on(table.status),
+    rangeIdx: index("absence_requests_range_idx").on(table.startDate, table.endDate),
+  }),
+);
+
+export const insertAbsenceRequestSchema = createInsertSchema(absenceRequests).omit({
+  id: true,
+  status: true,
+  reviewedBy: true,
+  reviewedAt: true,
+  createdAt: true,
+});
+export type AbsenceRequest = typeof absenceRequests.$inferSelect;
+export type InsertAbsenceRequest = z.infer<typeof insertAbsenceRequestSchema>;

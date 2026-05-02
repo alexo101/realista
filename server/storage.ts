@@ -114,6 +114,10 @@ import {
   type WorkSession,
   type InsertWorkSession,
   type WorkBreak,
+  absenceRequests,
+  type AbsenceRequest,
+  type AbsenceReason,
+  type AbsenceStatus,
 } from "@shared/schema";
 import { hashPassword, isPasswordHashed } from "./security/password";
 
@@ -416,6 +420,27 @@ export interface IStorage {
     agent: { id: number; name: string | null; surname: string | null; email: string };
     session: WorkSession | null;
   }>>;
+
+  // Absence requests (Control de ausencias)
+  createAbsenceRequest(data: {
+    agentId: number;
+    agencyId: number | null;
+    startDate: string;
+    endDate: string;
+    reason: AbsenceReason;
+  }): Promise<AbsenceRequest>;
+  getAbsenceRequestsByAgent(agentId: number): Promise<AbsenceRequest[]>;
+  getAbsenceRequestById(id: number): Promise<AbsenceRequest | undefined>;
+  updateAbsenceRequestStatus(id: number, status: AbsenceStatus, reviewerId: number): Promise<AbsenceRequest>;
+  getPendingTeamAbsenceRequests(agencyId: number): Promise<Array<{
+    request: AbsenceRequest;
+    agent: { id: number; name: string | null; surname: string | null; email: string };
+  }>>;
+  getApprovedTeamAbsenceRequests(agencyId: number, fromDate: string, toDate: string): Promise<Array<{
+    request: AbsenceRequest;
+    agent: { id: number; name: string | null; surname: string | null; email: string };
+  }>>;
+
   superAdminGlobalSearch(params: {
     query: string;
     entity?: "users" | "listings" | "agencies";
@@ -4538,6 +4563,128 @@ export class DatabaseStorage implements IStorage {
       agent,
       session: byAgent.get(agent.id) ?? null,
     }));
+  }
+
+  // ============================================================
+  // Absence requests (Control de ausencias)
+  // ============================================================
+  async createAbsenceRequest(data: {
+    agentId: number;
+    agencyId: number | null;
+    startDate: string;
+    endDate: string;
+    reason: AbsenceReason;
+  }): Promise<AbsenceRequest> {
+    const [request] = await db
+      .insert(absenceRequests)
+      .values({
+        agentId: data.agentId,
+        agencyId: data.agencyId ?? null,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        reason: data.reason,
+      })
+      .returning();
+    return request;
+  }
+
+  async getAbsenceRequestsByAgent(agentId: number): Promise<AbsenceRequest[]> {
+    return await db
+      .select()
+      .from(absenceRequests)
+      .where(eq(absenceRequests.agentId, agentId))
+      .orderBy(desc(absenceRequests.createdAt));
+  }
+
+  async getAbsenceRequestById(id: number): Promise<AbsenceRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(absenceRequests)
+      .where(eq(absenceRequests.id, id));
+    return request;
+  }
+
+  async updateAbsenceRequestStatus(
+    id: number,
+    status: AbsenceStatus,
+    reviewerId: number,
+  ): Promise<AbsenceRequest> {
+    const [updated] = await db
+      .update(absenceRequests)
+      .set({ status, reviewedBy: reviewerId, reviewedAt: new Date() })
+      .where(eq(absenceRequests.id, id))
+      .returning();
+    if (!updated) throw new Error("Solicitud no encontrada");
+    return updated;
+  }
+
+  async getPendingTeamAbsenceRequests(agencyId: number): Promise<Array<{
+    request: AbsenceRequest;
+    agent: { id: number; name: string | null; surname: string | null; email: string };
+  }>> {
+    const rows = await db
+      .select({
+        request: absenceRequests,
+        agent: {
+          id: agents.id,
+          name: agents.name,
+          surname: agents.surname,
+          email: agents.email,
+        },
+      })
+      .from(absenceRequests)
+      .innerJoin(agents, eq(agents.id, absenceRequests.agentId))
+      .innerJoin(
+        agencyAgents,
+        and(
+          eq(agencyAgents.agentId, agents.id),
+          eq(agencyAgents.agencyId, agencyId),
+          isNull(agencyAgents.leftAt),
+        ),
+      )
+      .where(eq(absenceRequests.status, "pending"))
+      .orderBy(desc(absenceRequests.createdAt));
+    return rows;
+  }
+
+  async getApprovedTeamAbsenceRequests(
+    agencyId: number,
+    fromDate: string,
+    toDate: string,
+  ): Promise<Array<{
+    request: AbsenceRequest;
+    agent: { id: number; name: string | null; surname: string | null; email: string };
+  }>> {
+    const rows = await db
+      .select({
+        request: absenceRequests,
+        agent: {
+          id: agents.id,
+          name: agents.name,
+          surname: agents.surname,
+          email: agents.email,
+        },
+      })
+      .from(absenceRequests)
+      .innerJoin(agents, eq(agents.id, absenceRequests.agentId))
+      .innerJoin(
+        agencyAgents,
+        and(
+          eq(agencyAgents.agentId, agents.id),
+          eq(agencyAgents.agencyId, agencyId),
+          isNull(agencyAgents.leftAt),
+        ),
+      )
+      .where(
+        and(
+          eq(absenceRequests.status, "approved"),
+          // Overlap: request.start <= toDate AND request.end >= fromDate
+          lte(absenceRequests.startDate, toDate),
+          gte(absenceRequests.endDate, fromDate),
+        ),
+      )
+      .orderBy(absenceRequests.startDate);
+    return rows;
   }
 
   async superAdminGlobalSearch(params: {

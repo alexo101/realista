@@ -6493,6 +6493,129 @@ Gracias!
     }
   });
 
+  // ============================================================
+  // Absence Requests (Control de ausencias)
+  // ============================================================
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const createAbsenceSchema = z
+    .object({
+      startDate: z.string().regex(dateRegex, "Fecha de inicio inválida"),
+      endDate: z.string().regex(dateRegex, "Fecha de fin inválida"),
+      reason: z.enum(["vacaciones", "remoto", "baja_laboral"]),
+    })
+    .refine((d) => d.startDate <= d.endDate, {
+      message: "La fecha de inicio debe ser anterior o igual a la fecha de fin",
+      path: ["endDate"],
+    });
+
+  const reviewAbsenceSchema = z.object({
+    status: z.enum(["approved", "rejected"]),
+  });
+
+  app.get("/api/absence-requests/mine", requireAuth, async (req, res) => {
+    try {
+      const rows = await storage.getAbsenceRequestsByAgent(req.user!.id);
+      res.json({ rows });
+    } catch (error) {
+      console.error("Error fetching own absence requests:", error);
+      res.status(500).json({ message: "Error al obtener tus solicitudes" });
+    }
+  });
+
+  app.post("/api/absence-requests", requireAuth, async (req, res) => {
+    try {
+      const parsed = createAbsenceSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: parsed.error.errors[0]?.message ?? "Datos inválidos",
+        });
+      }
+      const request = await storage.createAbsenceRequest({
+        agentId: req.user!.id,
+        agencyId: req.user!.agencyId ?? null,
+        startDate: parsed.data.startDate,
+        endDate: parsed.data.endDate,
+        reason: parsed.data.reason,
+      });
+      res.status(201).json(request);
+    } catch (error: unknown) {
+      console.error("Error creating absence request:", error);
+      res.status(400).json({ message: errorMessage(error, "No se pudo crear la solicitud") });
+    }
+  });
+
+  app.get("/api/absence-requests/team/calendar", requireAuth, async (req, res) => {
+    try {
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) {
+        return res.json({ rows: [] });
+      }
+      const fromParam = (req.query.from as string | undefined)?.trim();
+      const toParam = (req.query.to as string | undefined)?.trim();
+      if (!fromParam || !dateRegex.test(fromParam) || !toParam || !dateRegex.test(toParam)) {
+        return res.status(400).json({ message: "Parámetros from/to inválidos (YYYY-MM-DD)" });
+      }
+      if (fromParam > toParam) {
+        return res.status(400).json({ message: "El rango from/to es inválido" });
+      }
+      const rows = await storage.getApprovedTeamAbsenceRequests(agencyId, fromParam, toParam);
+      res.json({ rows });
+    } catch (error) {
+      console.error("Error fetching team absence calendar:", error);
+      res.status(500).json({ message: "Error al obtener el calendario del equipo" });
+    }
+  });
+
+  app.get("/api/absence-requests/team/pending", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.isAdmin) {
+        return res.status(403).json({ message: "Solo los administradores pueden ver las solicitudes" });
+      }
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: "Tu cuenta no está asociada a una agencia" });
+      }
+      const rows = await storage.getPendingTeamAbsenceRequests(agencyId);
+      res.json({ rows });
+    } catch (error) {
+      console.error("Error fetching pending absence requests:", error);
+      res.status(500).json({ message: "Error al obtener las solicitudes pendientes" });
+    }
+  });
+
+  app.patch("/api/absence-requests/:id", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.isAdmin) {
+        return res.status(403).json({ message: "Solo los administradores pueden revisar solicitudes" });
+      }
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: "Tu cuenta no está asociada a una agencia" });
+      }
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      const parsed = reviewAbsenceSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Datos inválidos" });
+      }
+      const existing = await storage.getAbsenceRequestById(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      // Scope: admin can only review requests from their own agency
+      if (existing.agencyId !== agencyId) {
+        return res.status(403).json({ message: "No puedes revisar solicitudes de otra agencia" });
+      }
+      const updated = await storage.updateAbsenceRequestStatus(id, parsed.data.status, req.user!.id);
+      res.json(updated);
+    } catch (error: unknown) {
+      console.error("Error reviewing absence request:", error);
+      res.status(400).json({ message: errorMessage(error, "No se pudo procesar la solicitud") });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
