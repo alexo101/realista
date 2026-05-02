@@ -13,6 +13,8 @@ import {
   uuid,
   index,
   real,
+  varchar,
+  json,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -691,6 +693,17 @@ export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEven
 });
 export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
 export type InsertSubscriptionEvent = z.infer<typeof insertSubscriptionEventSchema>;
+
+// Session storage table managed by connect-pg-simple. Declared here so
+// drizzle-kit recognises it as an existing table and does not propose
+// renaming it whenever a new table is added to the schema.
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { precision: 6, mode: "date" }).notNull(),
+}, (table) => ({
+  expireIdx: index("IDX_session_expire").on(table.expire),
+}));
 
 // App settings table - key/value config storage for platform-wide settings
 export const appSettings = pgTable("app_settings", {
