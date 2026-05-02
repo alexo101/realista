@@ -55,3 +55,7 @@ defaultBucketID = "replit-objstore-60a5ea22-e602-42f2-948c-b43002a405a1"
 
 [userenv.production]
 PUBLIC_BASE_URL = "https://realista.homes"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
