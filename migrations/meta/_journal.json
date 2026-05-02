@@ -15,6 +15,13 @@
       "when": 1762968301181,
       "tag": "0001_super_admin_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777741800000,
+      "tag": "0002_work_sessions",
+      "breakpoints": true
     }
   ]
 }

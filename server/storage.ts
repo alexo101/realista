@@ -110,6 +110,10 @@ import {
   adminAuditLogs,
   type AdminAuditLog,
   type InsertAdminAuditLog,
+  workSessions,
+  type WorkSession,
+  type InsertWorkSession,
+  type WorkBreak,
 } from "@shared/schema";
 import { hashPassword, isPasswordHashed } from "./security/password";
 
@@ -401,6 +405,17 @@ export interface IStorage {
     updatedBy: number | null;
   }): Promise<AppSetting>;
   createAdminAuditLog(logData: InsertAdminAuditLog): Promise<AdminAuditLog>;
+
+  // Work sessions (Control de jornada)
+  getWorkSessionForDate(agentId: number, workDate: string): Promise<WorkSession | undefined>;
+  clockInWorkSession(agentId: number, workDate: string, now: Date): Promise<WorkSession>;
+  startWorkSessionBreak(agentId: number, workDate: string, now: Date): Promise<WorkSession>;
+  endWorkSessionBreak(agentId: number, workDate: string, now: Date): Promise<WorkSession>;
+  clockOutWorkSession(agentId: number, workDate: string, now: Date): Promise<WorkSession>;
+  getTeamWorkSessionsForDate(agencyId: number, workDate: string): Promise<Array<{
+    agent: { id: number; name: string | null; surname: string | null; email: string };
+    session: WorkSession | null;
+  }>>;
   superAdminGlobalSearch(params: {
     query: string;
     entity?: "users" | "listings" | "agencies";
@@ -4394,6 +4409,135 @@ export class DatabaseStorage implements IStorage {
   async createAdminAuditLog(logData: InsertAdminAuditLog): Promise<AdminAuditLog> {
     const [log] = await db.insert(adminAuditLogs).values(logData).returning();
     return log;
+  }
+
+  // Work sessions (Control de jornada)
+  async getWorkSessionForDate(agentId: number, workDate: string): Promise<WorkSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(workSessions)
+      .where(and(eq(workSessions.agentId, agentId), eq(workSessions.workDate, workDate)));
+    return session;
+  }
+
+  async clockInWorkSession(agentId: number, workDate: string, now: Date): Promise<WorkSession> {
+    const existing = await this.getWorkSessionForDate(agentId, workDate);
+    if (existing) {
+      throw new Error("Ya has fichado la entrada de hoy");
+    }
+    const [session] = await db
+      .insert(workSessions)
+      .values({
+        agentId,
+        workDate,
+        clockInAt: now,
+        breaks: [],
+      })
+      .returning();
+    return session;
+  }
+
+  async startWorkSessionBreak(agentId: number, workDate: string, now: Date): Promise<WorkSession> {
+    const existing = await this.getWorkSessionForDate(agentId, workDate);
+    if (!existing) {
+      throw new Error("Debes fichar la entrada antes de iniciar una pausa");
+    }
+    if (existing.clockOutAt) {
+      throw new Error("La jornada ya ha finalizado");
+    }
+    const breaks = (existing.breaks ?? []) as WorkBreak[];
+    if (breaks.some((b) => b.endAt === null)) {
+      throw new Error("Ya hay una pausa en curso");
+    }
+    const updatedBreaks: WorkBreak[] = [...breaks, { startAt: now.toISOString(), endAt: null }];
+    const [session] = await db
+      .update(workSessions)
+      .set({ breaks: updatedBreaks })
+      .where(eq(workSessions.id, existing.id))
+      .returning();
+    return session;
+  }
+
+  async endWorkSessionBreak(agentId: number, workDate: string, now: Date): Promise<WorkSession> {
+    const existing = await this.getWorkSessionForDate(agentId, workDate);
+    if (!existing) {
+      throw new Error("No hay jornada activa");
+    }
+    if (existing.clockOutAt) {
+      throw new Error("La jornada ya ha finalizado");
+    }
+    const breaks = (existing.breaks ?? []) as WorkBreak[];
+    const openIndex = breaks.findIndex((b) => b.endAt === null);
+    if (openIndex === -1) {
+      throw new Error("No hay ninguna pausa en curso");
+    }
+    const updatedBreaks = breaks.map((b, idx) =>
+      idx === openIndex ? { startAt: b.startAt, endAt: now.toISOString() } : b,
+    );
+    const [session] = await db
+      .update(workSessions)
+      .set({ breaks: updatedBreaks })
+      .where(eq(workSessions.id, existing.id))
+      .returning();
+    return session;
+  }
+
+  async clockOutWorkSession(agentId: number, workDate: string, now: Date): Promise<WorkSession> {
+    const existing = await this.getWorkSessionForDate(agentId, workDate);
+    if (!existing) {
+      throw new Error("Debes fichar la entrada antes de fichar la salida");
+    }
+    if (existing.clockOutAt) {
+      throw new Error("Ya has fichado la salida de hoy");
+    }
+    let breaks = (existing.breaks ?? []) as WorkBreak[];
+    // Auto-close any open break when clocking out
+    breaks = breaks.map((b) => (b.endAt === null ? { startAt: b.startAt, endAt: now.toISOString() } : b));
+    const [session] = await db
+      .update(workSessions)
+      .set({ clockOutAt: now, breaks })
+      .where(eq(workSessions.id, existing.id))
+      .returning();
+    return session;
+  }
+
+  async getTeamWorkSessionsForDate(agencyId: number, workDate: string): Promise<Array<{
+    agent: { id: number; name: string | null; surname: string | null; email: string };
+    session: WorkSession | null;
+  }>> {
+    const teamAgents = await db
+      .select({
+        id: agents.id,
+        name: agents.name,
+        surname: agents.surname,
+        email: agents.email,
+      })
+      .from(agents)
+      .innerJoin(
+        agencyAgents,
+        and(
+          eq(agencyAgents.agentId, agents.id),
+          eq(agencyAgents.agencyId, agencyId),
+          isNull(agencyAgents.leftAt),
+        ),
+      )
+      .orderBy(agents.name);
+
+    if (teamAgents.length === 0) return [];
+
+    const agentIds = teamAgents.map((a) => a.id);
+    const sessions = await db
+      .select()
+      .from(workSessions)
+      .where(and(inArray(workSessions.agentId, agentIds), eq(workSessions.workDate, workDate)));
+
+    const byAgent = new Map<number, WorkSession>();
+    for (const s of sessions) byAgent.set(s.agentId, s);
+
+    return teamAgents.map((agent) => ({
+      agent,
+      session: byAgent.get(agent.id) ?? null,
+    }));
   }
 
   async superAdminGlobalSearch(params: {

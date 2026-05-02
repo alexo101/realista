@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyForm } from "@/components/PropertyForm";
@@ -35,6 +35,7 @@ import { ConversationalMessages } from "@/components/ConversationalMessages";
 import { ReviewManagement } from "@/components/ReviewManagement";
 import { AgentCalendar } from "@/pages/agent-calendar";
 import { TeamManagement } from "@/components/TeamManagement";
+import { ControlJornada } from "@/components/ControlJornada";
 import { NetworkManagement } from "@/components/NetworkManagement";
 import { BillingTab } from "@/components/BillingTab";
 import { PropertyManagement } from "@/components/PropertyManagement";
@@ -61,6 +62,7 @@ const VALID_SECTIONS = [
   'mensajes', 
   'resenas', 
   'equipo',
+  'control-jornada',
   'red',
   'facturacion'
 ] as const;
@@ -745,25 +747,86 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Only show team management for admin agents */}
+              {/* Team management group - admins only */}
               {user?.isAdmin && (
+                <>
+                  {/* Group header (non-clickable) */}
+                  <SidebarMenuItem>
+                    <div
+                      className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
+                      title={sidebarCollapsed ? "Gestionar mi equipo" : ""}
+                      data-testid="sidebar-group-equipo"
+                    >
+                      <Users className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Gestionar mi equipo</span>}
+                      {sidebarCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                          Gestionar mi equipo
+                        </div>
+                      )}
+                    </div>
+                  </SidebarMenuItem>
+
+                  {/* Child: Accesos (formerly "equipo") */}
+                  <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                    <SidebarMenuButton
+                      isActive={currentSection === "equipo"}
+                      onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
+                      className="relative group"
+                      title={sidebarCollapsed ? "Accesos" : ""}
+                      data-testid="sidebar-link-accesos"
+                    >
+                      <KeyRound className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Accesos</span>}
+                      {sidebarCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                          Accesos
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  {/* Child: Control de jornada */}
+                  <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                    <SidebarMenuButton
+                      isActive={currentSection === "control-jornada"}
+                      onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
+                      className="relative group"
+                      title={sidebarCollapsed ? "Control de jornada" : ""}
+                      data-testid="sidebar-link-control-jornada-admin"
+                    >
+                      <Clock className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Control de jornada</span>}
+                      {sidebarCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                          Control de jornada
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
+
+              {/* Non-admin agents get Control de jornada as a top-level item */}
+              {!user?.isAdmin && user?.agentType !== "network_admin" && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    isActive={currentSection === "equipo"}
-                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
+                    isActive={currentSection === "control-jornada"}
+                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
                     className="relative group"
-                    title={sidebarCollapsed ? "Gestionar mi equipo" : ""}
+                    title={sidebarCollapsed ? "Control de jornada" : ""}
+                    data-testid="sidebar-link-control-jornada"
                   >
-                    <Users className="h-4 w-4 flex-shrink-0" />
-                    {!sidebarCollapsed && <span>Gestionar mi equipo</span>}
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>Control de jornada</span>}
                     {sidebarCollapsed && (
                       <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Gestionar mi equipo
-                    </div>
-                  )}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
+                        Control de jornada
+                      </div>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
 
               {/* Only show network management for network admins */}
               {user?.agentType === "network_admin" && (
@@ -2567,6 +2630,12 @@ export default function ManagePage() {
           {currentSection === "equipo" && user?.isAdmin && (
             <div className="max-w-6xl mx-auto">
               <TeamManagement agencyId={user.agencyId ? parseInt(user.agencyId) : undefined} />
+            </div>
+          )}
+
+          {currentSection === "control-jornada" && (
+            <div className="max-w-6xl mx-auto">
+              <ControlJornada />
             </div>
           )}
 

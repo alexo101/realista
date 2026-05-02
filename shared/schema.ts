@@ -934,3 +934,31 @@ export const propertyHistory = pgTable("property_history", {
 export const insertPropertyHistorySchema = createInsertSchema(propertyHistory).omit({ id: true, createdAt: true });
 export type PropertyHistoryEntry = typeof propertyHistory.$inferSelect;
 export type InsertPropertyHistory = z.infer<typeof insertPropertyHistorySchema>;
+
+// Work sessions for "Control de jornada" time tracking
+// One row per agent per workDate, tracking clock-in/out and break intervals.
+export type WorkBreak = {
+  startAt: string; // ISO timestamp
+  endAt: string | null; // ISO timestamp or null while break is active
+};
+
+export const workSessions = pgTable("work_sessions", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  workDate: text("work_date").notNull(), // YYYY-MM-DD (agent local day)
+  clockInAt: timestamp("clock_in_at").notNull(),
+  clockOutAt: timestamp("clock_out_at"),
+  breaks: jsonb("breaks").$type<WorkBreak[]>().notNull().default(sql`'[]'::jsonb`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  uniqueAgentDate: uniqueIndex("work_sessions_agent_date_unique").on(table.agentId, table.workDate),
+  agentIdx: index("work_sessions_agent_idx").on(table.agentId),
+  dateIdx: index("work_sessions_date_idx").on(table.workDate),
+}));
+
+export const insertWorkSessionSchema = createInsertSchema(workSessions).omit({
+  id: true,
+  createdAt: true,
+});
+export type WorkSession = typeof workSessions.$inferSelect;
+export type InsertWorkSession = z.infer<typeof insertWorkSessionSchema>;

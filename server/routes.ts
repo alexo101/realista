@@ -6405,6 +6405,94 @@ Gracias!
     }
   });
 
+  // ============================================================
+  // Work Sessions (Control de jornada)
+  // ============================================================
+  const todayString = (date = new Date()): string => {
+    // YYYY-MM-DD in local server time
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  app.get("/api/work-sessions/today", requireAuth, async (req, res) => {
+    try {
+      const session = await storage.getWorkSessionForDate(req.user!.id, todayString());
+      res.json({ session: session ?? null, today: todayString() });
+    } catch (error) {
+      console.error("Error fetching today work session:", error);
+      res.status(500).json({ message: "Error al obtener la jornada de hoy" });
+    }
+  });
+
+  const errorMessage = (error: unknown, fallback: string): string =>
+    error instanceof Error && error.message ? error.message : fallback;
+
+  app.post("/api/work-sessions/clock-in", requireAuth, async (req, res) => {
+    try {
+      const now = new Date();
+      const session = await storage.clockInWorkSession(req.user!.id, todayString(now), now);
+      res.status(201).json(session);
+    } catch (error: unknown) {
+      console.error("Error clocking in:", error);
+      res.status(400).json({ message: errorMessage(error, "No se pudo fichar la entrada") });
+    }
+  });
+
+  app.post("/api/work-sessions/break-start", requireAuth, async (req, res) => {
+    try {
+      const now = new Date();
+      const session = await storage.startWorkSessionBreak(req.user!.id, todayString(now), now);
+      res.json(session);
+    } catch (error: unknown) {
+      console.error("Error starting break:", error);
+      res.status(400).json({ message: errorMessage(error, "No se pudo iniciar la pausa") });
+    }
+  });
+
+  app.post("/api/work-sessions/break-end", requireAuth, async (req, res) => {
+    try {
+      const now = new Date();
+      const session = await storage.endWorkSessionBreak(req.user!.id, todayString(now), now);
+      res.json(session);
+    } catch (error: unknown) {
+      console.error("Error ending break:", error);
+      res.status(400).json({ message: errorMessage(error, "No se pudo finalizar la pausa") });
+    }
+  });
+
+  app.post("/api/work-sessions/clock-out", requireAuth, async (req, res) => {
+    try {
+      const now = new Date();
+      const session = await storage.clockOutWorkSession(req.user!.id, todayString(now), now);
+      res.json(session);
+    } catch (error: unknown) {
+      console.error("Error clocking out:", error);
+      res.status(400).json({ message: errorMessage(error, "No se pudo fichar la salida") });
+    }
+  });
+
+  app.get("/api/work-sessions/team", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.isAdmin) {
+        return res.status(403).json({ message: "Solo los administradores pueden ver el equipo" });
+      }
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: "Tu cuenta no está asociada a una agencia" });
+      }
+      const dateParam = (req.query.date as string | undefined)?.trim();
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      const workDate = dateParam && dateRegex.test(dateParam) ? dateParam : todayString();
+      const rows = await storage.getTeamWorkSessionsForDate(agencyId, workDate);
+      res.json({ workDate, rows });
+    } catch (error) {
+      console.error("Error fetching team work sessions:", error);
+      res.status(500).json({ message: "Error al obtener la jornada del equipo" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
