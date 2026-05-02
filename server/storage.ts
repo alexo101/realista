@@ -432,6 +432,7 @@ export interface IStorage {
   getAbsenceRequestsByAgent(agentId: number): Promise<AbsenceRequest[]>;
   getAbsenceRequestById(id: number): Promise<AbsenceRequest | undefined>;
   updateAbsenceRequestStatus(id: number, status: AbsenceStatus, reviewerId: number): Promise<AbsenceRequest>;
+  deleteAbsenceRequest(id: number): Promise<void>;
   getPendingTeamAbsenceRequests(agencyId: number): Promise<Array<{
     request: AbsenceRequest;
     agent: { id: number; name: string | null; surname: string | null; email: string };
@@ -4616,6 +4617,10 @@ export class DatabaseStorage implements IStorage {
       .returning();
     if (!updated) throw new Error("Solicitud no encontrada");
     return updated;
+  }
+
+  async deleteAbsenceRequest(id: number): Promise<void> {
+    await db.delete(absenceRequests).where(eq(absenceRequests.id, id));
   }
 
   async getPendingTeamAbsenceRequests(agencyId: number): Promise<Array<{

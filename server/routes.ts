@@ -6583,6 +6583,30 @@ Gracias!
     }
   });
 
+  app.delete("/api/absence-requests/:id", requireAuth, requireRole("agent"), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+      const existing = await storage.getAbsenceRequestById(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Solicitud no encontrada" });
+      }
+      if (existing.agentId !== req.user!.id) {
+        return res.status(403).json({ message: "Solo puedes cancelar tus propias solicitudes" });
+      }
+      if (existing.status !== "pending") {
+        return res.status(409).json({ message: "Solo puedes cancelar solicitudes pendientes" });
+      }
+      await storage.deleteAbsenceRequest(id);
+      res.status(204).end();
+    } catch (error: unknown) {
+      console.error("Error cancelling absence request:", error);
+      res.status(400).json({ message: errorMessage(error, "No se pudo cancelar la solicitud") });
+    }
+  });
+
   app.patch("/api/absence-requests/:id", requireAuth, async (req, res) => {
     try {
       if (!req.user!.isAdmin) {

@@ -32,6 +32,7 @@ import {
   Home,
   Stethoscope,
   CalendarOff,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -293,6 +294,23 @@ function NewRequestTab() {
 
   const requests = data?.rows ?? [];
 
+  const cancelMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/absence-requests/${id}`),
+    onSuccess: () => {
+      toast({ title: "Solicitud cancelada" });
+      queryClient.invalidateQueries({ queryKey: ["/api/absence-requests/mine"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/absence-requests/team/calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/absence-requests/team/pending"] });
+    },
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: errorText(err, "No se pudo cancelar la solicitud"),
+        variant: "destructive",
+      });
+    },
+  });
+
   // Build modifiers per reason for own requests
   const { modifiers, dayInfo } = useMemo(() => {
     const buckets: Record<AbsenceReason, Date[]> = {
@@ -383,6 +401,8 @@ function NewRequestTab() {
                     const status = r.status as AbsenceStatus;
                     const meta = REASON_META[reason];
                     const Icon = meta.Icon;
+                    const isCancelling =
+                      cancelMutation.isPending && cancelMutation.variables === r.id;
                     return (
                       <div
                         key={r.id}
@@ -400,9 +420,29 @@ function NewRequestTab() {
                             </p>
                           </div>
                         </div>
-                        <Badge variant="outline" className={STATUS_META[status].className}>
-                          {STATUS_META[status].label}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={STATUS_META[status].className}>
+                            {STATUS_META[status].label}
+                          </Badge>
+                          {status === "pending" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => cancelMutation.mutate(r.id)}
+                              disabled={isCancelling}
+                              data-testid={`button-cancel-mine-request-${r.id}`}
+                            >
+                              {isCancelling ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Cancelar
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
