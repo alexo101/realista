@@ -24,6 +24,17 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -576,22 +587,45 @@ function NewRequestTab() {
                             {STATUS_META[status].label}
                           </Badge>
                           {status === "pending" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => cancelMutation.mutate(r.id)}
-                              disabled={isCancelling}
-                              data-testid={`button-cancel-mine-request-${r.id}`}
-                            >
-                              {isCancelling ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Trash2 className="h-4 w-4 mr-1" />
-                                  Cancelar
-                                </>
-                              )}
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isCancelling}
+                                  data-testid={`button-cancel-mine-request-${r.id}`}
+                                >
+                                  {isCancelling ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-4 w-4 mr-1" />
+                                      Cancelar
+                                    </>
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Cancelar esta solicitud?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Se eliminará tu solicitud de {REASON_META[reason].label.toLowerCase()} del{" "}
+                                    {formatDateLong(r.startDate)} al {formatDateLong(r.endDate)}. Esta acción no se puede deshacer.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel data-testid={`button-cancel-cancel-${r.id}`}>
+                                    Volver
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => cancelMutation.mutate(r.id)}
+                                    data-testid={`button-confirm-cancel-${r.id}`}
+                                  >
+                                    Sí, cancelar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </div>
