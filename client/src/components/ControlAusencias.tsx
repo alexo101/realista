@@ -1,6 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO, eachDayOfInterval } from "date-fns";
+import {
+  format,
+  parseISO,
+  eachDayOfInterval,
+  addDays,
+  startOfWeek,
+  isSameDay,
+  isWeekend,
+} from "date-fns";
 import { es } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +41,8 @@ import {
   Stethoscope,
   CalendarOff,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -54,22 +64,34 @@ interface TeamRequestRow {
 
 const REASON_META: Record<
   AbsenceReason,
-  { label: string; caption: string; className: string; chipClass: string; Icon: typeof Plane }
+  {
+    label: string;
+    caption: string;
+    className: string;
+    chipClass: string;
+    cellClass: string;
+    dotClass: string;
+    Icon: typeof Plane;
+  }
 > = {
   vacaciones: {
     label: "Vacaciones",
     caption: "Días de descanso aprobados fuera del calendario laboral.",
     className:
-      "bg-blue-100 text-blue-900 border border-blue-300 hover:bg-blue-200 rounded-md",
-    chipClass: "bg-blue-50 text-blue-700 border-blue-300",
+      "bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200 rounded-md",
+    chipClass: "bg-emerald-50 text-emerald-700 border-emerald-300",
+    cellClass: "bg-emerald-500",
+    dotClass: "bg-emerald-500",
     Icon: Plane,
   },
   remoto: {
     label: "Remoto",
     caption: "Jornada en modalidad de teletrabajo.",
     className:
-      "bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200 rounded-md",
-    chipClass: "bg-emerald-50 text-emerald-700 border-emerald-300",
+      "bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 rounded-md",
+    chipClass: "bg-amber-50 text-amber-700 border-amber-300",
+    cellClass: "bg-amber-500",
+    dotClass: "bg-amber-500",
     Icon: Home,
   },
   baja_laboral: {
@@ -78,6 +100,8 @@ const REASON_META: Record<
     className:
       "bg-rose-100 text-rose-900 border border-rose-300 hover:bg-rose-200 rounded-md",
     chipClass: "bg-rose-50 text-rose-700 border-rose-300",
+    cellClass: "bg-rose-500",
+    dotClass: "bg-rose-500",
     Icon: Stethoscope,
   },
 };
@@ -99,14 +123,6 @@ function fullName(agent: AgentLite): string {
 
 function expandRange(startISO: string, endISO: string): Date[] {
   return eachDayOfInterval({ start: parseISO(startISO), end: parseISO(endISO) });
-}
-
-function monthRange(refDate: Date): { from: string; to: string } {
-  const start = new Date(refDate.getFullYear(), refDate.getMonth() - 1, 1);
-  const end = new Date(refDate.getFullYear(), refDate.getMonth() + 2, 0);
-  const fmt = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  return { from: fmt(start), to: fmt(end) };
 }
 
 function errorText(error: unknown, fallback: string): string {
@@ -162,10 +178,26 @@ export function ControlAusencias() {
   );
 }
 
-// -------------------- Calendario de equipo --------------------
+// -------------------- Calendario de equipo (Gantt-style) --------------------
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function TeamCalendarTab() {
-  const [month, setMonth] = useState<Date>(new Date());
-  const range = useMemo(() => monthRange(month), [month]);
+  // Anchor = Monday of the first visible week. Default = current week.
+  const [anchor, setAnchor] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+
+  // Show ~4 weeks (28 days) starting from the anchor.
+  const VISIBLE_DAYS = 28;
+  const days = useMemo(
+    () => eachDayOfInterval({ start: anchor, end: addDays(anchor, VISIBLE_DAYS - 1) }),
+    [anchor],
+  );
+
+  const range = useMemo(
+    () => ({ from: fmtDate(days[0]), to: fmtDate(days[days.length - 1]) }),
+    [days],
+  );
 
   const { data, isLoading } = useQuery<{ rows: TeamRequestRow[] }>({
     queryKey: ["/api/absence-requests/team/calendar", range.from, range.to],
@@ -181,77 +213,196 @@ function TeamCalendarTab() {
 
   const rows = data?.rows ?? [];
 
-  // Build modifiers per reason and a per-day index for tooltips
-  const { modifiers, dayInfo } = useMemo(() => {
-    const buckets: Record<AbsenceReason, Date[]> = {
-      vacaciones: [],
-      remoto: [],
-      baja_laboral: [],
-    };
-    const info = new Map<string, Array<{ name: string; reason: AbsenceReason }>>();
+  // Build per-agent map of date -> reason
+  const { agents, byAgentDay } = useMemo(() => {
+    const agentMap = new Map<number, AgentLite>();
+    const cells = new Map<number, Map<string, AbsenceReason>>();
     for (const row of rows) {
+      agentMap.set(row.agent.id, row.agent);
       const reason = row.request.reason as AbsenceReason;
-      const days = expandRange(row.request.startDate, row.request.endDate);
-      for (const d of days) {
-        buckets[reason].push(d);
-        const key = format(d, "yyyy-MM-dd");
-        const list = info.get(key) ?? [];
-        list.push({ name: fullName(row.agent), reason });
-        info.set(key, list);
+      const ds = expandRange(row.request.startDate, row.request.endDate);
+      const inner = cells.get(row.agent.id) ?? new Map<string, AbsenceReason>();
+      for (const d of ds) {
+        inner.set(fmtDate(d), reason);
       }
+      cells.set(row.agent.id, inner);
     }
-    return { modifiers: buckets, dayInfo: info };
+    const list = Array.from(agentMap.values()).sort((a, b) =>
+      fullName(a).localeCompare(fullName(b), "es"),
+    );
+    return { agents: list, byAgentDay: cells };
   }, [rows]);
 
-  const modifiersClassNames: Record<string, string> = {
-    vacaciones: REASON_META.vacaciones.className,
-    remoto: REASON_META.remoto.className,
-    baja_laboral: REASON_META.baja_laboral.className,
-  };
+  const today = useMemo(() => new Date(), []);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // When "Hoy" is in view, scroll to it
+  useEffect(() => {
+    if (!scrollerRef.current) return;
+    const el = scrollerRef.current.querySelector<HTMLElement>("[data-today='true']");
+    if (el) {
+      el.scrollIntoView({ behavior: "auto", inline: "start", block: "nearest" });
+    }
+  }, [anchor]);
+
+  const goPrev = () => setAnchor((a) => addDays(a, -7));
+  const goNext = () => setAnchor((a) => addDays(a, 7));
+  const goToday = () => setAnchor(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   return (
     <Card data-testid="card-calendario-equipo">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5" />
-          Calendario del equipo
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 md:p-6">
+        {/* Header: nav + Hoy + legend */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goPrev}
+              data-testid="button-calendar-prev"
+              aria-label="Semana anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goNext}
+              data-testid="button-calendar-next"
+              aria-label="Semana siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={goToday}
+              className="font-medium"
+              data-testid="button-calendar-today"
+            >
+              Hoy
+            </Button>
+          </div>
+          <InlineLegend />
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="flex justify-center">
-              <Calendar
-                mode="single"
-                month={month}
-                onMonthChange={setMonth}
-                modifiers={modifiers}
-                modifiersClassNames={modifiersClassNames}
-                components={{
-                  DayContent: ({ date }) => {
-                    const key = format(date, "yyyy-MM-dd");
-                    const items = dayInfo.get(key);
-                    const title = items
-                      ? items.map((i) => `${i.name} — ${REASON_META[i.reason].label}`).join("\n")
-                      : undefined;
+          <div
+            ref={scrollerRef}
+            className="overflow-x-auto border rounded-md"
+            data-testid="team-calendar-grid"
+          >
+            <table className="border-collapse">
+              <thead>
+                <tr>
+                  <th
+                    className="sticky left-0 z-10 bg-muted/60 border-b border-r text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground px-3 py-2 min-w-[180px]"
+                  >
+                    Equipo
+                  </th>
+                  {days.map((d) => {
+                    const isToday = isSameDay(d, today);
+                    const weekend = isWeekend(d);
+                    const showMonth = d.getDate() === 1 || d === days[0];
                     return (
-                      <span title={title} data-testid={`calendar-day-${key}`}>
-                        {date.getDate()}
-                      </span>
+                      <th
+                        key={fmtDate(d)}
+                        data-today={isToday ? "true" : undefined}
+                        className={`border-b border-r text-[10px] uppercase tracking-wide font-medium px-1 py-1 text-center align-bottom min-w-[40px] ${
+                          isToday
+                            ? "bg-primary/10 text-primary"
+                            : weekend
+                            ? "bg-muted/40 text-muted-foreground"
+                            : "bg-background text-muted-foreground"
+                        }`}
+                      >
+                        <div>{format(d, "EEE", { locale: es }).slice(0, 3)}</div>
+                        <div className="text-sm font-semibold text-foreground">
+                          {d.getDate()}
+                        </div>
+                        {showMonth && (
+                          <div className="text-[9px] text-muted-foreground">
+                            {format(d, "MMM", { locale: es })}
+                          </div>
+                        )}
+                      </th>
                     );
-                  },
-                }}
-              />
-            </div>
-            <Legend />
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {agents.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={days.length + 1}
+                      className="text-center py-10 text-sm text-muted-foreground"
+                    >
+                      No hay ausencias aprobadas en este rango.
+                    </td>
+                  </tr>
+                ) : (
+                  agents.map((agent) => {
+                    const cellsForAgent = byAgentDay.get(agent.id);
+                    return (
+                      <tr key={agent.id} data-testid={`row-team-agent-${agent.id}`}>
+                        <td className="sticky left-0 z-10 bg-background border-b border-r px-3 py-2 text-sm font-medium whitespace-nowrap">
+                          {fullName(agent)}
+                        </td>
+                        {days.map((d) => {
+                          const key = fmtDate(d);
+                          const reason = cellsForAgent?.get(key);
+                          const isToday = isSameDay(d, today);
+                          const weekend = isWeekend(d);
+                          return (
+                            <td
+                              key={key}
+                              className={`border-b border-r p-1 text-center ${
+                                isToday
+                                  ? "bg-primary/5"
+                                  : weekend
+                                  ? "bg-muted/20"
+                                  : ""
+                              }`}
+                              data-testid={`cell-${agent.id}-${key}`}
+                            >
+                              {reason && (
+                                <div
+                                  className={`mx-auto h-6 w-6 rounded-md ${REASON_META[reason].cellClass}`}
+                                  title={`${fullName(agent)} — ${REASON_META[reason].label}`}
+                                />
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function InlineLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-4">
+      {(Object.keys(REASON_META) as AbsenceReason[]).map((reason) => {
+        const meta = REASON_META[reason];
+        return (
+          <div key={reason} className="flex items-center gap-2" data-testid={`inline-legend-${reason}`}>
+            <span className={`h-3 w-3 rounded ${meta.dotClass}`} />
+            <span className="text-xs font-medium text-muted-foreground">{meta.label}</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
