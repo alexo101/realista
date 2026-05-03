@@ -1539,6 +1539,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties", async (req, res) => {
     try {
+      // Validate exclusion filters explicitly. Other params are validated
+      // implicitly by the storage layer's parsers (parseInt etc.).
+      const booleanFlag = z
+        .union([z.literal('true'), z.literal('false'), z.literal('1'), z.literal('0')])
+        .optional()
+        .transform((v) => v === 'true' || v === '1');
+      const exclusionFiltersSchema = z.object({
+        excludeSinglePhoto: booleanFlag,
+        requireExactAddress: booleanFlag,
+        requireCedulaHabitabilidad: booleanFlag,
+        excludeOcupados: booleanFlag,
+        excludeAlquilados: booleanFlag,
+      });
+      const exclusionFiltersResult = exclusionFiltersSchema.safeParse({
+        excludeSinglePhoto: req.query.excludeSinglePhoto,
+        requireExactAddress: req.query.requireExactAddress,
+        requireCedulaHabitabilidad: req.query.requireCedulaHabitabilidad,
+        excludeOcupados: req.query.excludeOcupados,
+        excludeAlquilados: req.query.excludeAlquilados,
+      });
+      if (!exclusionFiltersResult.success) {
+        return res.status(400).json({
+          message: "Invalid exclusion filter values",
+          errors: exclusionFiltersResult.error.flatten(),
+        });
+      }
+      const exclusionFilters = exclusionFiltersResult.data;
+
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
       const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
       const mostViewed = req.query.mostViewed === 'true';
@@ -1606,7 +1634,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        properties = await storage.searchProperties(updatedQuery);
+        // Override raw exclusion params with the parsed/validated booleans
+        const sanitizedQuery = { ...updatedQuery, ...exclusionFilters };
+        properties = await storage.searchProperties(sanitizedQuery);
       }
       res.json(properties);
     } catch (error) {
