@@ -43,6 +43,9 @@ Preferred communication style: Simple, everyday language.
   - **Serving Flow**: Images served via `/property-images/:imageId` endpoint with streaming from GCS and proper cache headers for CDN optimization
   - **Environment Variables**: `PUBLIC_OBJECT_SEARCH_PATHS` (public bucket path) and `PRIVATE_OBJECT_DIR` (private object directory) configured as secrets
   - **Implementation**: `ObjectStorageService` in `server/objectStorage.ts` handles all GCS interactions
+- **Cédula de Habitabilidad Bulk Edit**: Properties have a `has_cedula_habitabilidad` boolean (defaults to `false` after the `0004_has_cedula_habitabilidad.sql` migration). Because the new column hides every existing listing from the "Solo con cédula de habitabilidad" search filter, agents and admins can backfill the flag without editing properties one by one:
+  - **In-app bulk action**: In `Manage > Propiedades`, the "Marcar cédula" button opens a dialog where the user picks any subset of their properties (with search), chooses CON or SIN cédula, and applies the change. Backed by `POST /api/properties/bulk-cedula-habitabilidad` (auth required). Agency admins update every property in their agency, regular agents update only their own, and super admins update across all agencies.
+  - **CLI backfill**: `tsx scripts/backfill-cedula-habitabilidad.ts` supports `--all`, `--agency-id=N`, `--agent-id=N`, `--value=true|false`, and `--dry-run`. Run it once after the migration when you have a confirmed list of agencies/agents whose properties already have a cédula.
 - **Email Service**: Nodemailer (Ethereal for development).
 - **AI Integration**: Replit AI Integrations with OpenAI GPT-4o-mini for automated property description generation.
 - **Payment Processing**: Stripe integration for subscription billing.

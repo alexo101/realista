@@ -169,6 +169,11 @@ export interface IStorage {
   searchProperties(filters: any): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(uuid: string, property: InsertProperty): Promise<Property>;
+  bulkUpdateCedulaHabitabilidad(
+    uuids: string[],
+    hasCedulaHabitabilidad: boolean,
+    scope: { agentId?: number; agencyId?: number; isSuperAdmin?: boolean },
+  ): Promise<{ updated: number }>;
   updatePropertyAddress(uuid: string, address: string, lat?: number, lng?: number): Promise<Property>;
   deleteProperty(uuid: string): Promise<void>;
   togglePropertyStatus(uuid: string, isActive: boolean): Promise<Property>;
@@ -2325,6 +2330,45 @@ export class DatabaseStorage implements IStorage {
     // Clear property caches so updated property reflects in searches immediately
     cache.clearPropertyCaches();
     return updatedProperty;
+  }
+
+  async bulkUpdateCedulaHabitabilidad(
+    uuids: string[],
+    hasCedulaHabitabilidad: boolean,
+    scope: { agentId?: number; agencyId?: number; isSuperAdmin?: boolean },
+  ): Promise<{ updated: number }> {
+    if (!Array.isArray(uuids) || uuids.length === 0) {
+      return { updated: 0 };
+    }
+
+    const conditions = [inArray(properties.uuid, uuids)];
+
+    if (!scope.isSuperAdmin) {
+      const ownershipFilters = [];
+      if (scope.agencyId !== undefined && scope.agencyId !== null) {
+        ownershipFilters.push(eq(properties.agencyId, scope.agencyId));
+      }
+      if (scope.agentId !== undefined && scope.agentId !== null) {
+        ownershipFilters.push(eq(properties.agentId, scope.agentId));
+      }
+      if (ownershipFilters.length === 0) {
+        return { updated: 0 };
+      }
+      conditions.push(
+        ownershipFilters.length === 1
+          ? ownershipFilters[0]
+          : or(...ownershipFilters)!,
+      );
+    }
+
+    const updated = await db
+      .update(properties)
+      .set({ hasCedulaHabitabilidad })
+      .where(and(...conditions))
+      .returning({ uuid: properties.uuid });
+
+    cache.clearPropertyCaches();
+    return { updated: updated.length };
   }
 
   async updatePropertyAddress(uuid: string, address: string, lat?: number, lng?: number): Promise<Property> {
