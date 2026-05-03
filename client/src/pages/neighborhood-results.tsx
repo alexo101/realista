@@ -684,6 +684,53 @@ export default function NeighborhoodResultsPage() {
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
   
+  // Stable sorted lists — memoized so the maps and area-uuid memos don't churn on every render.
+  const sortedProperties = useMemo(() => {
+    if (!properties) return [];
+    const list = [...properties];
+    switch (propertyFilters.sortBy) {
+      case 'price-asc':
+        return list.sort((a: any, b: any) => a.price - b.price);
+      case 'price-m2':
+        return list.sort((a: any, b: any) => {
+          const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
+          const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
+          return pricePerM2A - pricePerM2B;
+        });
+      case 'price-drop':
+        return list.sort((a: any, b: any) => {
+          const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
+          const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
+          return dropB - dropA;
+        });
+      case 'newest':
+      default:
+        return list.sort((a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    }
+  }, [properties, propertyFilters.sortBy]);
+
+  const sortedAgencies = useMemo(() => {
+    if (!agencies) return [];
+    const list = [...agencies];
+    switch (agenciesFilter) {
+      case 'best_rating':
+        return list.sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0));
+      case 'newest_reviews':
+        return list.sort((a: any, b: any) =>
+          (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) -
+          (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
+        );
+      case 'most_reviews':
+        return list.sort((a: any, b: any) => (b.reviewCount || 0) - (a.reviewCount || 0));
+      case 'most_properties':
+        return list.sort((a: any, b: any) => (b.propertyCount || 0) - (a.propertyCount || 0));
+      default:
+        return list;
+    }
+  }, [agencies, agenciesFilter]);
+
   // Consulta para las valoraciones del barrio
   const { data: ratings, isFetching: ratingsFetching, refetch: refetchRatings } = useQuery({
     queryKey: ['/api/neighborhoods/ratings/average', { neighborhood: effectiveNeighborhood }],
@@ -1012,32 +1059,6 @@ export default function NeighborhoodResultsPage() {
 
               {/* Contenido condicional basado en el modo de vista */}
               {(() => {
-                const sortedProperties = (() => {
-                  if (!properties) return [];
-                  const list = [...properties];
-                  switch (propertyFilters.sortBy) {
-                    case 'price-asc':
-                      return list.sort((a, b) => a.price - b.price);
-                    case 'price-m2':
-                      return list.sort((a, b) => {
-                        const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
-                        const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
-                        return pricePerM2A - pricePerM2B;
-                      });
-                    case 'price-drop':
-                      return list.sort((a, b) => {
-                        const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
-                        const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
-                        return dropB - dropA;
-                      });
-                      case 'newest':
-                      default:
-                        return list.sort((a, b) =>
-                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                        );
-                    }
-                })();
-
                 // Apply draw-on-map area filter to the list view (the map handles its own filtering).
                 const areaFilteredForList = propertyAreaShape && propertyAreaUuids !== null
                   ? sortedProperties.filter((p: any) => propertyAreaUuids.includes(p.uuid))
@@ -1127,26 +1148,6 @@ export default function NeighborhoodResultsPage() {
                 )}
               </div>
               {(() => {
-                const sortedAgencies = (() => {
-                  if (!agencies) return [];
-                  const list = [...agencies];
-                  switch (agenciesFilter) {
-                    case 'best_rating':
-                      return list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-                    case 'newest_reviews':
-                      return list.sort((a, b) =>
-                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) -
-                        (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
-                      );
-                    case 'most_reviews':
-                      return list.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-                    case 'most_properties':
-                      return list.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
-                    default:
-                      return list;
-                  }
-                })();
-
                 const areaFilteredAgencies = agencyAreaShape && agencyAreaIds !== null
                   ? sortedAgencies.filter((a: any) => agencyAreaIds.includes(a.id))
                   : sortedAgencies;

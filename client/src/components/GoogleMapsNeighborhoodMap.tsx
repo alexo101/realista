@@ -255,15 +255,20 @@ export default function GoogleMapsNeighborhoodMap({
     return inside;
   }, [shape, properties, positionsByUuid, isMapReady]);
 
+  // Only emit when the actual set of uuids changes (by content), not just the array reference.
+  const lastEmittedAreaKeyRef = useRef<string | null>(null);
   useEffect(() => {
+    const key = uuidsInShape === null ? '__null__' : uuidsInShape.slice().sort().join('|');
+    if (lastEmittedAreaKeyRef.current === key) return;
+    lastEmittedAreaKeyRef.current = key;
     onAreaPropertyUuidsChange?.(uuidsInShape);
   }, [uuidsInShape, onAreaPropertyUuidsChange]);
 
-  // Add markers when map is ready and geocoding is done
+  // Add markers when map is ready and geocoding is done.
+  // Visibility for the active drawn area is handled by a separate effect below
+  // so that drawing/editing a shape does not tear down and rebuild every marker.
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current || isLoading) return;
-    const insideSet = uuidsInShape ? new Set(uuidsInShape) : null;
-    let visibleCount = 0;
 
     // Clear existing markers
     markersRef.current.forEach(marker => marker.setMap(null));
@@ -286,13 +291,9 @@ export default function GoogleMapsNeighborhoodMap({
       }
     });
 
-    const bounds = new window.google.maps.LatLngBounds();
-
     // Add markers for each property
     properties.forEach(property => {
       const position = positionsByUuid.get(property.uuid)!;
-      const isVisible = !insideSet || insideSet.has(property.uuid);
-      if (isVisible) visibleCount++;
 
       // Create custom marker icon based on operation type
       const markerColor = property.operationType.toLowerCase() === 'venta' ? '#ef4444' : '#3b82f6';
@@ -347,12 +348,13 @@ export default function GoogleMapsNeighborhoodMap({
         anchor: new window.google.maps.Point(labelWidth / 2, totalHeight),
       };
 
-      const marker = new window.google.maps.Marker({
+      const marker: any = new window.google.maps.Marker({
         position,
-        map: isVisible ? mapInstanceRef.current : null,
+        map: mapInstanceRef.current,
         icon: markerIcon,
         title: `${priceLabel} · ${property.title || property.address}`
       });
+      marker.__uuid = property.uuid;
 
       // Create info window content with image carousel
       const propertyId = property.uuid.replace(/-/g, '');
@@ -530,19 +532,36 @@ export default function GoogleMapsNeighborhoodMap({
       });
 
       markersRef.current.push(marker);
-      if (isVisible) bounds.extend(position);
     });
 
-    // Fit map to show all markers — but don't auto-zoom while a shape is active,
-    // so the user keeps the framing they picked when drawing.
-    if (!shape && properties.length > 0) {
+  }, [properties, isLoading, onPropertyClick, positionsByUuid, isMapReady, favoriteProperties]);
+
+  // Toggle marker visibility based on the active drawn area, and fit bounds when no shape.
+  // Runs after the marker creation effect; reuses the existing markers without rebuilding them.
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return;
+    const insideSet = uuidsInShape ? new Set(uuidsInShape) : null;
+    const bounds = new window.google.maps.LatLngBounds();
+    let visibleCount = 0;
+    markersRef.current.forEach((marker: any) => {
+      const uuid = marker.__uuid as string;
+      const isVisible = !insideSet || insideSet.has(uuid);
+      const currentMap = marker.getMap?.();
+      const targetMap = isVisible ? mapInstanceRef.current : null;
+      if (currentMap !== targetMap) marker.setMap(targetMap);
+      if (isVisible) {
+        const pos = marker.getPosition();
+        if (pos) bounds.extend(pos);
+        visibleCount++;
+      }
+    });
+    if (!shape && visibleCount > 0) {
       mapInstanceRef.current.fitBounds(bounds);
       if (visibleCount === 1) {
         mapInstanceRef.current.setZoom(Math.max(zoom, 16));
       }
     }
-
-  }, [properties, isLoading, onPropertyClick, positionsByUuid, isMapReady, zoom, uuidsInShape, shape]);
+  }, [uuidsInShape, shape, isMapReady, zoom]);
 
   return (
     <div className="relative w-full h-full">

@@ -137,14 +137,19 @@ export default function GoogleMapsAgenciesMap({
     return inside;
   }, [shape, agencies, positionsById, isMapReady]);
 
+  // Only emit when the actual set of ids changes (by content), not just the array reference.
+  const lastEmittedAreaKeyRef = useRef<string | null>(null);
   useEffect(() => {
+    const key = idsInShape === null ? '__null__' : idsInShape.slice().sort((a, b) => a - b).join('|');
+    if (lastEmittedAreaKeyRef.current === key) return;
+    lastEmittedAreaKeyRef.current = key;
     onAreaAgencyIdsChange?.(idsInShape);
   }, [idsInShape, onAreaAgencyIdsChange]);
 
-  // Render markers
+  // Render markers. Visibility for the active drawn area is handled by a separate
+  // effect below so drawing/editing a shape doesn't rebuild every marker.
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return;
-    const insideSet = idsInShape ? new Set(idsInShape) : null;
 
     // Clear previous markers
     markersRef.current.forEach((m) => m.setMap(null));
@@ -165,7 +170,6 @@ export default function GoogleMapsAgenciesMap({
       }
     });
 
-    const bounds = new window.google.maps.LatLngBounds();
     let plotted = 0;
 
     // Building-shaped pin SVG
@@ -196,14 +200,14 @@ export default function GoogleMapsAgenciesMap({
     agencies.forEach((agency) => {
       const position = positionsById.get(agency.id);
       if (!position) return; // Skip agencies we couldn't place
-      const isVisible = !insideSet || insideSet.has(agency.id);
 
-      const marker = new window.google.maps.Marker({
+      const marker: any = new window.google.maps.Marker({
         position,
-        map: isVisible ? mapInstanceRef.current : null,
+        map: mapInstanceRef.current,
         icon: markerIcon,
         title: agency.agencyName,
       });
+      marker.__id = agency.id;
 
       const rating = agency.reviewAverage ?? agency.rating ?? 0;
       const reviewCount = agency.reviewCount ?? 0;
@@ -261,24 +265,38 @@ export default function GoogleMapsAgenciesMap({
       });
 
       markersRef.current.push(marker);
+      plotted++;
+    });
+    void plotted;
+  }, [isMapReady, agencies, positionsById]);
+
+  // Toggle marker visibility based on the active drawn area, and fit bounds when no shape.
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return;
+    const insideSet = idsInShape ? new Set(idsInShape) : null;
+    const bounds = new window.google.maps.LatLngBounds();
+    let visibleCount = 0;
+    markersRef.current.forEach((marker: any) => {
+      const id = marker.__id as number;
+      const isVisible = !insideSet || insideSet.has(id);
+      const currentMap = marker.getMap?.();
+      const targetMap = isVisible ? mapInstanceRef.current : null;
+      if (currentMap !== targetMap) marker.setMap(targetMap);
       if (isVisible) {
-        bounds.extend(position);
-        plotted++;
+        const pos = marker.getPosition();
+        if (pos) bounds.extend(pos);
+        visibleCount++;
       }
     });
-
-    if (!shape && plotted > 0) {
+    if (!shape && visibleCount > 0) {
       mapInstanceRef.current.fitBounds(bounds);
-      // Cap zoom for single-marker case
-      if (plotted === 1) {
-        const listener = window.google.maps.event.addListenerOnce(mapInstanceRef.current, 'bounds_changed', () => {
+      if (visibleCount === 1) {
+        window.google.maps.event.addListenerOnce(mapInstanceRef.current, 'bounds_changed', () => {
           if (mapInstanceRef.current.getZoom() > 16) mapInstanceRef.current.setZoom(16);
         });
-        // listener auto-removed via Once
-        void listener;
       }
     }
-  }, [isMapReady, agencies, positionsById, idsInShape, shape]);
+  }, [idsInShape, shape, isMapReady]);
 
   return (
     <div className="relative w-full" data-testid="map-agencies">
