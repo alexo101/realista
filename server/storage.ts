@@ -1476,8 +1476,8 @@ export class DatabaseStorage implements IStorage {
       // Mapear campos individuales
       if (agencyData.agencyName !== undefined) updates.agencyName = agencyData.agencyName;
       if (agencyData.agencyAddress !== undefined) updates.agencyAddress = agencyData.agencyAddress;
-      if ((agencyData as any).latitude !== undefined) updates.latitude = (agencyData as any).latitude;
-      if ((agencyData as any).longitude !== undefined) updates.longitude = (agencyData as any).longitude;
+      if (agencyData.latitude !== undefined) updates.latitude = agencyData.latitude;
+      if (agencyData.longitude !== undefined) updates.longitude = agencyData.longitude;
       if (agencyData.agencyDescription !== undefined) updates.agencyDescription = agencyData.agencyDescription;
       if (agencyData.agencyLogo !== undefined) updates.agencyLogo = agencyData.agencyLogo;
       if (agencyData.agencyPhone !== undefined) updates.agencyPhone = agencyData.agencyPhone;

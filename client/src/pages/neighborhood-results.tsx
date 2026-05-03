@@ -1093,20 +1093,22 @@ export default function NeighborhoodResultsPage() {
                     <Map className="h-4 w-4" /> Mapa
                   </button>
                 </div>
-                <Select
-                  value={agenciesFilter}
-                  onValueChange={setAgenciesFilter}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="best_rating">Mejor puntuación</SelectItem>
-                    <SelectItem value="newest_reviews">Más recientes</SelectItem>
-                    <SelectItem value="most_reviews">Más reseñas</SelectItem>
-                    <SelectItem value="most_properties">Más propiedades</SelectItem>
-                  </SelectContent>
-                </Select>
+                {agenciesViewMode === 'list' && (
+                  <Select
+                    value={agenciesFilter}
+                    onValueChange={setAgenciesFilter}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="best_rating">Mejor puntuación</SelectItem>
+                      <SelectItem value="newest_reviews">Más recientes</SelectItem>
+                      <SelectItem value="most_reviews">Más reseñas</SelectItem>
+                      <SelectItem value="most_properties">Más propiedades</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               {(() => {
                 const sortedAgencies = (() => {
