@@ -15,6 +15,8 @@ export interface Agency {
   id: number;
   agencyName: string;
   agencyAddress?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   agencyLogo?: string;
   agencyDescription?: string;
   agencyPhone?: string;
@@ -38,6 +40,8 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   // Estados para los campos del formulario
   const [agencyName, setAgencyName] = useState("");
   const [agencyAddress, setAgencyAddress] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [agencyDescription, setAgencyDescription] = useState("");
   const [agencyPhone, setAgencyPhone] = useState("");
   const [agencyWebsite, setAgencyWebsite] = useState("");
@@ -79,6 +83,8 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     if (agency) {
       setAgencyName(agency.agencyName || "");
       setAgencyAddress(agency.agencyAddress || "");
+      setLatitude(agency.latitude ?? null);
+      setLongitude(agency.longitude ?? null);
       setAgencyDescription(agency.agencyDescription || "");
       setAgencyPhone(agency.agencyPhone || "");
       setAgencyWebsite(agency.agencyWebsite || "");
@@ -116,6 +122,8 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     const data: Partial<Agency> = {
       agencyName,
       agencyAddress,
+      latitude,
+      longitude,
       agencyDescription,
       agencyPhone,
       agencyWebsite,
@@ -191,7 +199,19 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               <Label htmlFor="agencyAddress">Dirección de la agencia</Label>
               <AddressAutocomplete
                 value={agencyAddress}
-                onChange={setAgencyAddress}
+                onChange={(val) => {
+                  setAgencyAddress(val);
+                  // If user is editing the text manually, drop stale coords
+                  if (val !== agencyAddress) {
+                    setLatitude(null);
+                    setLongitude(null);
+                  }
+                }}
+                onPlaceSelected={({ address, latitude: lat, longitude: lng }) => {
+                  setAgencyAddress(address);
+                  setLatitude(lat);
+                  setLongitude(lng);
+                }}
                 placeholder="Busca la dirección física de la agencia"
               />
             </div>

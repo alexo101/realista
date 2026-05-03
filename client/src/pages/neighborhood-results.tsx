@@ -8,6 +8,7 @@ import { GoogleMapsPropertyMap } from "@/components/GoogleMapsPropertyMap";
 import { AgencyResults } from "@/components/AgencyResults";
 import { AgentResults } from "@/components/AgentResults";
 import GoogleMapsNeighborhoodMap from "@/components/GoogleMapsNeighborhoodMap";
+import GoogleMapsAgenciesMap from "@/components/GoogleMapsAgenciesMap";
 import { Footer } from "@/components/Footer";
 import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -205,6 +206,7 @@ export default function NeighborhoodResultsPage() {
   
   // Estado para el toggle de vista (lista/mapa)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [agenciesViewMode, setAgenciesViewMode] = useState<'list' | 'map'>('list');
   
   // Filtros específicos para propiedades
   const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
@@ -452,6 +454,13 @@ export default function NeighborhoodResultsPage() {
       setViewMode('list');
     }
   }, [activeTab, viewMode]);
+
+  // Reset agencies map view when switching away from Agencies tab
+  useEffect(() => {
+    if (activeTab !== 'agencies' && agenciesViewMode === 'map') {
+      setAgenciesViewMode('list');
+    }
+  }, [activeTab, agenciesViewMode]);
   
   // Preload data for all tabs on component mount for faster switching
   useEffect(() => {
@@ -766,6 +775,12 @@ export default function NeighborhoodResultsPage() {
           isMapView={viewMode === 'map'}
         />
       )}
+      {activeTab === 'agencies' && (
+        <FloatingMapButton
+          onClick={() => setAgenciesViewMode(agenciesViewMode === 'list' ? 'map' : 'list')}
+          isMapView={agenciesViewMode === 'map'}
+        />
+      )}
 
       <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-12">
         {/* Desktop Breadcrumb - Hidden on mobile */}
@@ -1054,8 +1069,30 @@ export default function NeighborhoodResultsPage() {
 
             {/* Contenido de pestaña: Agencias */}
             <TabsContent value="agencies" className="mt-0">
-              {/* Desktop sort selector - hidden on mobile since MobileFilterRow handles it */}
-              <div className="mb-4 hidden md:flex justify-end">
+              {/* Desktop sort + view toggle - hidden on mobile since MobileFilterRow handles it */}
+              <div className="mb-4 hidden md:flex justify-end items-center gap-3">
+                <div className="inline-flex rounded-md border bg-white overflow-hidden" data-testid="toggle-agencies-view">
+                  <button
+                    type="button"
+                    onClick={() => setAgenciesViewMode('list')}
+                    className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                      agenciesViewMode === 'list' ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    data-testid="button-agencies-view-list"
+                  >
+                    <List className="h-4 w-4" /> Lista
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAgenciesViewMode('map')}
+                    className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                      agenciesViewMode === 'map' ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    data-testid="button-agencies-view-map"
+                  >
+                    <Map className="h-4 w-4" /> Mapa
+                  </button>
+                </div>
                 <Select
                   value={agenciesFilter}
                   onValueChange={setAgenciesFilter}
@@ -1071,30 +1108,37 @@ export default function NeighborhoodResultsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <AgencyResults 
-                results={useMemo(() => {
+              {(() => {
+                const sortedAgencies = (() => {
                   if (!agencies) return [];
-                  
-                  const sortedAgencies = [...agencies];
-                  
+                  const list = [...agencies];
                   switch (agenciesFilter) {
                     case 'best_rating':
-                      return sortedAgencies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                      return list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
                     case 'newest_reviews':
-                      return sortedAgencies.sort((a, b) => 
-                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) - 
+                      return list.sort((a, b) =>
+                        (b.lastReviewDate ? new Date(b.lastReviewDate).getTime() : 0) -
                         (a.lastReviewDate ? new Date(a.lastReviewDate).getTime() : 0)
                       );
                     case 'most_reviews':
-                      return sortedAgencies.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+                      return list.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
                     case 'most_properties':
-                      return sortedAgencies.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
+                      return list.sort((a, b) => (b.propertyCount || 0) - (a.propertyCount || 0));
                     default:
-                      return sortedAgencies;
+                      return list;
                   }
-                }, [agencies, agenciesFilter]) || []} 
-                showSkeleton={showAgenciesSkeleton} 
-              />
+                })();
+
+                if (agenciesViewMode === 'map') {
+                  return (
+                    <GoogleMapsAgenciesMap
+                      agencies={sortedAgencies}
+                      neighborhood={decodedNeighborhood}
+                    />
+                  );
+                }
+                return <AgencyResults results={sortedAgencies} showSkeleton={showAgenciesSkeleton} />;
+              })()}
             </TabsContent>
 
             {/* Contenido de pestaña: Agentes */}

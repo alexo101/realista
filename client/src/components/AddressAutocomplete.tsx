@@ -5,11 +5,12 @@ interface AddressAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onValidationChange?: (isValid: boolean) => void;
+  onPlaceSelected?: (place: { address: string; latitude: number; longitude: number }) => void;
   placeholder?: string;
   className?: string;
 }
 
-export function AddressAutocomplete({ value, onChange, onValidationChange, placeholder, className }: AddressAutocompleteProps) {
+export function AddressAutocomplete({ value, onChange, onValidationChange, onPlaceSelected, placeholder, className }: AddressAutocompleteProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isValidAddress, setIsValidAddress] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,6 +110,20 @@ export function AddressAutocomplete({ value, onChange, onValidationChange, place
             setIsValidAddress(true);
             onValidationChange?.(true);
             onChange(streetAddress);
+
+            // Surface coordinates if a callback is provided
+            try {
+              const loc = (place as any).location;
+              if (loc && onPlaceSelected) {
+                const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+                const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+                if (typeof lat === 'number' && typeof lng === 'number') {
+                  onPlaceSelected({ address: streetAddress, latitude: lat, longitude: lng });
+                }
+              }
+            } catch (e) {
+              console.warn('Could not extract location from place:', e);
+            }
 
             // Update internal input to match
             if (inputRef.current) {

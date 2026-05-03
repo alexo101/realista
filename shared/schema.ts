@@ -76,6 +76,8 @@ export const agencies = pgTable("agencies", {
   slug: text("slug").unique(), // SEO-friendly URL slug (nullable initially, will be populated)
   agencyName: text("agency_name").notNull(),
   agencyAddress: text("agency_address"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
   agencyDescription: text("agency_description"),
   agencyLogo: text("agency_logo"),
   agencyPhone: text("agency_phone"),
