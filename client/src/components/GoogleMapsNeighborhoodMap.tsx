@@ -237,20 +237,62 @@ export default function GoogleMapsNeighborhoodMap({
 
       // Create custom marker icon based on operation type
       const markerColor = property.operationType.toLowerCase() === 'venta' ? '#ef4444' : '#3b82f6';
+
+      // Format price compactly so it fits on the marker label
+      const formatPriceShort = (price: number | null | undefined): string => {
+        if (price == null || isNaN(price)) return '—';
+        if (price >= 1_000_000) {
+          const v = price / 1_000_000;
+          return `€${v >= 10 ? Math.round(v) : v.toFixed(1).replace('.0', '')}M`;
+        }
+        if (price >= 10_000) {
+          const v = price / 1_000;
+          return `€${Math.round(v)}K`;
+        }
+        // Rental-range prices (e.g. €1.500/mo) — show with thousands separator
+        return `€${Math.round(price).toLocaleString('es-ES')}`;
+      };
+
+      const priceLabel = formatPriceShort(property.price);
+
+      // Approximate label width based on character count (monospace-ish)
+      const charWidth = 8;
+      const paddingX = 14;
+      const labelWidth = Math.max(58, priceLabel.length * charWidth + paddingX * 2);
+      const labelHeight = 28;
+      const pinTipHeight = 8;
+      const totalHeight = labelHeight + pinTipHeight;
+
+      const escapedLabel = priceLabel
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${labelWidth}" height="${totalHeight}" viewBox="0 0 ${labelWidth} ${totalHeight}">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="1" y="1" width="${labelWidth - 2}" height="${labelHeight}" rx="${labelHeight / 2}" ry="${labelHeight / 2}" fill="${markerColor}" stroke="#ffffff" stroke-width="2"/>
+    <polygon points="${labelWidth / 2 - 6},${labelHeight} ${labelWidth / 2 + 6},${labelHeight} ${labelWidth / 2},${labelHeight + pinTipHeight - 1}" fill="${markerColor}" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
+  </g>
+  <text x="${labelWidth / 2}" y="${labelHeight / 2 + 5}" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700">${escapedLabel}</text>
+</svg>`;
+
       const markerIcon = {
-        path: window.google.maps.SymbolPath.CIRCLE,
-        scale: 12,
-        fillColor: markerColor,
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2
+        url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+        scaledSize: new window.google.maps.Size(labelWidth, totalHeight),
+        anchor: new window.google.maps.Point(labelWidth / 2, totalHeight),
       };
 
       const marker = new window.google.maps.Marker({
         position,
         map: mapInstanceRef.current,
         icon: markerIcon,
-        title: property.title || property.address
+        title: `${priceLabel} · ${property.title || property.address}`
       });
 
       // Create info window content with image carousel
