@@ -44,6 +44,8 @@ export default function GoogleMapsNeighborhoodMap({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const openInfoWindowRef = useRef<any>(null);
+  const mapClickListenerRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
   const [geocodedCoords, setGeocodedCoords] = useState<Map<string | number, GeocodingResult>>(new Map());
@@ -217,6 +219,23 @@ export default function GoogleMapsNeighborhoodMap({
     // Clear existing markers
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
+
+    // Close any open info window from a previous render
+    if (openInfoWindowRef.current) {
+      openInfoWindowRef.current.close();
+      openInfoWindowRef.current = null;
+    }
+
+    // Close the open info window when the user clicks anywhere on the map
+    if (mapClickListenerRef.current) {
+      window.google.maps.event.removeListener(mapClickListenerRef.current);
+    }
+    mapClickListenerRef.current = mapInstanceRef.current.addListener('click', () => {
+      if (openInfoWindowRef.current) {
+        openInfoWindowRef.current.close();
+        openInfoWindowRef.current = null;
+      }
+    });
 
     const bounds = new window.google.maps.LatLngBounds();
 
@@ -451,8 +470,20 @@ export default function GoogleMapsNeighborhoodMap({
         content: infoContent
       });
 
+      // Track open state so opening a different marker closes the previous one
+      infoWindow.addListener('closeclick', () => {
+        if (openInfoWindowRef.current === infoWindow) {
+          openInfoWindowRef.current = null;
+        }
+      });
+
       marker.addListener('click', () => {
+        // Close any other open info window before opening this one
+        if (openInfoWindowRef.current && openInfoWindowRef.current !== infoWindow) {
+          openInfoWindowRef.current.close();
+        }
         infoWindow.open(mapInstanceRef.current, marker);
+        openInfoWindowRef.current = infoWindow;
         if (onPropertyClick) {
           onPropertyClick(property);
         }
