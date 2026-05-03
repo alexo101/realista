@@ -87,9 +87,6 @@ export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
     setter(parsed);
   };
 
-  const savingsMax = Math.max(price, 0);
-  const savingsStep = 1000;
-
   const noSpinClass =
     "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
@@ -149,13 +146,12 @@ export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
               />
             </div>
             <Slider
-              value={[Math.min(Math.max(savings, 0), savingsMax)]}
+              value={[valueToIndex(savings)]}
               min={0}
-              max={savingsMax || savingsStep}
-              step={savingsStep}
-              onValueChange={([v]) => setSavings(v ?? 0)}
+              max={PRICE_STEPS.length - 1}
+              step={1}
+              onValueChange={([idx]) => setSavings(PRICE_STEPS[idx] ?? 0)}
               className="pt-1"
-              disabled={savingsMax <= 0}
               data-testid="slider-mortgage-savings"
             />
             <p className="text-xs text-gray-500" data-testid="text-down-payment-percent">
