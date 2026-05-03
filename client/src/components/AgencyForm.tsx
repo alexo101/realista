@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Building, X, Check, Search } from "lucide-react";
 import { SiGooglemaps } from "react-icons/si";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import { getCities } from "@/utils/neighborhoods";
 
 export interface Agency {
@@ -188,12 +189,10 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
 
             <div>
               <Label htmlFor="agencyAddress">Dirección de la agencia</Label>
-              <Input
-                id="agencyAddress"
+              <AddressAutocomplete
                 value={agencyAddress}
-                onChange={(e) => setAgencyAddress(e.target.value)}
-                placeholder="Dirección física de la agencia"
-                className="min-h-[44px] w-full"
+                onChange={setAgencyAddress}
+                placeholder="Busca la dirección física de la agencia"
               />
             </div>
 
