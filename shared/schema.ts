@@ -206,6 +206,7 @@ export const properties = pgTable("properties", {
   moderationReason: text("moderation_reason"),
   expiresAt: timestamp("expires_at"),
   managementStatus: text("management_status").default("Creada").notNull(), // Creada, Activa, Reservada, Alquilada, Inactiva, Vendida, En reforma
+  hasCedulaHabitabilidad: boolean("has_cedula_habitabilidad").default(false).notNull(), // Whether the property has a cédula de habitabilidad
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   // Performance indexes for frequent queries

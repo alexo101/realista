@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Euro, Bath, BedDouble, Building, List, Map } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Euro, Bath, BedDouble, Building, List, Map, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
@@ -34,6 +35,11 @@ interface PropertyFiltersProps {
   defaultPropertyType?: PropertyType;
   defaultBedrooms?: number | null;
   defaultBedroomsList?: number[];
+  defaultExcludeSinglePhoto?: boolean;
+  defaultRequireExactAddress?: boolean;
+  defaultRequireCedulaHabitabilidad?: boolean;
+  defaultExcludeOcupados?: boolean;
+  defaultExcludeAlquilados?: boolean;
   viewMode?: 'list' | 'map';
   onViewModeChange?: (mode: 'list' | 'map') => void;
   showViewToggle?: boolean;
@@ -48,8 +54,27 @@ export interface PropertyFilters {
   bedrooms: number | null;
   bathrooms: number | null;
   features: string[];
+  excludeSinglePhoto?: boolean;
+  requireExactAddress?: boolean;
+  requireCedulaHabitabilidad?: boolean;
+  excludeOcupados?: boolean;
+  excludeAlquilados?: boolean;
   sortBy?: string;
 }
+
+interface ExclusionToggleConfig {
+  key: 'excludeSinglePhoto' | 'requireExactAddress' | 'requireCedulaHabitabilidad' | 'excludeOcupados' | 'excludeAlquilados';
+  label: string;
+  description?: string;
+}
+
+const EXCLUSION_TOGGLES: ExclusionToggleConfig[] = [
+  { key: 'excludeSinglePhoto', label: 'Ocultar anuncios con 1 sola foto' },
+  { key: 'requireExactAddress', label: 'Solo dirección exacta' },
+  { key: 'requireCedulaHabitabilidad', label: 'Solo con cédula de habitabilidad' },
+  { key: 'excludeOcupados', label: 'Ocultar inmuebles ocupados' },
+  { key: 'excludeAlquilados', label: 'Ocultar inmuebles alquilados' },
+];
 
 export function PropertyFilters({ 
   onFilterChange, 
@@ -57,6 +82,11 @@ export function PropertyFilters({
   defaultPropertyType = "Vivienda",
   defaultBedrooms = null,
   defaultBedroomsList = [],
+  defaultExcludeSinglePhoto = false,
+  defaultRequireExactAddress = false,
+  defaultRequireCedulaHabitabilidad = false,
+  defaultExcludeOcupados = false,
+  defaultExcludeAlquilados = false,
   viewMode = 'list',
   onViewModeChange,
   showViewToggle = false,
@@ -76,6 +106,19 @@ export function PropertyFilters({
   const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [exclusionFlags, setExclusionFlags] = useState<{
+    excludeSinglePhoto: boolean;
+    requireExactAddress: boolean;
+    requireCedulaHabitabilidad: boolean;
+    excludeOcupados: boolean;
+    excludeAlquilados: boolean;
+  }>({
+    excludeSinglePhoto: defaultExcludeSinglePhoto,
+    requireExactAddress: defaultRequireExactAddress,
+    requireCedulaHabitabilidad: defaultRequireCedulaHabitabilidad,
+    excludeOcupados: defaultExcludeOcupados,
+    excludeAlquilados: defaultExcludeAlquilados,
+  });
 
   // Opciones para los rangos de precios según el tipo de operación
   const priceOptions = {
@@ -186,11 +229,12 @@ export function PropertyFilters({
       bedrooms: roomsFilter.length > 0 ? Math.min(...roomsFilter) : null,
       bathrooms: bathroomsFilter.length > 0 ? Math.min(...bathroomsFilter) : null,
       features: selectedFeatures,
+      ...exclusionFlags,
       sortBy: sortBy !== "newest" ? sortBy : undefined
     };
     
     debouncedFilterChange(filters);
-  }, [operationType, propertyType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy]);
+  }, [operationType, propertyType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy, exclusionFlags]);
 
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
@@ -607,6 +651,32 @@ export function PropertyFilters({
             </Select>
           </div>
 
+        </div>
+
+        {/* Filtros de exclusión */}
+        <div className="border-t pt-4">
+          <div className="flex items-center mb-3">
+            <Filter className="w-4 h-4 mr-2 text-gray-600" />
+            <h3 className="text-sm font-semibold text-gray-700">Filtros de exclusión</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {EXCLUSION_TOGGLES.map((toggle) => (
+              <label
+                key={toggle.key}
+                className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                data-testid={`row-exclusion-${toggle.key}`}
+              >
+                <span className="text-sm text-gray-700">{toggle.label}</span>
+                <Switch
+                  checked={exclusionFlags[toggle.key]}
+                  onCheckedChange={(checked) =>
+                    setExclusionFlags(prev => ({ ...prev, [toggle.key]: checked }))
+                  }
+                  data-testid={`switch-exclusion-${toggle.key}`}
+                />
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* Etiquetas de características seleccionadas */}

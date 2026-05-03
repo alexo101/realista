@@ -94,6 +94,16 @@ const availabilityOptions = [
 
 const propertyConditionOptions = ["Obra nueva", "Buen estado", "A reformar", "Reformado"] as const;
 
+const managementStatusOptions = [
+  "Creada",
+  "Activa",
+  "Reservada",
+  "Alquilada",
+  "Inactiva",
+  "Vendida",
+  "En reforma",
+] as const;
+
 // Escalera options
 const escaleraOptions = ["A", "B", "C"] as const;
 
@@ -148,6 +158,8 @@ const formSchema = z.object({
   availabilityDate: z.date().optional(),
   propertyCondition: z.enum(propertyConditionOptions).optional(),
   housingStatus: z.enum(housingStatus).optional(),
+  managementStatus: z.enum(managementStatusOptions).optional(),
+  hasCedulaHabitabilidad: z.boolean().default(false),
   isActive: z.boolean().default(true),
   imageUrls: z.array(z.string()).default([]),
   mainImageIndex: z.number().default(-1),
@@ -342,6 +354,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       availabilityDate: initialData?.availabilityDate || undefined,
       propertyCondition: initialData?.propertyCondition || undefined,
       housingStatus: initialData?.housingStatus || undefined,
+      managementStatus: (initialData as any)?.managementStatus || undefined,
+      hasCedulaHabitabilidad: (initialData as any)?.hasCedulaHabitabilidad ?? false,
       isActive: initialData?.isActive ?? true,
       imageUrls: initialData?.imageUrls || [],
       mainImageIndex: initialData?.mainImageIndex ?? -1,
@@ -1139,6 +1153,65 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                               {option}
                             </SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Estado de gestión */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Estado de gestión</h3>
+                <FormField
+                  control={form.control}
+                  name="managementStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-management-status">
+                            <SelectValue placeholder="Selecciona el estado de gestión" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {managementStatusOptions.map((option) => (
+                            <SelectItem key={option} value={option} data-testid={`option-management-status-${option.toLowerCase().replace(/\s+/g, '-')}`}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Cédula de habitabilidad */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Cédula de habitabilidad</h3>
+                <FormField
+                  control={form.control}
+                  name="hasCedulaHabitabilidad"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select
+                        onValueChange={(value) => field.onChange(value === "yes")}
+                        value={field.value ? "yes" : "no"}
+                      >
+                        <FormControl>
+                          <SelectTrigger data-testid="select-has-cedula-habitabilidad">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="yes" data-testid="option-cedula-yes">Sí, dispone de cédula de habitabilidad</SelectItem>
+                          <SelectItem value="no" data-testid="option-cedula-no">No</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

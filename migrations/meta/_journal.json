@@ -29,6 +29,13 @@
       "when": 1777742400000,
       "tag": "0003_absence_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777743000000,
+      "tag": "0004_has_cedula_habitabilidad",
+      "breakpoints": true
     }
   ]
 }

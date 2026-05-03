@@ -186,6 +186,11 @@ export default function NeighborhoodResultsPage() {
   const minPriceFromUrl = urlParams.get('minPrice');
   const maxPriceFromUrl = urlParams.get('maxPrice');
   const operationTypeFromUrl = urlParams.get('operationType');
+  const excludeSinglePhotoFromUrl = urlParams.get('excludeSinglePhoto') === 'true';
+  const requireExactAddressFromUrl = urlParams.get('requireExactAddress') === 'true';
+  const requireCedulaHabitabilidadFromUrl = urlParams.get('requireCedulaHabitabilidad') === 'true';
+  const excludeOcupadosFromUrl = urlParams.get('excludeOcupados') === 'true';
+  const excludeAlquiladosFromUrl = urlParams.get('excludeAlquilados') === 'true';
   
   // Parse bedrooms - could be a single number or comma-separated list
   let defaultBedroomsList: number[] = [];
@@ -209,8 +214,41 @@ export default function NeighborhoodResultsPage() {
     priceMax: maxPriceFromUrl ? parseInt(maxPriceFromUrl) : null,
     bedrooms: defaultBedrooms,
     bathrooms: null,
-    features: []
+    features: [],
+    excludeSinglePhoto: excludeSinglePhotoFromUrl,
+    requireExactAddress: requireExactAddressFromUrl,
+    requireCedulaHabitabilidad: requireCedulaHabitabilidadFromUrl,
+    excludeOcupados: excludeOcupadosFromUrl,
+    excludeAlquilados: excludeAlquiladosFromUrl,
   });
+
+  // Persist exclusion filters to URL whenever they change
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const setOrDelete = (key: string, value: boolean | undefined) => {
+      if (value) {
+        params.set(key, 'true');
+      } else {
+        params.delete(key);
+      }
+    };
+    setOrDelete('excludeSinglePhoto', propertyFilters.excludeSinglePhoto);
+    setOrDelete('requireExactAddress', propertyFilters.requireExactAddress);
+    setOrDelete('requireCedulaHabitabilidad', propertyFilters.requireCedulaHabitabilidad);
+    setOrDelete('excludeOcupados', propertyFilters.excludeOcupados);
+    setOrDelete('excludeAlquilados', propertyFilters.excludeAlquilados);
+    const newSearch = params.toString();
+    const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+    if (`${window.location.pathname}${window.location.search}` !== newUrl) {
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [
+    propertyFilters.excludeSinglePhoto,
+    propertyFilters.requireExactAddress,
+    propertyFilters.requireCedulaHabitabilidad,
+    propertyFilters.excludeOcupados,
+    propertyFilters.excludeAlquilados,
+  ]);
   
   // Mutation to save search
   const saveSearchMutation = useMutation({
@@ -429,6 +467,11 @@ export default function NeighborhoodResultsPage() {
           bedrooms: propertyFilters.bedrooms,
           bathrooms: propertyFilters.bathrooms,
           features: propertyFilters.features,
+          excludeSinglePhoto: propertyFilters.excludeSinglePhoto,
+          requireExactAddress: propertyFilters.requireExactAddress,
+          requireCedulaHabitabilidad: propertyFilters.requireCedulaHabitabilidad,
+          excludeOcupados: propertyFilters.excludeOcupados,
+          excludeAlquilados: propertyFilters.excludeAlquilados,
           mostViewed: false
         }],
         queryFn: async () => {
@@ -457,6 +500,12 @@ export default function NeighborhoodResultsPage() {
           if (propertyFilters.features && propertyFilters.features.length > 0) {
             params.append('features', propertyFilters.features.join(','));
           }
+
+          if (propertyFilters.excludeSinglePhoto) params.append('excludeSinglePhoto', 'true');
+          if (propertyFilters.requireExactAddress) params.append('requireExactAddress', 'true');
+          if (propertyFilters.requireCedulaHabitabilidad) params.append('requireCedulaHabitabilidad', 'true');
+          if (propertyFilters.excludeOcupados) params.append('excludeOcupados', 'true');
+          if (propertyFilters.excludeAlquilados) params.append('excludeAlquilados', 'true');
           
           const response = await fetch(`/api/properties?${params.toString()}`);
           if (!response.ok) throw new Error(`Failed to fetch properties for ${effectiveNeighborhood}`);
@@ -523,6 +572,11 @@ export default function NeighborhoodResultsPage() {
       bedrooms: propertyFilters.bedrooms,
       bathrooms: propertyFilters.bathrooms,
       features: propertyFilters.features,
+      excludeSinglePhoto: propertyFilters.excludeSinglePhoto,
+      requireExactAddress: propertyFilters.requireExactAddress,
+      requireCedulaHabitabilidad: propertyFilters.requireCedulaHabitabilidad,
+      excludeOcupados: propertyFilters.excludeOcupados,
+      excludeAlquilados: propertyFilters.excludeAlquilados,
       mostViewed: false
     }],
     queryFn: async () => {
@@ -552,6 +606,13 @@ export default function NeighborhoodResultsPage() {
       if (propertyFilters.features && propertyFilters.features.length > 0) {
         params.append('features', propertyFilters.features.join(','));
       }
+
+      // Filtros de exclusión
+      if (propertyFilters.excludeSinglePhoto) params.append('excludeSinglePhoto', 'true');
+      if (propertyFilters.requireExactAddress) params.append('requireExactAddress', 'true');
+      if (propertyFilters.requireCedulaHabitabilidad) params.append('requireCedulaHabitabilidad', 'true');
+      if (propertyFilters.excludeOcupados) params.append('excludeOcupados', 'true');
+      if (propertyFilters.excludeAlquilados) params.append('excludeAlquilados', 'true');
       
       console.log(`Fetching properties with operationType: ${propertyFilters.operationType}, propertyType: ${propertyFilters.propertyType}`);
       const response = await fetch(`/api/properties?${params.toString()}`);
@@ -687,6 +748,11 @@ export default function NeighborhoodResultsPage() {
           defaultOperationType={propertyFilters.operationType}
           defaultBedrooms={defaultBedrooms}
           defaultBedroomsList={defaultBedroomsList}
+          defaultExcludeSinglePhoto={excludeSinglePhotoFromUrl}
+          defaultRequireExactAddress={requireExactAddressFromUrl}
+          defaultRequireCedulaHabitabilidad={requireCedulaHabitabilidadFromUrl}
+          defaultExcludeOcupados={excludeOcupadosFromUrl}
+          defaultExcludeAlquilados={excludeAlquiladosFromUrl}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           showViewToggle={false}
@@ -876,6 +942,11 @@ export default function NeighborhoodResultsPage() {
                   defaultOperationType={propertyFilters.operationType}
                   defaultBedrooms={defaultBedrooms}
                   defaultBedroomsList={defaultBedroomsList}
+                  defaultExcludeSinglePhoto={excludeSinglePhotoFromUrl}
+                  defaultRequireExactAddress={requireExactAddressFromUrl}
+                  defaultRequireCedulaHabitabilidad={requireCedulaHabitabilidadFromUrl}
+                  defaultExcludeOcupados={excludeOcupadosFromUrl}
+                  defaultExcludeAlquilados={excludeAlquiladosFromUrl}
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
                   showViewToggle={true}

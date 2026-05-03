@@ -2158,6 +2158,42 @@ export class DatabaseStorage implements IStorage {
           });
         }
       }
+
+      // Helper to coerce any truthy querystring value to a real boolean
+      const isTrue = (v: any) => v === true || v === "true" || v === 1 || v === "1";
+
+      // Filtros de exclusión / requisitos
+      // Hide ads with a single (or zero) photos
+      if (isTrue(filters.excludeSinglePhoto)) {
+        console.log("Filtrando: excluir anuncios con 1 sola foto");
+        whereConditions.push(sql`coalesce(cardinality(${properties.imageUrls}), 0) > 1`);
+      }
+
+      // Only ads with the exact address visible
+      if (isTrue(filters.requireExactAddress)) {
+        console.log("Filtrando: solo dirección exacta");
+        whereConditions.push(eq(properties.hideAddress, false));
+      }
+
+      // Only ads that declare cédula de habitabilidad
+      if (isTrue(filters.requireCedulaHabitabilidad)) {
+        console.log("Filtrando: solo con cédula de habitabilidad");
+        whereConditions.push(eq(properties.hasCedulaHabitabilidad, true));
+      }
+
+      // Hide occupied properties (housingStatus = 'Ocupada ilegalmente')
+      if (isTrue(filters.excludeOcupados)) {
+        console.log("Filtrando: ocultar ocupados");
+        whereConditions.push(
+          sql`${properties.housingStatus} IS DISTINCT FROM 'Ocupada ilegalmente'`
+        );
+      }
+
+      // Hide rented properties (managementStatus = 'Alquilada')
+      if (isTrue(filters.excludeAlquilados)) {
+        console.log("Filtrando: ocultar alquilados");
+        whereConditions.push(ne(properties.managementStatus, "Alquilada"));
+      }
     }
 
     // Build query with all conditions using defined fields
@@ -2173,6 +2209,8 @@ export class DatabaseStorage implements IStorage {
       operationType: properties.operationType,
       housingType: properties.housingType,
       housingStatus: properties.housingStatus,
+      managementStatus: properties.managementStatus,
+      hasCedulaHabitabilidad: properties.hasCedulaHabitabilidad,
       floor: properties.floor,
       features: properties.features,
       availability: properties.availability,
