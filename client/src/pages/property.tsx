@@ -7,6 +7,7 @@ import { type Property } from "@shared/schema";
 import { ImageGallery } from "@/components/ImageGallery";
 import { PropertyApplicationForm } from "@/components/PropertyApplicationForm";
 import { ClientAuthModal } from "@/components/ClientAuthModal";
+import { MortgageCalculator } from "@/components/MortgageCalculator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -483,6 +484,10 @@ export default function PropertyPage() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {property.operationType === "Venta" && property.price > 0 && (
+              <MortgageCalculator propertyPrice={property.price} />
             )}
           </div>
 
