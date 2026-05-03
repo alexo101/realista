@@ -4521,16 +4521,25 @@ export class DatabaseStorage implements IStorage {
     if (existing) {
       throw new Error("Ya has fichado la entrada de hoy");
     }
-    const [session] = await db
-      .insert(workSessions)
-      .values({
-        agentId,
-        workDate,
-        clockInAt: now,
-        breaks: [],
-      })
-      .returning();
-    return session;
+    try {
+      const [session] = await db
+        .insert(workSessions)
+        .values({
+          agentId,
+          workDate,
+          clockInAt: now,
+          breaks: [],
+        })
+        .returning();
+      return session;
+    } catch (err: any) {
+      // Handle race condition: a concurrent request inserted the row between
+      // our existence check and the insert. Surface the same friendly error.
+      if (err?.code === "23505") {
+        throw new Error("Ya has fichado la entrada de hoy");
+      }
+      throw err;
+    }
   }
 
   async startWorkSessionBreak(agentId: number, workDate: string, now: Date): Promise<WorkSession> {

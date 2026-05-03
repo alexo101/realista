@@ -161,6 +161,7 @@ export function ControlJornada() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/today"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/team"] });
     },
   });
 
@@ -190,6 +191,7 @@ export function ControlJornada() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/today"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/team"] });
     },
   });
 
@@ -219,6 +221,7 @@ export function ControlJornada() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/today"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/team"] });
     },
   });
 
@@ -245,6 +248,7 @@ export function ControlJornada() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/today"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-sessions/team"] });
     },
   });
 
