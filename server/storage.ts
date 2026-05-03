@@ -2163,35 +2163,23 @@ export class DatabaseStorage implements IStorage {
       const isTrue = (v: any) => v === true || v === "true" || v === 1 || v === "1";
 
       // Filtros de exclusión / requisitos
-      // Hide ads with a single (or zero) photos
       if (isTrue(filters.excludeSinglePhoto)) {
-        console.log("Filtrando: excluir anuncios con 1 sola foto");
         whereConditions.push(sql`coalesce(cardinality(${properties.imageUrls}), 0) > 1`);
       }
-
-      // Only ads with the exact address visible
       if (isTrue(filters.requireExactAddress)) {
-        console.log("Filtrando: solo dirección exacta");
         whereConditions.push(eq(properties.hideAddress, false));
       }
-
-      // Only ads that declare cédula de habitabilidad
       if (isTrue(filters.requireCedulaHabitabilidad)) {
-        console.log("Filtrando: solo con cédula de habitabilidad");
         whereConditions.push(eq(properties.hasCedulaHabitabilidad, true));
       }
-
-      // Hide occupied properties (housingStatus = 'Ocupada ilegalmente')
       if (isTrue(filters.excludeOcupados)) {
-        console.log("Filtrando: ocultar ocupados");
+        // The canonical occupied value in the housingStatus enum is
+        // "Ocupada ilegalmente" (see shared/schema.ts housingStatus).
         whereConditions.push(
           sql`${properties.housingStatus} IS DISTINCT FROM 'Ocupada ilegalmente'`
         );
       }
-
-      // Hide rented properties (managementStatus = 'Alquilada')
       if (isTrue(filters.excludeAlquilados)) {
-        console.log("Filtrando: ocultar alquilados");
         whereConditions.push(ne(properties.managementStatus, "Alquilada"));
       }
     }

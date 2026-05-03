@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Euro, Bath, BedDouble, Building, List, Map, Filter } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Euro, Bath, BedDouble, Building, List, Map, Filter, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
@@ -106,6 +107,9 @@ export function PropertyFilters({
   const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [isExclusionOpen, setIsExclusionOpen] = useState<boolean>(
+    defaultExcludeSinglePhoto || defaultRequireExactAddress || defaultRequireCedulaHabitabilidad || defaultExcludeOcupados || defaultExcludeAlquilados
+  );
   const [exclusionFlags, setExclusionFlags] = useState<{
     excludeSinglePhoto: boolean;
     requireExactAddress: boolean;
@@ -654,30 +658,48 @@ export function PropertyFilters({
         </div>
 
         {/* Filtros de exclusión */}
-        <div className="border-t pt-4">
-          <div className="flex items-center mb-3">
-            <Filter className="w-4 h-4 mr-2 text-gray-600" />
-            <h3 className="text-sm font-semibold text-gray-700">Filtros de exclusión</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {EXCLUSION_TOGGLES.map((toggle) => (
-              <label
-                key={toggle.key}
-                className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer"
-                data-testid={`row-exclusion-${toggle.key}`}
-              >
-                <span className="text-sm text-gray-700">{toggle.label}</span>
-                <Switch
-                  checked={exclusionFlags[toggle.key]}
-                  onCheckedChange={(checked) =>
-                    setExclusionFlags(prev => ({ ...prev, [toggle.key]: checked }))
-                  }
-                  data-testid={`switch-exclusion-${toggle.key}`}
-                />
-              </label>
-            ))}
-          </div>
-        </div>
+        <Collapsible open={isExclusionOpen} onOpenChange={setIsExclusionOpen} className="border-t pt-4">
+          <CollapsibleTrigger
+            className="flex items-center justify-between w-full text-left"
+            data-testid="toggle-exclusion-section"
+          >
+            <div className="flex items-center">
+              <Filter className="w-4 h-4 mr-2 text-gray-600" />
+              <h3 className="text-sm font-semibold text-gray-700">Filtros de exclusión</h3>
+              {Object.values(exclusionFlags).some(Boolean) && (
+                <Badge variant="secondary" className="ml-2 px-2 py-0 text-xs">
+                  {Object.values(exclusionFlags).filter(Boolean).length} activo{Object.values(exclusionFlags).filter(Boolean).length === 1 ? '' : 's'}
+                </Badge>
+              )}
+            </div>
+            <ChevronDown
+              className={cn(
+                "w-4 h-4 text-gray-500 transition-transform",
+                isExclusionOpen && "rotate-180"
+              )}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {EXCLUSION_TOGGLES.map((toggle) => (
+                <label
+                  key={toggle.key}
+                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                  data-testid={`row-exclusion-${toggle.key}`}
+                >
+                  <span className="text-sm text-gray-700">{toggle.label}</span>
+                  <Switch
+                    checked={exclusionFlags[toggle.key]}
+                    onCheckedChange={(checked) =>
+                      setExclusionFlags(prev => ({ ...prev, [toggle.key]: checked }))
+                    }
+                    data-testid={`switch-exclusion-${toggle.key}`}
+                  />
+                </label>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Etiquetas de características seleccionadas */}
         {selectedFeatures.length > 0 && (
