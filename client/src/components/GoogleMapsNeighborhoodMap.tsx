@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { geocodeAddresses, GeocodingResult, getFallbackCoordinates } from '../utils/geocoding';
 import { loadGoogleMaps } from '../utils/googleMaps';
 import { useUser } from '@/contexts/user-context';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
+import { MapDrawingControls } from './MapDrawingControls';
+import { type AreaShape, pointInShape } from '../utils/mapShape';
 
 declare global {
   interface Window {
@@ -32,6 +34,9 @@ interface GoogleMapsNeighborhoodMapProps {
   center?: [number, number];
   zoom?: number;
   onPropertyClick?: (property: Property) => void;
+  shape?: AreaShape | null;
+  onShapeChange?: (shape: AreaShape | null) => void;
+  onAreaPropertyUuidsChange?: (uuids: string[] | null) => void;
 }
 
 export default function GoogleMapsNeighborhoodMap({ 
@@ -39,8 +44,17 @@ export default function GoogleMapsNeighborhoodMap({
   properties, 
   center, 
   zoom = 14,
-  onPropertyClick 
+  onPropertyClick,
+  shape: shapeProp,
+  onShapeChange,
+  onAreaPropertyUuidsChange,
 }: GoogleMapsNeighborhoodMapProps) {
+  const [internalShape, setInternalShape] = useState<AreaShape | null>(null);
+  const shape = shapeProp !== undefined ? shapeProp : internalShape;
+  const setShape = (s: AreaShape | null) => {
+    if (shapeProp === undefined) setInternalShape(s);
+    onShapeChange?.(s);
+  };
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -212,9 +226,44 @@ export default function GoogleMapsNeighborhoodMap({
     geocodeProperties();
   }, [properties]);
 
+  // Compute display position (geocoded or fallback) for each property.
+  const positionsByUuid = useMemo(() => {
+    const map = new Map<string, { lat: number; lng: number }>();
+    properties.forEach((property) => {
+      const geocoded = geocodedCoords.get(property.uuid);
+      if (geocoded) {
+        map.set(property.uuid, { lat: geocoded.lat, lng: geocoded.lng });
+        return;
+      }
+      const fallback = getFallbackCoordinates(property.neighborhood);
+      const seed = parseInt(property.uuid.replace(/\D/g, '').slice(-5)) || 0;
+      const offsetLat = ((seed * 7) % 100 - 50) * 0.003;
+      const offsetLng = ((seed * 13) % 100 - 50) * 0.003;
+      map.set(property.uuid, { lat: fallback[0] + offsetLat, lng: fallback[1] + offsetLng });
+    });
+    return map;
+  }, [properties, geocodedCoords]);
+
+  // Compute uuids inside the active shape and notify the parent.
+  const uuidsInShape = useMemo<string[] | null>(() => {
+    if (!shape || !isMapReady) return null;
+    const inside: string[] = [];
+    properties.forEach((p) => {
+      const pos = positionsByUuid.get(p.uuid);
+      if (pos && pointInShape(shape, pos.lat, pos.lng)) inside.push(p.uuid);
+    });
+    return inside;
+  }, [shape, properties, positionsByUuid, isMapReady]);
+
+  useEffect(() => {
+    onAreaPropertyUuidsChange?.(uuidsInShape);
+  }, [uuidsInShape, onAreaPropertyUuidsChange]);
+
   // Add markers when map is ready and geocoding is done
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current || isLoading) return;
+    const insideSet = uuidsInShape ? new Set(uuidsInShape) : null;
+    let visibleCount = 0;
 
     // Clear existing markers
     markersRef.current.forEach(marker => marker.setMap(null));
@@ -241,18 +290,9 @@ export default function GoogleMapsNeighborhoodMap({
 
     // Add markers for each property
     properties.forEach(property => {
-      const geocoded = geocodedCoords.get(property.uuid);
-      let position: { lat: number; lng: number };
-
-      if (geocoded) {
-        position = { lat: geocoded.lat, lng: geocoded.lng };
-      } else {
-        // Use fallback coordinates with small randomization to avoid overlapping markers
-        const fallback = getFallbackCoordinates(property.neighborhood);
-        const offsetLat = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 7) % 100 - 50) * 0.003; // ±0.15 degrees ≈ ±170m
-        const offsetLng = ((parseInt(property.uuid.replace(/\D/g, '').slice(-5)) * 13) % 100 - 50) * 0.003;
-        position = { lat: fallback[0] + offsetLat, lng: fallback[1] + offsetLng };
-      }
+      const position = positionsByUuid.get(property.uuid)!;
+      const isVisible = !insideSet || insideSet.has(property.uuid);
+      if (isVisible) visibleCount++;
 
       // Create custom marker icon based on operation type
       const markerColor = property.operationType.toLowerCase() === 'venta' ? '#ef4444' : '#3b82f6';
@@ -309,7 +349,7 @@ export default function GoogleMapsNeighborhoodMap({
 
       const marker = new window.google.maps.Marker({
         position,
-        map: mapInstanceRef.current,
+        map: isVisible ? mapInstanceRef.current : null,
         icon: markerIcon,
         title: `${priceLabel} · ${property.title || property.address}`
       });
@@ -490,20 +530,19 @@ export default function GoogleMapsNeighborhoodMap({
       });
 
       markersRef.current.push(marker);
-      bounds.extend(position);
+      if (isVisible) bounds.extend(position);
     });
 
-    // Fit map to show all markers if there are properties
-    if (properties.length > 0) {
+    // Fit map to show all markers — but don't auto-zoom while a shape is active,
+    // so the user keeps the framing they picked when drawing.
+    if (!shape && properties.length > 0) {
       mapInstanceRef.current.fitBounds(bounds);
-      
-      // Set minimum zoom if there's only one property
-      if (properties.length === 1) {
+      if (visibleCount === 1) {
         mapInstanceRef.current.setZoom(Math.max(zoom, 16));
       }
     }
 
-  }, [properties, isLoading, onPropertyClick, geocodedCoords, isMapReady, zoom]);
+  }, [properties, isLoading, onPropertyClick, positionsByUuid, isMapReady, zoom, uuidsInShape, shape]);
 
   return (
     <div className="relative w-full h-full">
@@ -523,6 +562,27 @@ export default function GoogleMapsNeighborhoodMap({
         style={{ minHeight: '400px' }}
         data-testid="google-maps-container"
       />
+
+      {/* Drawing controls — top-left, above the map */}
+      <div className="absolute top-3 left-3 z-30 max-w-[calc(100%-1.5rem)]">
+        <MapDrawingControls
+          map={mapInstanceRef.current}
+          isReady={isMapReady}
+          shape={shape}
+          onShapeChange={setShape}
+          color="#0284c5"
+        />
+      </div>
+
+      {/* Properties-in-area pill */}
+      {shape && uuidsInShape !== null && (
+        <div
+          className="absolute top-3 right-3 z-30 bg-white/95 px-3 py-1.5 rounded-full shadow border border-gray-200 text-sm font-medium text-gray-800"
+          data-testid="text-area-property-count"
+        >
+          {uuidsInShape.length} {uuidsInShape.length === 1 ? 'inmueble' : 'inmuebles'} en esta zona
+        </div>
+      )}
     </div>
   );
 }

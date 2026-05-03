@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { geocodeAddress, getFallbackCoordinates } from '../utils/geocoding';
 import { loadGoogleMaps } from '../utils/googleMaps';
+import { MapDrawingControls } from './MapDrawingControls';
+import { type AreaShape, pointInShape } from '../utils/mapShape';
 
 interface AgencyForMap {
   id: number;
@@ -21,11 +23,27 @@ interface GoogleMapsAgenciesMapProps {
   agencies: AgencyForMap[];
   neighborhood: string;
   zoom?: number;
+  shape?: AreaShape | null;
+  onShapeChange?: (shape: AreaShape | null) => void;
+  onAreaAgencyIdsChange?: (ids: number[] | null) => void;
 }
 
 const AGENCY_PIN_COLOR = '#0f766e'; // teal-700, distinct from property red/blue
 
-export default function GoogleMapsAgenciesMap({ agencies, neighborhood, zoom = 14 }: GoogleMapsAgenciesMapProps) {
+export default function GoogleMapsAgenciesMap({
+  agencies,
+  neighborhood,
+  zoom = 14,
+  shape: shapeProp,
+  onShapeChange,
+  onAreaAgencyIdsChange,
+}: GoogleMapsAgenciesMapProps) {
+  const [internalShape, setInternalShape] = useState<AreaShape | null>(null);
+  const shape = shapeProp !== undefined ? shapeProp : internalShape;
+  const setShape = (s: AreaShape | null) => {
+    if (shapeProp === undefined) setInternalShape(s);
+    onShapeChange?.(s);
+  };
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
@@ -94,9 +112,39 @@ export default function GoogleMapsAgenciesMap({ agencies, neighborhood, zoom = 1
     };
   }, [agencies]);
 
+  // Compute the position used to plot each agency.
+  const positionsById = useMemo(() => {
+    const map = new Map<number, { lat: number; lng: number }>();
+    agencies.forEach((agency) => {
+      if (typeof agency.latitude === 'number' && typeof agency.longitude === 'number') {
+        map.set(agency.id, { lat: agency.latitude, lng: agency.longitude });
+        return;
+      }
+      const resolved = resolvedCoords.get(agency.id);
+      if (resolved) map.set(agency.id, resolved);
+    });
+    return map;
+  }, [agencies, resolvedCoords]);
+
+  // Compute ids inside the active shape and notify the parent.
+  const idsInShape = useMemo<number[] | null>(() => {
+    if (!shape || !isMapReady) return null;
+    const inside: number[] = [];
+    agencies.forEach((a) => {
+      const pos = positionsById.get(a.id);
+      if (pos && pointInShape(shape, pos.lat, pos.lng)) inside.push(a.id);
+    });
+    return inside;
+  }, [shape, agencies, positionsById, isMapReady]);
+
+  useEffect(() => {
+    onAreaAgencyIdsChange?.(idsInShape);
+  }, [idsInShape, onAreaAgencyIdsChange]);
+
   // Render markers
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return;
+    const insideSet = idsInShape ? new Set(idsInShape) : null;
 
     // Clear previous markers
     markersRef.current.forEach((m) => m.setMap(null));
@@ -146,18 +194,13 @@ export default function GoogleMapsAgenciesMap({ agencies, neighborhood, zoom = 1
     };
 
     agencies.forEach((agency) => {
-      let position: { lat: number; lng: number } | null = null;
-      if (typeof agency.latitude === 'number' && typeof agency.longitude === 'number') {
-        position = { lat: agency.latitude, lng: agency.longitude };
-      } else {
-        const resolved = resolvedCoords.get(agency.id);
-        if (resolved) position = resolved;
-      }
+      const position = positionsById.get(agency.id);
       if (!position) return; // Skip agencies we couldn't place
+      const isVisible = !insideSet || insideSet.has(agency.id);
 
       const marker = new window.google.maps.Marker({
         position,
-        map: mapInstanceRef.current,
+        map: isVisible ? mapInstanceRef.current : null,
         icon: markerIcon,
         title: agency.agencyName,
       });
@@ -218,11 +261,13 @@ export default function GoogleMapsAgenciesMap({ agencies, neighborhood, zoom = 1
       });
 
       markersRef.current.push(marker);
-      bounds.extend(position);
-      plotted++;
+      if (isVisible) {
+        bounds.extend(position);
+        plotted++;
+      }
     });
 
-    if (plotted > 0) {
+    if (!shape && plotted > 0) {
       mapInstanceRef.current.fitBounds(bounds);
       // Cap zoom for single-marker case
       if (plotted === 1) {
@@ -233,11 +278,33 @@ export default function GoogleMapsAgenciesMap({ agencies, neighborhood, zoom = 1
         void listener;
       }
     }
-  }, [isMapReady, agencies, resolvedCoords]);
+  }, [isMapReady, agencies, positionsById, idsInShape, shape]);
 
   return (
     <div className="relative w-full" data-testid="map-agencies">
       <div ref={mapRef} className="w-full h-[calc(100vh-180px)] min-h-[500px] rounded-lg overflow-hidden border border-gray-200" />
+
+      {/* Drawing controls — top-left */}
+      <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-1.5rem)]">
+        <MapDrawingControls
+          map={mapInstanceRef.current}
+          isReady={isMapReady}
+          shape={shape}
+          onShapeChange={setShape}
+          color={AGENCY_PIN_COLOR}
+        />
+      </div>
+
+      {/* Agencies-in-area pill */}
+      {shape && idsInShape !== null && (
+        <div
+          className="absolute top-3 right-3 z-10 bg-white/95 px-3 py-1.5 rounded-full shadow border border-gray-200 text-sm font-medium text-gray-800"
+          data-testid="text-area-agency-count"
+        >
+          {idsInShape.length} {idsInShape.length === 1 ? 'agencia' : 'agencias'} en esta zona
+        </div>
+      )}
+
       {isLoading && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-white/90 px-3 py-1.5 rounded-full shadow text-sm text-gray-700 flex items-center gap-2">
           <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />

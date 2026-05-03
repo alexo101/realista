@@ -207,6 +207,12 @@ export default function NeighborhoodResultsPage() {
   // Estado para el toggle de vista (lista/mapa)
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [agenciesViewMode, setAgenciesViewMode] = useState<'list' | 'map'>('list');
+
+  // Draw-on-map area filter state — persists when toggling between list/map.
+  const [propertyAreaShape, setPropertyAreaShape] = useState<import('@/utils/mapShape').AreaShape | null>(null);
+  const [propertyAreaUuids, setPropertyAreaUuids] = useState<string[] | null>(null);
+  const [agencyAreaShape, setAgencyAreaShape] = useState<import('@/utils/mapShape').AreaShape | null>(null);
+  const [agencyAreaIds, setAgencyAreaIds] = useState<number[] | null>(null);
   
   // Filtros específicos para propiedades
   const [propertyFilters, setPropertyFilters] = useState<PropertyFiltersType>({
@@ -461,6 +467,15 @@ export default function NeighborhoodResultsPage() {
       setAgenciesViewMode('list');
     }
   }, [activeTab, agenciesViewMode]);
+
+  // Clear any drawn area filter when the user changes neighborhood or active tab,
+  // so the saved zone doesn't silently filter results in a different context.
+  useEffect(() => {
+    setPropertyAreaShape(null);
+    setPropertyAreaUuids(null);
+    setAgencyAreaShape(null);
+    setAgencyAreaIds(null);
+  }, [decodedNeighborhood, activeTab]);
   
   // Preload data for all tabs on component mount for faster switching
   useEffect(() => {
@@ -996,73 +1011,74 @@ export default function NeighborhoodResultsPage() {
               </div>
 
               {/* Contenido condicional basado en el modo de vista */}
-              {viewMode === 'list' ? (
-                <PropertyResults 
-                  results={useMemo(() => {
-                    if (!properties) return [];
-                    
-                    const sortedProperties = [...properties];
-                    
-                    // Use the sortBy from propertyFilters instead of the removed propertiesFilter
-                    switch (propertyFilters.sortBy) {
-                      case 'price-asc':
-                        return sortedProperties.sort((a, b) => a.price - b.price);
-                      case 'price-m2':
-                        return sortedProperties.sort((a, b) => {
-                          const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
-                          const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
-                          return pricePerM2A - pricePerM2B;
-                        });
-                      case 'price-drop':
-                        return sortedProperties.sort((a, b) => {
-                          const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
-                          const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
-                          return dropB - dropA; // Mayor a menor
-                        });
+              {(() => {
+                const sortedProperties = (() => {
+                  if (!properties) return [];
+                  const list = [...properties];
+                  switch (propertyFilters.sortBy) {
+                    case 'price-asc':
+                      return list.sort((a, b) => a.price - b.price);
+                    case 'price-m2':
+                      return list.sort((a, b) => {
+                        const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
+                        const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
+                        return pricePerM2A - pricePerM2B;
+                      });
+                    case 'price-drop':
+                      return list.sort((a, b) => {
+                        const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
+                        const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
+                        return dropB - dropA;
+                      });
                       case 'newest':
                       default:
-                        // Default: sort by newest (created_at desc)
-                        return sortedProperties.sort((a, b) => 
+                        return list.sort((a, b) =>
                           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                         );
                     }
-                  }, [properties, propertyFilters.sortBy]) || []} 
-                  showSkeleton={showPropertiesSkeleton} 
-                />
-              ) : (
-                <GoogleMapsNeighborhoodMap
-                  properties={useMemo(() => {
-                    if (!properties) return [];
-                    
-                    const sortedProperties = [...properties];
-                    
-                    // Apply the same sorting logic as the list view
-                    switch (propertyFilters.sortBy) {
-                      case 'price-asc':
-                        return sortedProperties.sort((a, b) => a.price - b.price);
-                      case 'price-m2':
-                        return sortedProperties.sort((a, b) => {
-                          const pricePerM2A = a.superficie ? a.price / a.superficie : Infinity;
-                          const pricePerM2B = b.superficie ? b.price / b.superficie : Infinity;
-                          return pricePerM2A - pricePerM2B;
-                        });
-                      case 'price-drop':
-                        return sortedProperties.sort((a, b) => {
-                          const dropA = a.previousPrice ? ((a.previousPrice - a.price) / a.previousPrice) * 100 : 0;
-                          const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
-                          return dropB - dropA; // Mayor a menor
-                        });
-                      case 'newest':
-                      default:
-                        // Default: sort by newest (created_at desc)
-                        return sortedProperties.sort((a, b) => 
-                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                        );
-                    }
-                  }, [properties, propertyFilters.sortBy]) || []}
-                  neighborhood={decodedNeighborhood}
-                />
-              )}
+                })();
+
+                // Apply draw-on-map area filter to the list view (the map handles its own filtering).
+                const areaFilteredForList = propertyAreaShape && propertyAreaUuids !== null
+                  ? sortedProperties.filter((p: any) => propertyAreaUuids.includes(p.uuid))
+                  : sortedProperties;
+
+                if (viewMode === 'list') {
+                  return (
+                    <>
+                      {propertyAreaShape && (
+                        <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+                          <span className="text-gray-800" data-testid="text-area-filter-active">
+                            Filtrando por zona dibujada · {areaFilteredForList.length} {areaFilteredForList.length === 1 ? 'inmueble' : 'inmuebles'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => { setPropertyAreaShape(null); setPropertyAreaUuids(null); }}
+                            className="text-primary font-medium hover:underline"
+                            data-testid="button-clear-area-list"
+                          >
+                            Borrar zona
+                          </button>
+                        </div>
+                      )}
+                      <PropertyResults
+                        results={areaFilteredForList}
+                        showSkeleton={showPropertiesSkeleton}
+                      />
+                    </>
+                  );
+                }
+
+                return (
+                  <GoogleMapsNeighborhoodMap
+                    properties={sortedProperties}
+                    neighborhood={decodedNeighborhood}
+                    shape={propertyAreaShape}
+                    onShapeChange={setPropertyAreaShape}
+                    onAreaPropertyUuidsChange={setPropertyAreaUuids}
+                  />
+                );
+              })()}
             </TabsContent>
 
 
@@ -1131,15 +1147,41 @@ export default function NeighborhoodResultsPage() {
                   }
                 })();
 
+                const areaFilteredAgencies = agencyAreaShape && agencyAreaIds !== null
+                  ? sortedAgencies.filter((a: any) => agencyAreaIds.includes(a.id))
+                  : sortedAgencies;
+
                 if (agenciesViewMode === 'map') {
                   return (
                     <GoogleMapsAgenciesMap
                       agencies={sortedAgencies}
                       neighborhood={decodedNeighborhood}
+                      shape={agencyAreaShape}
+                      onShapeChange={setAgencyAreaShape}
+                      onAreaAgencyIdsChange={setAgencyAreaIds}
                     />
                   );
                 }
-                return <AgencyResults results={sortedAgencies} showSkeleton={showAgenciesSkeleton} />;
+                return (
+                  <>
+                    {agencyAreaShape && (
+                      <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-teal-700/30 bg-teal-700/5 px-3 py-2 text-sm">
+                        <span className="text-gray-800" data-testid="text-area-filter-active-agencies">
+                          Filtrando por zona dibujada · {areaFilteredAgencies.length} {areaFilteredAgencies.length === 1 ? 'agencia' : 'agencias'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setAgencyAreaShape(null); setAgencyAreaIds(null); }}
+                          className="text-teal-700 font-medium hover:underline"
+                          data-testid="button-clear-area-list-agencies"
+                        >
+                          Borrar zona
+                        </button>
+                      </div>
+                    )}
+                    <AgencyResults results={areaFilteredAgencies} showSkeleton={showAgenciesSkeleton} />
+                  </>
+                );
               })()}
             </TabsContent>
 
