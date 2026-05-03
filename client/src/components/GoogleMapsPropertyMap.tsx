@@ -30,7 +30,7 @@ export function GoogleMapsPropertyMap({
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
-  const [geocodedCoords, setGeocodedCoords] = useState<Map<number, GeocodingResult>>(new Map());
+  const [geocodedCoords, setGeocodedCoords] = useState<Map<string | number, GeocodingResult>>(new Map());
   const [internalShape, setInternalShape] = useState<AreaShape | null>(null);
   const shape = shapeProp !== undefined ? shapeProp : internalShape;
   const setShape = (s: AreaShape | null) => {
@@ -114,7 +114,7 @@ export function GoogleMapsPropertyMap({
   const positionsByUuid = useMemo(() => {
     const map = new Map<string, { lat: number; lng: number }>();
     properties.forEach((property) => {
-      const geocoded = geocodedCoords.get(property.uuid as any);
+      const geocoded = geocodedCoords.get(property.uuid);
       if (geocoded) {
         map.set(property.uuid, { lat: geocoded.lat, lng: geocoded.lng });
         return;
