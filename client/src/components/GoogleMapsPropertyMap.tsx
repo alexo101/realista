@@ -354,7 +354,7 @@ export function GoogleMapsPropertyMap({
 
       <div 
         ref={mapRef}
-        className="w-full h-[600px] bg-gray-100 rounded-lg border"
+        className="w-full h-[calc(100vh-180px)] min-h-[500px] bg-gray-100 rounded-lg border"
         data-testid="google-property-map"
       />
 

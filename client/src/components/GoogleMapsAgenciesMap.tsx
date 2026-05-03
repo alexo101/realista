@@ -237,7 +237,7 @@ export default function GoogleMapsAgenciesMap({ agencies, neighborhood, zoom = 1
 
   return (
     <div className="relative w-full" data-testid="map-agencies">
-      <div ref={mapRef} className="w-full h-[600px] rounded-lg overflow-hidden border border-gray-200" />
+      <div ref={mapRef} className="w-full h-[calc(100vh-180px)] min-h-[500px] rounded-lg overflow-hidden border border-gray-200" />
       {isLoading && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-white/90 px-3 py-1.5 rounded-full shadow text-sm text-gray-700 flex items-center gap-2">
           <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
