@@ -3,6 +3,7 @@ import { Calculator, Euro, PiggyBank, Percent, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 
 interface MortgageCalculatorProps {
   propertyPrice: number;
@@ -13,9 +14,31 @@ const DEFAULT_DOWN_PAYMENT_RATIO = 0.20;
 const DEFAULT_INTEREST_RATE = 3.5;
 const DEFAULT_YEARS = 30;
 
+// Same intervals used in the neighborhood-results price filter (Venta)
+const PRICE_STEPS: number[] = [
+  0,
+  60000, 70000, 80000, 90000, 100000, 110000, 120000, 130000, 140000, 150000,
+  160000, 170000, 180000, 190000, 200000, 220000, 240000, 260000, 280000, 300000,
+  320000, 340000, 360000, 380000, 400000, 450000, 500000, 550000, 600000, 650000,
+  700000, 750000, 800000, 850000, 900000, 950000, 1000000, 1100000, 1200000,
+  1300000, 1400000, 1500000, 1600000, 1700000, 1800000, 1900000, 2000000,
+  2100000, 2200000, 2300000, 2400000, 2500000, 2600000, 2700000, 2800000,
+  2900000, 3000000,
+];
+
 const formatEuro = (value: number): string => {
   if (!isFinite(value) || isNaN(value)) return "0 €";
   return `${Math.round(value).toLocaleString("es-ES")} €`;
+};
+
+// Find the index of the closest step <= value
+const valueToIndex = (value: number): number => {
+  let idx = 0;
+  for (let i = 0; i < PRICE_STEPS.length; i++) {
+    if (PRICE_STEPS[i] <= value) idx = i;
+    else break;
+  }
+  return idx;
 };
 
 export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
@@ -47,13 +70,7 @@ export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
     }
     const totalInterest = Math.max(0, monthlyPayment * totalPayments - loanAmount);
 
-    return {
-      loanAmount,
-      taxes,
-      totalInterest,
-      monthlyPayment,
-      downPaymentPercent,
-    };
+    return { loanAmount, taxes, totalInterest, monthlyPayment, downPaymentPercent };
   }, [price, savings, interestRate, years]);
 
   const handleNumberChange = (
@@ -70,6 +87,16 @@ export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
     setter(parsed);
   };
 
+  const priceMax = PRICE_STEPS[PRICE_STEPS.length - 1];
+  const savingsMax = Math.max(price, 0) || priceMax;
+  const savingsSteps = useMemo(
+    () => PRICE_STEPS.filter((v) => v <= savingsMax),
+    [savingsMax],
+  );
+
+  const noSpinClass =
+    "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+
   return (
     <div className="border rounded-lg overflow-hidden" data-testid="mortgage-calculator">
       <div className="bg-blue-50/60 px-5 py-4 flex items-center gap-2 border-b">
@@ -80,7 +107,7 @@ export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
       <div className="grid md:grid-cols-2 gap-6 p-5">
         {/* Inputs */}
         <div className="space-y-4">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="mortgage-price" className="text-sm font-medium text-gray-700">
               Precio de la propiedad
             </Label>
@@ -93,13 +120,22 @@ export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
                 min={0}
                 value={price || ""}
                 onChange={(e) => handleNumberChange(setPrice, e.target.value)}
-                className="pl-9"
+                className={`pl-9 ${noSpinClass}`}
                 data-testid="input-mortgage-price"
               />
             </div>
+            <Slider
+              value={[valueToIndex(price)]}
+              min={0}
+              max={PRICE_STEPS.length - 1}
+              step={1}
+              onValueChange={([idx]) => setPrice(PRICE_STEPS[idx] ?? 0)}
+              className="pt-1"
+              data-testid="slider-mortgage-price"
+            />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="mortgage-savings" className="text-sm font-medium text-gray-700">
               Ahorros / Entrada
             </Label>
@@ -112,10 +148,19 @@ export function MortgageCalculator({ propertyPrice }: MortgageCalculatorProps) {
                 min={0}
                 value={savings || ""}
                 onChange={(e) => handleNumberChange(setSavings, e.target.value)}
-                className="pl-9"
+                className={`pl-9 ${noSpinClass}`}
                 data-testid="input-mortgage-savings"
               />
             </div>
+            <Slider
+              value={[Math.min(valueToIndex(savings), Math.max(savingsSteps.length - 1, 0))]}
+              min={0}
+              max={Math.max(savingsSteps.length - 1, 0)}
+              step={1}
+              onValueChange={([idx]) => setSavings(savingsSteps[idx] ?? 0)}
+              className="pt-1"
+              data-testid="slider-mortgage-savings"
+            />
             <p className="text-xs text-gray-500" data-testid="text-down-payment-percent">
               {breakdown.downPaymentPercent.toFixed(1)}% del precio
             </p>
