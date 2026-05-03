@@ -232,7 +232,8 @@ export function SearchBar() {
   // Reset state when search type changes without changing URL
   const handleSearchTypeChange = (newType: SearchType) => {
     setSearchType(newType);
-    setSelectedNeighborhoods([]);
+    // Preserve the selected neighborhood across tab changes so users can
+    // pick a location first and then choose Comprar / Alquilar (or vice versa).
     setPriceRange({ min: "any", max: "any" });
     setAgencyName('');
     setAgentName('');
