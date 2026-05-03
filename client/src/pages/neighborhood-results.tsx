@@ -1612,10 +1612,12 @@ export default function NeighborhoodResultsPage() {
           </Tabs>
         </div>
       
-      {/* Footer - Only on neighborhood pages, hidden on mobile */}
-      <footer className="mt-auto hidden md:block">
-        <Footer />
-      </footer>
+      {/* Footer - Only on neighborhood pages, hidden on mobile and in map view */}
+      {viewMode !== 'map' && agenciesViewMode !== 'map' && (
+        <footer className="mt-auto hidden md:block">
+          <Footer />
+        </footer>
+      )}
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
