@@ -47,6 +47,7 @@ export default function GoogleMapsAgenciesMap({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const markerIdsRef = useRef<WeakMap<object, number>>(new WeakMap());
   const openInfoWindowRef = useRef<any>(null);
   const mapClickListenerRef = useRef<any>(null);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -201,13 +202,13 @@ export default function GoogleMapsAgenciesMap({
       const position = positionsById.get(agency.id);
       if (!position) return; // Skip agencies we couldn't place
 
-      const marker: any = new window.google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position,
         map: mapInstanceRef.current,
         icon: markerIcon,
         title: agency.agencyName,
       });
-      marker.__id = agency.id;
+      markerIdsRef.current.set(marker, agency.id);
 
       const rating = agency.reviewAverage ?? agency.rating ?? 0;
       const reviewCount = agency.reviewCount ?? 0;
@@ -265,19 +266,19 @@ export default function GoogleMapsAgenciesMap({
       });
 
       markersRef.current.push(marker);
-      plotted++;
     });
-    void plotted;
   }, [isMapReady, agencies, positionsById]);
 
   // Toggle marker visibility based on the active drawn area, and fit bounds when no shape.
+  // Depends on `positionsById` so it runs after the marker creation effect.
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return;
     const insideSet = idsInShape ? new Set(idsInShape) : null;
     const bounds = new window.google.maps.LatLngBounds();
     let visibleCount = 0;
-    markersRef.current.forEach((marker: any) => {
-      const id = marker.__id as number;
+    markersRef.current.forEach((marker) => {
+      const id = markerIdsRef.current.get(marker);
+      if (id === undefined) return;
       const isVisible = !insideSet || insideSet.has(id);
       const currentMap = marker.getMap?.();
       const targetMap = isVisible ? mapInstanceRef.current : null;
@@ -296,7 +297,7 @@ export default function GoogleMapsAgenciesMap({
         });
       }
     }
-  }, [idsInShape, shape, isMapReady]);
+  }, [idsInShape, shape, isMapReady, positionsById, agencies]);
 
   return (
     <div className="relative w-full" data-testid="map-agencies">

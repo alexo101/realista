@@ -58,6 +58,7 @@ export default function GoogleMapsNeighborhoodMap({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const markerUuidsRef = useRef<WeakMap<object, string>>(new WeakMap());
   const openInfoWindowRef = useRef<any>(null);
   const mapClickListenerRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -348,13 +349,13 @@ export default function GoogleMapsNeighborhoodMap({
         anchor: new window.google.maps.Point(labelWidth / 2, totalHeight),
       };
 
-      const marker: any = new window.google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position,
         map: mapInstanceRef.current,
         icon: markerIcon,
         title: `${priceLabel} · ${property.title || property.address}`
       });
-      marker.__uuid = property.uuid;
+      markerUuidsRef.current.set(marker, property.uuid);
 
       // Create info window content with image carousel
       const propertyId = property.uuid.replace(/-/g, '');
@@ -537,14 +538,16 @@ export default function GoogleMapsNeighborhoodMap({
   }, [properties, isLoading, onPropertyClick, positionsByUuid, isMapReady, favoriteProperties]);
 
   // Toggle marker visibility based on the active drawn area, and fit bounds when no shape.
-  // Runs after the marker creation effect; reuses the existing markers without rebuilding them.
+  // Runs after the marker creation effect (depends on `positionsByUuid`) so existing
+  // markers are simply shown/hidden instead of being torn down and rebuilt.
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return;
     const insideSet = uuidsInShape ? new Set(uuidsInShape) : null;
     const bounds = new window.google.maps.LatLngBounds();
     let visibleCount = 0;
-    markersRef.current.forEach((marker: any) => {
-      const uuid = marker.__uuid as string;
+    markersRef.current.forEach((marker) => {
+      const uuid = markerUuidsRef.current.get(marker);
+      if (!uuid) return;
       const isVisible = !insideSet || insideSet.has(uuid);
       const currentMap = marker.getMap?.();
       const targetMap = isVisible ? mapInstanceRef.current : null;
@@ -561,7 +564,7 @@ export default function GoogleMapsNeighborhoodMap({
         mapInstanceRef.current.setZoom(Math.max(zoom, 16));
       }
     }
-  }, [uuidsInShape, shape, isMapReady, zoom]);
+  }, [uuidsInShape, shape, isMapReady, zoom, positionsByUuid, properties, isLoading]);
 
   return (
     <div className="relative w-full h-full">
