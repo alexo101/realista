@@ -726,6 +726,7 @@ function NewRequestDialog({
               selected={range}
               onSelect={setRange}
               numberOfMonths={1}
+              locale={es}
               data-testid="calendar-range-picker"
             />
           </div>
