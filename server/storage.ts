@@ -446,6 +446,9 @@ export interface IStorage {
     request: AbsenceRequest;
     agent: { id: number; name: string | null; surname: string | null; email: string };
   }>>;
+  getAgencyMembersBasic(agencyId: number): Promise<Array<{
+    id: number; name: string | null; surname: string | null; email: string;
+  }>>;
 
   superAdminGlobalSearch(params: {
     query: string;
@@ -4778,6 +4781,29 @@ export class DatabaseStorage implements IStorage {
         ),
       )
       .orderBy(absenceRequests.startDate);
+    return rows;
+  }
+
+  async getAgencyMembersBasic(agencyId: number): Promise<Array<{
+    id: number; name: string | null; surname: string | null; email: string;
+  }>> {
+    const rows = await db
+      .select({
+        id: agents.id,
+        name: agents.name,
+        surname: agents.surname,
+        email: agents.email,
+      })
+      .from(agents)
+      .innerJoin(
+        agencyAgents,
+        and(
+          eq(agencyAgents.agentId, agents.id),
+          eq(agencyAgents.agencyId, agencyId),
+          isNull(agencyAgents.leftAt),
+        ),
+      )
+      .orderBy(agents.name);
     return rows;
   }
 

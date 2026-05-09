@@ -209,7 +209,7 @@ function TeamCalendarTab() {
     [days],
   );
 
-  const { data, isLoading } = useQuery<{ rows: TeamRequestRow[] }>({
+  const { data, isLoading } = useQuery<{ rows: TeamRequestRow[]; allAgents: AgentLite[] }>({
     queryKey: ["/api/absence-requests/team/calendar", range.from, range.to],
     queryFn: () =>
       fetch(
@@ -222,13 +222,12 @@ function TeamCalendarTab() {
   });
 
   const rows = data?.rows ?? [];
+  const allAgents = data?.allAgents ?? [];
 
   // Build per-agent map of date -> reason
   const { agents, byAgentDay } = useMemo(() => {
-    const agentMap = new Map<number, AgentLite>();
     const cells = new Map<number, Map<string, AbsenceReason>>();
     for (const row of rows) {
-      agentMap.set(row.agent.id, row.agent);
       const reason = row.request.reason as AbsenceReason;
       const ds = expandRange(row.request.startDate, row.request.endDate);
       const inner = cells.get(row.agent.id) ?? new Map<string, AbsenceReason>();
@@ -237,11 +236,11 @@ function TeamCalendarTab() {
       }
       cells.set(row.agent.id, inner);
     }
-    const list = Array.from(agentMap.values()).sort((a, b) =>
+    const list = [...allAgents].sort((a, b) =>
       fullName(a).localeCompare(fullName(b), "es"),
     );
     return { agents: list, byAgentDay: cells };
-  }, [rows]);
+  }, [rows, allAgents]);
 
   const today = useMemo(() => new Date(), []);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -350,7 +349,7 @@ function TeamCalendarTab() {
                       colSpan={days.length + 1}
                       className="text-center py-10 text-sm text-muted-foreground"
                     >
-                      No hay ausencias aprobadas en este rango.
+                      No hay miembros en el equipo.
                     </td>
                   </tr>
                 ) : (

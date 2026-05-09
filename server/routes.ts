@@ -6628,8 +6628,11 @@ Gracias!
       if (fromParam > toParam) {
         return res.status(400).json({ message: "El rango from/to es inválido" });
       }
-      const rows = await storage.getApprovedTeamAbsenceRequests(agencyId, fromParam, toParam);
-      res.json({ rows });
+      const [rows, allAgents] = await Promise.all([
+        storage.getApprovedTeamAbsenceRequests(agencyId, fromParam, toParam),
+        storage.getAgencyMembersBasic(agencyId),
+      ]);
+      res.json({ rows, allAgents });
     } catch (error) {
       console.error("Error fetching team absence calendar:", error);
       res.status(500).json({ message: "Error al obtener el calendario del equipo" });
