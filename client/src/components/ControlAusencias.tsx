@@ -752,6 +752,7 @@ function NewRequestDialog({
               onSelect={(val) => setDays(val ?? [])}
               numberOfMonths={1}
               locale={es}
+              disabled={{ before: new Date() }}
               data-testid="calendar-range-picker"
             />
           </div>
