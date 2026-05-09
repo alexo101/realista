@@ -6618,7 +6618,7 @@ Gracias!
     try {
       const agencyId = req.user!.agencyId;
       if (!agencyId) {
-        return res.json({ rows: [] });
+        return res.json({ rows: [], allAgents: [] });
       }
       const fromParam = (req.query.from as string | undefined)?.trim();
       const toParam = (req.query.to as string | undefined)?.trim();

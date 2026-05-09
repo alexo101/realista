@@ -133,6 +133,12 @@ app.use(session({
   }
 }));
 
+// Prevent browsers from caching API responses (avoids stale 304 replies)
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
