@@ -133,7 +133,10 @@ app.use(session({
   }
 }));
 
-// Prevent browsers from caching API responses (avoids stale 304 replies)
+// Prevent browsers from caching API responses (avoids stale 304 replies).
+// Disabling ETags stops Express from ever sending a 304 for API routes;
+// Cache-Control: no-store ensures the client never stores the response.
+app.set("etag", false);
 app.use("/api", (_req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
   next();
