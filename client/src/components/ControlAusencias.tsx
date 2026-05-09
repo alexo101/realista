@@ -59,7 +59,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
 import type { AbsenceRequest, AbsenceReason, AbsenceStatus } from "@shared/schema";
-import type { DateRange } from "react-day-picker";
 
 interface AgentLite {
   id: number;
@@ -652,6 +651,30 @@ function NewRequestTab() {
   );
 }
 
+/** Group a sorted list of dates into contiguous ranges. */
+function groupConsecutiveDays(dates: Date[]): Array<{ from: Date; to: Date }> {
+  if (dates.length === 0) return [];
+  const sorted = [...dates].sort((a, b) => a.getTime() - b.getTime());
+  const groups: Array<{ from: Date; to: Date }> = [];
+  let from = sorted[0];
+  let to = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const cur = sorted[i];
+    const diffMs = cur.getTime() - prev.getTime();
+    const diffDays = Math.round(diffMs / 86_400_000);
+    if (diffDays === 1) {
+      to = cur;
+    } else {
+      groups.push({ from, to });
+      from = cur;
+      to = cur;
+    }
+  }
+  groups.push({ from, to });
+  return groups;
+}
+
 function NewRequestDialog({
   open,
   onOpenChange,
@@ -661,28 +684,31 @@ function NewRequestDialog({
   onOpenChange: (v: boolean) => void;
   onSuccess: () => void;
 }) {
-  const [range, setRange] = useState<DateRange | undefined>();
+  const [days, setDays] = useState<Date[]>([]);
   const [reason, setReason] = useState<AbsenceReason | "">("");
   const { toast } = useToast();
 
   const reset = () => {
-    setRange(undefined);
+    setDays([]);
     setReason("");
   };
 
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
   const submitMutation = useMutation({
     mutationFn: async () => {
-      if (!range?.from || !reason) {
+      if (days.length === 0 || !reason) {
         throw new Error("Debes seleccionar al menos una fecha y un motivo");
       }
-      const fmt = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const end = range.to ?? range.from;
-      return apiRequest("POST", "/api/absence-requests", {
-        startDate: fmt(range.from),
-        endDate: fmt(end),
-        reason,
-      });
+      const groups = groupConsecutiveDays(days);
+      for (const g of groups) {
+        await apiRequest("POST", "/api/absence-requests", {
+          startDate: fmt(g.from),
+          endDate: fmt(g.to),
+          reason,
+        });
+      }
     },
     onSuccess: () => {
       reset();
@@ -698,10 +724,9 @@ function NewRequestDialog({
     },
   });
 
-  const canSubmit = Boolean(range?.from && reason) && !submitMutation.isPending;
-  const dayCount = range?.from
-    ? eachDayOfInterval({ start: range.from, end: range.to ?? range.from }).length
-    : 0;
+  const canSubmit = days.length > 0 && Boolean(reason) && !submitMutation.isPending;
+  const dayCount = days.length;
+  const groups = groupConsecutiveDays(days);
 
   return (
     <Dialog
@@ -715,16 +740,16 @@ function NewRequestDialog({
         <DialogHeader>
           <DialogTitle>Nueva solicitud de ausencia</DialogTitle>
           <DialogDescription>
-            Selecciona uno o varios días y el motivo. La solicitud quedará pendiente de aprobación.
+            Haz clic en días sueltos o en varios días consecutivos. La solicitud quedará pendiente de aprobación.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="flex justify-center">
             <Calendar
-              mode="range"
-              selected={range}
-              onSelect={setRange}
+              mode="multiple"
+              selected={days}
+              onSelect={(val) => setDays(val ?? [])}
               numberOfMonths={1}
               locale={es}
               data-testid="calendar-range-picker"
@@ -747,13 +772,17 @@ function NewRequestDialog({
             </Select>
           </div>
 
-          {range?.from && (
-            <p className="text-sm text-muted-foreground" data-testid="text-range-summary">
-              {dayCount} {dayCount === 1 ? "día" : "días"} —{" "}
-              {range.to && range.to.getTime() !== range.from.getTime()
-                ? `${format(range.from, "d MMM", { locale: es })} a ${format(range.to, "d MMM yyyy", { locale: es })}`
-                : format(range.from, "d MMM yyyy", { locale: es })}
-            </p>
+          {dayCount > 0 && (
+            <div className="text-sm text-muted-foreground space-y-0.5" data-testid="text-range-summary">
+              <p>{dayCount} {dayCount === 1 ? "día seleccionado" : "días seleccionados"}</p>
+              {groups.map((g, i) => (
+                <p key={i} className="tabular-nums">
+                  {isSameDay(g.from, g.to)
+                    ? format(g.from, "d MMM yyyy", { locale: es })
+                    : `${format(g.from, "d MMM", { locale: es })} – ${format(g.to, "d MMM yyyy", { locale: es })}`}
+                </p>
+              ))}
+            </div>
           )}
         </div>
 
