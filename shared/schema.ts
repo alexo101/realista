@@ -1031,3 +1031,29 @@ export const insertAbsenceRequestSchema = createInsertSchema(absenceRequests).om
 });
 export type AbsenceRequest = typeof absenceRequests.$inferSelect;
 export type InsertAbsenceRequest = z.infer<typeof insertAbsenceRequestSchema>;
+
+// Assigns a designated approver for each team member's absence requests.
+export const absenceApprovalAssignments = pgTable(
+  "absence_approval_assignments",
+  {
+    id: serial("id").primaryKey(),
+    agencyId: integer("agency_id")
+      .notNull()
+      .references(() => agencies.id, { onDelete: "cascade" }),
+    agentId: integer("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    approverId: integer("approver_id")
+      .references(() => agents.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueAgencyAgent: uniqueIndex("absence_approval_assignments_agency_agent_unique").on(
+      table.agencyId,
+      table.agentId,
+    ),
+    agencyIdx: index("absence_approval_assignments_agency_idx").on(table.agencyId),
+  }),
+);
+
+export type AbsenceApprovalAssignment = typeof absenceApprovalAssignments.$inferSelect;

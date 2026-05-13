@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, LogIn, LogOut, Pause, Play, Coffee, Loader2, Users } from "lucide-react";
+import { Clock, LogIn, LogOut, Pause, Play, Coffee, Loader2, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
@@ -438,9 +439,31 @@ export function ControlJornada() {
   );
 }
 
+interface AgentBasic {
+  id: number;
+  name: string | null;
+  surname: string | null;
+  email: string;
+}
+
+interface HistoryResponse {
+  rows: WorkSession[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+function agentFullName(agent: AgentBasic): string {
+  return [agent.name, agent.surname].filter(Boolean).join(" ") || agent.email;
+}
+
+const PAGE_SIZE = 10;
+
 function TeamJornadaCard() {
   const [date, setDate] = useState<string>(todayLocal());
   const [now, setNow] = useState<Date>(new Date());
+  const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
 
   // Live clock for in-progress workers (recompute totals every minute)
   useEffect(() => {
@@ -448,7 +471,8 @@ function TeamJornadaCard() {
     return () => clearInterval(interval);
   }, []);
 
-  const { data, isLoading } = useQuery<TeamResponse>({
+  // Date-based team view (no employee filter)
+  const { data: teamData, isLoading: teamLoading } = useQuery<TeamResponse>({
     queryKey: ["/api/work-sessions/team", date],
     queryFn: () =>
       fetch(`/api/work-sessions/team?date=${encodeURIComponent(date)}`, {
@@ -457,160 +481,385 @@ function TeamJornadaCard() {
         if (!res.ok) throw new Error("Failed to fetch team sessions");
         return res.json();
       }),
+    enabled: selectedAgentId === null,
   });
 
-  const rows = data?.rows ?? [];
+  // Paginated history for a specific employee
+  const { data: historyData, isLoading: historyLoading } = useQuery<HistoryResponse>({
+    queryKey: ["/api/work-sessions/history", selectedAgentId, historyPage],
+    queryFn: () =>
+      fetch(
+        `/api/work-sessions/history?agentId=${selectedAgentId}&page=${historyPage}&pageSize=${PAGE_SIZE}`,
+        { credentials: "include" },
+      ).then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch history");
+        return res.json();
+      }),
+    enabled: selectedAgentId !== null,
+  });
+
+  const teamRows = teamData?.rows ?? [];
+  const historyRows = historyData?.rows ?? [];
+  const totalPages = historyData ? Math.ceil(historyData.total / PAGE_SIZE) : 0;
+
+  // Derive agent list from team data (all active members, even those with no session today)
+  const allAgents = useMemo(() => {
+    const seen = new Set<number>();
+    const list: AgentBasic[] = [];
+    for (const row of teamRows) {
+      if (!seen.has(row.agent.id)) {
+        seen.add(row.agent.id);
+        list.push(row.agent);
+      }
+    }
+    return list.sort((a, b) =>
+      agentFullName(a).localeCompare(agentFullName(b), "es"),
+    );
+  }, [teamRows]);
+
+  const handleAgentChange = (value: string) => {
+    if (value === "__all__") {
+      setSelectedAgentId(null);
+    } else {
+      setSelectedAgentId(parseInt(value, 10));
+      setHistoryPage(1);
+    }
+  };
+
+  const selectedAgent = allAgents.find((a) => a.id === selectedAgentId) ?? null;
 
   return (
     <Card data-testid="card-control-jornada-equipo">
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Equipo
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <label htmlFor="team-date" className="text-sm text-muted-foreground">
-            Fecha:
-          </label>
-          <Input
-            id="team-date"
-            type="date"
-            value={date}
-            max={todayLocal()}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-auto"
-            data-testid="input-team-date"
-          />
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <CardTitle className="flex items-center gap-2 shrink-0">
+            <Users className="h-5 w-5" />
+            Equipo
+          </CardTitle>
+
+          {/* Employee filter */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground whitespace-nowrap">Empleado:</label>
+            <Select
+              value={selectedAgentId !== null ? String(selectedAgentId) : "__all__"}
+              onValueChange={handleAgentChange}
+            >
+              <SelectTrigger className="w-[180px]" data-testid="select-employee-filter">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos los empleados</SelectItem>
+                {allAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={String(agent.id)}>
+                    {agentFullName(agent)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date filter — only visible when no employee is selected */}
+          {selectedAgentId === null && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="team-date" className="text-sm text-muted-foreground whitespace-nowrap">
+                Fecha:
+              </label>
+              <Input
+                id="team-date"
+                type="date"
+                value={date}
+                max={todayLocal()}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-auto"
+                data-testid="input-team-date"
+              />
+            </div>
+          )}
         </div>
       </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>No hay agentes en tu equipo todavía.</p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop table */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Agente</TableHead>
-                    <TableHead>Entrada</TableHead>
-                    <TableHead>Pausas</TableHead>
-                    <TableHead>Salida</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Tiempo trabajado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((row) => {
-                    const state = getSessionState(row.session);
-                    const worked = computeWorkedMs(row.session, now.getTime());
-                    const breaks = (row.session?.breaks ?? []) as WorkBreak[];
-                    const fullName = [row.agent.name, row.agent.surname]
-                      .filter(Boolean)
-                      .join(" ") || row.agent.email;
-                    return (
-                      <TableRow key={row.agent.id} data-testid={`row-team-${row.agent.id}`}>
-                        <TableCell className="font-medium">{fullName}</TableCell>
-                        <TableCell className="tabular-nums">
-                          {formatTime(row.session?.clockInAt)}
-                        </TableCell>
-                        <TableCell>
-                          {breaks.length === 0 ? (
-                            <span className="text-muted-foreground">—</span>
-                          ) : (
-                            <div className="flex flex-col gap-0.5 text-xs tabular-nums">
-                              {breaks.map((b, i) => (
-                                <span key={i}>
-                                  {formatTime(b.startAt)} – {b.endAt ? formatTime(b.endAt) : "en curso"}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="tabular-nums">
-                          {formatTime(row.session?.clockOutAt)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={stateBadgeClass(state)}
-                            data-testid={`badge-team-state-${row.agent.id}`}
-                          >
-                            {stateLabel(state)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums font-medium">
-                          {row.session ? formatDuration(worked) : "—"}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
 
-            {/* Mobile cards */}
-            <div className="block md:hidden space-y-3">
-              {rows.map((row) => {
-                const state = getSessionState(row.session);
-                const worked = computeWorkedMs(row.session, now.getTime());
-                const breaks = (row.session?.breaks ?? []) as WorkBreak[];
-                const fullName = [row.agent.name, row.agent.surname]
-                  .filter(Boolean)
-                  .join(" ") || row.agent.email;
-                return (
-                  <div
-                    key={row.agent.id}
-                    className="border rounded-lg p-4 space-y-2"
-                    data-testid={`card-team-${row.agent.id}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <p className="font-semibold">{fullName}</p>
-                      <Badge variant="outline" className={stateBadgeClass(state)}>
-                        {stateLabel(state)}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Entrada</p>
-                        <p className="tabular-nums">{formatTime(row.session?.clockInAt)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Salida</p>
-                        <p className="tabular-nums">{formatTime(row.session?.clockOutAt)}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-xs text-muted-foreground">Tiempo trabajado</p>
-                        <p className="tabular-nums font-medium">
-                          {row.session ? formatDuration(worked) : "—"}
+      <CardContent>
+        {/* ── Paginated employee history ── */}
+        {selectedAgentId !== null ? (
+          historyLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : historyRows.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p>Este empleado no tiene jornadas registradas.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Entrada</TableHead>
+                      <TableHead>Pausas</TableHead>
+                      <TableHead>Salida</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Tiempo trabajado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {historyRows.map((session) => {
+                      const state = getSessionState(session);
+                      const worked = computeWorkedMs(session, now.getTime());
+                      const breaks = (session.breaks ?? []) as WorkBreak[];
+                      return (
+                        <TableRow key={session.id} data-testid={`row-history-${session.id}`}>
+                          <TableCell className="font-medium tabular-nums">
+                            {format(new Date(session.workDate + "T00:00:00"), "dd MMM yyyy", { locale: es })}
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {formatTime(session.clockInAt)}
+                          </TableCell>
+                          <TableCell>
+                            {breaks.length === 0 ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <div className="flex flex-col gap-0.5 text-xs tabular-nums">
+                                {breaks.map((b, i) => (
+                                  <span key={i}>
+                                    {formatTime(b.startAt)} – {b.endAt ? formatTime(b.endAt) : "en curso"}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {formatTime(session.clockOutAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={stateBadgeClass(state)}>
+                              {stateLabel(state)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums font-medium">
+                            {formatDuration(worked)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="block md:hidden space-y-3">
+                {historyRows.map((session) => {
+                  const state = getSessionState(session);
+                  const worked = computeWorkedMs(session, now.getTime());
+                  const breaks = (session.breaks ?? []) as WorkBreak[];
+                  return (
+                    <div
+                      key={session.id}
+                      className="border rounded-lg p-4 space-y-2"
+                      data-testid={`card-history-${session.id}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <p className="font-semibold tabular-nums">
+                          {format(new Date(session.workDate + "T00:00:00"), "dd MMM yyyy", { locale: es })}
                         </p>
+                        <Badge variant="outline" className={stateBadgeClass(state)}>
+                          {stateLabel(state)}
+                        </Badge>
                       </div>
-                    </div>
-                    {breaks.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Pausas</p>
-                        <div className="text-xs tabular-nums space-y-0.5">
-                          {breaks.map((b, i) => (
-                            <p key={i}>
-                              {formatTime(b.startAt)} – {b.endAt ? formatTime(b.endAt) : "en curso"}
-                            </p>
-                          ))}
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Entrada</p>
+                          <p className="tabular-nums">{formatTime(session.clockInAt)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Salida</p>
+                          <p className="tabular-nums">{formatTime(session.clockOutAt)}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">Tiempo trabajado</p>
+                          <p className="tabular-nums font-medium">{formatDuration(worked)}</p>
                         </div>
                       </div>
-                    )}
+                      {breaks.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Pausas</p>
+                          <div className="text-xs tabular-nums space-y-0.5">
+                            {breaks.map((b, i) => (
+                              <p key={i}>
+                                {formatTime(b.startAt)} – {b.endAt ? formatTime(b.endAt) : "en curso"}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Página {historyPage} de {totalPages} &middot; {historyData!.total} registros
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                      disabled={historyPage === 1}
+                      data-testid="button-prev-page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setHistoryPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={historyPage === totalPages}
+                      data-testid="button-next-page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
-          </>
+          )
+        ) : (
+          /* ── Date-based team view ── */
+          teamLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : teamRows.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p>No hay agentes en tu equipo todavía.</p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Agente</TableHead>
+                      <TableHead>Entrada</TableHead>
+                      <TableHead>Pausas</TableHead>
+                      <TableHead>Salida</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Tiempo trabajado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teamRows.map((row) => {
+                      const state = getSessionState(row.session);
+                      const worked = computeWorkedMs(row.session, now.getTime());
+                      const breaks = (row.session?.breaks ?? []) as WorkBreak[];
+                      const fullName = [row.agent.name, row.agent.surname]
+                        .filter(Boolean)
+                        .join(" ") || row.agent.email;
+                      return (
+                        <TableRow key={row.agent.id} data-testid={`row-team-${row.agent.id}`}>
+                          <TableCell className="font-medium">{fullName}</TableCell>
+                          <TableCell className="tabular-nums">
+                            {formatTime(row.session?.clockInAt)}
+                          </TableCell>
+                          <TableCell>
+                            {breaks.length === 0 ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <div className="flex flex-col gap-0.5 text-xs tabular-nums">
+                                {breaks.map((b, i) => (
+                                  <span key={i}>
+                                    {formatTime(b.startAt)} – {b.endAt ? formatTime(b.endAt) : "en curso"}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {formatTime(row.session?.clockOutAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={stateBadgeClass(state)}
+                              data-testid={`badge-team-state-${row.agent.id}`}
+                            >
+                              {stateLabel(state)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums font-medium">
+                            {row.session ? formatDuration(worked) : "—"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="block md:hidden space-y-3">
+                {teamRows.map((row) => {
+                  const state = getSessionState(row.session);
+                  const worked = computeWorkedMs(row.session, now.getTime());
+                  const breaks = (row.session?.breaks ?? []) as WorkBreak[];
+                  const fullName = [row.agent.name, row.agent.surname]
+                    .filter(Boolean)
+                    .join(" ") || row.agent.email;
+                  return (
+                    <div
+                      key={row.agent.id}
+                      className="border rounded-lg p-4 space-y-2"
+                      data-testid={`card-team-${row.agent.id}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <p className="font-semibold">{fullName}</p>
+                        <Badge variant="outline" className={stateBadgeClass(state)}>
+                          {stateLabel(state)}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Entrada</p>
+                          <p className="tabular-nums">{formatTime(row.session?.clockInAt)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Salida</p>
+                          <p className="tabular-nums">{formatTime(row.session?.clockOutAt)}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">Tiempo trabajado</p>
+                          <p className="tabular-nums font-medium">
+                            {row.session ? formatDuration(worked) : "—"}
+                          </p>
+                        </div>
+                      </div>
+                      {breaks.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Pausas</p>
+                          <div className="text-xs tabular-nums space-y-0.5">
+                            {breaks.map((b, i) => (
+                              <p key={i}>
+                                {formatTime(b.startAt)} – {b.endAt ? formatTime(b.endAt) : "en curso"}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )
         )}
       </CardContent>
     </Card>

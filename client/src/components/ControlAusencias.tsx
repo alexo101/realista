@@ -54,11 +54,12 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  UserCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
-import type { AbsenceRequest, AbsenceReason, AbsenceStatus } from "@shared/schema";
+import type { AbsenceRequest, AbsenceReason, AbsenceStatus, AbsenceApprovalAssignment } from "@shared/schema";
 
 interface AgentLite {
   id: number;
@@ -156,7 +157,7 @@ export function ControlAusencias() {
       </div>
 
       <Tabs defaultValue="calendario" className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
+        <TabsList className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-2"}`}>
           <TabsTrigger value="calendario" data-testid="tab-calendario-equipo">
             Calendario de equipo
           </TabsTrigger>
@@ -166,6 +167,11 @@ export function ControlAusencias() {
           {isAdmin && (
             <TabsTrigger value="aprobaciones" data-testid="tab-aprobaciones">
               Aprobaciones
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="asignaciones" data-testid="tab-asignaciones">
+              Asignaciones
             </TabsTrigger>
           )}
         </TabsList>
@@ -181,6 +187,12 @@ export function ControlAusencias() {
         {isAdmin && (
           <TabsContent value="aprobaciones" className="mt-6">
             <ApprovalsTab />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="asignaciones" className="mt-6">
+            <AsignacionesTab />
           </TabsContent>
         )}
       </Tabs>
@@ -804,6 +816,137 @@ function NewRequestDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// -------------------- Asignaciones (admin) --------------------
+interface AssignmentsResponse {
+  assignments: AbsenceApprovalAssignment[];
+  members: AgentLite[];
+}
+
+function AsignacionesTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery<AssignmentsResponse>({
+    queryKey: ["/api/absence-approvers"],
+  });
+
+  const members = data?.members ?? [];
+  const assignments = data?.assignments ?? [];
+
+  // Build a quick lookup: agentId -> approverId
+  const approverMap = useMemo(() => {
+    const m = new Map<number, number | null>();
+    for (const a of assignments) {
+      m.set(a.agentId, a.approverId ?? null);
+    }
+    return m;
+  }, [assignments]);
+
+  const saveMutation = useMutation({
+    mutationFn: ({ agentId, approverId }: { agentId: number; approverId: number | null }) =>
+      apiRequest("PUT", `/api/absence-approvers/${agentId}`, { approverId }),
+    onSuccess: () => {
+      toast({ title: "Asignación guardada" });
+      queryClient.invalidateQueries({ queryKey: ["/api/absence-approvers"] });
+    },
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: errorText(err, "No se pudo guardar la asignación"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleChange = (agentId: number, value: string) => {
+    const approverId = value === "__none__" ? null : parseInt(value, 10);
+    saveMutation.mutate({ agentId, approverId });
+  };
+
+  return (
+    <Card data-testid="card-asignaciones">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserCheck className="h-5 w-5" />
+          Asignaciones de aprobación
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Define quién es el responsable de aprobar las solicitudes de ausencia de cada miembro del equipo.
+        </p>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : members.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <UserCheck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <p>No hay miembros en el equipo todavía.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {members.map((member) => {
+              const currentApproverId = approverMap.get(member.id) ?? null;
+              const isSaving =
+                saveMutation.isPending && saveMutation.variables?.agentId === member.id;
+              return (
+                <div
+                  key={member.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg"
+                  data-testid={`row-assignment-${member.id}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      <span className="text-sm font-semibold text-muted-foreground">
+                        {(member.name?.[0] ?? member.email[0]).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{fullName(member)}</p>
+                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isSaving && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    <Select
+                      value={currentApproverId !== null ? String(currentApproverId) : "__none__"}
+                      onValueChange={(v) => handleChange(member.id, v)}
+                      disabled={isSaving}
+                    >
+                      <SelectTrigger
+                        className="w-[200px]"
+                        data-testid={`select-approver-${member.id}`}
+                      >
+                        <SelectValue placeholder="Sin asignar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sin asignar</SelectItem>
+                        {members
+                          .filter((m) => m.id !== member.id)
+                          .map((approver) => (
+                            <SelectItem
+                              key={approver.id}
+                              value={String(approver.id)}
+                              data-testid={`option-approver-${member.id}-${approver.id}`}
+                            >
+                              {fullName(approver)}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

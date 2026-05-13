@@ -115,7 +115,9 @@ import {
   type InsertWorkSession,
   type WorkBreak,
   absenceRequests,
+  absenceApprovalAssignments,
   type AbsenceRequest,
+  type AbsenceApprovalAssignment,
   type AbsenceReason,
   type AbsenceStatus,
 } from "@shared/schema";
@@ -449,6 +451,12 @@ export interface IStorage {
   getAgencyMembersBasic(agencyId: number): Promise<Array<{
     id: number; name: string | null; surname: string | null; email: string;
   }>>;
+  getAbsenceApprovalAssignments(agencyId: number): Promise<AbsenceApprovalAssignment[]>;
+  setAbsenceApprovalAssignment(agencyId: number, agentId: number, approverId: number | null): Promise<AbsenceApprovalAssignment>;
+  listWorkSessionsByAgent(agentId: number, page: number, pageSize: number): Promise<{
+    rows: WorkSession[];
+    total: number;
+  }>;
 
   superAdminGlobalSearch(params: {
     query: string;
@@ -4805,6 +4813,51 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(agents.name);
     return rows;
+  }
+
+  async getAbsenceApprovalAssignments(agencyId: number): Promise<AbsenceApprovalAssignment[]> {
+    return db
+      .select()
+      .from(absenceApprovalAssignments)
+      .where(eq(absenceApprovalAssignments.agencyId, agencyId));
+  }
+
+  async setAbsenceApprovalAssignment(
+    agencyId: number,
+    agentId: number,
+    approverId: number | null,
+  ): Promise<AbsenceApprovalAssignment> {
+    const now = new Date();
+    const [row] = await db
+      .insert(absenceApprovalAssignments)
+      .values({ agencyId, agentId, approverId, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [absenceApprovalAssignments.agencyId, absenceApprovalAssignments.agentId],
+        set: { approverId, updatedAt: now },
+      })
+      .returning();
+    return row;
+  }
+
+  async listWorkSessionsByAgent(agentId: number, page: number, pageSize: number): Promise<{
+    rows: WorkSession[];
+    total: number;
+  }> {
+    const offset = (page - 1) * pageSize;
+    const [rows, [{ value: total }]] = await Promise.all([
+      db
+        .select()
+        .from(workSessions)
+        .where(eq(workSessions.agentId, agentId))
+        .orderBy(desc(workSessions.workDate))
+        .limit(pageSize)
+        .offset(offset),
+      db
+        .select({ value: count() })
+        .from(workSessions)
+        .where(eq(workSessions.agentId, agentId)),
+    ]);
+    return { rows, total: Number(total) };
   }
 
   async superAdminGlobalSearch(params: {

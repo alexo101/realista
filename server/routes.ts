@@ -6563,6 +6563,88 @@ Gracias!
     }
   });
 
+  app.get("/api/work-sessions/members", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.isAdmin) {
+        return res.status(403).json({ message: "Solo los administradores pueden ver el equipo" });
+      }
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) {
+        return res.json({ members: [] });
+      }
+      const members = await storage.getAgencyMembersBasic(agencyId);
+      res.json({ members });
+    } catch (error) {
+      console.error("Error fetching work-sessions members:", error);
+      res.status(500).json({ message: "Error al obtener los miembros del equipo" });
+    }
+  });
+
+  app.get("/api/work-sessions/history", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.isAdmin) {
+        return res.status(403).json({ message: "Solo los administradores pueden ver el historial" });
+      }
+      const agentIdParam = req.query.agentId as string | undefined;
+      const agentId = agentIdParam ? parseInt(agentIdParam, 10) : NaN;
+      if (!agentId || isNaN(agentId)) {
+        return res.status(400).json({ message: "agentId inválido" });
+      }
+      const page = Math.max(1, parseInt((req.query.page as string | undefined) ?? "1", 10) || 1);
+      const pageSize = Math.min(50, Math.max(1, parseInt((req.query.pageSize as string | undefined) ?? "10", 10) || 10));
+      const { rows, total } = await storage.listWorkSessionsByAgent(agentId, page, pageSize);
+      res.json({ rows, total, page, pageSize });
+    } catch (error) {
+      console.error("Error fetching work session history:", error);
+      res.status(500).json({ message: "Error al obtener el historial de jornadas" });
+    }
+  });
+
+  // ============================================================
+  // Absence Approval Assignments
+  // ============================================================
+
+  app.get("/api/absence-approvers", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.isAdmin) {
+        return res.status(403).json({ message: "Solo los administradores pueden ver las asignaciones" });
+      }
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) return res.json({ assignments: [], members: [] });
+      const [assignments, members] = await Promise.all([
+        storage.getAbsenceApprovalAssignments(agencyId),
+        storage.getAgencyMembersBasic(agencyId),
+      ]);
+      res.json({ assignments, members });
+    } catch (error) {
+      console.error("Error fetching absence approvers:", error);
+      res.status(500).json({ message: "Error al obtener las asignaciones" });
+    }
+  });
+
+  app.put("/api/absence-approvers/:agentId", requireAuth, async (req, res) => {
+    try {
+      if (!req.user!.isAdmin) {
+        return res.status(403).json({ message: "Solo los administradores pueden cambiar las asignaciones" });
+      }
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) {
+        return res.status(400).json({ message: "Tu cuenta no está asociada a una agencia" });
+      }
+      const agentId = parseInt(req.params.agentId, 10);
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: "agentId inválido" });
+      }
+      const { approverId } = req.body as { approverId: number | null };
+      const approverIdVal = approverId === null || approverId === undefined ? null : Number(approverId);
+      const assignment = await storage.setAbsenceApprovalAssignment(agencyId, agentId, approverIdVal);
+      res.json(assignment);
+    } catch (error) {
+      console.error("Error setting absence approver:", error);
+      res.status(500).json({ message: "Error al guardar la asignación" });
+    }
+  });
+
   // ============================================================
   // Absence Requests (Control de ausencias)
   // ============================================================
