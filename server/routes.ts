@@ -3264,13 +3264,97 @@ Gracias!
   app.delete("/api/agency-agents/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      await storage.deleteAgencyAgent(id);
-      res.status(204).send();
+      const agencyIdParam = req.query.agencyId;
+      const agentIdParam = req.query.agentId;
+      const agencyId = typeof agencyIdParam === "string" ? parseInt(agencyIdParam) : NaN;
+      const agentId = typeof agentIdParam === "string" ? parseInt(agentIdParam) : NaN;
+
+      if (!Number.isNaN(id) && id > 0) {
+        await storage.deleteAgencyAgent(id);
+        return res.status(204).send();
+      }
+
+      if (!Number.isNaN(agencyId) && agencyId > 0 && !Number.isNaN(agentId) && agentId > 0) {
+        await storage.deleteAgencyAgentByAgencyAndAgent(agencyId, agentId);
+        return res.status(204).send();
+      }
+
+      return res.status(400).json({ message: "Se requiere id o agencyId+agentId válidos" });
     } catch (error) {
       console.error('Error deleting agency agent:', error);
       res.status(500).json({ message: "Failed to delete agency agent" });
     }
   });
+
+  app.patch(
+    "/api/agency-agents/:agentId/deactivate",
+    requireAuth,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const targetAgentId = parseInt(req.params.agentId);
+        if (!Number.isFinite(targetAgentId) || targetAgentId <= 0) {
+          return res.status(400).json({ message: "ID de agente inválido" });
+        }
+
+        if (req.user!.id === targetAgentId) {
+          return res.status(400).json({ message: "No puedes desactivar tu propia cuenta" });
+        }
+
+        const requesterRole = await storage.getAgentRole(req.user!.id);
+        if (requesterRole.role !== "admin" || !requesterRole.agencyId) {
+          return res.status(403).json({ message: "No tienes permisos para desactivar agentes" });
+        }
+
+        const targetRole = await storage.getAgentRole(targetAgentId);
+        if (!targetRole.agencyId || targetRole.agencyId !== requesterRole.agencyId) {
+          return res.status(403).json({ message: "El agente no pertenece a tu equipo" });
+        }
+
+        await storage.setUserActiveStatus({ kind: "agent", id: targetAgentId, isActive: false });
+        return res.status(200).json({ message: "Cuenta del agente desactivada correctamente" });
+      } catch (error) {
+        console.error("Error deactivating agency agent:", error);
+        return res.status(500).json({ message: "No se pudo desactivar la cuenta del agente" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/agency-agents/:agentId/activate",
+    requireAuth,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const targetAgentId = parseInt(req.params.agentId);
+        if (!Number.isFinite(targetAgentId) || targetAgentId <= 0) {
+          return res.status(400).json({ message: "ID de agente inválido" });
+        }
+
+        if (req.user!.id === targetAgentId) {
+          return res.status(400).json({ message: "No puedes activar tu propia cuenta" });
+        }
+
+        const requesterRole = await storage.getAgentRole(req.user!.id);
+        if (requesterRole.role !== "admin" || !requesterRole.agencyId) {
+          return res.status(403).json({ message: "No tienes permisos para activar agentes" });
+        }
+
+        const targetRole = await storage.getAgentRole(targetAgentId);
+        if (!targetRole.agencyId || targetRole.agencyId !== requesterRole.agencyId) {
+          return res.status(403).json({ message: "El agente no pertenece a tu equipo" });
+        }
+
+        await storage.setUserActiveStatus({ kind: "agent", id: targetAgentId, isActive: true });
+        return res.status(200).json({ message: "Cuenta del agente activada correctamente" });
+      } catch (error) {
+        console.error("Error activating agency agent:", error);
+        return res.status(500).json({ message: "No se pudo activar la cuenta del agente" });
+      }
+    },
+  );
+
+
 
   // Appointments routes
   app.get("/api/appointments/client/:clientId", async (req, res) => {
@@ -4289,14 +4373,146 @@ Gracias!
   app.delete("/api/agency-agents/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Deleting agency agent ${id}`);
-      await storage.deleteAgencyAgent(id);
-      res.status(200).json({ message: "Agency agent deleted successfully" });
+      const agencyIdParam = req.query.agencyId;
+      const agentIdParam = req.query.agentId;
+      const agencyId = typeof agencyIdParam === "string" ? parseInt(agencyIdParam) : NaN;
+      const agentId = typeof agentIdParam === "string" ? parseInt(agentIdParam) : NaN;
+
+      if (!Number.isNaN(id) && id > 0) {
+        console.log(`Deleting agency agent ${id}`);
+        await storage.deleteAgencyAgent(id);
+        return res.status(200).json({ message: "Agency agent deleted successfully" });
+      }
+
+      if (!Number.isNaN(agencyId) && agencyId > 0 && !Number.isNaN(agentId) && agentId > 0) {
+        console.log(`Deleting agency agent by pair agency=${agencyId}, agent=${agentId}`);
+        await storage.deleteAgencyAgentByAgencyAndAgent(agencyId, agentId);
+        return res.status(200).json({ message: "Agency agent deleted successfully" });
+      }
+
+      return res.status(400).json({ message: "Se requiere id o agencyId+agentId válidos" });
     } catch (error) {
       console.error('Error deleting agency agent:', error);
       res.status(500).json({ message: "Failed to delete agency agent" });
     }
   });
+
+  app.patch(
+    "/api/agency-agents/:agentId/deactivate",
+    requireAuth,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const targetAgentId = parseInt(req.params.agentId);
+        if (!Number.isFinite(targetAgentId) || targetAgentId <= 0) {
+          return res.status(400).json({ message: "ID de agente inválido" });
+        }
+
+        if (req.user!.id === targetAgentId) {
+          return res.status(400).json({ message: "No puedes desactivar tu propia cuenta" });
+        }
+
+        const requesterRole = await storage.getAgentRole(req.user!.id);
+        if (requesterRole.role !== "admin" || !requesterRole.agencyId) {
+          return res.status(403).json({ message: "No tienes permisos para desactivar agentes" });
+        }
+
+        const targetRole = await storage.getAgentRole(targetAgentId);
+        if (!targetRole.agencyId || targetRole.agencyId !== requesterRole.agencyId) {
+          return res.status(403).json({ message: "El agente no pertenece a tu equipo" });
+        }
+
+        await storage.setUserActiveStatus({ kind: "agent", id: targetAgentId, isActive: false });
+        return res.status(200).json({ message: "Cuenta del agente desactivada correctamente" });
+      } catch (error) {
+        console.error("Error deactivating agency agent:", error);
+        return res.status(500).json({ message: "No se pudo desactivar la cuenta del agente" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/agency-agents/:agentId/activate",
+    requireAuth,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const targetAgentId = parseInt(req.params.agentId);
+        if (!Number.isFinite(targetAgentId) || targetAgentId <= 0) {
+          return res.status(400).json({ message: "ID de agente inválido" });
+        }
+
+        if (req.user!.id === targetAgentId) {
+          return res.status(400).json({ message: "No puedes activar tu propia cuenta" });
+        }
+
+        const requesterRole = await storage.getAgentRole(req.user!.id);
+        if (requesterRole.role !== "admin" || !requesterRole.agencyId) {
+          return res.status(403).json({ message: "No tienes permisos para activar agentes" });
+        }
+
+        const targetRole = await storage.getAgentRole(targetAgentId);
+        if (!targetRole.agencyId || targetRole.agencyId !== requesterRole.agencyId) {
+          return res.status(403).json({ message: "El agente no pertenece a tu equipo" });
+        }
+
+        await storage.setUserActiveStatus({ kind: "agent", id: targetAgentId, isActive: true });
+        return res.status(200).json({ message: "Cuenta del agente activada correctamente" });
+      } catch (error) {
+        console.error("Error activating agency agent:", error);
+        return res.status(500).json({ message: "No se pudo activar la cuenta del agente" });
+      }
+    },
+  );
+
+  app.delete(
+    "/api/agency-agents/:agentId/remove-completely",
+    requireAuth,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const targetAgentId = parseInt(req.params.agentId);
+        if (!Number.isFinite(targetAgentId) || targetAgentId <= 0) {
+          return res.status(400).json({ message: "ID de agente inválido" });
+        }
+
+        if (req.user!.id === targetAgentId) {
+          return res.status(400).json({ message: "No puedes eliminar tu propia cuenta" });
+        }
+
+        const requesterRole = await storage.getAgentRole(req.user!.id);
+        if (requesterRole.role !== "admin" || !requesterRole.agencyId) {
+          return res.status(403).json({ message: "No tienes permisos para eliminar agentes" });
+        }
+
+        const targetRole = await storage.getAgentRole(targetAgentId);
+        if (!targetRole.agencyId || targetRole.agencyId !== requesterRole.agencyId) {
+          return res.status(403).json({ message: "El agente no pertenece a tu equipo" });
+        }
+
+        await storage.removeAgentCompletelyFromPlatform({
+          agencyId: requesterRole.agencyId,
+          targetAgentId,
+          adminAgentId: req.user!.id,
+          requestedBy: req.user!.id,
+        });
+
+        return res.status(200).json({
+          message: "Cuenta eliminada completamente y datos reasignados al administrador",
+        });
+      } catch (error: any) {
+        console.error("Error removing agent completely:", error);
+        const message = error?.message || "No se pudo eliminar completamente la cuenta del agente";
+        if (
+          message.includes("Cannot remove an agency admin") ||
+          message.includes("Target agent is not an active member")
+        ) {
+          return res.status(400).json({ message });
+        }
+        return res.status(500).json({ message: "No se pudo eliminar completamente la cuenta del agente" });
+      }
+    },
+  );
 
   // API para solicitar reseñas
   app.post("/api/review-requests", async (req, res) => {

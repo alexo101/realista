@@ -62,6 +62,7 @@ import {
   clientFavoriteAgents,
   clientFavoriteAgencies,
   clientFavoriteProperties,
+  agentFavoriteProperties,
   propertyVisitRequests,
   type ClientFavoriteAgent,
   type InsertClientFavoriteAgent,
@@ -157,6 +158,13 @@ export interface IStorage {
   getAgencyAgents(agencyId: number): Promise<User[]>;
   createAgencyAgent(agentData: InsertAgencyAgent): Promise<AgencyAgent>;
   deleteAgencyAgent(id: number): Promise<void>;
+  deleteAgencyAgentByAgencyAndAgent(agencyId: number, agentId: number): Promise<void>;
+  removeAgentCompletelyFromPlatform(params: {
+    agencyId: number;
+    targetAgentId: number;
+    adminAgentId: number;
+    requestedBy: number;
+  }): Promise<void>;
 
   // Properties
   getProperties(): Promise<Property[]>;
@@ -1705,6 +1713,7 @@ export class DatabaseStorage implements IStorage {
       // Select agents through the agency_agents junction table
       const result = await db
         .select({
+          agencyAgentId: agencyAgents.id,
           id: agents.id,
           email: agents.email,
           password: agents.password,
@@ -1722,6 +1731,7 @@ export class DatabaseStorage implements IStorage {
           pausedSubscriptionPlan: agents.pausedSubscriptionPlan,
           pausedIsYearlyBilling: agents.pausedIsYearlyBilling,
           pausedAt: agents.pausedAt,
+          isActive: agents.isActive,
           deletedAt: agents.deletedAt,
           createdAt: agents.createdAt,
           invitationStatus: agents.invitationStatus, // For team table display
@@ -1787,6 +1797,98 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgencyAgent(id: number): Promise<void> {
     await db.delete(agencyAgents).where(eq(agencyAgents.id, id));
+  }
+
+  async deleteAgencyAgentByAgencyAndAgent(agencyId: number, agentId: number): Promise<void> {
+    await db
+      .delete(agencyAgents)
+      .where(
+        and(
+          eq(agencyAgents.agencyId, agencyId),
+          eq(agencyAgents.agentId, agentId),
+          isNull(agencyAgents.leftAt),
+        ),
+      );
+  }
+
+  async removeAgentCompletelyFromPlatform(params: {
+    agencyId: number;
+    targetAgentId: number;
+    adminAgentId: number;
+    requestedBy: number;
+  }): Promise<void> {
+    const { agencyId, targetAgentId, adminAgentId } = params;
+
+    await db.transaction(async (tx) => {
+      const [targetMembership] = await tx
+        .select({ id: agencyAgents.id, role: agencyAgents.role })
+        .from(agencyAgents)
+        .where(
+          and(
+            eq(agencyAgents.agencyId, agencyId),
+            eq(agencyAgents.agentId, targetAgentId),
+            isNull(agencyAgents.leftAt),
+          ),
+        );
+
+      if (!targetMembership) {
+        throw new Error("Target agent is not an active member of this agency");
+      }
+
+      if (targetMembership.role === "admin") {
+        throw new Error("Cannot remove an agency admin without transferring admin first");
+      }
+
+      const [adminMembership] = await tx
+        .select({ id: agencyAgents.id })
+        .from(agencyAgents)
+        .where(
+          and(
+            eq(agencyAgents.agencyId, agencyId),
+            eq(agencyAgents.agentId, adminAgentId),
+            eq(agencyAgents.role, "admin"),
+            isNull(agencyAgents.leftAt),
+          ),
+        );
+
+      if (!adminMembership) {
+        throw new Error("Admin assignee is not an active agency admin");
+      }
+
+      // Reassign owned records to agency admin
+      await tx.update(properties).set({ agentId: adminAgentId }).where(eq(properties.agentId, targetAgentId));
+      await tx.update(clients).set({ agentId: adminAgentId }).where(eq(clients.agentId, targetAgentId));
+      await tx.update(appointments).set({ agentId: adminAgentId }).where(eq(appointments.agentId, targetAgentId));
+      await tx.update(inquiries).set({ agentId: adminAgentId }).where(eq(inquiries.agentId, targetAgentId));
+      await tx
+        .update(conversationMessages)
+        .set({ senderId: adminAgentId })
+        .where(and(eq(conversationMessages.senderType, "agent"), eq(conversationMessages.senderId, targetAgentId)));
+      await tx.update(propertyVisitRequests).set({ agentId: adminAgentId }).where(eq(propertyVisitRequests.agentId, targetAgentId));
+      await tx.update(agentEvents).set({ agentId: adminAgentId }).where(eq(agentEvents.agentId, targetAgentId));
+      await tx.update(absenceRequests).set({ agentId: adminAgentId }).where(eq(absenceRequests.agentId, targetAgentId));
+      await tx.update(absenceRequests).set({ reviewedBy: adminAgentId }).where(eq(absenceRequests.reviewedBy, targetAgentId));
+      await tx
+        .update(absenceApprovalAssignments)
+        .set({ agentId: adminAgentId })
+        .where(eq(absenceApprovalAssignments.agentId, targetAgentId));
+      await tx
+        .update(absenceApprovalAssignments)
+        .set({ approverId: adminAgentId })
+        .where(eq(absenceApprovalAssignments.approverId, targetAgentId));
+
+      // Cleanup relationship rows where reassignment is not applicable
+      await tx.delete(clientFavoriteAgents).where(eq(clientFavoriteAgents.agentId, targetAgentId));
+      await tx.delete(agentFavoriteProperties).where(eq(agentFavoriteProperties.agentId, targetAgentId));
+      await tx.delete(workSessions).where(eq(workSessions.agentId, targetAgentId));
+      await tx.delete(agencyAgents).where(eq(agencyAgents.agentId, targetAgentId));
+      await tx.delete(agentInvitations).where(eq(agentInvitations.invitedBy, targetAgentId));
+      await tx.delete(subscriptionEvents).where(eq(subscriptionEvents.triggeredBy, targetAgentId));
+      await tx.delete(reviews).where(and(eq(reviews.targetType, "agent"), eq(reviews.targetId, targetAgentId)));
+
+      // Final hard delete
+      await tx.delete(agents).where(eq(agents.id, targetAgentId));
+    });
   }
 
   // Properties

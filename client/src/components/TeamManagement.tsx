@@ -11,17 +11,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, UserPlus, Loader2 } from "lucide-react";
+import { Plus, Users, Loader2, UserMinus } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
 
 interface TeamAgent {
+  agencyAgentId: number;
   id: number;
   name: string | null;
   surname: string | null;
   email: string;
   invitationStatus: string | null;
+  isActive: boolean;
 }
 
 const createAgentSchema = z.object({
@@ -40,7 +42,10 @@ interface TeamManagementProps {
 export function TeamManagement({ agencyId }: TeamManagementProps) {
   const [showAddAgentForm, setShowAddAgentForm] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [showHardRemoveDialog, setShowHardRemoveDialog] = useState(false);
   const [pendingInvitation, setPendingInvitation] = useState<CreateAgentFormData | null>(null);
+  const [agentToRemove, setAgentToRemove] = useState<TeamAgent | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useUser();
@@ -110,11 +115,106 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     setShowConfirmDialog(true);
   };
 
+  const removeAccessMutation = useMutation({
+    mutationFn: async ({ agentId, isActive }: { agentId: number; isActive: boolean }) => {
+      const actionPath = isActive ? "deactivate" : "activate";
+      return apiRequest("PATCH", `/api/agency-agents/${agentId}/${actionPath}`);
+    },
+    onSuccess: () => {
+      const removedAgentName = agentToRemove
+        ? `${agentToRemove.name || ""} ${agentToRemove.surname || ""}`.trim() || agentToRemove.email
+        : "El agente";
+      const wasActive = agentToRemove?.isActive ?? true;
+      toast({
+        title: wasActive
+          ? "Acceso a la plataforma desactivado"
+          : "Cuenta activada correctamente",
+        description: wasActive
+          ? `La cuenta de ${removedAgentName} fue desactivada. Ya no podrá iniciar sesión.`
+          : `La cuenta de ${removedAgentName} se activó y ya puede volver a iniciar sesión.`,
+      });
+      setShowRemoveDialog(false);
+      setAgentToRemove(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/agency-agents", agencyId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al eliminar acceso",
+        description: error.message || "No se pudo eliminar el acceso del agente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const hardRemoveMutation = useMutation({
+    mutationFn: async ({ agentId }: { agentId: number }) => {
+      return apiRequest("DELETE", `/api/agency-agents/${agentId}/remove-completely`);
+    },
+    onSuccess: () => {
+      const removedAgentName = agentToRemove
+        ? `${agentToRemove.name || ""} ${agentToRemove.surname || ""}`.trim() || agentToRemove.email
+        : "El agente";
+      toast({
+        title: "Cuenta eliminada completamente",
+        description: `${removedAgentName} fue eliminado de la plataforma y sus datos se reasignaron al administrador.`,
+      });
+      setShowHardRemoveDialog(false);
+      setAgentToRemove(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/agency-agents", agencyId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al eliminar completamente",
+        description: error.message || "No se pudo eliminar completamente la cuenta del agente.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Confirm and send invitation
   const confirmInvitation = () => {
     if (pendingInvitation) {
       createAgentMutation.mutate(pendingInvitation);
     }
+  };
+
+  const openRemoveDialog = (agent: TeamAgent) => {
+    setAgentToRemove(agent);
+    setShowRemoveDialog(true);
+  };
+
+  const openHardRemoveDialog = (agent: TeamAgent) => {
+    setAgentToRemove(agent);
+    setShowHardRemoveDialog(true);
+  };
+
+  const confirmRemoveAccess = () => {
+    if (!agentToRemove) {
+      toast({
+        title: "No se pudo quitar acceso",
+        description: "No se encontró el agente seleccionado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    removeAccessMutation.mutate({
+      agentId: agentToRemove.id,
+      isActive: agentToRemove.isActive,
+    });
+  };
+
+  const confirmHardRemove = () => {
+    if (!agentToRemove) {
+      toast({
+        title: "No se pudo eliminar completamente",
+        description: "No se encontró el agente seleccionado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    hardRemoveMutation.mutate({ agentId: agentToRemove.id });
   };
 
   const isFormValid = () => {
@@ -123,7 +223,16 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
   };
 
   // Helper to get status badge
-  const getStatusBadge = (invitationStatus: string | null) => {
+  const getStatusBadge = (agent: TeamAgent) => {
+    if (!agent.isActive) {
+      return (
+        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300" data-testid="badge-status-inactive">
+          Inactivo
+        </Badge>
+      );
+    }
+
+    const { invitationStatus } = agent;
     if (invitationStatus === 'pending') {
       return (
         <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300" data-testid="badge-status-pending">
@@ -189,6 +298,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                       <TableHead>Apellido</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -197,7 +307,34 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                         <TableCell className="font-medium">{agent.name || '-'}</TableCell>
                         <TableCell>{agent.surname || '-'}</TableCell>
                         <TableCell>{agent.email}</TableCell>
-                        <TableCell>{getStatusBadge(agent.invitationStatus)}</TableCell>
+                        <TableCell>{getStatusBadge(agent)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant={agent.isActive ? "destructive" : "default"}
+                              size="sm"
+                              onClick={() => openRemoveDialog(agent)}
+                              disabled={removeAccessMutation.isPending || hardRemoveMutation.isPending}
+                              className="h-8 px-2 text-xs"
+                              data-testid={`button-remove-agent-${agent.id}`}
+                            >
+                              <UserMinus className="h-4 w-4 mr-1" />
+                              {agent.isActive ? "Desactivar" : "Activar"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => openHardRemoveDialog(agent)}
+                              disabled={removeAccessMutation.isPending || hardRemoveMutation.isPending}
+                              className="h-8 px-2 text-xs"
+                              data-testid={`button-hard-remove-agent-${agent.id}`}
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -220,7 +357,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                         </p>
                         <p className="text-sm text-muted-foreground">Agente</p>
                       </div>
-                      {getStatusBadge(agent.invitationStatus)}
+                      {getStatusBadge(agent)}
                     </div>
                     
                     {/* Email */}
@@ -228,6 +365,29 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                       <p className="text-sm text-muted-foreground">Email</p>
                       <p className="text-sm break-all">{agent.email}</p>
                     </div>
+                    <Button
+                      type="button"
+                      variant={agent.isActive ? "destructive" : "default"}
+                      size="sm"
+                      onClick={() => openRemoveDialog(agent)}
+                      disabled={removeAccessMutation.isPending}
+                      className="w-full h-8 px-2 text-xs"
+                      data-testid={`button-remove-agent-mobile-${agent.id}`}
+                    >
+                      <UserMinus className="h-4 w-4 mr-2" />
+                      {agent.isActive ? "Desactivar" : "Activar"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => openHardRemoveDialog(agent)}
+                      disabled={removeAccessMutation.isPending || hardRemoveMutation.isPending}
+                      className="w-full h-8 px-2 text-xs"
+                      data-testid={`button-hard-remove-agent-mobile-${agent.id}`}
+                    >
+                      Eliminar
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -394,6 +554,121 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
                 </>
               ) : (
                 "Sí, enviar invitación"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Access Confirmation Dialog */}
+      <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full mx-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {agentToRemove?.isActive
+                ? "Eliminar acceso del agente a la plataforma"
+                : "Activar la cuenta del agente"}
+            </DialogTitle>
+            <DialogDescription>
+              ¿Seguro que deseas{" "}
+              {agentToRemove?.isActive ? "desactivar la cuenta de " : "activar la cuenta de "}
+              <strong>
+                {agentToRemove
+                  ? `${agentToRemove.name || ""} ${agentToRemove.surname || ""}`.trim() || agentToRemove.email
+                  : "este agente"}
+              </strong>
+              ?{" "}
+              {agentToRemove?.isActive ? (
+                <>
+                  Esta acción desactivará su cuenta en la plataforma: no podrá iniciar sesión ni acceder a su panel.
+                  Sus datos históricos (propiedades, clientes, mensajes, reseñas y citas) se conservarán.
+                </>
+              ) : (
+                <>
+                  Esta acción activará su cuenta en la plataforma y podrá volver a iniciar sesión con normalidad.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowRemoveDialog(false);
+                setAgentToRemove(null);
+              }}
+              disabled={removeAccessMutation.isPending || hardRemoveMutation.isPending}
+              className="w-full sm:w-auto"
+              data-testid="button-cancel-remove-access"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant={agentToRemove?.isActive ? "destructive" : "default"}
+              onClick={confirmRemoveAccess}
+              disabled={removeAccessMutation.isPending || hardRemoveMutation.isPending}
+              className="w-full sm:w-auto"
+              data-testid="button-confirm-remove-access"
+            >
+              {removeAccessMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {agentToRemove?.isActive ? "Desactivando..." : "Activando..."}
+                </>
+              ) : (
+                agentToRemove?.isActive ? "Sí, desactivar cuenta" : "Sí, activar la cuenta"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hard Remove Confirmation Dialog */}
+      <Dialog open={showHardRemoveDialog} onOpenChange={setShowHardRemoveDialog}>
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] sm:w-full mx-auto">
+          <DialogHeader>
+            <DialogTitle>Eliminar completamente de la plataforma</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que deseas eliminar permanentemente la cuenta de{" "}
+              <strong>
+                {agentToRemove
+                  ? `${agentToRemove.name || ""} ${agentToRemove.surname || ""}`.trim() || agentToRemove.email
+                  : "este agente"}
+              </strong>
+              ? Esta acción no se puede deshacer. Sus datos se reasignarán al administrador de la agencia.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowHardRemoveDialog(false);
+                setAgentToRemove(null);
+              }}
+              disabled={hardRemoveMutation.isPending || removeAccessMutation.isPending}
+              className="w-full sm:w-auto"
+              data-testid="button-cancel-hard-remove"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmHardRemove}
+              disabled={hardRemoveMutation.isPending || removeAccessMutation.isPending}
+              className="w-full sm:w-auto"
+              data-testid="button-confirm-hard-remove"
+            >
+              {hardRemoveMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Eliminando cuenta...
+                </>
+              ) : (
+                "Sí, eliminar completamente"
               )}
             </Button>
           </DialogFooter>
