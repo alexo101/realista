@@ -37,6 +37,7 @@ interface GoogleMapsNeighborhoodMapProps {
   shape?: AreaShape | null;
   onShapeChange?: (shape: AreaShape | null) => void;
   onAreaPropertyUuidsChange?: (uuids: string[] | null) => void;
+  onAreaClick?: () => void;
 }
 
 export default function GoogleMapsNeighborhoodMap({ 
@@ -48,6 +49,7 @@ export default function GoogleMapsNeighborhoodMap({
   shape: shapeProp,
   onShapeChange,
   onAreaPropertyUuidsChange,
+  onAreaClick,
 }: GoogleMapsNeighborhoodMapProps) {
   const [internalShape, setInternalShape] = useState<AreaShape | null>(null);
   const shape = shapeProp !== undefined ? shapeProp : internalShape;
@@ -593,17 +595,20 @@ export default function GoogleMapsNeighborhoodMap({
           shape={shape}
           onShapeChange={setShape}
           color="#0284c5"
+          allowCircle={false}
         />
       </div>
 
       {/* Properties-in-area pill */}
       {shape && uuidsInShape !== null && (
-        <div
-          className="absolute top-3 right-3 z-30 bg-white/95 px-3 py-1.5 rounded-full shadow border border-gray-200 text-sm font-medium text-gray-800"
+        <button
+          type="button"
+          onClick={onAreaClick}
+          className="absolute top-3 right-3 z-30 bg-white/95 px-3 py-1.5 rounded-full shadow border border-gray-200 text-sm font-medium text-gray-800 cursor-pointer hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40"
           data-testid="text-area-property-count"
         >
-          {uuidsInShape.length} {uuidsInShape.length === 1 ? 'inmueble' : 'inmuebles'} en esta zona
-        </div>
+          Ver {uuidsInShape.length} {uuidsInShape.length === 1 ? 'inmueble' : 'inmuebles'}
+        </button>
       )}
     </div>
   );

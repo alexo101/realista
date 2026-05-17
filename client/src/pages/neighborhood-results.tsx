@@ -1097,6 +1097,7 @@ export default function NeighborhoodResultsPage() {
                     shape={propertyAreaShape}
                     onShapeChange={setPropertyAreaShape}
                     onAreaPropertyUuidsChange={setPropertyAreaUuids}
+                    onAreaClick={() => setViewMode('list')}
                   />
                 );
               })()}
@@ -1160,6 +1161,7 @@ export default function NeighborhoodResultsPage() {
                       shape={agencyAreaShape}
                       onShapeChange={setAgencyAreaShape}
                       onAreaAgencyIdsChange={setAgencyAreaIds}
+                      onAreaClick={() => setAgenciesViewMode('list')}
                     />
                   );
                 }

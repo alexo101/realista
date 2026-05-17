@@ -8,6 +8,7 @@ interface MapDrawingControlsProps {
   shape: AreaShape | null;
   onShapeChange: (shape: AreaShape | null) => void;
   color?: string;
+  allowCircle?: boolean;
   className?: string;
 }
 
@@ -19,6 +20,7 @@ export function MapDrawingControls({
   shape,
   onShapeChange,
   color = '#0284c5',
+  allowCircle = true,
   className = '',
 }: MapDrawingControlsProps) {
   const drawingManagerRef = useRef<any>(null);
@@ -39,7 +41,7 @@ export function MapDrawingControls({
         strokeColor: color,
         strokeWeight: 2,
         fillColor: color,
-        fillOpacity: 0.12,
+        fillOpacity: 0.2,
         clickable: false,
         editable: false,
         zIndex: 1,
@@ -48,7 +50,7 @@ export function MapDrawingControls({
         strokeColor: color,
         strokeWeight: 2,
         fillColor: color,
-        fillOpacity: 0.12,
+        fillOpacity: 0.2,
         clickable: false,
         editable: false,
         zIndex: 1,
@@ -119,7 +121,7 @@ export function MapDrawingControls({
         strokeColor: color,
         strokeWeight: 2,
         fillColor: color,
-        fillOpacity: 0.12,
+        fillOpacity: 0.2,
         clickable: false,
         map,
       });
@@ -130,7 +132,7 @@ export function MapDrawingControls({
         strokeColor: color,
         strokeWeight: 2,
         fillColor: color,
-        fillOpacity: 0.12,
+        fillOpacity: 0.2,
         clickable: false,
         map,
       });
@@ -196,17 +198,19 @@ export function MapDrawingControls({
         <Pentagon className="h-4 w-4" />
         <span>Polígono</span>
       </button>
-      <button
-        type="button"
-        onClick={() => startMode(mode === 'circle' ? 'idle' : 'circle')}
-        className={`${baseBtn} ${mode === 'circle' ? activeBtn : idleBtn}`}
-        style={mode === 'circle' ? { backgroundColor: color } : undefined}
-        data-testid="button-draw-circle"
-        aria-pressed={mode === 'circle'}
-      >
-        <Circle className="h-4 w-4" />
-        <span>Círculo</span>
-      </button>
+      {allowCircle && (
+        <button
+          type="button"
+          onClick={() => startMode(mode === 'circle' ? 'idle' : 'circle')}
+          className={`${baseBtn} ${mode === 'circle' ? activeBtn : idleBtn}`}
+          style={mode === 'circle' ? { backgroundColor: color } : undefined}
+          data-testid="button-draw-circle"
+          aria-pressed={mode === 'circle'}
+        >
+          <Circle className="h-4 w-4" />
+          <span>Círculo</span>
+        </button>
+      )}
       {shape && (
         <button
           type="button"

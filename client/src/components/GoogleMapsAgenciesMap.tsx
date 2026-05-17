@@ -26,6 +26,7 @@ interface GoogleMapsAgenciesMapProps {
   shape?: AreaShape | null;
   onShapeChange?: (shape: AreaShape | null) => void;
   onAreaAgencyIdsChange?: (ids: number[] | null) => void;
+  onAreaClick?: () => void;
 }
 
 const AGENCY_PIN_COLOR = '#0f766e'; // teal-700, distinct from property red/blue
@@ -37,6 +38,7 @@ export default function GoogleMapsAgenciesMap({
   shape: shapeProp,
   onShapeChange,
   onAreaAgencyIdsChange,
+  onAreaClick,
 }: GoogleMapsAgenciesMapProps) {
   const [internalShape, setInternalShape] = useState<AreaShape | null>(null);
   const shape = shapeProp !== undefined ? shapeProp : internalShape;
@@ -311,17 +313,20 @@ export default function GoogleMapsAgenciesMap({
           shape={shape}
           onShapeChange={setShape}
           color={AGENCY_PIN_COLOR}
+          allowCircle={false}
         />
       </div>
 
       {/* Agencies-in-area pill */}
       {shape && idsInShape !== null && (
-        <div
-          className="absolute top-3 right-3 z-10 bg-white/95 px-3 py-1.5 rounded-full shadow border border-gray-200 text-sm font-medium text-gray-800"
+        <button
+          type="button"
+          onClick={onAreaClick}
+          className="absolute top-3 right-3 z-10 bg-white/95 px-3 py-1.5 rounded-full shadow border border-gray-200 text-sm font-medium text-gray-800 cursor-pointer hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700/40"
           data-testid="text-area-agency-count"
         >
-          {idsInShape.length} {idsInShape.length === 1 ? 'agencia' : 'agencias'} en esta zona
-        </div>
+          Ver {idsInShape.length} {idsInShape.length === 1 ? 'agencia' : 'agencias'}
+        </button>
       )}
 
       {isLoading && (
