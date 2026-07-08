@@ -745,7 +745,7 @@ export default function ManagePage() {
                   title={sidebarCollapsed ? "Mi perfil de agente" : ""}
                   data-testid="sidebar-group-mi-perfil"
                 >
-                  {!sidebarCollapsed && <span>Mi perfil de agente</span>}
+                  {!sidebarCollapsed && <span>Agente</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                       Mi perfil de agente
