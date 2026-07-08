@@ -1,6 +1,6 @@
 export type TranslationMap = Record<string, string>;
 
-export const translations: Record<"es" | "en", TranslationMap> = {
+export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
   es: {
     // Navbar
     "nav.home": "Inicio",
@@ -313,6 +313,38 @@ export const translations: Record<"es" | "en", TranslationMap> = {
     "common.save": "Guardar",
     "common.yes": "Sí",
     "common.no": "No",
+
+    // Neighborhood Rating
+    "neighborhood_rating.title":
+      "Busca y conoce las localidades de tu interés",
+    "neighborhood_rating.search_placeholder":
+      "Buscar localidades en España",
+    "neighborhood_rating.not_rated": "Sin calificar",
+    "neighborhood_rating.rate_button": "Calificar esta localidad",
+    "neighborhood_rating.rate_title": "Califica: {location}",
+    "neighborhood_rating.category_security": "Seguridad",
+    "neighborhood_rating.category_parking": "Aparcamiento",
+    "neighborhood_rating.category_family": "Ambiente familiar",
+    "neighborhood_rating.category_transport": "Conectividad",
+    "neighborhood_rating.category_green": "Zonas verdes",
+    "neighborhood_rating.category_services": "Servicios",
+    "neighborhood_rating.submitting": "Enviando...",
+    "neighborhood_rating.submit": "Enviar valoración",
+    "neighborhood_rating.based_on":
+      "Basado en {count} valoraciones de residentes",
+    "neighborhood_rating.no_ratings":
+      "No hay valoraciones disponibles para {location} en este momento.",
+    "neighborhood_rating.try_popular":
+      "Prueba con uno de los barrios populares arriba.",
+    "neighborhood_rating.toast_submitted_title": "¡Valoración enviada!",
+    "neighborhood_rating.toast_submitted_desc":
+      "Tu valoración para {location} ha sido guardada con éxito.",
+    "neighborhood_rating.toast_error_title": "Error al enviar valoración",
+    "neighborhood_rating.toast_error_desc":
+      "No se pudo enviar tu valoración. Inténtalo de nuevo.",
+    "neighborhood_rating.toast_missing_title": "Faltan calificaciones",
+    "neighborhood_rating.toast_missing_desc":
+      "Por favor, califica todas las categorías antes de enviar.",
   },
   en: {
     // Navbar
@@ -354,7 +386,7 @@ export const translations: Record<"es" | "en", TranslationMap> = {
     "footer.all_districts": "See all districts →",
     "footer.popular_neighborhoods": "Popular neighborhoods",
     "footer.legal_info": "Legal information",
-    "footer.privacy": "Política de privacidad",
+    "footer.privacy": "Privacy Policy",
     "footer.terms": "Terms and Conditions",
     "footer.cookies": "Cookie Policy",
     "footer.legal_notice": "Legal Notice",
@@ -628,5 +660,731 @@ export const translations: Record<"es" | "en", TranslationMap> = {
     "common.save": "Save",
     "common.yes": "Yes",
     "common.no": "No",
+
+    // Neighborhood Rating
+    "neighborhood_rating.title":
+      "Search and discover the neighborhoods you're interested in",
+    "neighborhood_rating.search_placeholder":
+      "Search locations in Spain",
+    "neighborhood_rating.not_rated": "Not rated",
+    "neighborhood_rating.rate_button": "Rate this neighborhood",
+    "neighborhood_rating.rate_title": "Rate: {location}",
+    "neighborhood_rating.category_security": "Security",
+    "neighborhood_rating.category_parking": "Parking",
+    "neighborhood_rating.category_family": "Family friendly",
+    "neighborhood_rating.category_transport": "Connectivity",
+    "neighborhood_rating.category_green": "Green spaces",
+    "neighborhood_rating.category_services": "Services",
+    "neighborhood_rating.submitting": "Submitting...",
+    "neighborhood_rating.submit": "Submit rating",
+    "neighborhood_rating.based_on":
+      "Based on {count} resident ratings",
+    "neighborhood_rating.no_ratings":
+      "There are no ratings available for {location} at the moment.",
+    "neighborhood_rating.try_popular":
+      "Try one of the popular neighborhoods above.",
+    "neighborhood_rating.toast_submitted_title": "Rating submitted!",
+    "neighborhood_rating.toast_submitted_desc":
+      "Your rating for {location} has been saved successfully.",
+    "neighborhood_rating.toast_error_title": "Error submitting rating",
+    "neighborhood_rating.toast_error_desc":
+      "Your rating could not be submitted. Please try again.",
+    "neighborhood_rating.toast_missing_title": "Missing ratings",
+    "neighborhood_rating.toast_missing_desc":
+      "Please rate all categories before submitting.",
+  },
+  fr: {
+    // Navbar
+    "nav.home": "Accueil",
+    "nav.login": "Se connecter",
+    "nav.profile": "Mon espace personnel",
+    "nav.manage": "Tout gérer",
+    "nav.realista_pro": "RealistaPro",
+
+    // SearchBar
+    "search.rent": "Louer",
+    "search.buy": "Acheter",
+    "search.agencies": "Agences",
+    "search.agents": "Agents",
+    "search.neighborhood": "Rechercher un quartier...",
+    "search.button": "Rechercher",
+    "search.select_neighborhood": "Sélectionnez un quartier",
+    "search.location_required": "Emplacement requis",
+    "search.location_required_desc":
+      "Veuillez sélectionner un quartier, un district ou Barcelone pour effectuer une recherche",
+
+    // Home
+    "home.hero_title":
+      "Trouvez votre logement idéal avec toutes les informations",
+    "home.most_viewed": "Les plus vues",
+    "home.tab_sale": "À Vendre",
+    "home.tab_rent": "À Louer",
+    "home.no_sale_title":
+      "Il n'y a actuellement aucune propriété à vendre disponible.",
+    "home.no_rent_title":
+      "Il n'y a actuellement aucune propriété à louer disponible.",
+    "home.no_results_subtitle":
+      "Revenez bientôt pour découvrir de nouvelles opportunités.",
+
+    // Footer
+    "footer.company_description":
+      "Votre plateforme de confiance pour trouver les meilleures propriétés en Espagne. Nous connectons agents, agences et clients de manière professionnelle et efficace.",
+    "footer.location": "Barcelone, Espagne",
+    "footer.districts": "Quartiers de Barcelone",
+    "footer.all_districts": "Voir tous les quartiers →",
+    "footer.popular_neighborhoods": "Quartiers populaires",
+    "footer.legal_info": "Informations légales",
+    "footer.privacy": "Politique de confidentialité",
+    "footer.terms": "Termes et Conditions",
+    "footer.cookies": "Politique de Cookies",
+    "footer.legal_notice": "Mentions légales",
+    "footer.copyright": "Tous droits réservés.",
+    "footer.digital_real_estate": "Immobilier Digital",
+    "footer.disclaimer":
+      "Realista est une plateforme numérique qui connecte des professionnels de l'immobilier avec des clients. Nous ne sommes pas responsables des transactions effectuées entre utilisateurs. Toutes les informations affichées sont fournies par les agents et agences enregistrés.",
+
+    // RealistaPro
+    "realista_pro.title": "RealistaPro",
+    "realista_pro.subtitle":
+      "La plateforme professionnelle pour les agences immobilières qui veulent se démarquer",
+    "realista_pro.crm": "CRM Avancé",
+    "realista_pro.ai": "IA Intégrée",
+    "realista_pro.reviews": "Gestion des Avis",
+    "realista_pro.choose_plan": "Choisissez votre plan parfait",
+    "realista_pro.flexible_plans":
+      "Plans flexibles pour les agences et agents individuels",
+    "realista_pro.agencies": "Agences",
+    "realista_pro.agents": "Agents",
+    "realista_pro.networks": "Réseaux",
+    "realista_pro.monthly": "Mensuel",
+    "realista_pro.yearly": "Annuel",
+    "realista_pro.start_free": "Commencer gratuitement",
+    "realista_pro.start_now": "Commencer maintenant",
+    "realista_pro.ai_features": "Que comprennent les avantages IA ?",
+    "realista_pro.auto_descriptions": "Descriptions automatiques",
+    "realista_pro.auto_descriptions_desc":
+      "L'IA génère des descriptions attrayantes et professionnelles pour vos propriétés",
+    "realista_pro.smart_responses": "Réponses intelligentes",
+    "realista_pro.smart_responses_desc":
+      "Suggestions automatiques pour répondre aux demandes des clients",
+    "realista_pro.per_month": "/mois",
+    "realista_pro.billed_annually": "Facturé annuellement",
+    "realista_pro.free": "Gratuit",
+    "realista_pro.two_months_free": "2 mois gratuits",
+    "realista_pro.current_subscription": "Votre abonnement actuel",
+    "realista_pro.annual": "Annuel",
+    "realista_pro.up_to": "Jusqu'à",
+    "realista_pro.unlimited": "illimités",
+    "realista_pro.properties": "propriétés",
+    "realista_pro.agents_label": "agents",
+    "realista_pro.manage_billing": "Gérer la facturation",
+    "realista_pro.current_plan": "Plan actuel",
+    "realista_pro.network_register": "Enregistrer mon réseau",
+    "realista_pro.agency_label": "Agence",
+    "realista_pro.monthly_only": "Facturation mensuelle uniquement",
+    "realista_pro.network_pricing":
+      "Facturation selon les agences et leurs plans",
+    "realista_pro.free_plan_activated_title": "Plan activé !",
+    "realista_pro.free_plan_activated_desc":
+      "Votre plan gratuit a été activé avec succès.",
+    "realista_pro.subscription_activated_title": "Abonnement activé !",
+    "realista_pro.subscription_activated_desc":
+      "Votre plan a été activé avec succès. Merci de faire confiance à Realista.",
+    "realista_pro.subscription_cancelled_title": "Abonnement annulé",
+    "realista_pro.subscription_cancelled_desc":
+      "Le processus de paiement a été annulé. Vous pouvez réessayer quand vous le souhaitez.",
+    "realista_pro.error_title": "Erreur",
+    "realista_pro.error_checkout":
+      "Impossible de démarrer le processus de paiement",
+    "realista_pro.error_profile":
+      "Impossible de déterminer votre profil. Veuillez vous reconnecter.",
+    "realista_pro.error_price":
+      "Le prix de ce plan est introuvable. Veuillez réessayer.",
+    "realista_pro.error_free_plan":
+      "Impossible d'activer le plan gratuit",
+    "realista_pro.error_billing_portal":
+      "Impossible d'ouvrir le portail de facturation",
+    "realista_pro.billed_annually_prefix": "Facturé annuellement :",
+
+    // Plans
+    "plan.basic_agency": "Agence Basique",
+    "plan.basic_agency_desc": "Profil basique pour démarrer",
+    "plan.small_agency": "Petite Agence",
+    "plan.small_agency_desc": "Pour les petites équipes",
+    "plan.medium_agency": "Agence Moyenne",
+    "plan.medium_agency_desc": "Pour les équipes en croissance",
+    "plan.leader_agency": "Agence Leader",
+    "plan.leader_agency_desc": "Pour les grandes agences",
+    "plan.basic_agent": "Agent Basique",
+    "plan.basic_agent_desc": "Profil individuel basique",
+    "plan.leader_agent": "Agent Leader",
+    "plan.leader_agent_desc": "Pour les agents professionnels",
+    "plan.small_label": "Petite",
+    "plan.medium_label": "Moyenne",
+    "plan.leader_label": "Leader",
+    "plan.network": "Réseau d'Agences",
+    "plan.network_desc": "Pour les franchises et réseaux immobiliers",
+    "plan.feature.crm": "CRM et gestion d'agenda",
+    "plan.feature.ai_benefits": "Avantages IA",
+    "plan.feature.unlimited_clients": "Gestion illimitée des clients",
+    "plan.feature.unlimited_reviews": "Demandes d'avis illimitées",
+    "plan.feature.no_reviews": "Pas de possibilité de demander des avis",
+    "plan.feature.basic_main_agent":
+      "Profil basique avec uniquement l'agent principal",
+    "plan.feature.2_properties": "2 propriétés actives à la fois",
+    "plan.feature.2_public_profiles":
+      "Jusqu'à 2 profils publics d'agents",
+    "plan.feature.10_properties": "Jusqu'à 10 propriétés actives à la fois",
+    "plan.feature.6_agents": "Jusqu'à 6 agents",
+    "plan.feature.30_properties": "Jusqu'à 30 propriétés actives à la fois",
+    "plan.feature.unlimited_agents": "Agents illimités",
+    "plan.feature.unlimited_properties": "Propriétés illimitées",
+    "plan.feature.agent_basic_profile":
+      "Profil basique d'agent individuel",
+    "plan.feature.agent_pro_profile": "Profil professionnel d'agent",
+    "plan.feature.network_unlimited_agencies":
+      "Agences illimitées sous votre marque",
+    "plan.feature.network_central_panel":
+      "Panneau de contrôle centralisé de tout le réseau",
+    "plan.feature.network_consolidated_stats":
+      "Statistiques consolidées de performance",
+    "plan.feature.network_branding":
+      "Image de marque corporative sur tous les profils",
+    "plan.feature.network_billing":
+      "Gestion centralisée ou facturation individuelle par agence",
+    "plan.feature.network_priority_support":
+      "Support prioritaire dédié",
+    "plan.feature.network_api": "API d'intégration disponible",
+
+    // Legal pages
+    "legal.notice.title": "MENTIONS LÉGALES",
+    "legal.notice.web_owner": "Titulaire du site web",
+    "legal.notice.web_owner_text":
+      "Conformément aux dispositions de la réglementation espagnole sur les services numériques, il est porté à la connaissance des utilisateurs que le présent site web, realista.homes, est la propriété de :",
+    "legal.notice.owner":
+      "Titulaire : [Nom et prénom du promoteur]",
+    "legal.notice.nif": "Numéro fiscal : [NIF]",
+    "legal.notice.address": "Adresse : [Adresse complète]",
+    "legal.notice.contact":
+      "E-mail de contact : [contacto@realista.homes]",
+    "legal.notice.company_update":
+      "Dans le cas où l'activité viendrait à être exercée par une société commerciale, les données ci-dessus seront mises à jour conformément à son immatriculation.",
+    "legal.notice.object": "Objet",
+    "legal.notice.object_text":
+      "Le présent site web a pour objet d'offrir une plateforme numérique d'intermédiation immobilière permettant aux utilisateurs de publier, rechercher et souscrire des services liés à l'immobilier.",
+    "legal.notice.terms": "Conditions d'utilisation",
+    "legal.notice.terms_text":
+      "L'accès et l'utilisation du site web confèrent la qualité d'utilisateur et impliquent l'acceptation pleine et entière des présentes conditions.",
+    "legal.notice.user_commitment": "L'utilisateur s'engage à :",
+    "legal.notice.use_1": "Faire un usage approprié et licite du site.",
+    "legal.notice.use_2": "Ne pas réaliser d'activités frauduleuses.",
+    "legal.notice.use_3":
+      "Ne pas introduire de contenus illicites ou préjudiciables.",
+    "legal.notice.ip": "Propriété intellectuelle",
+    "legal.notice.ip_text":
+      "Tous les contenus du site (textes, designs, logos, logiciels) sont la propriété du titulaire ou bénéficient d'une licence légitime.",
+    "legal.notice.ip_text_2":
+      "Leur reproduction sans autorisation expresse est interdite.",
+    "legal.notice.liability": "Responsabilité",
+    "legal.notice.liability_text":
+      "Le titulaire ne garantit pas la disponibilité continue du site et n'est pas responsable des dommages découlant d'une utilisation inappropriée de celui-ci.",
+
+    "legal.privacy.title": "POLITIQUE DE CONFIDENTIALITÉ",
+    "legal.privacy.controller": "Responsable du traitement",
+    "legal.privacy.controller_text":
+      "Responsable : [Nom et prénom ou future société]",
+    "legal.privacy.email": "E-mail : contacto@realista.homes",
+    "legal.privacy.data": "Données que nous collectons",
+    "legal.privacy.data_1": "Données d'identification (nom, e-mail)",
+    "legal.privacy.data_2": "Données de facturation",
+    "legal.privacy.data_3": "Données de contact",
+    "legal.privacy.data_4":
+      "Informations d'utilisation de la plateforme",
+    "legal.privacy.data_5":
+      "Données de paiement (gérées par un prestataire externe)",
+    "legal.privacy.purpose": "Finalité",
+    "legal.privacy.purpose_1": "Gestion des comptes utilisateurs",
+    "legal.privacy.purpose_2": "Gestion des paiements et commissions",
+    "legal.privacy.purpose_3":
+      "Prestation de services d'intermédiation",
+    "legal.privacy.purpose_4":
+      "Respect des obligations légales",
+    "legal.privacy.purpose_5":
+      "Envoi de communications liées au service",
+    "legal.privacy.basis": "Base juridique",
+    "legal.privacy.basis_1": "Exécution du contrat",
+    "legal.privacy.basis_2": "Consentement de l'utilisateur",
+    "legal.privacy.basis_3": "Respect d'une obligation légale",
+    "legal.privacy.retention": "Conservation",
+    "legal.privacy.retention_text":
+      "Les données seront conservées tant que la relation contractuelle existe et ensuite pendant les délais exigés par la réglementation fiscale et commerciale.",
+    "legal.privacy.recipients": "Destinataires",
+    "legal.privacy.recipients_intro":
+      "Peuvent accéder aux données :",
+    "legal.privacy.recipients_1": "Fournisseurs technologiques",
+    "legal.privacy.recipients_2":
+      "Prestataires de services de paiement",
+    "legal.privacy.recipients_3":
+      "Autorités compétentes en cas d'obligation légale",
+    "legal.privacy.international":
+      "En cas de transferts internationaux, ceux-ci seront encadrés par des mécanismes appropriés conformément au RGPD.",
+    "legal.privacy.rights": "Droits de l'utilisateur",
+    "legal.privacy.rights_intro": "L'utilisateur peut exercer :",
+    "legal.privacy.rights_1": "Accès",
+    "legal.privacy.rights_2": "Rectification",
+    "legal.privacy.rights_3": "Effacement",
+    "legal.privacy.rights_4": "Opposition",
+    "legal.privacy.rights_5": "Limitation",
+    "legal.privacy.rights_6": "Portabilité",
+    "legal.privacy.contact_rights":
+      "En envoyant une demande à privacidad@realista.homes.",
+    "legal.privacy.aepd":
+      "Vous pouvez également déposer une réclamation auprès de l'Agence espagnole de protection des données.",
+
+    "legal.cookies.title": "POLITIQUE DE COOKIES",
+    "legal.cookies.intro":
+      "Le site realista.homes utilise des cookies propres et de tiers.",
+    "legal.cookies.types": "Types de cookies",
+    "legal.cookies.types_1":
+      "Techniques (nécessaires au fonctionnement)",
+    "legal.cookies.types_2": "Analytiques",
+    "legal.cookies.types_3": "Publicitaires (le cas échéant)",
+    "legal.cookies.non_essential":
+      "Les cookies non essentiels ne seront installés qu'après le consentement de l'utilisateur.",
+    "legal.cookies.management": "Gestion du consentement",
+    "legal.cookies.user_can": "L'utilisateur pourra :",
+    "legal.cookies.action_1": "Tout accepter",
+    "legal.cookies.action_2": "Tout refuser",
+    "legal.cookies.action_3": "Configurer les préférences",
+    "legal.cookies.change":
+      "Vous pouvez modifier votre consentement à tout moment depuis le panneau de configuration.",
+
+    "legal.terms.title": "CONDITIONS GÉNÉRALES D'UTILISATION",
+    "legal.terms.section_1": "1. Nature du service",
+    "legal.terms.section_1_text":
+      "realista.homes est une plateforme numérique qui agit en tant qu'intermédiaire entre les utilisateurs qui publient des biens immobiliers et les utilisateurs intéressés.",
+    "legal.terms.section_1_text_2":
+      "La plateforme n'est pas propriétaire des biens publiés, sauf indication expresse contraire.",
+    "legal.terms.section_2": "2. Inscription",
+    "legal.terms.section_2_text":
+      "Pour utiliser certains services, il est obligatoire de créer un compte en fournissant des informations véridiques et à jour.",
+    "legal.terms.section_2_text_2":
+      "L'utilisateur est responsable de la protection de ses identifiants.",
+    "legal.terms.section_3": "3. Paiements et commissions",
+    "legal.terms.section_3_intro": "La plateforme pourra facturer :",
+    "legal.terms.section_3_1": "Commissions de publication",
+    "legal.terms.section_3_2": "Commissions de transaction",
+    "legal.terms.section_3_3": "Services additionnels",
+    "legal.terms.section_3_text":
+      "Les paiements sont gérés par un prestataire externe de services de paiement.",
+    "legal.terms.section_3_text_2":
+      "La plateforme ne stocke pas les données complètes des cartes.",
+    "legal.terms.section_4": "4. Obligations des utilisateurs",
+    "legal.terms.section_4_intro": "Les utilisateurs s'engagent à :",
+    "legal.terms.section_4_1": "Ne pas publier d'informations fausses",
+    "legal.terms.section_4_2":
+      "Respecter la réglementation immobilière",
+    "legal.terms.section_4_3":
+      "Ne pas porter atteinte aux droits de tiers",
+    "legal.terms.section_5": "5. Responsabilité",
+    "legal.terms.section_5_intro":
+      "La plateforme agit en tant qu'intermédiaire technologique et ne garantit pas :",
+    "legal.terms.section_5_1": "L'exactitude des annonces",
+    "legal.terms.section_5_2": "Le succès des opérations",
+    "legal.terms.section_6": "6. Annulations et remboursements",
+    "legal.terms.section_6_text":
+      "Les conditions d'annulation et de remboursement dépendront du type de service souscrit et seront précisées dans chaque cas.",
+    "legal.terms.section_7": "7. Résolution des conflits",
+    "legal.terms.section_7_text":
+      "Les parties se soumettent à la législation espagnole.",
+
+    // Common
+    "common.clear": "Effacer",
+    "common.select_all": "Tout sélectionner",
+    "common.done": "Terminé",
+    "common.cancel": "Annuler",
+    "common.save": "Enregistrer",
+    "common.yes": "Oui",
+    "common.no": "Non",
+
+    // Neighborhood Rating
+    "neighborhood_rating.title":
+      "Recherchez et découvrez les quartiers qui vous intéressent",
+    "neighborhood_rating.search_placeholder":
+      "Rechercher des localités en Espagne",
+    "neighborhood_rating.not_rated": "Non noté",
+    "neighborhood_rating.rate_button": "Évaluer ce quartier",
+    "neighborhood_rating.rate_title": "Évaluer : {location}",
+    "neighborhood_rating.category_security": "Sécurité",
+    "neighborhood_rating.category_parking": "Stationnement",
+    "neighborhood_rating.category_family": "Convivialité familiale",
+    "neighborhood_rating.category_transport": "Connectivité",
+    "neighborhood_rating.category_green": "Espaces verts",
+    "neighborhood_rating.category_services": "Services",
+    "neighborhood_rating.submitting": "Envoi en cours...",
+    "neighborhood_rating.submit": "Envoyer l'évaluation",
+    "neighborhood_rating.based_on":
+      "Basé sur {count} évaluations de résidents",
+    "neighborhood_rating.no_ratings":
+      "Aucune évaluation disponible pour {location} pour le moment.",
+    "neighborhood_rating.try_popular":
+      "Essayez l'un des quartiers populaires ci-dessus.",
+    "neighborhood_rating.toast_submitted_title": "Évaluation envoyée !",
+    "neighborhood_rating.toast_submitted_desc":
+      "Votre évaluation pour {location} a été enregistrée avec succès.",
+    "neighborhood_rating.toast_error_title":
+      "Erreur lors de l'envoi de l'évaluation",
+    "neighborhood_rating.toast_error_desc":
+      "Votre évaluation n'a pas pu être envoyée. Veuillez réessayer.",
+    "neighborhood_rating.toast_missing_title": "Évaluations manquantes",
+    "neighborhood_rating.toast_missing_desc":
+      "Veuillez évaluer toutes les catégories avant d'envoyer.",
+  },
+  it: {
+    // Navbar
+    "nav.home": "Home",
+    "nav.login": "Accedi",
+    "nav.profile": "La mia area personale",
+    "nav.manage": "Gestisci tutto",
+    "nav.realista_pro": "RealistaPro",
+
+    // SearchBar
+    "search.rent": "Affittare",
+    "search.buy": "Comprare",
+    "search.agencies": "Agenzie",
+    "search.agents": "Agenti",
+    "search.neighborhood": "Cerca quartiere...",
+    "search.button": "Cerca",
+    "search.select_neighborhood": "Seleziona un quartiere",
+    "search.location_required": "Posizione richiesta",
+    "search.location_required_desc":
+      "Seleziona un quartiere, un distretto o Barcellona per effettuare la ricerca",
+
+    // Home
+    "home.hero_title":
+      "Trova la tua casa ideale con tutte le informazioni",
+    "home.most_viewed": "Le più viste",
+    "home.tab_sale": "In Vendita",
+    "home.tab_rent": "In Affitto",
+    "home.no_sale_title":
+      "Al momento non ci sono proprietà in vendita disponibili.",
+    "home.no_rent_title":
+      "Al momento non ci sono proprietà in affitto disponibili.",
+    "home.no_results_subtitle":
+      "Torna presto per scoprire nuove opportunità.",
+
+    // Footer
+    "footer.company_description":
+      "La tua piattaforma di fiducia per trovare le migliori proprietà in Spagna. Colleghiamo agenti, agenzie e clienti in modo professionale ed efficiente.",
+    "footer.location": "Barcellona, Spagna",
+    "footer.districts": "Distretti di Barcellona",
+    "footer.all_districts": "Vedi tutti i distretti →",
+    "footer.popular_neighborhoods": "Quartieri popolari",
+    "footer.legal_info": "Informazioni legali",
+    "footer.privacy": "Informativa sulla privacy",
+    "footer.terms": "Termini e Condizioni",
+    "footer.cookies": "Informativa sui Cookie",
+    "footer.legal_notice": "Note Legali",
+    "footer.copyright": "Tutti i diritti riservati.",
+    "footer.digital_real_estate": "Immobiliare Digitale",
+    "footer.disclaimer":
+      "Realista è una piattaforma digitale che collega professionisti immobiliari con i clienti. Non siamo responsabili delle transazioni effettuate tra utenti. Tutte le informazioni mostrate sono fornite dagli agenti e dalle agenzie registrati.",
+
+    // RealistaPro
+    "realista_pro.title": "RealistaPro",
+    "realista_pro.subtitle":
+      "La piattaforma professionale per le agenzie immobiliari che vogliono distinguersi",
+    "realista_pro.crm": "CRM Avanzato",
+    "realista_pro.ai": "IA Integrata",
+    "realista_pro.reviews": "Gestione delle Recensioni",
+    "realista_pro.choose_plan": "Scegli il tuo piano perfetto",
+    "realista_pro.flexible_plans":
+      "Piani flessibili per agenzie e agenti individuali",
+    "realista_pro.agencies": "Agenzie",
+    "realista_pro.agents": "Agenti",
+    "realista_pro.networks": "Reti",
+    "realista_pro.monthly": "Mensile",
+    "realista_pro.yearly": "Annuale",
+    "realista_pro.start_free": "Inizia gratis",
+    "realista_pro.start_now": "Inizia ora",
+    "realista_pro.ai_features": "Cosa includono i vantaggi IA?",
+    "realista_pro.auto_descriptions": "Descrizioni automatiche",
+    "realista_pro.auto_descriptions_desc":
+      "L'IA genera descrizioni accattivanti e professionali per le tue proprietà",
+    "realista_pro.smart_responses": "Risposte intelligenti",
+    "realista_pro.smart_responses_desc":
+      "Suggerimenti automatici per rispondere alle richieste dei clienti",
+    "realista_pro.per_month": "/mese",
+    "realista_pro.billed_annually": "Fatturato annualmente",
+    "realista_pro.free": "Gratis",
+    "realista_pro.two_months_free": "2 mesi gratis",
+    "realista_pro.current_subscription": "Il tuo abbonamento attuale",
+    "realista_pro.annual": "Annuale",
+    "realista_pro.up_to": "Fino a",
+    "realista_pro.unlimited": "illimitati",
+    "realista_pro.properties": "proprietà",
+    "realista_pro.agents_label": "agenti",
+    "realista_pro.manage_billing": "Gestisci fatturazione",
+    "realista_pro.current_plan": "Piano attuale",
+    "realista_pro.network_register": "Registra la mia rete",
+    "realista_pro.agency_label": "Agenzia",
+    "realista_pro.monthly_only": "Solo fatturazione mensile",
+    "realista_pro.network_pricing":
+      "Fatturazione in base alle agenzie e ai loro piani",
+    "realista_pro.free_plan_activated_title": "Piano attivato!",
+    "realista_pro.free_plan_activated_desc":
+      "Il tuo piano gratuito è stato attivato correttamente.",
+    "realista_pro.subscription_activated_title": "Abbonamento attivato!",
+    "realista_pro.subscription_activated_desc":
+      "Il tuo piano è stato attivato correttamente. Grazie per aver scelto Realista.",
+    "realista_pro.subscription_cancelled_title": "Abbonamento annullato",
+    "realista_pro.subscription_cancelled_desc":
+      "Il processo di pagamento è stato annullato. Puoi riprovare quando vuoi.",
+    "realista_pro.error_title": "Errore",
+    "realista_pro.error_checkout":
+      "Impossibile avviare il processo di pagamento",
+    "realista_pro.error_profile":
+      "Impossibile determinare il tuo profilo. Effettua nuovamente l'accesso.",
+    "realista_pro.error_price":
+      "Prezzo per questo piano non trovato. Riprova.",
+    "realista_pro.error_free_plan":
+      "Impossibile attivare il piano gratuito",
+    "realista_pro.error_billing_portal":
+      "Impossibile aprire il portale di fatturazione",
+    "realista_pro.billed_annually_prefix": "Fatturato annualmente:",
+
+    // Plans
+    "plan.basic_agency": "Agenzia Base",
+    "plan.basic_agency_desc": "Profilo base per iniziare",
+    "plan.small_agency": "Piccola Agenzia",
+    "plan.small_agency_desc": "Per piccoli team",
+    "plan.medium_agency": "Agenzia Media",
+    "plan.medium_agency_desc": "Per team in crescita",
+    "plan.leader_agency": "Agenzia Leader",
+    "plan.leader_agency_desc": "Per grandi agenzie",
+    "plan.basic_agent": "Agente Base",
+    "plan.basic_agent_desc": "Profilo individuale base",
+    "plan.leader_agent": "Agente Leader",
+    "plan.leader_agent_desc": "Per agenti professionisti",
+    "plan.small_label": "Piccola",
+    "plan.medium_label": "Media",
+    "plan.leader_label": "Leader",
+    "plan.network": "Rete di Agenzie",
+    "plan.network_desc": "Per franchising e reti immobiliari",
+    "plan.feature.crm": "CRM e gestione agenda",
+    "plan.feature.ai_benefits": "Vantaggi IA",
+    "plan.feature.unlimited_clients": "Gestione illimitata dei clienti",
+    "plan.feature.unlimited_reviews": "Richieste illimitate di recensioni",
+    "plan.feature.no_reviews":
+      "Nessuna possibilità di richiedere recensioni",
+    "plan.feature.basic_main_agent":
+      "Profilo base con solo l'agente principale",
+    "plan.feature.2_properties": "2 proprietà attive alla volta",
+    "plan.feature.2_public_profiles":
+      "Fino a 2 profili pubblici di agenti",
+    "plan.feature.10_properties": "Fino a 10 proprietà attive alla volta",
+    "plan.feature.6_agents": "Fino a 6 agenti",
+    "plan.feature.30_properties": "Fino a 30 proprietà attive alla volta",
+    "plan.feature.unlimited_agents": "Agenti illimitati",
+    "plan.feature.unlimited_properties": "Proprietà illimitate",
+    "plan.feature.agent_basic_profile":
+      "Profilo base di agente individuale",
+    "plan.feature.agent_pro_profile": "Profilo professionale di agente",
+    "plan.feature.network_unlimited_agencies":
+      "Agenzie illimitate sotto il tuo marchio",
+    "plan.feature.network_central_panel":
+      "Pannello di controllo centralizzato di tutta la rete",
+    "plan.feature.network_consolidated_stats":
+      "Statistiche consolidate delle prestazioni",
+    "plan.feature.network_branding":
+      "Branding aziendale su tutti i profili",
+    "plan.feature.network_billing":
+      "Gestione centralizzata o fatturazione individuale per agenzia",
+    "plan.feature.network_priority_support":
+      "Supporto prioritario dedicato",
+    "plan.feature.network_api": "API di integrazione disponibile",
+
+    // Legal pages
+    "legal.notice.title": "NOTE LEGALI",
+    "legal.notice.web_owner": "Titolare del sito web",
+    "legal.notice.web_owner_text":
+      "In conformità con le disposizioni della normativa spagnola sui servizi digitali, si informa che il presente sito web, realista.homes, è di proprietà di:",
+    "legal.notice.owner":
+      "Titolare: [Nome e Cognome del promotore]",
+    "legal.notice.nif": "Codice Fiscale: [NIF]",
+    "legal.notice.address": "Indirizzo: [Indirizzo completo]",
+    "legal.notice.contact":
+      "E-mail di contatto: [contacto@realista.homes]",
+    "legal.notice.company_update":
+      "Nel caso in cui l'attività venga successivamente svolta da una società commerciale, i dati precedenti saranno aggiornati in base alla sua iscrizione nel registro.",
+    "legal.notice.object": "Oggetto",
+    "legal.notice.object_text":
+      "Il presente sito web ha lo scopo di offrire una piattaforma digitale di intermediazione immobiliare che consente agli utenti di pubblicare, cercare e contrattare servizi relativi agli immobili.",
+    "legal.notice.terms": "Condizioni d'uso",
+    "legal.notice.terms_text":
+      "L'accesso e l'utilizzo del sito web attribuiscono la condizione di utente e implicano la piena accettazione delle presenti condizioni.",
+    "legal.notice.user_commitment": "L'utente si impegna a:",
+    "legal.notice.use_1": "Fare un uso adeguato e lecito del sito.",
+    "legal.notice.use_2": "Non svolgere attività fraudolente.",
+    "legal.notice.use_3":
+      "Non introdurre contenuti illeciti o dannosi.",
+    "legal.notice.ip": "Proprietà intellettuale",
+    "legal.notice.ip_text":
+      "Tutti i contenuti del sito (testi, design, loghi, software) sono di proprietà del titolare o dispongono di licenza legittima.",
+    "legal.notice.ip_text_2":
+      "È vietata la loro riproduzione senza autorizzazione espressa.",
+    "legal.notice.liability": "Responsabilità",
+    "legal.notice.liability_text":
+      "Il titolare non garantisce la disponibilità continua del sito né si assume la responsabilità per danni derivanti dall'uso improprio dello stesso.",
+
+    "legal.privacy.title": "INFORMATIVA SULLA PRIVACY",
+    "legal.privacy.controller": "Titolare del trattamento",
+    "legal.privacy.controller_text":
+      "Titolare: [Nome e Cognome o futura società]",
+    "legal.privacy.email": "Email: contacto@realista.homes",
+    "legal.privacy.data": "Dati che raccogliamo",
+    "legal.privacy.data_1": "Dati identificativi (nome, email)",
+    "legal.privacy.data_2": "Dati di fatturazione",
+    "legal.privacy.data_3": "Dati di contatto",
+    "legal.privacy.data_4":
+      "Informazioni sull'utilizzo della piattaforma",
+    "legal.privacy.data_5":
+      "Dati di pagamento (gestiti tramite fornitore esterno)",
+    "legal.privacy.purpose": "Finalità",
+    "legal.privacy.purpose_1": "Gestione degli account utente",
+    "legal.privacy.purpose_2": "Gestione di pagamenti e commissioni",
+    "legal.privacy.purpose_3":
+      "Erogazione di servizi di intermediazione",
+    "legal.privacy.purpose_4":
+      "Adempimento degli obblighi legali",
+    "legal.privacy.purpose_5":
+      "Invio di comunicazioni relative al servizio",
+    "legal.privacy.basis": "Base giuridica",
+    "legal.privacy.basis_1": "Esecuzione del contratto",
+    "legal.privacy.basis_2": "Consenso dell'utente",
+    "legal.privacy.basis_3": "Adempimento di un obbligo legale",
+    "legal.privacy.retention": "Conservazione",
+    "legal.privacy.retention_text":
+      "I dati saranno conservati per tutta la durata del rapporto contrattuale e successivamente per i periodi richiesti dalla normativa fiscale e commerciale.",
+    "legal.privacy.recipients": "Destinatari",
+    "legal.privacy.recipients_intro":
+      "Potranno accedere ai dati:",
+    "legal.privacy.recipients_1": "Fornitori tecnologici",
+    "legal.privacy.recipients_2":
+      "Fornitori di servizi di pagamento",
+    "legal.privacy.recipients_3":
+      "Autorità competenti in caso di obbligo legale",
+    "legal.privacy.international":
+      "In caso di trasferimenti internazionali, questi saranno garantiti tramite meccanismi adeguati conformi al RGPD.",
+    "legal.privacy.rights": "Diritti dell'utente",
+    "legal.privacy.rights_intro": "L'utente può esercitare:",
+    "legal.privacy.rights_1": "Accesso",
+    "legal.privacy.rights_2": "Rettifica",
+    "legal.privacy.rights_3": "Cancellazione",
+    "legal.privacy.rights_4": "Opposizione",
+    "legal.privacy.rights_5": "Limitazione",
+    "legal.privacy.rights_6": "Portabilità",
+    "legal.privacy.contact_rights":
+      "Inviando una richiesta a privacidad@realista.homes.",
+    "legal.privacy.aepd":
+      "Inoltre, è possibile presentare un reclamo all'Agenzia Spagnola per la Protezione dei Dati.",
+
+    "legal.cookies.title": "INFORMATIVA SUI COOKIE",
+    "legal.cookies.intro":
+      "Il sito realista.homes utilizza cookie propri e di terze parti.",
+    "legal.cookies.types": "Tipi di cookie",
+    "legal.cookies.types_1":
+      "Tecnici (necessari per il funzionamento)",
+    "legal.cookies.types_2": "Analitici",
+    "legal.cookies.types_3": "Pubblicitari (se applicabile)",
+    "legal.cookies.non_essential":
+      "I cookie non essenziali verranno installati solo dopo il consenso dell'utente.",
+    "legal.cookies.management": "Gestione del consenso",
+    "legal.cookies.user_can": "L'utente potrà:",
+    "legal.cookies.action_1": "Accettare tutti",
+    "legal.cookies.action_2": "Rifiutare tutti",
+    "legal.cookies.action_3": "Configurare le preferenze",
+    "legal.cookies.change":
+      "Puoi modificare il tuo consenso in qualsiasi momento dal pannello delle impostazioni.",
+
+    "legal.terms.title": "TERMINI E CONDIZIONI D'USO",
+    "legal.terms.section_1": "1. Natura del servizio",
+    "legal.terms.section_1_text":
+      "realista.homes è una piattaforma digitale che agisce da intermediaria tra gli utenti che pubblicano immobili e gli utenti interessati.",
+    "legal.terms.section_1_text_2":
+      "La piattaforma non è proprietaria degli immobili pubblicati, salvo indicazione espressa contraria.",
+    "legal.terms.section_2": "2. Registrazione",
+    "legal.terms.section_2_text":
+      "Per utilizzare determinati servizi è obbligatorio creare un account fornendo informazioni veritiere e aggiornate.",
+    "legal.terms.section_2_text_2":
+      "L'utente è responsabile della custodia delle proprie credenziali.",
+    "legal.terms.section_3": "3. Pagamenti e commissioni",
+    "legal.terms.section_3_intro": "La piattaforma potrà addebitare:",
+    "legal.terms.section_3_1": "Commissioni di pubblicazione",
+    "legal.terms.section_3_2": "Commissioni di transazione",
+    "legal.terms.section_3_3": "Servizi aggiuntivi",
+    "legal.terms.section_3_text":
+      "I pagamenti sono gestiti tramite un fornitore esterno di servizi di pagamento.",
+    "legal.terms.section_3_text_2":
+      "La piattaforma non memorizza i dati completi delle carte.",
+    "legal.terms.section_4": "4. Obblighi degli utenti",
+    "legal.terms.section_4_intro": "Gli utenti si impegnano a:",
+    "legal.terms.section_4_1": "Non pubblicare informazioni false",
+    "legal.terms.section_4_2":
+      "Rispettare la normativa immobiliare",
+    "legal.terms.section_4_3":
+      "Non violare i diritti di terzi",
+    "legal.terms.section_5": "5. Responsabilità",
+    "legal.terms.section_5_intro":
+      "La piattaforma agisce come intermediario tecnologico e non garantisce:",
+    "legal.terms.section_5_1": "L'accuratezza degli annunci",
+    "legal.terms.section_5_2": "Il successo delle operazioni",
+    "legal.terms.section_6": "6. Cancellazioni e rimborsi",
+    "legal.terms.section_6_text":
+      "Le condizioni di cancellazione e rimborso dipenderanno dal tipo di servizio contrattato e saranno specificate in ogni caso.",
+    "legal.terms.section_7": "7. Risoluzione delle controversie",
+    "legal.terms.section_7_text":
+      "Le parti si sottopongono alla legislazione spagnola.",
+
+    // Common
+    "common.clear": "Cancella",
+    "common.select_all": "Seleziona tutti",
+    "common.done": "Fatto",
+    "common.cancel": "Annulla",
+    "common.save": "Salva",
+    "common.yes": "Sì",
+    "common.no": "No",
+
+    // Neighborhood Rating
+    "neighborhood_rating.title": "Cerca e scopri i quartieri che ti interessano",
+    "neighborhood_rating.search_placeholder":
+      "Cerca località in Spagna",
+    "neighborhood_rating.not_rated": "Non valutato",
+    "neighborhood_rating.rate_button": "Valuta questo quartiere",
+    "neighborhood_rating.rate_title": "Valuta: {location}",
+    "neighborhood_rating.category_security": "Sicurezza",
+    "neighborhood_rating.category_parking": "Parcheggio",
+    "neighborhood_rating.category_family": "Ambiente familiare",
+    "neighborhood_rating.category_transport": "Collegamenti",
+    "neighborhood_rating.category_green": "Aree verdi",
+    "neighborhood_rating.category_services": "Servizi",
+    "neighborhood_rating.submitting": "Invio in corso...",
+    "neighborhood_rating.submit": "Invia valutazione",
+    "neighborhood_rating.based_on":
+      "Basato su {count} valutazioni di residenti",
+    "neighborhood_rating.no_ratings":
+      "Al momento non sono disponibili valutazioni per {location}.",
+    "neighborhood_rating.try_popular":
+      "Prova uno dei quartieri popolari qui sopra.",
+    "neighborhood_rating.toast_submitted_title": "Valutazione inviata!",
+    "neighborhood_rating.toast_submitted_desc":
+      "La tua valutazione per {location} è stata salvata con successo.",
+    "neighborhood_rating.toast_error_title":
+      "Errore nell'invio della valutazione",
+    "neighborhood_rating.toast_error_desc":
+      "Non è stato possibile inviare la tua valutazione. Riprova.",
+    "neighborhood_rating.toast_missing_title": "Valutazioni mancanti",
+    "neighborhood_rating.toast_missing_desc":
+      "Valuta tutte le categorie prima di inviare.",
   },
 };

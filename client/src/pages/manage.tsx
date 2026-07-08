@@ -656,20 +656,18 @@ export default function ManagePage() {
             <SidebarMenu>
               {/* CRM Section */}
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={currentSection === "clientes"}
-                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes`)}
-                  className="relative group"
+                <div
+                  className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
                   title={sidebarCollapsed ? "CRM" : ""}
+                  data-testid="sidebar-group-crm"
                 >
-                  <Users className="h-4 w-4 flex-shrink-0" />
                   {!sidebarCollapsed && <span>CRM</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                       CRM
                     </div>
                   )}
-                </SidebarMenuButton>
+                </div>
               </SidebarMenuItem>
 
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
@@ -723,44 +721,7 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={currentSection === "perfil-agente"}
-                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agente`)}
-                  className="relative group"
-                  title={sidebarCollapsed ? "Mi perfil de agente" : ""}
-                >
-                  <UserCircle className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Mi perfil de agente</span>}
-                  {sidebarCollapsed && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Mi perfil de agente
-                    </div>
-                  )}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Only show agency profile option for agency admins */}
-              {user?.isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={currentSection === "perfil-agencia"}
-                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agencia`)}
-                    className="relative group"
-                    title={sidebarCollapsed ? "Gestionar agencia" : ""}
-                  >
-                    <Building className="h-4 w-4 flex-shrink-0" />
-                    {!sidebarCollapsed && <span>Gestionar agencia</span>}
-                    {sidebarCollapsed && (
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                        Gestionar agencia
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              <SidebarMenuItem>
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "propiedades"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/propiedades`)}
@@ -777,7 +738,40 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Mi perfil de agente Section */}
               <SidebarMenuItem>
+                <div
+                  className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
+                  title={sidebarCollapsed ? "Mi perfil de agente" : ""}
+                  data-testid="sidebar-group-mi-perfil"
+                >
+                  {!sidebarCollapsed && <span>Mi perfil de agente</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Mi perfil de agente
+                    </div>
+                  )}
+                </div>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                <SidebarMenuButton
+                  isActive={currentSection === "perfil-agente"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agente`)}
+                  className="relative group"
+                  title={sidebarCollapsed ? "Mi perfil de agente" : ""}
+                >
+                  <UserCircle className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>Mi perfil</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Mi perfil de agente
+                    </div>
+                  )}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "resenas"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/resenas`)}
@@ -794,27 +788,82 @@ export default function ManagePage() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* Team management group - admins only */}
+              {/* Individual agents get Control de jornada/ausencias under Mi perfil de agente */}
+              {!user?.isAdmin && user?.agentType !== "network_admin" && (
+                <>
+                  <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                    <SidebarMenuButton
+                      isActive={currentSection === "control-jornada"}
+                      onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
+                      className="relative group"
+                      title={sidebarCollapsed ? "Control de jornada" : ""}
+                      data-testid="sidebar-link-control-jornada"
+                    >
+                      <Clock className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Control de jornada</span>}
+                      {sidebarCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                          Control de jornada
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                    <SidebarMenuButton
+                      isActive={currentSection === "control-ausencias"}
+                      onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
+                      className="relative group"
+                      title={sidebarCollapsed ? "Control de ausencias" : ""}
+                      data-testid="sidebar-link-control-ausencias"
+                    >
+                      <CalendarDays className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Control de ausencias</span>}
+                      {sidebarCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                          Control de ausencias
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
+
+              {/* Agencia Section - admins only */}
               {user?.isAdmin && (
                 <>
-                  {/* Group header (non-clickable) */}
                   <SidebarMenuItem>
                     <div
                       className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
-                      title={sidebarCollapsed ? "Gestionar mi equipo" : ""}
-                      data-testid="sidebar-group-equipo"
+                      title={sidebarCollapsed ? "Agencia" : ""}
+                      data-testid="sidebar-group-agencia"
                     >
-                      <Users className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>Gestionar mi equipo</span>}
+                      {!sidebarCollapsed && <span>Agencia</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Gestionar mi equipo
+                          Agencia
                         </div>
                       )}
                     </div>
                   </SidebarMenuItem>
 
-                  {/* Child: Accesos (formerly "equipo") */}
+                  <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                    <SidebarMenuButton
+                      isActive={currentSection === "perfil-agencia"}
+                      onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agencia`)}
+                      className="relative group"
+                      title={sidebarCollapsed ? "Perfil de agencia" : ""}
+                    >
+                      <Building className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Perfil de agencia</span>}
+                      {sidebarCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                          Perfil de agencia
+                        </div>
+                      )}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "equipo"}
@@ -833,7 +882,6 @@ export default function ManagePage() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {/* Child: Control de jornada */}
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "control-jornada"}
@@ -852,7 +900,6 @@ export default function ManagePage() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {/* Child: Control de ausencias */}
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "control-ausencias"}
@@ -873,48 +920,6 @@ export default function ManagePage() {
                 </>
               )}
 
-              {/* Non-admin agents get Control de jornada as a top-level item */}
-              {!user?.isAdmin && user?.agentType !== "network_admin" && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={currentSection === "control-jornada"}
-                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
-                    className="relative group"
-                    title={sidebarCollapsed ? "Control de jornada" : ""}
-                    data-testid="sidebar-link-control-jornada"
-                  >
-                    <Clock className="h-4 w-4 flex-shrink-0" />
-                    {!sidebarCollapsed && <span>Control de jornada</span>}
-                    {sidebarCollapsed && (
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                        Control de jornada
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              {/* Non-admin agents get Control de ausencias as a top-level item */}
-              {!user?.isAdmin && user?.agentType !== "network_admin" && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={currentSection === "control-ausencias"}
-                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
-                    className="relative group"
-                    title={sidebarCollapsed ? "Control de ausencias" : ""}
-                    data-testid="sidebar-link-control-ausencias"
-                  >
-                    <CalendarDays className="h-4 w-4 flex-shrink-0" />
-                    {!sidebarCollapsed && <span>Control de ausencias</span>}
-                    {sidebarCollapsed && (
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                        Control de ausencias
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
               {/* Only show network management for network admins */}
               {user?.agentType === "network_admin" && (
                 <SidebarMenuItem>
@@ -928,15 +933,30 @@ export default function ManagePage() {
                     {!sidebarCollapsed && <span>Gestionar mi red</span>}
                     {sidebarCollapsed && (
                       <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Gestionar mi red
+                        Gestionar mi red
+                      </div>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* Cuenta Section */}
+              <SidebarMenuItem>
+                <div
+                  className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
+                  title={sidebarCollapsed ? "Cuenta" : ""}
+                  data-testid="sidebar-group-cuenta"
+                >
+                  {!sidebarCollapsed && <span>Cuenta</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      Cuenta
                     </div>
                   )}
-                </SidebarMenuButton>
+                </div>
               </SidebarMenuItem>
-            )}
 
-              {/* Billing section - visible to agency admins and individual agents */}
-              <SidebarMenuItem>
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "facturacion"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/facturacion`)}

@@ -7,6 +7,8 @@ import { translations } from "./translations";
 const resources = {
   es: { translation: translations.es },
   en: { translation: translations.en },
+  fr: { translation: translations.fr },
+  it: { translation: translations.it },
 };
 
 void i18n
@@ -16,7 +18,7 @@ void i18n
   .init({
     resources,
     fallbackLng: "es",
-    supportedLngs: ["es", "en"],
+    supportedLngs: ["es", "en", "fr", "it"],
     keySeparator: false,
     interpolation: { escapeValue: false },
     detection: {

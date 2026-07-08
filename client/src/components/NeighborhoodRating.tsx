@@ -8,6 +8,7 @@ import { Star, Search, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { searchNeighborhoods, getNeighborhoodDisplayName, parseNeighborhoodDisplayName } from "@/utils/neighborhoods";
+import { useLanguage } from "@/contexts/language-context";
 
 const POPULAR_NEIGHBORHOODS = [
   { neighborhood: "Vila de Gràcia", district: "Gràcia", city: "Barcelona", display: "Vila de Gràcia, Gràcia, Barcelona" },
@@ -34,6 +35,7 @@ interface StarRatingProps {
 
 const StarRatingInput = ({ value, onChange, disabled = false }: StarRatingProps) => {
   const [hoverValue, setHoverValue] = useState(0);
+  const { t } = useLanguage();
 
   return (
     <div className="flex gap-1 mt-2">
@@ -57,13 +59,14 @@ const StarRatingInput = ({ value, onChange, disabled = false }: StarRatingProps)
         </button>
       ))}
       <span className="ml-2 text-sm text-gray-600 font-medium">
-        {value > 0 ? `${value}/10` : 'Sin calificar'}
+        {value > 0 ? `${value}/10` : t("neighborhood_rating.not_rated")}
       </span>
     </div>
   );
 };
 
 export function NeighborhoodRating() {
+  const { t } = useLanguage();
   const [selectedLocation, setSelectedLocation] = useState<{neighborhood: string, district: string | null, city: string}>({neighborhood: "Vila de Gràcia", district: "Gràcia", city: "Barcelona"});
   const [searchValue, setSearchValue] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
@@ -121,8 +124,10 @@ export function NeighborhoodRating() {
     },
     onSuccess: () => {
       toast({
-        title: "¡Valoración enviada!",
-        description: `Tu valoración para ${getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city)} ha sido guardada con éxito.`,
+        title: t("neighborhood_rating.toast_submitted_title"),
+        description: t("neighborhood_rating.toast_submitted_desc", {
+          location: getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city),
+        }),
       });
       setShowRatingForm(false);
       setUserRatings({
@@ -144,8 +149,8 @@ export function NeighborhoodRating() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error al enviar valoración",
-        description: error?.message || "No se pudo enviar tu valoración. Inténtalo de nuevo.",
+        title: t("neighborhood_rating.toast_error_title"),
+        description: error?.message || t("neighborhood_rating.toast_error_desc"),
         variant: "destructive",
       });
     },
@@ -166,12 +171,12 @@ export function NeighborhoodRating() {
   }, []);
 
   const ratingCategories = [
-    { key: 'security' as keyof NeighborhoodAverages, label: 'Seguridad', icon: '🔒' },
-    { key: 'parking' as keyof NeighborhoodAverages, label: 'Aparcamiento', icon: '🚗' },
-    { key: 'familyFriendly' as keyof NeighborhoodAverages, label: 'Ambiente familiar', icon: '👨‍👩‍👧‍👦' },
-    { key: 'publicTransport' as keyof NeighborhoodAverages, label: 'Conectividad', icon: '🚌' },
-    { key: 'greenSpaces' as keyof NeighborhoodAverages, label: 'Zonas verdes', icon: '🌳' },
-    { key: 'services' as keyof NeighborhoodAverages, label: 'Servicios', icon: '🛍️' },
+    { key: 'security' as keyof NeighborhoodAverages, label: t("neighborhood_rating.category_security"), icon: '🔒' },
+    { key: 'parking' as keyof NeighborhoodAverages, label: t("neighborhood_rating.category_parking"), icon: '🚗' },
+    { key: 'familyFriendly' as keyof NeighborhoodAverages, label: t("neighborhood_rating.category_family"), icon: '👨‍👩‍👧‍👦' },
+    { key: 'publicTransport' as keyof NeighborhoodAverages, label: t("neighborhood_rating.category_transport"), icon: '🚌' },
+    { key: 'greenSpaces' as keyof NeighborhoodAverages, label: t("neighborhood_rating.category_green"), icon: '🌳' },
+    { key: 'services' as keyof NeighborhoodAverages, label: t("neighborhood_rating.category_services"), icon: '🛍️' },
   ];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,8 +256,8 @@ export function NeighborhoodRating() {
     
     if (!hasAllRatings) {
       toast({
-        title: "Faltan calificaciones",
-        description: "Por favor, califica todas las categorías antes de enviar.",
+        title: t("neighborhood_rating.toast_missing_title"),
+        description: t("neighborhood_rating.toast_missing_desc"),
         variant: "destructive",
       });
       return;
@@ -272,7 +277,7 @@ export function NeighborhoodRating() {
   return (
     <div className="w-full">
       <div className="bg-white rounded-lg shadow-lg p-4">
-        <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">Busca y conoce las localidades de tu interés</h2>
+        <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">{t("neighborhood_rating.title")}</h2>
         
         {/* Search bar */}
         <form onSubmit={handleSearchSubmit} className="mb-6 max-w-md">
@@ -281,7 +286,7 @@ export function NeighborhoodRating() {
           <Input
             ref={searchInputRef}
             type="text"
-            placeholder="Buscar barrios de Barcelona y Madrid..."
+            placeholder={t("neighborhood_rating.search_placeholder")}
             value={searchValue}
             onChange={handleSearchChange}
             onKeyDown={handleKeyDown}
@@ -344,7 +349,7 @@ export function NeighborhoodRating() {
             onClick={() => setShowRatingForm(true)}
             className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 text-white px-6 py-2 rounded-lg bg-[#0284c5]"
             data-testid="rate-neighborhood-button"
-          >Calificar esta localidad</Button>
+          >{t("neighborhood_rating.rate_button")}</Button>
         </div>
       )}
 
@@ -354,7 +359,9 @@ export function NeighborhoodRating() {
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">
-                Califica: {getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city)}
+                {t("neighborhood_rating.rate_title", {
+                  location: getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city),
+                })}
               </h3>
               <Button 
                 variant="ghost" 
@@ -390,7 +397,7 @@ export function NeighborhoodRating() {
                   className="bg-[#0284c5e6] text-white px-6 py-2"
                   data-testid="submit-rating-button"
                 >
-                  {ratingMutation.isPending ? "Enviando..." : "Enviar valoración"}
+                  {ratingMutation.isPending ? t("neighborhood_rating.submitting") : t("neighborhood_rating.submit")}
                 </Button>
                 <Button
                   variant="outline"
@@ -398,7 +405,7 @@ export function NeighborhoodRating() {
                   disabled={ratingMutation.isPending}
                   data-testid="cancel-rating-button"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </Button>
               </div>
             </div>
@@ -419,7 +426,7 @@ export function NeighborhoodRating() {
       ) : ratings && ratings.count > 0 ? (
         <div data-testid="neighborhood-ratings" className="space-y-6">
           <p className="text-sm text-gray-600 mb-4">
-            Basado en {ratings.count} valoraciones de residentes
+            {t("neighborhood_rating.based_on", { count: ratings.count })}
           </p>
           {ratingCategories.map(({ key, label, icon }) => {
             const value = ratings[key] as number;
@@ -454,8 +461,10 @@ export function NeighborhoodRating() {
         </div>
       ) : selectedLocation.neighborhood && (!ratings || ratings.count === 0) ? (
         <div data-testid="no-ratings-message" className="text-gray-500 py-8">
-          <p>No hay valoraciones disponibles para {getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city)} en este momento.</p>
-          <p className="text-sm text-gray-400 mt-2">Prueba con uno de los barrios populares arriba.</p>
+          <p>{t("neighborhood_rating.no_ratings", {
+            location: getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city),
+          })}</p>
+          <p className="text-sm text-gray-400 mt-2">{t("neighborhood_rating.try_popular")}</p>
         </div>
       ) : null}
     </div>
