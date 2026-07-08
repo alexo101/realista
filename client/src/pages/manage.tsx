@@ -230,12 +230,6 @@ export default function ManagePage() {
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<Set<string>>(new Set());
   const [emailMessage, setEmailMessage] = useState("");
 
-  // Bulk cédula de habitabilidad modal state
-  const [isCedulaModalOpen, setIsCedulaModalOpen] = useState(false);
-  const [cedulaSearch, setCedulaSearch] = useState("");
-  const [cedulaSelectedIds, setCedulaSelectedIds] = useState<Set<string>>(new Set());
-  const [cedulaTargetValue, setCedulaTargetValue] = useState<boolean>(true);
-
   // Properties view mode (grid or table)
   const [propertiesView, setPropertiesView] = useState<'grid' | 'table'>(() => {
     const saved = localStorage.getItem('propertiesView');
@@ -312,21 +306,6 @@ export default function ManagePage() {
     enabled: currentSection === 'propiedades' && Boolean(user?.id),
   });
 
-  // Source for the bulk cédula modal: fetch agency-wide properties when the
-  // user is an agency admin (the bulk endpoint scopes by agency for them),
-  // otherwise reuse the agent-scoped list above.
-  const { data: cedulaAgencyProperties, isLoading: isLoadingCedulaAgencyProperties } = useQuery<Property[]>({
-    queryKey: ['/api/properties', { agencyId: currentAgency?.id, forCedula: true }],
-    queryFn: async () => {
-      const response = await fetch(`/api/properties?agencyId=${currentAgency!.id}`, { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch agency properties');
-      return response.json();
-    },
-    enabled: isCedulaModalOpen && Boolean(user?.isAdmin) && Boolean(currentAgency?.id),
-  });
-  const cedulaSourceProperties = user?.isAdmin && currentAgency?.id ? cedulaAgencyProperties : properties;
-  const isLoadingCedulaSource = user?.isAdmin && currentAgency?.id ? isLoadingCedulaAgencyProperties : isLoadingProperties;
-
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: [`/api/clients?agentId=${user?.id}`],
     enabled: (currentSection === 'clientes' || currentSection === 'resenas') && Boolean(user?.id),
@@ -399,29 +378,6 @@ export default function ManagePage() {
     },
   });
 
-  const bulkCedulaMutation = useMutation({
-    mutationFn: async (data: { uuids: string[]; hasCedulaHabitabilidad: boolean }) => {
-      return await apiRequest('POST', '/api/properties/bulk-cedula-habitabilidad', data);
-    },
-    onSuccess: (result: any) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
-      toast({
-        title: "Cédula actualizada",
-        description: `Se actualizaron ${result?.updated ?? 0} propiedades`,
-      });
-      setIsCedulaModalOpen(false);
-      setCedulaSelectedIds(new Set());
-      setCedulaSearch("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: (error as Error).message || "No se pudo actualizar el estado de cédula",
-        variant: "destructive",
-      });
-    },
-  });
 
   const fetchPropertyForEditMutation = useMutation({
     mutationFn: async (uuid: string) => {
@@ -1728,20 +1684,6 @@ export default function ManagePage() {
                           <List className="h-4 w-4" />
                         </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        onClick={() => {
-                          setCedulaSelectedIds(new Set());
-                          setCedulaSearch("");
-                          setCedulaTargetValue(true);
-                          setIsCedulaModalOpen(true);
-                        }}
-                        data-testid="button-open-bulk-cedula"
-                      >
-                        <KeyRound className="h-4 w-4 mr-2" />
-                        Marcar cédula
-                      </Button>
                       <Button 
                         onClick={() => {
                           setIsAddingProperty(true);
@@ -1768,21 +1710,6 @@ export default function ManagePage() {
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Añadir propiedad
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        size="lg"
-                        onClick={() => {
-                          setCedulaSelectedIds(new Set());
-                          setCedulaSearch("");
-                          setCedulaTargetValue(true);
-                          setIsCedulaModalOpen(true);
-                        }}
-                        data-testid="button-open-bulk-cedula-mobile"
-                      >
-                        <KeyRound className="h-4 w-4 mr-2" />
-                        Marcar cédula
                       </Button>
                     </div>
                   </div>
@@ -2461,159 +2388,6 @@ export default function ManagePage() {
                       data-testid="button-confirm-delete"
                     >
                       {deleteClientMutation.isPending ? "Eliminando..." : "Eliminar"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              {/* Bulk Cédula de Habitabilidad Modal */}
-              <Dialog
-                open={isCedulaModalOpen}
-                onOpenChange={(open) => {
-                  if (!open) {
-                    setIsCedulaModalOpen(false);
-                    setCedulaSelectedIds(new Set());
-                    setCedulaSearch("");
-                  }
-                }}
-              >
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle>Marcar cédula de habitabilidad</DialogTitle>
-                    <DialogDescription>
-                      Selecciona las propiedades cuyo estado de cédula quieres actualizar y aplica el cambio en bloque.
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="flex-1 overflow-hidden flex flex-col gap-4">
-                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                      <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar por dirección, referencia o título..."
-                          value={cedulaSearch}
-                          onChange={(e) => setCedulaSearch(e.target.value)}
-                          className="pl-10"
-                          data-testid="input-search-cedula-properties"
-                        />
-                      </div>
-                      <Select
-                        value={cedulaTargetValue ? "yes" : "no"}
-                        onValueChange={(v) => setCedulaTargetValue(v === "yes")}
-                      >
-                        <SelectTrigger className="w-full sm:w-[220px]" data-testid="select-cedula-target">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Marcar como CON cédula</SelectItem>
-                          <SelectItem value="no">Marcar como SIN cédula</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex-1 overflow-auto border rounded-lg">
-                      {isLoadingCedulaSource ? (
-                        <div className="flex items-center justify-center h-48">
-                          <p className="text-muted-foreground">Cargando propiedades...</p>
-                        </div>
-                      ) : !cedulaSourceProperties?.length ? (
-                        <div className="flex items-center justify-center h-48">
-                          <p className="text-muted-foreground">No hay propiedades</p>
-                        </div>
-                      ) : (() => {
-                        const search = cedulaSearch.toLowerCase();
-                        const filtered = cedulaSourceProperties.filter((p) =>
-                          !search ||
-                          p.title?.toLowerCase().includes(search) ||
-                          p.address?.toLowerCase().includes(search) ||
-                          p.reference?.toLowerCase().includes(search)
-                        );
-                        const allSelected = filtered.length > 0 && filtered.every((p) => cedulaSelectedIds.has(p.uuid));
-                        return (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[50px]">
-                                  <Checkbox
-                                    checked={allSelected}
-                                    onCheckedChange={(checked) => {
-                                      const newSet = new Set(cedulaSelectedIds);
-                                      if (checked) {
-                                        filtered.forEach((p) => newSet.add(p.uuid));
-                                      } else {
-                                        filtered.forEach((p) => newSet.delete(p.uuid));
-                                      }
-                                      setCedulaSelectedIds(newSet);
-                                    }}
-                                    data-testid="checkbox-cedula-select-all"
-                                  />
-                                </TableHead>
-                                <TableHead>Referencia</TableHead>
-                                <TableHead>Dirección</TableHead>
-                                <TableHead className="w-[110px]">Cédula actual</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filtered.map((property) => {
-                                const isSelected = cedulaSelectedIds.has(property.uuid);
-                                return (
-                                  <TableRow
-                                    key={property.uuid}
-                                    className={isSelected ? 'bg-primary/5' : ''}
-                                    data-testid={`row-cedula-property-${property.uuid}`}
-                                  >
-                                    <TableCell>
-                                      <Checkbox
-                                        checked={isSelected}
-                                        onCheckedChange={(checked) => {
-                                          const newSet = new Set(cedulaSelectedIds);
-                                          if (checked) newSet.add(property.uuid);
-                                          else newSet.delete(property.uuid);
-                                          setCedulaSelectedIds(newSet);
-                                        }}
-                                        data-testid={`checkbox-cedula-${property.uuid}`}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="font-medium">{property.reference || '-'}</TableCell>
-                                    <TableCell className="line-clamp-1">{property.address}</TableCell>
-                                    <TableCell>
-                                      <Badge variant={property.hasCedulaHabitabilidad ? 'default' : 'outline'}>
-                                        {property.hasCedulaHabitabilidad ? 'Sí' : 'No'}
-                                      </Badge>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        );
-                      })()}
-                    </div>
-
-                    <div className="text-sm text-muted-foreground" data-testid="text-cedula-selection-count">
-                      {cedulaSelectedIds.size} propiedad(es) seleccionada(s)
-                    </div>
-                  </div>
-
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCedulaModalOpen(false)}
-                      data-testid="button-cancel-bulk-cedula"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      disabled={cedulaSelectedIds.size === 0 || bulkCedulaMutation.isPending}
-                      onClick={() => {
-                        bulkCedulaMutation.mutate({
-                          uuids: Array.from(cedulaSelectedIds),
-                          hasCedulaHabitabilidad: cedulaTargetValue,
-                        });
-                      }}
-                      data-testid="button-confirm-bulk-cedula"
-                    >
-                      {bulkCedulaMutation.isPending ? 'Guardando...' : 'Aplicar cambios'}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

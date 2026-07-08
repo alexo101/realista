@@ -1524,46 +1524,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/properties/bulk-cedula-habitabilidad", requireAuth, async (req, res) => {
-    try {
-      const bulkSchema = z.object({
-        uuids: z.array(z.string().uuid()).min(1).max(500),
-        hasCedulaHabitabilidad: z.boolean(),
-      });
-      const parsed = bulkSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Datos inválidos",
-          errors: parsed.error.flatten(),
-        });
-      }
-      const { uuids, hasCedulaHabitabilidad } = parsed.data;
-      const user = req.user!;
-
-      const isSuperAdmin = user.agentType === "super_admin";
-      const scope: { agentId?: number; agencyId?: number; isSuperAdmin?: boolean } = {
-        isSuperAdmin,
-      };
-      if (!isSuperAdmin) {
-        if (user.isAdmin && user.agencyId) {
-          scope.agencyId = user.agencyId;
-        } else {
-          scope.agentId = user.id;
-        }
-      }
-
-      const result = await storage.bulkUpdateCedulaHabitabilidad(
-        uuids,
-        hasCedulaHabitabilidad,
-        scope,
-      );
-      res.json(result);
-    } catch (error) {
-      console.error("Error in bulk cedula update:", error);
-      res.status(500).json({ message: "Error al actualizar las propiedades" });
-    }
-  });
-
   app.patch("/api/properties/:id", async (req, res) => {
     try {
       console.log('Attempting to update property:', req.params.id, req.body);
