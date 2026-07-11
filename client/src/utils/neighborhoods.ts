@@ -474,8 +474,8 @@ export function getAllNeighborhoodsByCity(city: string): string[] {
   return cityStructure ? cityStructure.districts.flatMap(d => d.neighborhoods) : [];
 }
 
-export function getNeighborhoodDisplayName(neighborhood: string, district: string, city: string): string {
-  return `${neighborhood}, ${district}, ${city}`;
+export function getNeighborhoodDisplayName(neighborhood: string, district: string | null, city: string): string {
+  return [neighborhood, district, city].filter(Boolean).join(", ");
 }
 
 export function parseNeighborhoodDisplayName(displayName: string): { neighborhood: string; district: string; city: string } | null {

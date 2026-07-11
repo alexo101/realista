@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { searchNeighborhoods, getNeighborhoodDisplayName, parseNeighborhoodDisplayName } from "@/utils/neighborhoods";
 import { useLanguage } from "@/contexts/language-context";
+import { cn } from "@/lib/utils";
 
 const POPULAR_NEIGHBORHOODS = [
   { neighborhood: "Vila de Gràcia", district: "Gràcia", city: "Barcelona", display: "Vila de Gràcia, Gràcia, Barcelona" },
@@ -65,7 +66,11 @@ const StarRatingInput = ({ value, onChange, disabled = false }: StarRatingProps)
   );
 };
 
-export function NeighborhoodRating() {
+interface NeighborhoodRatingProps {
+  compact?: boolean;
+}
+
+export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps) {
   const { t } = useLanguage();
   const [selectedLocation, setSelectedLocation] = useState<{neighborhood: string, district: string | null, city: string}>({neighborhood: "Vila de Gràcia", district: "Gràcia", city: "Barcelona"});
   const [searchValue, setSearchValue] = useState<string>("");
@@ -189,9 +194,12 @@ export function NeighborhoodRating() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchValue.trim()) {
-      setSelectedNeighborhood(searchValue.trim());
-      setSearchValue("");
-      setShowSuggestions(false);
+      const parsed = parseNeighborhoodDisplayName(searchValue.trim());
+      if (parsed) {
+        setSelectedLocation(parsed);
+        setSearchValue("");
+        setShowSuggestions(false);
+      }
     }
   };
 
@@ -276,11 +284,18 @@ export function NeighborhoodRating() {
 
   return (
     <div className="w-full">
-      <div className="bg-white rounded-lg shadow-lg p-4">
-        <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">{t("neighborhood_rating.title")}</h2>
+      <div className={cn(
+        "bg-white rounded-lg",
+        compact ? "p-0" : "shadow-lg p-4"
+      )}>
+        {!compact && (
+          <h2 data-testid="neighborhood-section-title" className="text-xl md:text-2xl font-semibold mb-6">
+            {t("neighborhood_rating.title")}
+          </h2>
+        )}
         
         {/* Search bar */}
-        <form onSubmit={handleSearchSubmit} className="mb-6 max-w-md">
+        <form onSubmit={handleSearchSubmit} className={cn("max-w-md", compact ? "mb-4" : "mb-6")}>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
@@ -324,27 +339,29 @@ export function NeighborhoodRating() {
       </form>
       
       {/* Neighborhood buttons */}
-      <div className="flex flex-wrap gap-3 mb-8">
-        {POPULAR_NEIGHBORHOODS.map((location) => (
-          <Button
-            key={location.display}
-            data-testid={`neighborhood-button-${location.neighborhood.toLowerCase().replace(' ', '-')}`}
-            variant="outline"
-            onClick={() => setSelectedLocation(location)}
-            className={`px-4 py-2 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 ${
-              selectedLocation.neighborhood === location.neighborhood && selectedLocation.city === location.city
-                ? "border-2 border-[#0284c5e6]" 
-                : "border border-gray-300"
-            }`}
-          >
-            {location.display}
-          </Button>
-        ))}
-      </div>
+      {!compact && (
+        <div className="flex flex-wrap gap-3 mb-8">
+          {POPULAR_NEIGHBORHOODS.map((location) => (
+            <Button
+              key={location.display}
+              data-testid={`neighborhood-button-${location.neighborhood.toLowerCase().replace(' ', '-')}`}
+              variant="outline"
+              onClick={() => setSelectedLocation(location)}
+              className={`px-4 py-2 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 ${
+                selectedLocation.neighborhood === location.neighborhood && selectedLocation.city === location.city
+                  ? "border-2 border-[#0284c5e6]" 
+                  : "border border-gray-300"
+              }`}
+            >
+              {location.display}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Rate this neighborhood button */}
       {selectedLocation.neighborhood && !showRatingForm && (
-        <div className="mb-8">
+        <div className={compact ? "mb-5" : "mb-8"}>
           <Button 
             onClick={() => setShowRatingForm(true)}
             className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 text-white px-6 py-2 rounded-lg bg-[#0284c5]"
@@ -355,8 +372,8 @@ export function NeighborhoodRating() {
 
       {/* Rating form */}
       {showRatingForm && (
-        <Card className="mb-8 border shadow-sm">
-          <CardContent className="p-6">
+        <Card className={cn("border shadow-sm", compact ? "mb-5" : "mb-8")}>
+          <CardContent className={compact ? "p-4" : "p-6"}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">
                 {t("neighborhood_rating.rate_title", {
@@ -373,7 +390,7 @@ export function NeighborhoodRating() {
               </Button>
             </div>
             
-            <div className="space-y-6">
+            <div className={compact ? "space-y-4" : "space-y-6"}>
               {ratingCategories.map(({ key, label, icon }) => (
                 <div key={key} className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -424,7 +441,7 @@ export function NeighborhoodRating() {
           ))}
         </div>
       ) : ratings && ratings.count > 0 ? (
-        <div data-testid="neighborhood-ratings" className="space-y-6">
+        <div data-testid="neighborhood-ratings" className={compact ? "space-y-3" : "space-y-6"}>
           <p className="text-sm text-gray-600 mb-4">
             {t("neighborhood_rating.based_on", { count: ratings.count })}
           </p>
@@ -433,8 +450,8 @@ export function NeighborhoodRating() {
             const percentage = (value / 10) * 100;
             
             return (
-              <div key={key} className="flex items-center gap-4">
-                <div className="flex items-center gap-2 w-32 flex-shrink-0">
+              <div key={key} className={cn("flex items-center", compact ? "gap-2" : "gap-4")}>
+                <div className={cn("flex items-center gap-2 flex-shrink-0", compact ? "w-28" : "w-32")}>
                   <span className="text-lg">{icon}</span>
                   <span data-testid={`rating-label-${key}`} className="text-sm text-gray-700">
                     {label}
@@ -460,7 +477,7 @@ export function NeighborhoodRating() {
           })}
         </div>
       ) : selectedLocation.neighborhood && (!ratings || ratings.count === 0) ? (
-        <div data-testid="no-ratings-message" className="text-gray-500 py-8">
+        <div data-testid="no-ratings-message" className={cn("text-gray-500", compact ? "py-4" : "py-8")}>
           <p>{t("neighborhood_rating.no_ratings", {
             location: getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city),
           })}</p>

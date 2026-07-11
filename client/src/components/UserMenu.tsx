@@ -6,15 +6,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { Heart, LogOut, User } from "lucide-react";
 import { Link } from "wouter";
 
 export function UserMenu() {
   const { user, logout } = useUser();
+  const { t } = useLanguage();
 
   if (!user) return null;
 
-  const displayName = user.name || (user.email ? user.email.split('@')[0] : 'Usuario');
+  const displayName = user.name || (user.email ? user.email.split('@')[0] : t('nav.user_default'));
 
   return (
     <DropdownMenu>
@@ -27,7 +29,7 @@ export function UserMenu() {
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={logout} className="text-red-600">
           <LogOut className="h-4 w-4 mr-2" />
-          <span>Cerrar sesión</span>
+          <span>{t('nav.logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -15,6 +15,7 @@ import { Plus, Users, Loader2, UserMinus } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 
 interface TeamAgent {
   agencyAgentId: number;
@@ -49,6 +50,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const { t } = useLanguage();
 
   // Fetch agencies managed by the admin agent
   const { data: agencies = [], isLoading: agenciesLoading } = useQuery({
@@ -87,7 +89,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Invitación enviada exitosamente",
+        title: t("manage.team.invite_sent"),
         description: `Se ha enviado una invitación a ${pendingInvitation?.email || data.email} para unirse al equipo.`,
       });
       form.reset();
@@ -100,7 +102,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Error al enviar invitación",
+        title: t("manage.team.invite_error"),
         description: error.message || "No se pudo enviar la invitación.",
         variant: "destructive",
       });
@@ -127,8 +129,8 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
       const wasActive = agentToRemove?.isActive ?? true;
       toast({
         title: wasActive
-          ? "Acceso a la plataforma desactivado"
-          : "Cuenta activada correctamente",
+          ? t("manage.team.access_deactivated")
+          : t("manage.team.account_activated"),
         description: wasActive
           ? `La cuenta de ${removedAgentName} fue desactivada. Ya no podrá iniciar sesión.`
           : `La cuenta de ${removedAgentName} se activó y ya puede volver a iniciar sesión.`,
@@ -139,7 +141,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Error al eliminar acceso",
+        title: t("manage.team.remove_access_error"),
         description: error.message || "No se pudo eliminar el acceso del agente.",
         variant: "destructive",
       });
@@ -155,7 +157,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
         ? `${agentToRemove.name || ""} ${agentToRemove.surname || ""}`.trim() || agentToRemove.email
         : "El agente";
       toast({
-        title: "Cuenta eliminada completamente",
+        title: t("manage.team.account_deleted"),
         description: `${removedAgentName} fue eliminado de la plataforma y sus datos se reasignaron al administrador.`,
       });
       setShowHardRemoveDialog(false);
@@ -164,7 +166,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     },
     onError: (error: any) => {
       toast({
-        title: "Error al eliminar completamente",
+        title: t("manage.team.delete_error"),
         description: error.message || "No se pudo eliminar completamente la cuenta del agente.",
         variant: "destructive",
       });
@@ -227,7 +229,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     if (!agent.isActive) {
       return (
         <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300" data-testid="badge-status-inactive">
-          Inactivo
+          {t("manage.team.status_inactive")}
         </Badge>
       );
     }
@@ -236,13 +238,13 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
     if (invitationStatus === 'pending') {
       return (
         <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300" data-testid="badge-status-pending">
-          Pendiente
+          {t("manage.team.status_pending")}
         </Badge>
       );
     }
     return (
       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300" data-testid="badge-status-active">
-        Activo
+        {t("manage.team.status_active")}
       </Badge>
     );
   };
@@ -252,9 +254,9 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
       {/* Header - Stacks on mobile */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Gestionar mi equipo</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">{t("manage.team.title")}</h1>
           <p className="text-muted-foreground text-sm md:text-base">
-            Administra los agentes de tu equipo
+            {t("manage.team.subtitle")}
           </p>
         </div>
         <Button 
@@ -263,7 +265,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
           data-testid="button-add-agent"
         >
           <Plus className="h-4 w-4" />
-          Invitar miembro
+          {t("manage.team.add_agent")}
         </Button>
       </div>
 

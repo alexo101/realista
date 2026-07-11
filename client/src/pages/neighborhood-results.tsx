@@ -10,7 +10,11 @@ import { AgentResults } from "@/components/AgentResults";
 import GoogleMapsNeighborhoodMap from "@/components/GoogleMapsNeighborhoodMap";
 import GoogleMapsAgenciesMap from "@/components/GoogleMapsAgenciesMap";
 import { Footer } from "@/components/Footer";
-import { PropertyFilters, PropertyFilters as PropertyFiltersType } from "@/components/PropertyFilters";
+import {
+  PropertyFilters,
+  type PropertyFilters as PropertyFiltersType,
+  type PropertySortOption,
+} from "@/components/PropertyFilters";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MobileSearchHeader } from "@/components/MobileSearchHeader";
 import { MobileFilterRow } from "@/components/MobileFilterRow";
@@ -57,7 +61,6 @@ export default function NeighborhoodResultsPage() {
   
   // State for mobile filter sheet
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [mobileSortBy, setMobileSortBy] = useState<'newest' | 'price-asc' | 'price-m2' | 'price-drop'>('newest');
   
   // State for inline neighborhood rating form
   const [showInlineRatingForm, setShowInlineRatingForm] = useState(false);
@@ -228,6 +231,7 @@ export default function NeighborhoodResultsPage() {
     requireCedulaHabitabilidad: requireCedulaHabitabilidadFromUrl,
     excludeOcupados: excludeOcupadosFromUrl,
     excludeAlquilados: excludeAlquiladosFromUrl,
+    sortBy: "newest",
   });
 
   // Persist exclusion filters to URL whenever they change
@@ -703,6 +707,8 @@ export default function NeighborhoodResultsPage() {
           const dropB = b.previousPrice ? ((b.previousPrice - b.price) / b.previousPrice) * 100 : 0;
           return dropB - dropA;
         });
+      case 'most-viewed':
+        return list.sort((a: any, b: any) => (b.viewCount || 0) - (a.viewCount || 0));
       case 'newest':
       default:
         return list.sort((a: any, b: any) =>
@@ -790,9 +796,8 @@ export default function NeighborhoodResultsPage() {
         <MobileFilterRow
           activeTab={activeTab}
           onTabChange={(tab) => handleTabChange(tab)}
-          propertySortBy={mobileSortBy}
+          propertySortBy={(propertyFilters.sortBy || "newest") as PropertySortOption}
           onPropertySortChange={(sort) => {
-            setMobileSortBy(sort);
             setPropertyFilters(prev => ({ ...prev, sortBy: sort }));
           }}
           entitySortBy={activeTab === 'agencies' ? agenciesFilter as 'best_rating' | 'most_reviews' : agentsFilter as 'best_rating' | 'most_reviews'}
@@ -827,6 +832,8 @@ export default function NeighborhoodResultsPage() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           showViewToggle={false}
+          sortBy={(propertyFilters.sortBy || "newest") as PropertySortOption}
+          onSortChange={(sort) => setPropertyFilters(prev => ({ ...prev, sortBy: sort }))}
         />
       </MobileFilterSheet>
 
@@ -1027,6 +1034,8 @@ export default function NeighborhoodResultsPage() {
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
                   showViewToggle={true}
+                  sortBy={(propertyFilters.sortBy || "newest") as PropertySortOption}
+                  onSortChange={(sort) => setPropertyFilters(prev => ({ ...prev, sortBy: sort }))}
                   saveSearchButton={
                     <Button
                       onClick={handleSaveSearch}

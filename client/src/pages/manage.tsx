@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Redirect, useLocation, useRoute, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
+import { getClientStatuses } from "@/utils/clientStatuses";
 import {
   Sidebar,
   SidebarContent,
@@ -71,18 +73,11 @@ const VALID_SECTIONS = [
 
 type DashboardSection = typeof VALID_SECTIONS[number];
 
-// Client status options with colors
-const CLIENT_STATUSES = [
-  { value: "Nuevo", label: "Nuevo", color: "bg-blue-100 text-blue-900" },
-  { value: "Seguimiento", label: "Seguimiento", color: "bg-blue-300 text-blue-900" },
-  { value: "En visitas", label: "En visitas", color: "bg-blue-500 text-white" },
-  { value: "Cerrando", label: "Cerrando", color: "bg-blue-700 text-white" },
-  { value: "Ganado", label: "Ganado", color: "bg-blue-900 text-white" },
-  { value: "Perdido", label: "Perdido", color: "bg-gray-500 text-white" }
-] as const;
 
 export default function ManagePage() {
   const { user, setUser, isLoading } = useUser();
+  const { t } = useLanguage();
+  const clientStatuses = getClientStatuses(t);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [location, navigate] = useLocation();
@@ -126,8 +121,8 @@ export default function ManagePage() {
     if (!user.agentUuid) {
       // Agent without UUID - something is wrong
       toast({
-        title: "Error",
-        description: "Tu perfil no tiene un identificador válido. Contacta soporte.",
+        title: t("common.error"),
+        description: t("manage.invalid_profile"),
         variant: "destructive"
       });
       return;
@@ -144,8 +139,8 @@ export default function ManagePage() {
     if (urlAgentUuid !== user.agentUuid) {
       // Attempting to access another agent's dashboard
       toast({
-        title: "Acceso denegado",
-        description: "No puedes acceder al panel de otro agente.",
+        title: t("common.access_denied"),
+        description: t("manage.access_denied_other_agent"),
         variant: "destructive"
       });
       navigate(`/gestionar/${user.agentUuid}/calendario`);
@@ -338,15 +333,15 @@ export default function ManagePage() {
       setIsAddingProperty(false);
       setEditingProperty(null);
       toast({
-        title: "Propiedad creada",
-        description: "La propiedad se ha añadido correctamente",
+        title: t("manage.properties.created"),
+        description: t("manage.properties.created_desc"),
       });
     },
     onError: (error) => {
       console.error('Error creating property:', error);
       toast({
-        title: "Error al crear propiedad",
-        description: (error as Error).message || "No se pudo crear la propiedad",
+        title: t("manage.properties.create_error"),
+        description: (error as Error).message || t("manage.properties.create_error_desc"),
         variant: "destructive",
       });
     },
@@ -364,15 +359,15 @@ export default function ManagePage() {
       queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
       setEditingProperty(null);
       toast({
-        title: "Propiedad actualizada",
-        description: "Los cambios se han guardado correctamente",
+        title: t("manage.properties.updated"),
+        description: t("manage.changes_saved"),
       });
     },
     onError: (error) => {
       console.error('Error updating property:', error);
       toast({
-        title: "Error al actualizar",
-        description: (error as Error).message || "No se pudieron guardar los cambios",
+        title: t("manage.properties.update_error"),
+        description: (error as Error).message || t("manage.properties.update_error_desc"),
         variant: "destructive",
       });
     },
@@ -452,14 +447,14 @@ export default function ManagePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
       toast({
-        title: "Cliente eliminado",
-        description: "El cliente ha sido eliminado correctamente",
+        title: t("manage.clients.deleted"),
+        description: t("manage.clients.deleted_desc"),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el cliente",
+        title: t("common.error"),
+        description: t("manage.clients.delete_error"),
         variant: "destructive",
       });
     },
@@ -472,8 +467,8 @@ export default function ManagePage() {
     },
     onSuccess: (result: any) => {
       toast({
-        title: "Correos enviados",
-        description: `Se han enviado ${result.sentCount || selectedClientIds.size} correos correctamente`,
+        title: t("manage.clients.emails_sent"),
+        description: t("manage.clients.emails_sent_desc", { count: String(result.sentCount || selectedClientIds.size) }),
       });
       // Reset modal state
       setIsSendModalOpen(false);
@@ -484,8 +479,8 @@ export default function ManagePage() {
     },
     onError: (error) => {
       toast({
-        title: "Error al enviar correos",
-        description: (error as Error).message || "No se pudieron enviar los correos",
+        title: t("manage.clients.emails_error"),
+        description: (error as Error).message || t("manage.clients.emails_error_desc"),
         variant: "destructive",
       });
     },
@@ -504,8 +499,8 @@ export default function ManagePage() {
         setShowSavedIndicator(true);
         setHasAgentChanges(false); // Added
         toast({
-          title: "Perfil actualizado",
-          description: "Los cambios se han guardado correctamente",
+          title: t("manage.profile.updated"),
+          description: t("manage.changes_saved"),
         });
 
         setTimeout(() => {
@@ -515,8 +510,8 @@ export default function ManagePage() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: (error as Error).message || "No se pudo actualizar el perfil",
+        title: t("common.error"),
+        description: (error as Error).message || t("manage.profile.update_error"),
         variant: "destructive",
       });
     }
@@ -534,8 +529,8 @@ export default function ManagePage() {
       setShowSavedIndicator(true);
       setHasAgencyChanges(false);
       toast({
-        title: "Agencia actualizada",
-        description: "Los cambios se han guardado correctamente",
+        title: t("manage.agency.updated"),
+        description: t("manage.changes_saved"),
       });
 
       setTimeout(() => {
@@ -544,8 +539,8 @@ export default function ManagePage() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: (error as Error).message || "No se pudo actualizar la agencia",
+        title: t("common.error"),
+        description: (error as Error).message || t("manage.agency.update_error"),
         variant: "destructive",
       });
     }
@@ -562,14 +557,14 @@ export default function ManagePage() {
     },
     onSuccess: () => {
       toast({
-        title: "Solicitud enviada",
-        description: "Se ha enviado la solicitud de reseña por email al cliente",
+        title: t("manage.reviews.request_sent"),
+        description: t("manage.reviews.request_sent_desc"),
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: (error as Error).message || "No se pudo enviar la solicitud",
+        title: t("common.error"),
+        description: (error as Error).message || t("manage.reviews.request_error"),
         variant: "destructive",
       });
     }
@@ -597,7 +592,7 @@ export default function ManagePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <p className="mt-2 text-gray-600">Cargando...</p>
+          <p className="mt-2 text-gray-600">{t("manage.loading")}</p>
         </div>
       </div>
     );
@@ -614,13 +609,13 @@ export default function ManagePage() {
               <SidebarMenuItem>
                 <div
                   className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
-                  title={sidebarCollapsed ? "CRM" : ""}
+                  title={sidebarCollapsed ? t("nav.crm") : ""}
                   data-testid="sidebar-group-crm"
                 >
-                  {!sidebarCollapsed && <span>CRM</span>}
+                  {!sidebarCollapsed && <span>{t("nav.crm")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      CRM
+                      {t("nav.crm")}
                     </div>
                   )}
                 </div>
@@ -631,13 +626,13 @@ export default function ManagePage() {
                   isActive={currentSection === "calendario"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/calendario`)}
                   className="relative group"
-                  title={sidebarCollapsed ? "Calendario" : ""}
+                  title={sidebarCollapsed ? t("nav.calendar") : ""}
                 >
                   <Calendar className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Calendario</span>}
+                  {!sidebarCollapsed && <span>{t("nav.calendar")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Calendario
+                      {t("nav.calendar")}
                     </div>
                   )}
                 </SidebarMenuButton>
@@ -648,13 +643,13 @@ export default function ManagePage() {
                   isActive={currentSection === "clientes"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes`)}
                   className="relative group"
-                  title={sidebarCollapsed ? "Clientes" : ""}
+                  title={sidebarCollapsed ? t("nav.clients") : ""}
                 >
                   <UserCircle className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Clientes</span>}
+                  {!sidebarCollapsed && <span>{t("nav.clients")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Clientes
+                      {t("nav.clients")}
                     </div>
                   )}
                 </SidebarMenuButton>
@@ -665,13 +660,13 @@ export default function ManagePage() {
                   isActive={currentSection === "mensajes"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/mensajes`)}
                   className="relative group"
-                  title={sidebarCollapsed ? "Mensajes" : ""}
+                  title={sidebarCollapsed ? t("nav.messages") : ""}
                 >
                   <MessageSquare className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Mensajes</span>}
+                  {!sidebarCollapsed && <span>{t("nav.messages")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Mensajes
+                      {t("nav.messages")}
                     </div>
                   )}
                 </SidebarMenuButton>
@@ -682,13 +677,13 @@ export default function ManagePage() {
                   isActive={currentSection === "propiedades"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/propiedades`)}
                   className="relative group"
-                  title={sidebarCollapsed ? "Gestionar propiedades" : ""}
+                  title={sidebarCollapsed ? t("nav.manage_properties") : ""}
                 >
                   <Building2 className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Propiedades</span>}
+                  {!sidebarCollapsed && <span>{t("nav.properties")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Gestionar propiedades
+                      {t("nav.manage_properties")}
                     </div>
                   )}
                 </SidebarMenuButton>
@@ -698,13 +693,13 @@ export default function ManagePage() {
               <SidebarMenuItem>
                 <div
                   className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
-                  title={sidebarCollapsed ? "Mi perfil de agente" : ""}
+                  title={sidebarCollapsed ? t("nav.agent_profile") : ""}
                   data-testid="sidebar-group-mi-perfil"
                 >
-                  {!sidebarCollapsed && <span>Agente</span>}
+                  {!sidebarCollapsed && <span>{t("nav.agent_section")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Mi perfil de agente
+                      {t("nav.agent_profile")}
                     </div>
                   )}
                 </div>
@@ -715,13 +710,13 @@ export default function ManagePage() {
                   isActive={currentSection === "perfil-agente"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agente`)}
                   className="relative group"
-                  title={sidebarCollapsed ? "Mi perfil de agente" : ""}
+                  title={sidebarCollapsed ? t("nav.agent_profile") : ""}
                 >
                   <UserCircle className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Mi perfil</span>}
+                  {!sidebarCollapsed && <span>{t("nav.my_profile")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Mi perfil de agente
+                      {t("nav.agent_profile")}
                     </div>
                   )}
                 </SidebarMenuButton>
@@ -732,13 +727,13 @@ export default function ManagePage() {
                   isActive={currentSection === "resenas"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/resenas`)}
                   className="relative group"
-                  title={sidebarCollapsed ? "Gestionar reseñas" : ""}
+                  title={sidebarCollapsed ? t("nav.manage_reviews") : ""}
                 >
                   <Star className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Gestionar reseñas</span>}
+                  {!sidebarCollapsed && <span>{t("nav.manage_reviews")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Gestionar reseñas
+                      {t("nav.manage_reviews")}
                     </div>
                   )}
                 </SidebarMenuButton>
@@ -752,11 +747,11 @@ export default function ManagePage() {
                       isActive={currentSection === "control-jornada"}
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
                       className="relative group"
-                      title={sidebarCollapsed ? "Control de jornada" : ""}
+                      title={sidebarCollapsed ? t("nav.workday_control") : ""}
                       data-testid="sidebar-link-control-jornada"
                     >
                       <Clock className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>Control de jornada</span>}
+                      {!sidebarCollapsed && <span>{t("nav.workday_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                           Control de jornada
@@ -770,11 +765,11 @@ export default function ManagePage() {
                       isActive={currentSection === "control-ausencias"}
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
                       className="relative group"
-                      title={sidebarCollapsed ? "Control de ausencias" : ""}
+                      title={sidebarCollapsed ? t("nav.absence_control") : ""}
                       data-testid="sidebar-link-control-ausencias"
                     >
                       <CalendarDays className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>Control de ausencias</span>}
+                      {!sidebarCollapsed && <span>{t("nav.absence_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                           Control de ausencias
@@ -791,10 +786,10 @@ export default function ManagePage() {
                   <SidebarMenuItem>
                     <div
                       className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
-                      title={sidebarCollapsed ? "Agencia" : ""}
+                      title={sidebarCollapsed ? t("nav.agency_section") : ""}
                       data-testid="sidebar-group-agencia"
                     >
-                      {!sidebarCollapsed && <span>Agencia</span>}
+                      {!sidebarCollapsed && <span>{t("nav.agency_section")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                           Agencia
@@ -808,10 +803,10 @@ export default function ManagePage() {
                       isActive={currentSection === "perfil-agencia"}
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agencia`)}
                       className="relative group"
-                      title={sidebarCollapsed ? "Perfil de agencia" : ""}
+                      title={sidebarCollapsed ? t("nav.agency_profile") : ""}
                     >
                       <Building className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>Perfil de agencia</span>}
+                      {!sidebarCollapsed && <span>{t("nav.agency_profile")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                           Perfil de agencia
@@ -825,11 +820,11 @@ export default function ManagePage() {
                       isActive={currentSection === "equipo"}
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
                       className="relative group"
-                      title={sidebarCollapsed ? "Accesos" : ""}
+                      title={sidebarCollapsed ? t("nav.access") : ""}
                       data-testid="sidebar-link-accesos"
                     >
                       <KeyRound className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>Accesos</span>}
+                      {!sidebarCollapsed && <span>{t("nav.access")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                           Accesos
@@ -843,11 +838,11 @@ export default function ManagePage() {
                       isActive={currentSection === "control-jornada"}
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
                       className="relative group"
-                      title={sidebarCollapsed ? "Control de jornada" : ""}
+                      title={sidebarCollapsed ? t("nav.workday_control") : ""}
                       data-testid="sidebar-link-control-jornada-admin"
                     >
                       <Clock className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>Control de jornada</span>}
+                      {!sidebarCollapsed && <span>{t("nav.workday_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                           Control de jornada
@@ -861,11 +856,11 @@ export default function ManagePage() {
                       isActive={currentSection === "control-ausencias"}
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
                       className="relative group"
-                      title={sidebarCollapsed ? "Control de ausencias" : ""}
+                      title={sidebarCollapsed ? t("nav.absence_control") : ""}
                       data-testid="sidebar-link-control-ausencias-admin"
                     >
                       <CalendarDays className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>Control de ausencias</span>}
+                      {!sidebarCollapsed && <span>{t("nav.absence_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                           Control de ausencias
@@ -883,13 +878,13 @@ export default function ManagePage() {
                     isActive={currentSection === "red"}
                     onClick={() => navigate(`/gestionar/${user?.agentUuid}/red`)}
                     className="relative group"
-                    title={sidebarCollapsed ? "Gestionar mi red" : ""}
+                    title={sidebarCollapsed ? t("nav.manage_network") : ""}
                   >
                     <Network className="h-4 w-4 flex-shrink-0" />
-                    {!sidebarCollapsed && <span>Gestionar mi red</span>}
+                    {!sidebarCollapsed && <span>{t("nav.manage_network")}</span>}
                     {sidebarCollapsed && (
                       <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                        Gestionar mi red
+                        {t("nav.manage_network")}
                       </div>
                     )}
                   </SidebarMenuButton>
@@ -900,10 +895,10 @@ export default function ManagePage() {
               <SidebarMenuItem>
                 <div
                   className="relative group flex items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground/80 select-none"
-                  title={sidebarCollapsed ? "Cuenta" : ""}
+                  title={sidebarCollapsed ? t("nav.account") : ""}
                   data-testid="sidebar-group-cuenta"
                 >
-                  {!sidebarCollapsed && <span>Cuenta</span>}
+                  {!sidebarCollapsed && <span>{t("nav.account")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                       Cuenta
@@ -917,10 +912,10 @@ export default function ManagePage() {
                   isActive={currentSection === "facturacion"}
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/facturacion`)}
                   className="relative group"
-                  title={sidebarCollapsed ? "Suscripción y facturación" : ""}
+                  title={sidebarCollapsed ? t("nav.subscription_billing") : ""}
                 >
                   <CreditCard className="h-4 w-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span>Suscripción y facturación</span>}
+                  {!sidebarCollapsed && <span>{t("nav.subscription_billing")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
                       Suscripción y facturación
@@ -966,7 +961,7 @@ export default function ManagePage() {
                   )}
                 </div>
                 <Label htmlFor="picture" className={`cursor-pointer text-sm ${isUploadingAvatar ? 'text-gray-400' : 'text-primary'}`}>
-                  {isUploadingAvatar ? 'Subiendo foto...' : 'Gestionar foto'}
+                  {isUploadingAvatar ? t("manage.photo_uploading") : t("manage.manage_photo")}
                 </Label>
                 <Input
                   id="picture"
@@ -1009,14 +1004,14 @@ export default function ManagePage() {
                         });
                         
                         toast({
-                          title: "Éxito",
-                          description: "Foto actualizada correctamente",
+                          title: t("common.success"),
+                          description: t("manage.photo_updated"),
                         });
                       } catch (error) {
                         console.error('Error uploading avatar:', error);
                         toast({
-                          title: "Error",
-                          description: "No se pudo cargar la imagen. Por favor intenta de nuevo.",
+                          title: t("common.error"),
+                          description: t("manage.photo_upload_error"),
                           variant: "destructive"
                         });
                       } finally {
@@ -1030,29 +1025,29 @@ export default function ManagePage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Nombre</Label>
+                    <Label htmlFor="name">{t("common.name")}</Label>
                     <Input 
                       id="name" 
-                      placeholder="Tu nombre" 
+                      placeholder={t("manage.profile.name_placeholder")} 
                       value={name}
                       onChange={(e) => {setName(e.target.value); setHasAgentChanges(true);}}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="surname">Apellidos</Label>
+                    <Label htmlFor="surname">{t("common.surname")}</Label>
                     <Input 
                       id="surname" 
-                      placeholder="Tus apellidos" 
+                      placeholder={t("manage.profile.surname_placeholder")} 
                       value={surname}
                       onChange={(e) => {setSurname(e.target.value); setHasAgentChanges(true);}}
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="description">Descripción pública</Label>
+                  <Label htmlFor="description">{t("manage.profile.public_description")}</Label>
                   <Textarea 
                     id="description" 
-                    placeholder="Escribe una breve descripción sobre ti que verán tus clientes"
+                    placeholder={t("manage.profile.public_description_placeholder")}
                     className="min-h-[100px]"
                     value={description}
                     onChange={(e) => {setDescription(e.target.value); setHasAgentChanges(true);}}
@@ -1060,10 +1055,10 @@ export default function ManagePage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="agent-phone">Número de teléfono</Label>
+                    <Label htmlFor="agent-phone">{t("manage.profile.phone")}</Label>
                     <Input 
                       id="agent-phone" 
-                      placeholder="Teléfono (ej: 612345678)" 
+                      placeholder={t("manage.profile.phone_placeholder")} 
                       value={phone}
                       onChange={(e) => {setPhone(e.target.value); setHasAgentChanges(true);}}
                       data-testid="input-agent-phone"
@@ -1073,11 +1068,11 @@ export default function ManagePage() {
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="yearsOfExperience">Años de experiencia</Label>
+                    <Label htmlFor="yearsOfExperience">{t("manage.profile.years_experience")}</Label>
                     <Input 
                       id="yearsOfExperience" 
                       type="number"
-                      placeholder="Años de experiencia" 
+                      placeholder={t("manage.profile.years_experience")} 
                       value={yearsOfExperience !== undefined ? yearsOfExperience : ''}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -1095,7 +1090,7 @@ export default function ManagePage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="languagesSpoken">Idiomas que hablas</Label>
+                  <Label htmlFor="languagesSpoken">{t("manage.profile.languages")}</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
                       <Button 
@@ -1118,13 +1113,13 @@ export default function ManagePage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="city">Ciudad donde trabajas</Label>
+                  <Label htmlFor="city">{t("manage.profile.city")}</Label>
                   <div className="relative">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
                         id="city-search"
-                        placeholder="Buscar ciudad..."
+                        placeholder={t("manage.profile.search_city")}
                         value={cityDropdownOpen ? citySearchTerm : city}
                         onChange={(e) => {
                           setCitySearchTerm(e.target.value);
@@ -1201,13 +1196,13 @@ export default function ManagePage() {
                   </div>
                 </div>
                 <div className="w-full">
-                  <Label htmlFor="influence-neighborhoods">Barrios de influencia (tu perfil de agente aparecerá en estos barrios)</Label>
+                  <Label htmlFor="influence-neighborhoods">{t("manage.profile.influence_neighborhoods")}</Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={influenceNeighborhoods}
                       city={city}
                       onChange={(e) => {setInfluenceNeighborhoods(e); setHasAgentChanges(true);}} // Added change detection
-                      buttonText="Selecciona los barrios donde trabajas habitualmente"
+                      buttonText={t("manage.profile.neighborhoods_button")}
                     />
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
@@ -1216,7 +1211,7 @@ export default function ManagePage() {
                 </div>
 
                 <div className="space-y-3 md:space-y-4">
-                  <Label>Redes sociales</Label>
+                  <Label>{t("manage.profile.social_media")}</Label>
                   <p className="text-sm text-gray-500">
                     Añade tus perfiles de redes sociales para que aparezcan en tu perfil público.
                   </p>
@@ -1229,7 +1224,7 @@ export default function ManagePage() {
                         </svg>
                       </div>
                       <Input
-                        placeholder="URL de Facebook"
+                        placeholder={t("manage.profile.facebook_placeholder")}
                         value={agentFacebookUrl}
                         onChange={(e) => {setAgentFacebookUrl(e.target.value); setHasAgentChanges(true);}}
                         className="min-h-[44px]"
@@ -1245,7 +1240,7 @@ export default function ManagePage() {
                         </svg>
                       </div>
                       <Input
-                        placeholder="URL de Instagram"
+                        placeholder={t("manage.profile.instagram_placeholder")}
                         value={agentInstagramUrl}
                         onChange={(e) => {setAgentInstagramUrl(e.target.value); setHasAgentChanges(true);}}
                         className="min-h-[44px]"
@@ -1261,7 +1256,7 @@ export default function ManagePage() {
                         </svg>
                       </div>
                       <Input
-                        placeholder="URL de LinkedIn"
+                        placeholder={t("manage.profile.linkedin_placeholder")}
                         value={agentLinkedinUrl}
                         onChange={(e) => {setAgentLinkedinUrl(e.target.value); setHasAgentChanges(true);}}
                         className="min-h-[44px]"
@@ -1281,8 +1276,8 @@ export default function ManagePage() {
                       const phoneRegex = /^(\+34|0034|34)?[\s\-]?[6789]\d{2}[\s\-]?\d{3}[\s\-]?\d{3}$/;
                       if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
                         toast({
-                          title: "Número de teléfono inválido",
-                          description: "Por favor, introduce un número de teléfono español válido (ej: 612345678 o +34 612 345 678)",
+                          title: t("manage.invalid_phone"),
+                          description: t("manage.invalid_phone_desc"),
                           variant: "destructive",
                         });
                         return;
@@ -1313,7 +1308,7 @@ export default function ManagePage() {
                   {showSavedIndicator && (
                     <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
                   )}
-                  Guardar cambios
+                  {t("common.save_changes")}
                 </Button>
               </div>
             </div>
@@ -1340,7 +1335,7 @@ export default function ManagePage() {
                   )}
                 </div>
                 <Label htmlFor="agency-logo" className={`cursor-pointer text-sm ${isUploadingAgencyLogo ? 'text-gray-400' : 'text-primary'}`}>
-                  {isUploadingAgencyLogo ? 'Subiendo logo...' : 'Gestionar logo'}
+                  {isUploadingAgencyLogo ? t("manage.agency.uploading_logo") : t("manage.agency.manage_logo")}
                 </Label>
                 <Input
                   id="agency-logo"
@@ -1383,14 +1378,14 @@ export default function ManagePage() {
                         });
                         
                         toast({
-                          title: "Éxito",
-                          description: "Logo actualizado correctamente",
+                          title: t("common.success"),
+                          description: t("manage.logo_updated"),
                         });
                       } catch (error) {
                         console.error('Error uploading agency logo:', error);
                         toast({
-                          title: "Error",
-                          description: "No se pudo cargar el logo. Por favor intenta de nuevo.",
+                          title: t("common.error"),
+                          description: t("manage.logo_upload_error"),
                           variant: "destructive"
                         });
                       } finally {
@@ -1403,49 +1398,49 @@ export default function ManagePage() {
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="agency-name">Nombre de la agencia</Label>
+                  <Label htmlFor="agency-name">{t("manage.agency.name")}</Label>
                   <Input 
                     id="agency-name" 
-                    placeholder="Nombre de tu agencia inmobiliaria" 
+                    placeholder={t("manage.agency.name_placeholder")} 
                     value={agencyName}
                     onChange={(e) => {setAgencyName(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
-                  <Label htmlFor="agency-address">Dirección completa de la agencia</Label>
+                  <Label htmlFor="agency-address">{t("manage.agency.address")}</Label>
                   <Input 
                     id="agency-address" 
-                    placeholder="Dirección física completa" 
+                    placeholder={t("manage.agency.address_placeholder")} 
                     value={agencyAddress}
                     onChange={(e) => {setAgencyAddress(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
-                  <Label htmlFor="agency-description">Descripción pública</Label>
+                  <Label htmlFor="agency-description">{t("manage.agency.description")}</Label>
                   <Textarea 
                     id="agency-description" 
-                    placeholder="Describe tu agencia inmobiliaria a clientes potenciales"
+                    placeholder={t("manage.agency.description_placeholder")}
                     className="min-h-[120px]"
                     value={agencyDescription}
                     onChange={(e) => {setAgencyDescription(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div>
-                  <Label htmlFor="agency-phone">Número de teléfono</Label>
+                  <Label htmlFor="agency-phone">{t("manage.agency.phone")}</Label>
                   <Input 
                     id="agency-phone" 
-                    placeholder="Teléfono de contacto" 
+                    placeholder={t("manage.agency.phone_placeholder")} 
                     value={agencyPhone}
                     onChange={(e) => {setAgencyPhone(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
                 <div className="w-full">
-                  <Label htmlFor="agency-influence-neighborhoods">Barrios de influencia</Label>
+                  <Label htmlFor="agency-influence-neighborhoods">{t("manage.agency.influence_neighborhoods")}</Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={agencyInfluenceNeighborhoods}
                       onChange={(e) => {setAgencyInfluenceNeighborhoods(e); setHasAgencyChanges(true);}} // Added change detection
-                      buttonText="Selecciona los barrios donde opera tu agencia"
+                      buttonText={t("manage.agency.neighborhoods_button")}
                       title="ZONAS DE OPERACIÓN DE LA AGENCIA"
                     />
                   </div>
@@ -1458,7 +1453,7 @@ export default function ManagePage() {
                 {user && !user.isAgent && (
                   <div className="pt-4 pb-2 border-t border-gray-200">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium">Agentes de la agencia</h3>
+                      <h3 className="text-lg font-medium">{t("manage.agency.agents_title")}</h3>
                       <Button 
                         onClick={() => {
                           // Obtener referencia al componente AgencyAgentsList
@@ -1472,7 +1467,7 @@ export default function ManagePage() {
                         }}
                         size="sm"
                       >
-                        <Plus className="mr-2 h-4 w-4" /> Añadir Agente
+                        <Plus className="mr-2 h-4 w-4" /> {t("manage.agency.add_agent")}
                       </Button>
                     </div>
                     <AgencyAgentsList hideAddButton={true} agencyId={user?.id || 0} />
@@ -1480,7 +1475,7 @@ export default function ManagePage() {
                 )}
 
                 <div>
-                  <Label htmlFor="yearEstablished">Año de fundación</Label>
+                  <Label htmlFor="yearEstablished">{t("manage.agency.year_established")}</Label>
                   <Select
                     value={yearEstablished ? yearEstablished.toString() : 'none'}
                     onValueChange={(value) => {
@@ -1493,7 +1488,7 @@ export default function ManagePage() {
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el año de fundación" />
+                      <SelectValue placeholder={t("manage.agency.year_placeholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">-- Seleccionar año --</SelectItem>
@@ -1514,7 +1509,7 @@ export default function ManagePage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="agencySupportedLanguages">Idiomas que se hablan en la agencia</Label>
+                  <Label htmlFor="agencySupportedLanguages">{t("manage.agency.languages")}</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
                       <Button 
@@ -1538,17 +1533,17 @@ export default function ManagePage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="agency-website">Sitio web</Label>
+                  <Label htmlFor="agency-website">{t("manage.agency.website")}</Label>
                   <Input 
                     id="agency-website" 
-                    placeholder="URL de tu sitio web (con https://)" 
+                    placeholder={t("manage.agency.website_placeholder")} 
                     value={agencyWebsite}
                     onChange={(e) => {setAgencyWebsite(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                   />
                 </div>
 
                 <div>
-                  <Label>Enlaces a redes sociales</Label>
+                  <Label>{t("manage.agency.social_links")}</Label>
                   <div className="space-y-3 mt-2">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full">
@@ -1557,7 +1552,7 @@ export default function ManagePage() {
                         </svg>
                       </div>
                       <Input 
-                        placeholder="URL de Facebook" 
+                        placeholder={t("manage.profile.facebook_placeholder")} 
                         value={facebookUrl}
                         onChange={(e) => {setFacebookUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
@@ -1572,7 +1567,7 @@ export default function ManagePage() {
                         </svg>
                       </div>
                       <Input 
-                        placeholder="URL de Instagram" 
+                        placeholder={t("manage.profile.instagram_placeholder")} 
                         value={instagramUrl}
                         onChange={(e) => {setInstagramUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
@@ -1585,7 +1580,7 @@ export default function ManagePage() {
                         </svg>
                       </div>
                       <Input 
-                        placeholder="URL de Twitter" 
+                        placeholder={t("manage.agency.twitter_placeholder")} 
                         value={twitterUrl}
                         onChange={(e) => {setTwitterUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
@@ -1600,7 +1595,7 @@ export default function ManagePage() {
                         </svg>
                       </div>
                       <Input 
-                        placeholder="URL de LinkedIn" 
+                        placeholder={t("manage.profile.linkedin_placeholder")} 
                         value={linkedinUrl}
                         onChange={(e) => {setLinkedinUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
                       />
@@ -1635,7 +1630,7 @@ export default function ManagePage() {
                   {showSavedIndicator && (
                     <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
                   )}
-                  Guardar cambios
+                  {t("common.save_changes")}
                 </Button>
               </div>
             </div>
@@ -1661,7 +1656,7 @@ export default function ManagePage() {
                 <>
                   {/* Desktop Header */}
                   <div className="hidden md:flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Crea y edita tus propiedades</h2>
+                    <h2 className="text-2xl font-bold">{t("manage.properties.title")}</h2>
                     <div className="flex items-center gap-2">
                       {/* View Toggle Buttons */}
                       <div className="flex border rounded-md">
@@ -1691,14 +1686,14 @@ export default function ManagePage() {
                         }} 
                         size="lg"
                       >
-                        Añadir propiedad
+                        {t("manage.properties.add")}
                       </Button>
                     </div>
                   </div>
 
                   {/* Mobile Header */}
                   <div className="md:hidden space-y-3">
-                    <h2 className="text-xl font-bold">Gestión de Propiedades</h2>
+                    <h2 className="text-xl font-bold">{t("manage.properties.title_mobile")}</h2>
                     <div className="flex flex-col gap-2">
                       <Button 
                         onClick={() => {
@@ -1709,7 +1704,7 @@ export default function ManagePage() {
                         size="lg"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Añadir propiedad
+                        {t("manage.properties.add")}
                       </Button>
                     </div>
                   </div>
@@ -1722,7 +1717,7 @@ export default function ManagePage() {
                     <div className="flex items-center justify-center py-12">
                       <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                        <p className="text-muted-foreground">Cargando propiedad...</p>
+                        <p className="text-muted-foreground">{t("manage.properties.loading")}</p>
                       </div>
                     </div>
                   ) : (isAddingProperty && !editingProperty) || (editingProperty?.isDraft) ? (
@@ -1788,15 +1783,15 @@ export default function ManagePage() {
                     <div className="flex items-center justify-center py-12">
                       <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                        <p className="text-muted-foreground">Cargando propiedades...</p>
+                        <p className="text-muted-foreground">{t("manage.properties.loading_list")}</p>
                       </div>
                     </div>
                   ) : !properties?.length ? (
                     <div className="text-center py-12 bg-gray-50 rounded-lg">
                       <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-lg font-medium text-gray-900">Sin propiedades</h3>
+                      <h3 className="mt-2 text-lg font-medium text-gray-900">{t("manage.properties.empty_title")}</h3>
                       <p className="mt-1 text-gray-500">
-                        Empieza añadiendo tu primera propiedad
+                        {t("manage.properties.empty_desc")}
                       </p>
                     </div>
                   ) : (
@@ -1807,13 +1802,13 @@ export default function ManagePage() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead className="w-[120px]">Referencia</TableHead>
-                                <TableHead>Dirección</TableHead>
-                                <TableHead className="w-[120px]">Precio</TableHead>
-                                <TableHead className="w-[100px]">Estado</TableHead>
-                                <TableHead className="w-[120px]">Tipo Operación</TableHead>
-                                <TableHead className="w-[100px]">Inquilino</TableHead>
-                                <TableHead className="w-[100px] text-center">Acciones</TableHead>
+                                <TableHead className="w-[120px]">{t("common.reference")}</TableHead>
+                                <TableHead>{t("common.address")}</TableHead>
+                                <TableHead className="w-[120px]">{t("common.price")}</TableHead>
+                                <TableHead className="w-[100px]">{t("common.status")}</TableHead>
+                                <TableHead className="w-[120px]">{t("common.operation_type")}</TableHead>
+                                <TableHead className="w-[100px]">{t("common.tenant")}</TableHead>
+                                <TableHead className="w-[100px] text-center">{t("common.actions")}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1977,7 +1972,7 @@ export default function ManagePage() {
                                   data-testid={`button-edit-property-mobile-${property.uuid}`}
                                 >
                                   <Pencil className="h-4 w-4 mr-2" />
-                                  Editar propiedad
+                                  {t("manage.properties.edit")}
                                 </Button>
                               </div>
                             </div>
@@ -1998,7 +1993,7 @@ export default function ManagePage() {
             <div className="space-y-4">
               {/* Header - responsive */}
               <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
-                <h2 className="text-2xl font-bold">Gestión de Clientes</h2>
+                <h2 className="text-2xl font-bold">{t("manage.clients.title")}</h2>
                 
                 {/* Desktop buttons */}
                 <div className="hidden md:flex items-center gap-2">
@@ -2012,7 +2007,7 @@ export default function ManagePage() {
                       data-testid="button-view-list"
                     >
                       <List className="h-4 w-4 mr-1" />
-                      Lista
+                      {t("common.list")}
                     </Button>
                     <Button 
                       variant={clientsView === 'kanban' ? 'default' : 'ghost'}
@@ -2022,13 +2017,13 @@ export default function ManagePage() {
                       data-testid="button-view-kanban"
                     >
                       <LayoutGrid className="h-4 w-4 mr-1" />
-                      Panel
+                      {t("common.panel")}
                     </Button>
                   </div>
                   
                   {/* Container for Enviar button sliding animation */}
                   <div className="relative flex items-center">
-                    {/* Enviar button - slides out from behind Añadir cliente */}
+                    {/* Enviar button - slides out from behind {t("manage.clients.add")} */}
                     <div 
                       className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
                         selectedClientIds.size > 0 
@@ -2049,7 +2044,7 @@ export default function ManagePage() {
                         data-testid="button-send-to-clients"
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        Enviar a {selectedClientIds.size}
+                        {t("manage.clients.send_to", { count: String(selectedClientIds.size) })}
                       </Button>
                     </div>
                     
@@ -2061,7 +2056,7 @@ export default function ManagePage() {
                       data-testid="button-add-client"
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Añadir cliente
+                      {t("manage.clients.add")}
                     </Button>
                   </div>
                 </div>
@@ -2077,7 +2072,7 @@ export default function ManagePage() {
                   data-testid="button-view-list-mobile"
                 >
                   <List className="h-4 w-4 mr-1" />
-                  Lista
+                  {t("common.list")}
                 </Button>
                 <Button 
                   variant={clientsView === 'kanban' ? 'default' : 'ghost'}
@@ -2087,7 +2082,7 @@ export default function ManagePage() {
                   data-testid="button-view-kanban-mobile"
                 >
                   <LayoutGrid className="h-4 w-4 mr-1" />
-                  Panel
+                  {t("common.panel")}
                 </Button>
               </div>
 
@@ -2107,7 +2102,7 @@ export default function ManagePage() {
                     data-testid="button-send-to-clients-mobile"
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    Enviar a {selectedClientIds.size}
+                    {t("manage.clients.send_to", { count: String(selectedClientIds.size) })}
                   </Button>
                 )}
                 <Button 
@@ -2119,7 +2114,7 @@ export default function ManagePage() {
                   data-testid="button-add-client-mobile"
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Añadir cliente
+                  {t("manage.clients.add")}
                 </Button>
               </div>
 
@@ -2156,14 +2151,14 @@ export default function ManagePage() {
               {/* Conditional rendering based on view mode */}
               {isLoadingClients ? (
                 <div className="text-center py-8">
-                  <p>Cargando clientes...</p>
+                  <p>{t("manage.clients.loading")}</p>
                 </div>
               ) : !clients?.length ? (
                 <div className="text-center py-16 bg-gray-50 rounded-lg">
                   <Users className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-lg font-medium text-gray-900">Sin clientes</h3>
+                  <h3 className="mt-2 text-lg font-medium text-gray-900">{t("manage.clients.empty_title")}</h3>
                   <p className="mt-1 text-gray-500">
-                    Empieza añadiendo tu primer cliente al CRM
+                    {t("manage.clients.empty_desc")}
                   </p>
                 </div>
               ) : clientsView === 'kanban' ? (
@@ -2185,7 +2180,7 @@ export default function ManagePage() {
                   {/* Mobile Card View */}
                   <div className="md:hidden space-y-4">
                     {clients.map((client) => {
-                      const statusConfig = CLIENT_STATUSES.find(s => s.value === client.status);
+                      const statusConfig = clientStatuses.find(s => s.value === client.status);
                       const isSelected = selectedClientIds.has(client.id);
                       return (
                         <Card 
@@ -2245,7 +2240,7 @@ export default function ManagePage() {
                                 className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                                 onClick={() => setEditingClient(client)}
                                 data-testid={`button-edit-client-mobile-${client.id}`}
-                                title="Editar"
+                                title={t("common.edit")}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -2255,7 +2250,7 @@ export default function ManagePage() {
                                 className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
                                 onClick={() => setClientToDelete(client)}
                                 data-testid={`button-delete-client-mobile-${client.id}`}
-                                title="Eliminar"
+                                title={t("common.delete")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -2284,17 +2279,17 @@ export default function ManagePage() {
                               data-testid="checkbox-select-all-clients"
                             />
                           </TableHead>
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>Apellido</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Teléfono</TableHead>
-                          <TableHead>Estado</TableHead>
-                          <TableHead className="text-right">Acciones</TableHead>
+                          <TableHead>{t("common.name")}</TableHead>
+                          <TableHead>{t("common.surname")}</TableHead>
+                          <TableHead>{t("common.email")}</TableHead>
+                          <TableHead>{t("common.phone")}</TableHead>
+                          <TableHead>{t("common.status")}</TableHead>
+                          <TableHead className="text-right">{t("common.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {clients.map((client) => {
-                          const statusConfig = CLIENT_STATUSES.find(s => s.value === client.status);
+                          const statusConfig = clientStatuses.find(s => s.value === client.status);
                           const isSelected = selectedClientIds.has(client.id);
                           return (
                             <TableRow 
@@ -2337,7 +2332,7 @@ export default function ManagePage() {
                                     data-testid={`button-edit-client-${client.id}`}
                                   >
                                     <Pencil className="h-4 w-4 mr-1" />
-                                    Editar
+                                    {t("common.edit")}
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -2346,7 +2341,7 @@ export default function ManagePage() {
                                     data-testid={`button-delete-client-${client.id}`}
                                   >
                                     <Trash2 className="h-4 w-4 mr-1" />
-                                    Eliminar
+                                    {t("common.delete")}
                                   </Button>
                                 </div>
                               </TableCell>
@@ -2362,10 +2357,9 @@ export default function ManagePage() {
               <Dialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Eliminar cliente</DialogTitle>
+                    <DialogTitle>{t("manage.clients.delete_title")}</DialogTitle>
                     <DialogDescription>
-                      ¿Estás seguro de que quieres eliminar a {clientToDelete?.name} {clientToDelete?.surname || ''}? 
-                      Esta acción es permanente y no se puede deshacer.
+                      {t("manage.clients.delete_desc", { name: `${clientToDelete?.name} ${clientToDelete?.surname || ""}`.trim() })}
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
@@ -2374,7 +2368,7 @@ export default function ManagePage() {
                       onClick={() => setClientToDelete(null)}
                       data-testid="button-cancel-delete"
                     >
-                      Cancelar
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       variant="destructive"
@@ -2387,7 +2381,7 @@ export default function ManagePage() {
                       disabled={deleteClientMutation.isPending}
                       data-testid="button-confirm-delete"
                     >
-                      {deleteClientMutation.isPending ? "Eliminando..." : "Eliminar"}
+                      {deleteClientMutation.isPending ? t("common.deleting") : t("common.delete")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -2410,7 +2404,7 @@ export default function ManagePage() {
                   {sendModalStep === 1 ? (
                     <>
                       <DialogHeader>
-                        <DialogTitle>Seleccionar Propiedades</DialogTitle>
+                        <DialogTitle>{t("manage.clients.select_properties")}</DialogTitle>
                       </DialogHeader>
                       
                       <div className="flex-1 overflow-hidden flex flex-col">
@@ -2418,7 +2412,7 @@ export default function ManagePage() {
                         <div className="mb-4">
                           <div className="relative">
                             <Input
-                              placeholder="Buscar propiedades..."
+                              placeholder={t("manage.clients.search_properties")}
                               value={propertySearch}
                               onChange={(e) => setPropertySearch(e.target.value)}
                               className="pl-10"
@@ -2440,7 +2434,7 @@ export default function ManagePage() {
                         <div className="flex-1 overflow-auto border rounded-lg">
                           {isLoadingAgencyProperties ? (
                             <div className="flex items-center justify-center h-48">
-                              <p className="text-muted-foreground">Cargando propiedades...</p>
+                              <p className="text-muted-foreground">{t("manage.properties.loading_list")}</p>
                             </div>
                           ) : !agencyProperties?.length ? (
                             <div className="flex items-center justify-center h-48">
@@ -2483,7 +2477,7 @@ export default function ManagePage() {
                                     />
                                   </TableHead>
                                   <TableHead>Referencia</TableHead>
-                                  <TableHead>Dirección</TableHead>
+                                  <TableHead>{t("common.address")}</TableHead>
                                   <TableHead className="text-right">Precio</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -2549,7 +2543,7 @@ export default function ManagePage() {
                           }}
                           data-testid="button-cancel-send"
                         >
-                          Cancelar
+                          {t("common.cancel")}
                         </Button>
                         <Button
                           onClick={() => setSendModalStep(2)}
@@ -2563,13 +2557,13 @@ export default function ManagePage() {
                   ) : (
                     <>
                       <DialogHeader>
-                        <DialogTitle>Confirmar Envío</DialogTitle>
+                        <DialogTitle>{t("manage.clients.confirm_send")}</DialogTitle>
                       </DialogHeader>
                       
                       <div className="flex-1 overflow-auto space-y-4">
                         {/* Selected Clients */}
                         <div>
-                          <h4 className="font-medium mb-2">Clientes ({selectedClientIds.size})</h4>
+                          <h4 className="font-medium mb-2">{t("manage.clients.selected_clients", { count: String(selectedClientIds.size) })}</h4>
                           <div className="space-y-2 max-h-32 overflow-auto">
                             {clients?.filter(c => selectedClientIds.has(c.id)).map((client) => (
                               <div 
@@ -2609,7 +2603,7 @@ export default function ManagePage() {
                           <Label htmlFor="emailMessage" className="font-medium">Mensaje del correo</Label>
                           <Textarea
                             id="emailMessage"
-                            placeholder="Escribe el mensaje que se enviará a los clientes junto con las propiedades seleccionadas..."
+                            placeholder={t("manage.clients.email_message_placeholder")}
                             value={emailMessage}
                             onChange={(e) => setEmailMessage(e.target.value)}
                             className="mt-2 min-h-[100px]"
@@ -2639,7 +2633,7 @@ export default function ManagePage() {
                             }}
                             data-testid="button-cancel-confirm"
                           >
-                            Cancelar
+                            {t("common.cancel")}
                           </Button>
                           <Button
                             onClick={() => {
@@ -2728,7 +2722,7 @@ export default function ManagePage() {
       <Dialog open={reviewRequestClient !== null} onOpenChange={(open) => !open && setReviewRequestClient(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar solicitud de reseña</DialogTitle>
+            <DialogTitle>{t("manage.reviews.confirm_title")}</DialogTitle>
             <DialogDescription>
               ¿Estás seguro de que quieres solicitar una reseña a {reviewRequestClient?.name}?
             </DialogDescription>
@@ -2739,7 +2733,7 @@ export default function ManagePage() {
               onClick={() => setReviewRequestClient(null)}
               disabled={sendReviewRequestMutation.isPending}
             >
-              Cancelar
+              {t("common.cancel")}
             </Button>
             <Button 
               onClick={confirmSendReviewRequest}

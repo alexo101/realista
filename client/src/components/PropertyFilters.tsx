@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Euro, Bath, BedDouble, Building, List, Map, ShieldOff } from "lucide-react";
+import { Euro, Bath, BedDouble, Building, List, Map, ShieldOff, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
@@ -28,6 +28,16 @@ const PROPERTY_TYPES = [
 
 type PropertyType = typeof PROPERTY_TYPES[number];
 
+export type PropertySortOption = "newest" | "price-asc" | "price-m2" | "price-drop" | "most-viewed";
+
+export const PROPERTY_SORT_OPTIONS: { value: PropertySortOption; label: string }[] = [
+  { value: "newest", label: "Más recientes" },
+  { value: "price-asc", label: "Precio: menor a mayor" },
+  { value: "price-m2", label: "Precio por m²" },
+  { value: "price-drop", label: "Mayor rebaja" },
+  { value: "most-viewed", label: "Más vistas" },
+];
+
 interface PropertyFiltersProps {
   onFilterChange: (filters: PropertyFilters) => void;
   defaultOperationType?: "Venta" | "Alquiler";
@@ -43,6 +53,8 @@ interface PropertyFiltersProps {
   onViewModeChange?: (mode: 'list' | 'map') => void;
   showViewToggle?: boolean;
   saveSearchButton?: React.ReactNode;
+  sortBy: PropertySortOption;
+  onSortChange: (sort: PropertySortOption) => void;
 }
 
 export interface PropertyFilters {
@@ -58,7 +70,7 @@ export interface PropertyFilters {
   requireCedulaHabitabilidad?: boolean;
   excludeOcupados?: boolean;
   excludeAlquilados?: boolean;
-  sortBy?: string;
+  sortBy?: PropertySortOption;
 }
 
 interface ExclusionToggleConfig {
@@ -89,7 +101,9 @@ export function PropertyFilters({
   viewMode = 'list',
   onViewModeChange,
   showViewToggle = false,
-  saveSearchButton
+  saveSearchButton,
+  sortBy,
+  onSortChange,
 }: PropertyFiltersProps) {
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [propertyType, setPropertyType] = useState<PropertyType>(defaultPropertyType);
@@ -104,7 +118,6 @@ export function PropertyFilters({
   );
   const [bathroomsFilter, setBathroomsFilter] = useState<number[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<string>("newest");
   const [exclusionFlags, setExclusionFlags] = useState<{
     excludeSinglePhoto: boolean;
     requireExactAddress: boolean;
@@ -233,7 +246,7 @@ export function PropertyFilters({
     };
     
     debouncedFilterChange(filters);
-  }, [operationType, propertyType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, sortBy, exclusionFlags]);
+  }, [operationType, propertyType, priceMin, priceMax, roomsFilter, bathroomsFilter, selectedFeatures, exclusionFlags]);
 
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
@@ -375,7 +388,7 @@ export function PropertyFilters({
         </div>
 
         {/* Sección de filtros principales */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
           {/* Precio mínimo */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
@@ -688,6 +701,33 @@ export function PropertyFilters({
                     </label>
                   ))}
                 </div>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Ordenar */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-600 flex items-center">
+              <ArrowUpDown className="w-4 h-4 mr-1" />
+              Ordenar por
+            </Label>
+            <Select
+              value={sortBy}
+              onValueChange={(value: PropertySortOption) => onSortChange(value)}
+            >
+              <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md" data-testid="select-property-sort">
+                <SelectValue placeholder="Más recientes" />
+              </SelectTrigger>
+              <SelectContent side="bottom">
+                {PROPERTY_SORT_OPTIONS.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    data-testid={`option-property-sort-${option.value}`}
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

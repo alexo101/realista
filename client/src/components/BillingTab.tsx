@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/language-context";
 
 const AGENCY_PLAN_LABELS: Record<string, string> = {
   'basica': 'Básica (0€/mes)',
@@ -157,6 +158,7 @@ interface Props {
 
 export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [, navigate] = useLocation();
   const [taxInfo, setTaxInfo] = useState({
     taxId: "",
@@ -202,7 +204,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   const changePlanMutation = useMutation({
     mutationFn: async ({ planId, isYearly }: { planId: string; isYearly: boolean }) => {
       const newPlan = plans.find(p => p.id === planId);
-      if (!newPlan) throw new Error("Plan no encontrado");
+      if (!newPlan) throw new Error(t("manage.billing.plan_not_found"));
 
       // For free plan downgrades, use activate-free-tier endpoint
       if (newPlan.monthlyPrice === 0) {
@@ -227,7 +229,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       } else if (data.success) {
         // Free tier activated successfully
         toast({
-          title: "Plan actualizado",
+          title: t("manage.billing.plan_updated"),
           description: "Tu plan ha sido cambiado exitosamente",
         });
         // Refresh the page to show updated plan
@@ -236,7 +238,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "No se pudo procesar el cambio de plan",
         variant: "destructive",
       });
@@ -319,8 +321,8 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
       <div>
-        <h1 className="text-2xl font-bold" data-testid="text-billing-title">Suscripción y facturación</h1>
-        <p className="text-muted-foreground">Gestiona tu plan, facturación e información fiscal</p>
+        <h1 className="text-2xl font-bold" data-testid="text-billing-title">{t("manage.billing.title")}</h1>
+        <p className="text-muted-foreground">{t("manage.billing.subtitle")}</p>
       </div>
 
       {/* Current Plan Card */}

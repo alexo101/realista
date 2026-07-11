@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { Search, Heart, MessageCircle, Bookmark, User } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { cn } from "@/lib/utils";
 
 interface MobileBottomNavProps {
@@ -10,6 +11,7 @@ interface MobileBottomNavProps {
 export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const [location, setLocation] = useLocation();
   const { user } = useUser();
+  const { t } = useLanguage();
 
   const handleNavigation = (path: string, requiresAuth: boolean) => {
     if (requiresAuth && !user) {
@@ -23,7 +25,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const navItems = [
     {
       id: 'explorar',
-      label: 'Explorar',
+      label: t('mobile.explore'),
       icon: Search,
       path: '/',
       requiresAuth: false,
@@ -31,7 +33,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     },
     {
       id: 'favoritos',
-      label: 'Favoritos',
+      label: t('mobile.favorites'),
       icon: Heart,
       path: '/favoritos',
       requiresAuth: true,
@@ -39,7 +41,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     },
     {
       id: 'mensajes',
-      label: 'Mensajes',
+      label: t('mobile.messages'),
       icon: MessageCircle,
       path: '/mensajes',
       requiresAuth: true,
@@ -47,7 +49,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     },
     {
       id: 'busquedas',
-      label: 'Búsquedas',
+      label: t('mobile.saved_searches'),
       icon: Bookmark,
       path: '/busquedas-guardadas',
       requiresAuth: true,
@@ -55,7 +57,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     },
     {
       id: 'perfil',
-      label: 'Perfil',
+      label: t('mobile.profile'),
       icon: User,
       path: '/mi-perfil',
       requiresAuth: true,

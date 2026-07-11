@@ -152,14 +152,14 @@ export function Navbar() {
                     data-testid="nav-gestionar-todo"
                   >
                     <Briefcase className="h-5 w-5" />
-                    <span>Gestionar todo</span>
+                    <span>{t('nav.manage')}</span>
                   </button>
                   <div className="border-t my-3" />
                 </>
               )}
 
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 py-2">
-                CRM
+                {t('nav.crm')}
               </div>
               
               <button
@@ -172,7 +172,7 @@ export function Navbar() {
                 data-testid="nav-calendario"
               >
                 <Calendar className="h-5 w-5" />
-                <span>Calendario</span>
+                <span>{t('nav.calendar')}</span>
               </button>
 
               <button
@@ -185,7 +185,7 @@ export function Navbar() {
                 data-testid="nav-clientes"
               >
                 <Users className="h-5 w-5" />
-                <span>Clientes</span>
+                <span>{t('nav.clients')}</span>
               </button>
 
               <button
@@ -198,7 +198,7 @@ export function Navbar() {
                 data-testid="nav-mensajes"
               >
                 <MessageSquare className="h-5 w-5" />
-                <span>Mensajes</span>
+                <span>{t('nav.messages')}</span>
               </button>
 
               <div className="border-t my-3" />
@@ -213,7 +213,7 @@ export function Navbar() {
                 data-testid="nav-perfil-agente"
               >
                 <UserCircle className="h-5 w-5" />
-                <span>Mi perfil de agente</span>
+                <span>{t('nav.agent_profile')}</span>
               </button>
 
               {user?.isAdmin && (
@@ -227,7 +227,7 @@ export function Navbar() {
                   data-testid="nav-perfil-agencia"
                 >
                   <Building className="h-5 w-5" />
-                  <span>Gestionar agencia</span>
+                  <span>{t('nav.manage_agency')}</span>
                 </button>
               )}
 
@@ -241,7 +241,7 @@ export function Navbar() {
                 data-testid="nav-propiedades"
               >
                 <Building2 className="h-5 w-5" />
-                <span>Gestionar propiedades</span>
+                <span>{t('nav.manage_properties')}</span>
               </button>
 
               <button
@@ -254,7 +254,7 @@ export function Navbar() {
                 data-testid="nav-resenas"
               >
                 <Star className="h-5 w-5" />
-                <span>Gestionar reseñas</span>
+                <span>{t('nav.manage_reviews')}</span>
               </button>
 
               {user?.isAdmin && (
@@ -268,7 +268,7 @@ export function Navbar() {
                   data-testid="nav-equipo"
                 >
                   <Users className="h-5 w-5" />
-                  <span>Gestionar mi equipo</span>
+                  <span>{t('nav.manage_team')}</span>
                 </button>
               )}
 
@@ -282,7 +282,7 @@ export function Navbar() {
                 data-testid="nav-facturacion"
               >
                 <CreditCard className="h-5 w-5" />
-                <span>Suscripción y facturación</span>
+                <span>{t('nav.subscription_billing')}</span>
               </button>
             </div>
           </div>

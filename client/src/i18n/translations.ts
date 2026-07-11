@@ -1,3 +1,5 @@
+import { manageTranslations } from "./manage-translations";
+
 export type TranslationMap = Record<string, string>;
 
 export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
@@ -32,6 +34,33 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "No hay propiedades en alquiler disponibles en este momento.",
     "home.no_results_subtitle":
       "Vuelve pronto para ver nuevas oportunidades.",
+    "home.add_review_title":
+      "Añade una review a tu agente y/o agencia",
+    "home.add_review_subtitle":
+      "Busca a tu agente o agencia y comparte tu experiencia.",
+    "home.agency_eyebrow": "Para agencias inmobiliarias",
+    "home.agency_title": "Todo lo que tu agencia necesita para crecer",
+    "home.agency_subtitle":
+      "Centraliza tu operativa, aumenta la visibilidad de tus propiedades y construye una reputación que genere confianza.",
+    "home.agency_benefit_visibility_title": "Más visibilidad",
+    "home.agency_benefit_visibility_description":
+      "Publica propiedades y presenta tu agencia y tu equipo con perfiles profesionales.",
+    "home.agency_benefit_crm_title": "CRM de clientes",
+    "home.agency_benefit_crm_description":
+      "Organiza contactos, conversaciones y oportunidades desde un único espacio.",
+    "home.agency_benefit_operations_title": "Agenda y equipo",
+    "home.agency_benefit_operations_description":
+      "Coordina citas, tareas y agentes para que toda la agencia trabaje conectada.",
+    "home.agency_benefit_reputation_title": "Reputación verificada",
+    "home.agency_benefit_reputation_description":
+      "Solicita y gestiona reseñas que ayuden a nuevos clientes a elegirte.",
+    "home.agency_benefit_ai_title": "IA integrada",
+    "home.agency_benefit_ai_description":
+      "Crea descripciones profesionales para tus propiedades de forma más rápida.",
+    "home.agency_neighborhood_title": "Conoce cómo valoran los clientes cada barrio",
+    "home.agency_neighborhood_description":
+      "Las clasificaciones de seguridad, transporte, servicios y calidad de vida aportan contexto a tus propiedades y ayudan a tus clientes a decidir mejor.",
+    "home.agency_cta": "Explorar planes en RealistaPro",
 
     // Footer
     "footer.company_description":
@@ -345,6 +374,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "neighborhood_rating.toast_missing_title": "Faltan calificaciones",
     "neighborhood_rating.toast_missing_desc":
       "Por favor, califica todas las categorías antes de enviar.",
+
+    ...manageTranslations.es,
   },
   en: {
     // Navbar
@@ -377,6 +408,33 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "There are no rental properties available at the moment.",
     "home.no_results_subtitle":
       "Come back soon to discover new opportunities.",
+    "home.add_review_title":
+      "Add a review for your agent and/or agency",
+    "home.add_review_subtitle":
+      "Search for your agent or agency and share your experience.",
+    "home.agency_eyebrow": "For real estate agencies",
+    "home.agency_title": "Everything your agency needs to grow",
+    "home.agency_subtitle":
+      "Centralize your operations, increase property visibility, and build a reputation that earns trust.",
+    "home.agency_benefit_visibility_title": "More visibility",
+    "home.agency_benefit_visibility_description":
+      "Publish properties and showcase your agency and team with professional profiles.",
+    "home.agency_benefit_crm_title": "Client CRM",
+    "home.agency_benefit_crm_description":
+      "Organize contacts, conversations, and opportunities in one place.",
+    "home.agency_benefit_operations_title": "Schedule and team",
+    "home.agency_benefit_operations_description":
+      "Coordinate appointments, tasks, and agents so your whole agency stays connected.",
+    "home.agency_benefit_reputation_title": "Verified reputation",
+    "home.agency_benefit_reputation_description":
+      "Request and manage reviews that help new clients choose you.",
+    "home.agency_benefit_ai_title": "Integrated AI",
+    "home.agency_benefit_ai_description":
+      "Create professional property descriptions more quickly.",
+    "home.agency_neighborhood_title": "See how clients rate each neighborhood",
+    "home.agency_neighborhood_description":
+      "Ratings for safety, transport, services, and quality of life add context to your properties and help clients make better decisions.",
+    "home.agency_cta": "Explore RealistaPro plans",
 
     // Footer
     "footer.company_description":
@@ -692,6 +750,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "neighborhood_rating.toast_missing_title": "Missing ratings",
     "neighborhood_rating.toast_missing_desc":
       "Please rate all categories before submitting.",
+
+    ...manageTranslations.en,
   },
   fr: {
     // Navbar
@@ -725,6 +785,33 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Il n'y a actuellement aucune propriété à louer disponible.",
     "home.no_results_subtitle":
       "Revenez bientôt pour découvrir de nouvelles opportunités.",
+    "home.add_review_title":
+      "Ajoutez un avis pour votre agent et/ou agence",
+    "home.add_review_subtitle":
+      "Recherchez votre agent ou agence et partagez votre expérience.",
+    "home.agency_eyebrow": "Pour les agences immobilières",
+    "home.agency_title": "Tout ce dont votre agence a besoin pour se développer",
+    "home.agency_subtitle":
+      "Centralisez vos opérations, augmentez la visibilité de vos biens et bâtissez une réputation digne de confiance.",
+    "home.agency_benefit_visibility_title": "Plus de visibilité",
+    "home.agency_benefit_visibility_description":
+      "Publiez vos biens et présentez votre agence et votre équipe avec des profils professionnels.",
+    "home.agency_benefit_crm_title": "CRM clients",
+    "home.agency_benefit_crm_description":
+      "Organisez contacts, conversations et opportunités depuis un seul espace.",
+    "home.agency_benefit_operations_title": "Agenda et équipe",
+    "home.agency_benefit_operations_description":
+      "Coordonnez rendez-vous, tâches et agents pour garder toute l'agence connectée.",
+    "home.agency_benefit_reputation_title": "Réputation vérifiée",
+    "home.agency_benefit_reputation_description":
+      "Demandez et gérez des avis qui aident de nouveaux clients à vous choisir.",
+    "home.agency_benefit_ai_title": "IA intégrée",
+    "home.agency_benefit_ai_description":
+      "Créez plus rapidement des descriptions professionnelles pour vos biens.",
+    "home.agency_neighborhood_title": "Découvrez comment les clients évaluent chaque quartier",
+    "home.agency_neighborhood_description":
+      "Les évaluations de la sécurité, des transports, des services et de la qualité de vie contextualisent vos biens et aident vos clients à mieux décider.",
+    "home.agency_cta": "Découvrir les offres RealistaPro",
 
     // Footer
     "footer.company_description":
@@ -1039,6 +1126,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "neighborhood_rating.toast_missing_title": "Évaluations manquantes",
     "neighborhood_rating.toast_missing_desc":
       "Veuillez évaluer toutes les catégories avant d'envoyer.",
+
+    ...manageTranslations.fr,
   },
   it: {
     // Navbar
@@ -1072,6 +1161,33 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Al momento non ci sono proprietà in affitto disponibili.",
     "home.no_results_subtitle":
       "Torna presto per scoprire nuove opportunità.",
+    "home.add_review_title":
+      "Aggiungi una recensione per il tuo agente e/o agenzia",
+    "home.add_review_subtitle":
+      "Cerca il tuo agente o agenzia e condividi la tua esperienza.",
+    "home.agency_eyebrow": "Per le agenzie immobiliari",
+    "home.agency_title": "Tutto ciò che serve alla tua agenzia per crescere",
+    "home.agency_subtitle":
+      "Centralizza le attività, aumenta la visibilità degli immobili e costruisci una reputazione che ispiri fiducia.",
+    "home.agency_benefit_visibility_title": "Più visibilità",
+    "home.agency_benefit_visibility_description":
+      "Pubblica immobili e presenta la tua agenzia e il tuo team con profili professionali.",
+    "home.agency_benefit_crm_title": "CRM clienti",
+    "home.agency_benefit_crm_description":
+      "Organizza contatti, conversazioni e opportunità in un unico spazio.",
+    "home.agency_benefit_operations_title": "Agenda e team",
+    "home.agency_benefit_operations_description":
+      "Coordina appuntamenti, attività e agenti mantenendo connessa tutta l'agenzia.",
+    "home.agency_benefit_reputation_title": "Reputazione verificata",
+    "home.agency_benefit_reputation_description":
+      "Richiedi e gestisci recensioni che aiutino nuovi clienti a sceglierti.",
+    "home.agency_benefit_ai_title": "IA integrata",
+    "home.agency_benefit_ai_description":
+      "Crea più rapidamente descrizioni professionali per i tuoi immobili.",
+    "home.agency_neighborhood_title": "Scopri come i clienti valutano ogni quartiere",
+    "home.agency_neighborhood_description":
+      "Le valutazioni di sicurezza, trasporti, servizi e qualità della vita contestualizzano gli immobili e aiutano i clienti a decidere meglio.",
+    "home.agency_cta": "Scopri i piani RealistaPro",
 
     // Footer
     "footer.company_description":
@@ -1386,5 +1502,7 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "neighborhood_rating.toast_missing_title": "Valutazioni mancanti",
     "neighborhood_rating.toast_missing_desc":
       "Valuta tutte le categorie prima di inviare.",
+
+    ...manageTranslations.it,
   },
 };

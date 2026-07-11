@@ -7,9 +7,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  PROPERTY_SORT_OPTIONS,
+  type PropertySortOption,
+} from "@/components/PropertyFilters";
 
 type TabType = 'properties' | 'agencies' | 'agents' | 'overview';
-type PropertySortOption = 'newest' | 'price-asc' | 'price-m2' | 'price-drop';
 type EntitySortOption = 'best_rating' | 'most_reviews';
 
 interface MobileFilterRowProps {
@@ -30,13 +33,6 @@ const TAB_OPTIONS: { value: TabType; label: string; icon: typeof HomeIcon }[] = 
   { value: 'agencies', label: 'Agencias', icon: Building2 },
   { value: 'agents', label: 'Agentes', icon: UserCircle },
   { value: 'overview', label: 'Descripción', icon: Info },
-];
-
-const PROPERTY_SORT_OPTIONS: { value: PropertySortOption; label: string }[] = [
-  { value: 'newest', label: 'Más recientes' },
-  { value: 'price-asc', label: 'Precio: menor a mayor' },
-  { value: 'price-m2', label: 'Precio por m²' },
-  { value: 'price-drop', label: 'Mayor rebaja' },
 ];
 
 const ENTITY_SORT_OPTIONS: { value: EntitySortOption; label: string }[] = [

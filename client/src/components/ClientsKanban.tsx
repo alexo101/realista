@@ -3,15 +3,8 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Mail, Phone } from "lucide-react";
 import { type Client } from "@shared/schema";
-
-const CLIENT_STATUSES = [
-  { value: "Nuevo", label: "Nuevo", color: "bg-blue-100 text-blue-900" },
-  { value: "Seguimiento", label: "Seguimiento", color: "bg-blue-300 text-blue-900" },
-  { value: "En visitas", label: "En visitas", color: "bg-blue-500 text-white" },
-  { value: "Cerrando", label: "Cerrando", color: "bg-blue-700 text-white" },
-  { value: "Ganado", label: "Ganado", color: "bg-blue-900 text-white" },
-  { value: "Perdido", label: "Perdido", color: "bg-gray-500 text-white" }
-] as const;
+import { useLanguage } from "@/contexts/language-context";
+import { getClientStatuses } from "@/utils/clientStatuses";
 
 interface ClientCardProps {
   client: Client;
@@ -62,13 +55,14 @@ function ClientCard({ client, onEdit }: ClientCardProps) {
 }
 
 interface KanbanColumnProps {
-  status: typeof CLIENT_STATUSES[number];
+  status: ReturnType<typeof getClientStatuses>[number];
   clients: Client[];
   onEdit: (client: Client) => void;
   onDrop: (clientId: number, newStatus: string) => void;
+  emptyLabel: string;
 }
 
-function KanbanColumn({ status, clients, onEdit, onDrop }: KanbanColumnProps) {
+function KanbanColumn({ status, clients, onEdit, onDrop, emptyLabel }: KanbanColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'CLIENT',
     drop: (item: { clientId: number; currentStatus: string }) => {
@@ -98,7 +92,7 @@ function KanbanColumn({ status, clients, onEdit, onDrop }: KanbanColumnProps) {
       >
         {clients.length === 0 ? (
           <div className="text-center text-xs text-gray-400 py-4">
-            Sin clientes
+            {emptyLabel}
           </div>
         ) : (
           clients.map((client) => (
@@ -121,25 +115,29 @@ interface ClientsKanbanProps {
 }
 
 export function ClientsKanban({ clients, onEditClient, onUpdateClientStatus }: ClientsKanbanProps) {
+  const { t } = useLanguage();
+  const clientStatuses = getClientStatuses(t);
+
   const clientsByStatus = useMemo(() => {
     const grouped: Record<string, Client[]> = {};
-    CLIENT_STATUSES.forEach(status => {
+    clientStatuses.forEach(status => {
       grouped[status.value] = clients.filter(c => c.status === status.value);
     });
     return grouped;
-  }, [clients]);
+  }, [clients, clientStatuses]);
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="w-full overflow-x-auto pb-4">
         <div className="flex gap-3 min-w-max">
-          {CLIENT_STATUSES.map((status) => (
+          {clientStatuses.map((status) => (
             <KanbanColumn
               key={status.value}
               status={status}
               clients={clientsByStatus[status.value] || []}
               onEdit={onEditClient}
               onDrop={onUpdateClientStatus}
+              emptyLabel={t("manage.clients.empty_kanban")}
             />
           ))}
         </div>
