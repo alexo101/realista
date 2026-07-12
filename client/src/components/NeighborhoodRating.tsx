@@ -70,9 +70,11 @@ interface NeighborhoodRatingProps {
   compact?: boolean;
 }
 
+type SelectedLocation = { neighborhood: string; district: string | null; city: string };
+
 export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps) {
   const { t } = useLanguage();
-  const [selectedLocation, setSelectedLocation] = useState<{neighborhood: string, district: string | null, city: string}>({neighborhood: "Vila de Gràcia", district: "Gràcia", city: "Barcelona"});
+  const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   const [searchValue, setSearchValue] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -96,14 +98,15 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
 
   // Fetch ratings for the selected neighborhood with hierarchical parameters
   const { data: ratings, isLoading } = useQuery<NeighborhoodAverages>({
-    queryKey: [`/api/neighborhoods/ratings/average`, { 
-      neighborhood: selectedLocation.neighborhood, 
-      city: selectedLocation.city, 
-      district: selectedLocation.district 
-    }],
-    enabled: !!selectedLocation.neighborhood && !!selectedLocation.city,
+    queryKey: [`/api/neighborhoods/ratings/average`, selectedLocation ? {
+      neighborhood: selectedLocation.neighborhood,
+      city: selectedLocation.city,
+      district: selectedLocation.district
+    } : null],
+    enabled: !!selectedLocation,
     staleTime: 300000, // 5 minutes cache
     queryFn: async () => {
+      if (!selectedLocation) throw new Error('No location selected');
       const params = new URLSearchParams({
         neighborhood: selectedLocation.neighborhood,
         city: selectedLocation.city,
@@ -128,6 +131,7 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
       return await apiRequest('POST', '/api/neighborhoods/ratings', ratingData);
     },
     onSuccess: () => {
+      if (!selectedLocation) return;
       toast({
         title: t("neighborhood_rating.toast_submitted_title"),
         description: t("neighborhood_rating.toast_submitted_desc", {
@@ -197,7 +201,7 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
       const parsed = parseNeighborhoodDisplayName(searchValue.trim());
       if (parsed) {
         setSelectedLocation(parsed);
-        setSearchValue("");
+        setSearchValue(getNeighborhoodDisplayName(parsed.neighborhood, parsed.district, parsed.city));
         setShowSuggestions(false);
       }
     }
@@ -208,7 +212,7 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
     if (parsed) {
       setSelectedLocation(parsed);
     }
-    setSearchValue("");
+    setSearchValue(displayName);
     setShowSuggestions(false);
     setHighlightedIndex(-1);
   };
@@ -238,7 +242,7 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
           const parsed = parseNeighborhoodDisplayName(searchValue.trim());
           if (parsed) {
             setSelectedLocation(parsed);
-            setSearchValue("");
+            setSearchValue(getNeighborhoodDisplayName(parsed.neighborhood, parsed.district, parsed.city));
             setShowSuggestions(false);
           }
         }
@@ -259,6 +263,8 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
   };
 
   const handleSubmitRating = () => {
+    if (!selectedLocation) return;
+
     // Check if all ratings are filled
     const hasAllRatings = Object.values(userRatings).every(rating => rating > 0);
     
@@ -346,9 +352,12 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
               key={location.display}
               data-testid={`neighborhood-button-${location.neighborhood.toLowerCase().replace(' ', '-')}`}
               variant="outline"
-              onClick={() => setSelectedLocation(location)}
+              onClick={() => {
+                setSelectedLocation(location);
+                setSearchValue(location.display);
+              }}
               className={`px-4 py-2 rounded-full text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 ${
-                selectedLocation.neighborhood === location.neighborhood && selectedLocation.city === location.city
+                selectedLocation?.neighborhood === location.neighborhood && selectedLocation?.city === location.city
                   ? "border-2 border-[#0284c5e6]" 
                   : "border border-gray-300"
               }`}
@@ -360,7 +369,7 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
       )}
 
       {/* Rate this neighborhood button */}
-      {selectedLocation.neighborhood && !showRatingForm && (
+      {selectedLocation && !showRatingForm && (
         <div className={compact ? "mb-5" : "mb-8"}>
           <Button 
             onClick={() => setShowRatingForm(true)}
@@ -371,7 +380,7 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
       )}
 
       {/* Rating form */}
-      {showRatingForm && (
+      {showRatingForm && selectedLocation && (
         <Card className={cn("border shadow-sm", compact ? "mb-5" : "mb-8")}>
           <CardContent className={compact ? "p-4" : "p-6"}>
             <div className="flex justify-between items-center mb-4">
@@ -431,7 +440,11 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
       )}
 
       {/* Ratings display */}
-      {isLoading ? (
+      {!selectedLocation ? (
+        <div data-testid="no-location-selected-message" className={cn("text-gray-500", compact ? "py-4" : "py-8")}>
+          <p>{t("neighborhood_rating.no_location_selected")}</p>
+        </div>
+      ) : isLoading ? (
         <div className="space-y-4">
           {[...Array(ratingCategories.length)].map((_, i) => (
             <div key={i} className="space-y-2">
@@ -476,7 +489,7 @@ export function NeighborhoodRating({ compact = false }: NeighborhoodRatingProps)
             );
           })}
         </div>
-      ) : selectedLocation.neighborhood && (!ratings || ratings.count === 0) ? (
+      ) : !ratings || ratings.count === 0 ? (
         <div data-testid="no-ratings-message" className={cn("text-gray-500", compact ? "py-4" : "py-8")}>
           <p>{t("neighborhood_rating.no_ratings", {
             location: getNeighborhoodDisplayName(selectedLocation.neighborhood, selectedLocation.district, selectedLocation.city),

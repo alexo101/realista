@@ -60,6 +60,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_neighborhood_title": "Conoce cómo valoran los clientes cada barrio",
     "home.agency_neighborhood_description":
       "Las clasificaciones de seguridad, transporte, servicios y calidad de vida aportan contexto a tus propiedades y ayudan a tus clientes a decidir mejor.",
+    "home.client_neighborhood_note":
+      "Para tus clientes: conocer las valoraciones de un barrio les ayuda a decidir con más confianza, y al ser un sistema colaborativo, cada nueva reseña que dejen otros vecinos hace la información más completa y útil para todos.",
     "home.agency_cta": "Explorar planes en RealistaPro",
 
     // Footer
@@ -348,6 +350,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Busca y conoce las localidades de tu interés",
     "neighborhood_rating.search_placeholder":
       "Buscar localidades en España",
+    "neighborhood_rating.no_location_selected":
+      "Busca una localidad para ver sus valoraciones.",
     "neighborhood_rating.not_rated": "Sin calificar",
     "neighborhood_rating.rate_button": "Calificar esta localidad",
     "neighborhood_rating.rate_title": "Califica: {location}",
@@ -434,6 +438,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_neighborhood_title": "See how clients rate each neighborhood",
     "home.agency_neighborhood_description":
       "Ratings for safety, transport, services, and quality of life add context to your properties and help clients make better decisions.",
+    "home.client_neighborhood_note":
+      "For your clients: knowing a neighborhood's ratings helps them decide with more confidence, and since it's a collaborative system, every new review from other residents makes the information more complete and useful for everyone.",
     "home.agency_cta": "Explore RealistaPro plans",
 
     // Footer
@@ -724,6 +730,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Search and discover the neighborhoods you're interested in",
     "neighborhood_rating.search_placeholder":
       "Search locations in Spain",
+    "neighborhood_rating.no_location_selected":
+      "Search for a location to see its ratings.",
     "neighborhood_rating.not_rated": "Not rated",
     "neighborhood_rating.rate_button": "Rate this neighborhood",
     "neighborhood_rating.rate_title": "Rate: {location}",
@@ -811,6 +819,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_neighborhood_title": "Découvrez comment les clients évaluent chaque quartier",
     "home.agency_neighborhood_description":
       "Les évaluations de la sécurité, des transports, des services et de la qualité de vie contextualisent vos biens et aident vos clients à mieux décider.",
+    "home.client_neighborhood_note":
+      "Pour vos clients : connaître les évaluations d'un quartier les aide à décider avec plus de confiance, et comme il s'agit d'un système collaboratif, chaque nouvel avis laissé par d'autres résidents rend l'information plus complète et utile pour tous.",
     "home.agency_cta": "Découvrir les offres RealistaPro",
 
     // Footer
@@ -1099,6 +1109,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Recherchez et découvrez les quartiers qui vous intéressent",
     "neighborhood_rating.search_placeholder":
       "Rechercher des localités en Espagne",
+    "neighborhood_rating.no_location_selected":
+      "Recherchez une localité pour voir ses évaluations.",
     "neighborhood_rating.not_rated": "Non noté",
     "neighborhood_rating.rate_button": "Évaluer ce quartier",
     "neighborhood_rating.rate_title": "Évaluer : {location}",
@@ -1187,6 +1199,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_neighborhood_title": "Scopri come i clienti valutano ogni quartiere",
     "home.agency_neighborhood_description":
       "Le valutazioni di sicurezza, trasporti, servizi e qualità della vita contestualizzano gli immobili e aiutano i clienti a decidere meglio.",
+    "home.client_neighborhood_note":
+      "Per i tuoi clienti: conoscere le valutazioni di un quartiere li aiuta a decidere con più sicurezza e, trattandosi di un sistema collaborativo, ogni nuova recensione lasciata da altri residenti rende le informazioni più complete e utili per tutti.",
     "home.agency_cta": "Scopri i piani RealistaPro",
 
     // Footer
@@ -1475,6 +1489,8 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "neighborhood_rating.title": "Cerca e scopri i quartieri che ti interessano",
     "neighborhood_rating.search_placeholder":
       "Cerca località in Spagna",
+    "neighborhood_rating.no_location_selected":
+      "Cerca una località per vedere le sue valutazioni.",
     "neighborhood_rating.not_rated": "Non valutato",
     "neighborhood_rating.rate_button": "Valuta questo quartiere",
     "neighborhood_rating.rate_title": "Valuta: {location}",
