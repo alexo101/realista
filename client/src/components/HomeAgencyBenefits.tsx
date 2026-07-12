@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import {
   ArrowRight,
   Bot,
+  Building2,
   CalendarDays,
   Home,
   MessageSquareText,
@@ -27,6 +28,10 @@ export function HomeAgencyBenefits() {
     <section className="bg-slate-50 py-12 md:py-20">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mb-10 md:mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-4">
+            <Building2 className="h-4 w-4" />
+            {t("home.agency_eyebrow")}
+          </div>
           <h2 className="text-2xl md:text-4xl font-bold tracking-tight mb-4">
             {t("home.agency_title")}
           </h2>
