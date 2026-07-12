@@ -67,12 +67,6 @@ export function HomeAgencyBenefits() {
               <p className="text-muted-foreground leading-relaxed">
                 {t("home.agency_neighborhood_description")}
               </p>
-              <div className="mt-4 flex items-start gap-2 rounded-lg bg-primary/5 p-3">
-                <Users className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {t("home.client_neighborhood_note")}
-                </p>
-              </div>
             </div>
             <NeighborhoodRating compact />
           </div>
