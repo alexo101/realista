@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db, pool } from "./db";
 import { cache } from "./cache";
 import {
   eq,
@@ -2532,15 +2532,12 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
 
-    // Drizzle ORM silently omits client_type and tags from the generated SQL,
-    // so patch them with a direct raw SQL update.
-    const patched = await db.execute(sql`
-      UPDATE clients
-      SET client_type = ${client.clientType ?? null},
-          tags        = ${client.tags ?? null}
-      WHERE id = ${newClient.id}
-      RETURNING *
-    `);
+    // Drizzle ORM silently omits client_type and tags from its generated SQL,
+    // so patch them via pool.query which correctly serialises JS arrays to text[].
+    const patched = await pool.query(
+      'UPDATE clients SET client_type = $1, tags = $2 WHERE id = $3 RETURNING *',
+      [client.clientType ?? null, client.tags ?? null, newClient.id]
+    );
     return (patched.rows[0] as Client) ?? newClient;
   }
 
@@ -2559,15 +2556,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(clients.id, id))
       .returning();
 
-    // Drizzle ORM silently omits client_type and tags from the generated SQL,
-    // so patch them with a direct raw SQL update.
-    const patched = await db.execute(sql`
-      UPDATE clients
-      SET client_type = ${client.clientType ?? null},
-          tags        = ${client.tags ?? null}
-      WHERE id = ${updatedClient.id}
-      RETURNING *
-    `);
+    // Drizzle ORM silently omits client_type and tags from its generated SQL,
+    // so patch them via pool.query which correctly serialises JS arrays to text[].
+    const patched = await pool.query(
+      'UPDATE clients SET client_type = $1, tags = $2 WHERE id = $3 RETURNING *',
+      [client.clientType ?? null, client.tags ?? null, updatedClient.id]
+    );
     return (patched.rows[0] as Client) ?? updatedClient;
   }
 
