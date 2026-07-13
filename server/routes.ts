@@ -1678,10 +1678,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clients", async (req, res) => {
     try {
       console.log('Attempting to create client with data:', req.body);
-      const client = insertClientSchema.parse({
+      const parsedClient = insertClientSchema.parse({
         ...req.body,
         source: req.body.source || 'manual'
       });
+      const client = {
+        ...parsedClient,
+        clientType: req.body.clientType ?? null,
+        tags: req.body.tags ?? null,
+      };
       const result = await storage.createClient(client);
       console.log('Client created successfully:', result);
       res.status(201).json(result);
@@ -1694,7 +1699,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/clients/:id", async (req, res) => {
     try {
       console.log('Attempting to update client:', req.params.id, req.body);
-      const client = insertClientSchema.parse(req.body);
+      const parsedClient = insertClientSchema.parse(req.body);
+      const client = {
+        ...parsedClient,
+        clientType: req.body.clientType ?? null,
+        tags: req.body.tags ?? null,
+      };
       const result = await storage.updateClient(parseInt(req.params.id), client);
       console.log('Client updated successfully:', result);
       res.json(result);

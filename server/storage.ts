@@ -2526,9 +2526,22 @@ export class DatabaseStorage implements IStorage {
 
     const [newClient] = await db
       .insert(clients)
-      .values({ ...client, password: normalizedPassword })
+      .values({
+        ...client,
+        password: normalizedPassword,
+      })
       .returning();
-    return newClient;
+
+    // Drizzle ORM silently omits client_type and tags from the generated SQL,
+    // so patch them with a direct raw SQL update.
+    const patched = await db.execute(sql`
+      UPDATE clients
+      SET client_type = ${client.clientType ?? null},
+          tags        = ${client.tags ?? null}
+      WHERE id = ${newClient.id}
+      RETURNING *
+    `);
+    return (patched.rows[0] as Client) ?? newClient;
   }
 
   async updateClient(id: number, client: InsertClient): Promise<Client> {
@@ -2539,10 +2552,23 @@ export class DatabaseStorage implements IStorage {
 
     const [updatedClient] = await db
       .update(clients)
-      .set({ ...client, password: normalizedPassword })
+      .set({
+        ...client,
+        password: normalizedPassword,
+      })
       .where(eq(clients.id, id))
       .returning();
-    return updatedClient;
+
+    // Drizzle ORM silently omits client_type and tags from the generated SQL,
+    // so patch them with a direct raw SQL update.
+    const patched = await db.execute(sql`
+      UPDATE clients
+      SET client_type = ${client.clientType ?? null},
+          tags        = ${client.tags ?? null}
+      WHERE id = ${updatedClient.id}
+      RETURNING *
+    `);
+    return (patched.rows[0] as Client) ?? updatedClient;
   }
 
   async updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined> {
