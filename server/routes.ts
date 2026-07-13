@@ -1686,6 +1686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...parsedClient,
         clientType: req.body.clientType ?? null,
         tags: req.body.tags ?? null,
+        propertyPreferences: req.body.propertyPreferences ?? null,
       };
       const result = await storage.createClient(client);
       console.log('Client created successfully:', result);
@@ -1704,6 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...parsedClient,
         clientType: req.body.clientType ?? null,
         tags: req.body.tags ?? null,
+        propertyPreferences: req.body.propertyPreferences ?? null,
       };
       const result = await storage.updateClient(parseInt(req.params.id), client);
       console.log('Client updated successfully:', result);

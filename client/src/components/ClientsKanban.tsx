@@ -9,10 +9,10 @@ import { getClientStatuses } from "@/utils/clientStatuses";
 
 interface ClientCardProps {
   client: Client;
-  onEdit: (client: Client) => void;
+  onView: (client: Client) => void;
 }
 
-function ClientCard({ client, onEdit }: ClientCardProps) {
+function ClientCard({ client, onView }: ClientCardProps) {
   const { t } = useLanguage();
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'CLIENT',
@@ -35,7 +35,7 @@ function ClientCard({ client, onEdit }: ClientCardProps) {
           className="font-medium text-sm text-primary hover:underline cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            onEdit(client);
+            onView(client);
           }}
           data-testid={`link-client-name-${client.id}`}
         >
@@ -73,12 +73,12 @@ function ClientCard({ client, onEdit }: ClientCardProps) {
 interface KanbanColumnProps {
   status: ReturnType<typeof getClientStatuses>[number];
   clients: Client[];
-  onEdit: (client: Client) => void;
+  onView: (client: Client) => void;
   onDrop: (clientId: number, newStatus: string) => void;
   emptyLabel: string;
 }
 
-function KanbanColumn({ status, clients, onEdit, onDrop, emptyLabel }: KanbanColumnProps) {
+function KanbanColumn({ status, clients, onView, onDrop, emptyLabel }: KanbanColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'CLIENT',
     drop: (item: { clientId: number; currentStatus: string }) => {
@@ -115,7 +115,7 @@ function KanbanColumn({ status, clients, onEdit, onDrop, emptyLabel }: KanbanCol
             <ClientCard
               key={client.id}
               client={client}
-              onEdit={onEdit}
+              onView={onView}
             />
           ))
         )}
@@ -126,11 +126,11 @@ function KanbanColumn({ status, clients, onEdit, onDrop, emptyLabel }: KanbanCol
 
 interface ClientsKanbanProps {
   clients: Client[];
-  onEditClient: (client: Client) => void;
+  onViewClient: (client: Client) => void;
   onUpdateClientStatus: (clientId: number, newStatus: string) => void;
 }
 
-export function ClientsKanban({ clients, onEditClient, onUpdateClientStatus }: ClientsKanbanProps) {
+export function ClientsKanban({ clients, onViewClient, onUpdateClientStatus }: ClientsKanbanProps) {
   const { t } = useLanguage();
   const clientStatuses = getClientStatuses(t);
 
@@ -151,7 +151,7 @@ export function ClientsKanban({ clients, onEditClient, onUpdateClientStatus }: C
               key={status.value}
               status={status}
               clients={clientsByStatus[status.value] || []}
-              onEdit={onEditClient}
+              onView={onViewClient}
               onDrop={onUpdateClientStatus}
               emptyLabel={t("manage.clients.empty_kanban")}
             />

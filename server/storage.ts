@@ -2529,14 +2529,15 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...client,
         password: normalizedPassword,
+        propertyPreferences: client.propertyPreferences ?? null,
       })
       .returning();
 
     // Drizzle ORM silently omits client_type and tags from its generated SQL,
     // so patch them via pool.query which correctly serialises JS arrays to text[].
     const patched = await pool.query(
-      'UPDATE clients SET client_type = $1, tags = $2 WHERE id = $3 RETURNING *',
-      [client.clientType ?? null, client.tags ?? null, newClient.id]
+      'UPDATE clients SET client_type = $1, tags = $2, property_preferences = $3 WHERE id = $4 RETURNING *',
+      [client.clientType ?? null, client.tags ?? null, client.propertyPreferences ?? null, newClient.id]
     );
     return (patched.rows[0] as Client) ?? newClient;
   }
@@ -2552,6 +2553,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         ...client,
         password: normalizedPassword,
+        propertyPreferences: client.propertyPreferences ?? null,
       })
       .where(eq(clients.id, id))
       .returning();
@@ -2559,8 +2561,8 @@ export class DatabaseStorage implements IStorage {
     // Drizzle ORM silently omits client_type and tags from its generated SQL,
     // so patch them via pool.query which correctly serialises JS arrays to text[].
     const patched = await pool.query(
-      'UPDATE clients SET client_type = $1, tags = $2 WHERE id = $3 RETURNING *',
-      [client.clientType ?? null, client.tags ?? null, updatedClient.id]
+      'UPDATE clients SET client_type = $1, tags = $2, property_preferences = $3 WHERE id = $4 RETURNING *',
+      [client.clientType ?? null, client.tags ?? null, client.propertyPreferences ?? null, updatedClient.id]
     );
     return (patched.rows[0] as Client) ?? updatedClient;
   }

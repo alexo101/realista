@@ -2166,7 +2166,7 @@ export default function ManagePage() {
               ) : clientsView === 'kanban' ? (
                 <ClientsKanban
                   clients={clients}
-                  onEditClient={setEditingClient}
+                  onViewClient={(client) => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
                   onUpdateClientStatus={async (clientId, newStatus) => {
                     const client = clients.find(c => c.id === clientId);
                     if (client) {
@@ -2208,7 +2208,11 @@ export default function ManagePage() {
                                   data-testid={`checkbox-client-mobile-${client.id}`}
                                 />
                                 <div>
-                                  <div className="font-semibold text-lg">
+                                  <div
+                                    className="font-semibold text-lg text-primary hover:underline cursor-pointer"
+                                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
+                                    data-testid={`link-client-mobile-${client.id}`}
+                                  >
                                     {client.name} {client.surname || ''}
                                   </div>
                                 </div>
@@ -2260,11 +2264,11 @@ export default function ManagePage() {
                                 size="icon"
                                 variant="ghost"
                                 className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                                onClick={() => setEditingClient(client)}
-                                data-testid={`button-edit-client-mobile-${client.id}`}
-                                title={t("common.edit")}
+                                onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
+                                data-testid={`button-enter-client-mobile-${client.id}`}
+                                title={t("manage.clients.enter")}
                               >
-                                <Pencil className="h-4 w-4" />
+                                <LogIn className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="icon"
@@ -2336,7 +2340,16 @@ export default function ManagePage() {
                                   data-testid={`checkbox-client-${client.id}`}
                                 />
                               </TableCell>
-                              <TableCell className="font-medium">{client.name}</TableCell>
+                              <TableCell>
+                                <button
+                                  type="button"
+                                  className="font-medium text-primary hover:underline text-left"
+                                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
+                                  data-testid={`link-client-table-${client.id}`}
+                                >
+                                  {client.name}
+                                </button>
+                              </TableCell>
                               <TableCell>{client.surname || '-'}</TableCell>
                               <TableCell>{client.email}</TableCell>
                               <TableCell>{client.phone}</TableCell>
@@ -2364,11 +2377,11 @@ export default function ManagePage() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setEditingClient(client)}
-                                    data-testid={`button-edit-client-${client.id}`}
+                                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
+                                    data-testid={`button-enter-client-${client.id}`}
                                   >
-                                    <Pencil className="h-4 w-4 mr-1" />
-                                    {t("common.edit")}
+                                    <LogIn className="h-4 w-4 mr-1" />
+                                    {t("manage.clients.enter")}
                                   </Button>
                                   <Button
                                     variant="ghost"

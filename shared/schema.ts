@@ -228,6 +228,26 @@ export const properties = pgTable("properties", {
   viewCountIdx: index("properties_view_count_idx").on(table.viewCount),
 }));
 
+export type ClientPropertyPreferences = {
+  operationType?: string | null;
+  propertyType?: string | null;
+  housingType?: string | null;
+  city?: string | null;
+  district?: string | null;
+  neighborhood?: string | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  minArea?: number | null;
+  maxArea?: number | null;
+  floor?: string | null;
+  propertyCondition?: string | null;
+  availability?: string | null;
+  availabilityDate?: string | null;
+  features?: string[];
+};
+
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
   uuid: uuid("uuid").notNull().unique().defaultRandom(), // Public-facing UUID for security
@@ -238,6 +258,7 @@ export const clients = pgTable("clients", {
   status: text("status").notNull().default("Nuevo"), // Client status: Nuevo, Contactado, En seguimiento, etc.
   clientType: text("client_type"), // Buyer, tenant, seller, or landlord
   tags: text("tags").array(), // Type-specific CRM tags
+  propertyPreferences: jsonb("property_preferences").$type<ClientPropertyPreferences | null>(),
   password: text("password"), // Contraseña para clientes auto-registrados
   propertyInterest: text("property_interest"), // Tipo de propiedad de interés
   budget: integer("budget"), // Presupuesto
@@ -396,6 +417,25 @@ export const insertClientSchema = createInsertSchema(clients).omit({
     { message: "Invalid client type" },
   ).optional().nullable(),
   tags: z.array(z.string()).optional().nullable(),
+  propertyPreferences: z.object({
+    operationType: z.string().nullable().optional(),
+    propertyType: z.string().nullable().optional(),
+    housingType: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    district: z.string().nullable().optional(),
+    neighborhood: z.string().nullable().optional(),
+    minPrice: z.number().nullable().optional(),
+    maxPrice: z.number().nullable().optional(),
+    bedrooms: z.number().nullable().optional(),
+    bathrooms: z.number().nullable().optional(),
+    minArea: z.number().nullable().optional(),
+    maxArea: z.number().nullable().optional(),
+    floor: z.string().nullable().optional(),
+    propertyCondition: z.string().nullable().optional(),
+    availability: z.string().nullable().optional(),
+    availabilityDate: z.string().nullable().optional(),
+    features: z.array(z.string()).optional(),
+  }).nullable().optional(),
   reviewRequestSentAt: dateCoerce,
   moveInDate: dateCoerce,
   lastLoginAt: dateCoerce,
