@@ -331,7 +331,7 @@ export default function AgentProfile() {
 
   // Combine critical isFetching states with route transition for skeleton visibility
   const showSkeleton = useSkeletonVisibility({ 
-    isFetching: agentFetching || propertiesFetching, 
+    isFetching: agentFetching || propertiesFetching || (!agent && !error),
     isTransitioning 
   });
 

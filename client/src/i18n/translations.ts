@@ -38,12 +38,15 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Añade una review a tu agente y/o agencia",
     "home.add_review_subtitle":
       "Busca a tu agente o agencia y comparte tu experiencia.",
-    "home.agency_eyebrow": "Para agencias inmobiliarias",
+    "home.agency_eyebrow": "El sistema operativo para las agencias inmobiliarias",
     "home.agency_title": "Todo lo que tu agencia inmobiliaria necesita para crecer",
     "home.agency_subtitle": "Centraliza tu operativa en una sola plataforma.",
     "home.agency_benefit_visibility_title": "Más visibilidad",
     "home.agency_benefit_visibility_description":
       "Publica propiedades y presenta tu agencia y tu equipo con perfiles profesionales.",
+    "home.agency_benefit_property_management_title": "Gestión de propiedades",
+    "home.agency_benefit_property_management_description":
+      "Administra, actualiza y organiza todo tu catálogo de propiedades desde un único lugar.",
     "home.agency_benefit_crm_title": "CRM de clientes",
     "home.agency_benefit_crm_description":
       "Organiza contactos, conversaciones y oportunidades desde un único espacio.",
@@ -56,9 +59,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_benefit_ai_title": "IA integrada",
     "home.agency_benefit_ai_description":
       "Crea descripciones profesionales para tus propiedades de forma más rápida.",
-    "home.agency_neighborhood_title": "Conoce cómo valoran los clientes cada barrio",
+    "home.agency_neighborhood_title": "Descubre dónde vivir con más confianza",
     "home.agency_neighborhood_description":
-      "Las clasificaciones de seguridad, transporte, servicios y calidad de vida aportan contexto a tus propiedades y ayudan a tus clientes a decidir mejor.",
+      "Consulta las valoraciones de seguridad, transporte, servicios y calidad de vida de cada barrio. Las experiencias compartidas por otros residentes te ayudan a comparar opciones y elegir el lugar que mejor encaja contigo.",
     "home.agency_cta": "Explorar planes en RealistaPro",
 
     // Footer
@@ -411,12 +414,15 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Add a review for your agent and/or agency",
     "home.add_review_subtitle":
       "Search for your agent or agency and share your experience.",
-    "home.agency_eyebrow": "For real estate agencies",
+    "home.agency_eyebrow": "The operating system for real estate agencies",
     "home.agency_title": "Everything your real estate agency needs to grow",
     "home.agency_subtitle": "Centralize your operations on a single platform.",
     "home.agency_benefit_visibility_title": "More visibility",
     "home.agency_benefit_visibility_description":
       "Publish properties and showcase your agency and team with professional profiles.",
+    "home.agency_benefit_property_management_title": "Property management",
+    "home.agency_benefit_property_management_description":
+      "Manage, update, and organize your entire property portfolio from one place.",
     "home.agency_benefit_crm_title": "Client CRM",
     "home.agency_benefit_crm_description":
       "Organize contacts, conversations, and opportunities in one place.",
@@ -429,9 +435,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_benefit_ai_title": "Integrated AI",
     "home.agency_benefit_ai_description":
       "Create professional property descriptions more quickly.",
-    "home.agency_neighborhood_title": "See how clients rate each neighborhood",
+    "home.agency_neighborhood_title": "Discover where to live with more confidence",
     "home.agency_neighborhood_description":
-      "Ratings for safety, transport, services, and quality of life add context to your properties and help clients make better decisions.",
+      "Explore safety, transport, services, and quality-of-life ratings for each neighborhood. Experiences shared by other residents help you compare options and choose the place that best fits you.",
     "home.agency_cta": "Explore RealistaPro plans",
 
     // Footer
@@ -787,12 +793,15 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Ajoutez un avis pour votre agent et/ou agence",
     "home.add_review_subtitle":
       "Recherchez votre agent ou agence et partagez votre expérience.",
-    "home.agency_eyebrow": "Pour les agences immobilières",
+    "home.agency_eyebrow": "Le système d'exploitation pour les agences immobilières",
     "home.agency_title": "Tout ce dont votre agence immobilière a besoin pour se développer",
     "home.agency_subtitle": "Centralisez vos opérations sur une seule plateforme.",
     "home.agency_benefit_visibility_title": "Plus de visibilité",
     "home.agency_benefit_visibility_description":
       "Publiez vos biens et présentez votre agence et votre équipe avec des profils professionnels.",
+    "home.agency_benefit_property_management_title": "Gestion des biens",
+    "home.agency_benefit_property_management_description":
+      "Gérez, mettez à jour et organisez tout votre portefeuille de biens depuis un seul endroit.",
     "home.agency_benefit_crm_title": "CRM clients",
     "home.agency_benefit_crm_description":
       "Organisez contacts, conversations et opportunités depuis un seul espace.",
@@ -805,9 +814,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_benefit_ai_title": "IA intégrée",
     "home.agency_benefit_ai_description":
       "Créez plus rapidement des descriptions professionnelles pour vos biens.",
-    "home.agency_neighborhood_title": "Découvrez comment les clients évaluent chaque quartier",
+    "home.agency_neighborhood_title": "Découvrez où vivre en toute confiance",
     "home.agency_neighborhood_description":
-      "Les évaluations de la sécurité, des transports, des services et de la qualité de vie contextualisent vos biens et aident vos clients à mieux décider.",
+      "Consultez les évaluations de la sécurité, des transports, des services et de la qualité de vie de chaque quartier. Les expériences partagées par les résidents vous aident à comparer les options et à choisir le lieu qui vous correspond le mieux.",
     "home.agency_cta": "Découvrir les offres RealistaPro",
 
     // Footer
@@ -1162,12 +1171,15 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Aggiungi una recensione per il tuo agente e/o agenzia",
     "home.add_review_subtitle":
       "Cerca il tuo agente o agenzia e condividi la tua esperienza.",
-    "home.agency_eyebrow": "Per le agenzie immobiliari",
+    "home.agency_eyebrow": "Il sistema operativo per le agenzie immobiliari",
     "home.agency_title": "Tutto ciò che serve alla tua agenzia immobiliare per crescere",
     "home.agency_subtitle": "Centralizza le attività su un'unica piattaforma.",
     "home.agency_benefit_visibility_title": "Più visibilità",
     "home.agency_benefit_visibility_description":
       "Pubblica immobili e presenta la tua agenzia e il tuo team con profili professionali.",
+    "home.agency_benefit_property_management_title": "Gestione degli immobili",
+    "home.agency_benefit_property_management_description":
+      "Gestisci, aggiorna e organizza tutto il tuo portafoglio immobiliare da un unico spazio.",
     "home.agency_benefit_crm_title": "CRM clienti",
     "home.agency_benefit_crm_description":
       "Organizza contatti, conversazioni e opportunità in un unico spazio.",
@@ -1180,9 +1192,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "home.agency_benefit_ai_title": "IA integrata",
     "home.agency_benefit_ai_description":
       "Crea più rapidamente descrizioni professionali per i tuoi immobili.",
-    "home.agency_neighborhood_title": "Scopri come i clienti valutano ogni quartiere",
+    "home.agency_neighborhood_title": "Scopri dove vivere con più sicurezza",
     "home.agency_neighborhood_description":
-      "Le valutazioni di sicurezza, trasporti, servizi e qualità della vita contestualizzano gli immobili e aiutano i clienti a decidere meglio.",
+      "Consulta le valutazioni di sicurezza, trasporti, servizi e qualità della vita di ogni quartiere. Le esperienze condivise dagli altri residenti ti aiutano a confrontare le opzioni e scegliere il luogo più adatto a te.",
     "home.agency_cta": "Scopri i piani RealistaPro",
 
     // Footer

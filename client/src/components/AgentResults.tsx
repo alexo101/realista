@@ -238,12 +238,10 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
             </div>
             
             <div className="mt-auto pt-4">
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => window.location.href = `/agentes/${agent.slug || agent.id}`}
-              >
-                Ver perfil <ExternalLink className="w-4 h-4 ml-2" />
+              <Button variant="outline" className="w-full" asChild>
+                <Link href={`/agentes/${agent.slug || agent.id}`}>
+                  Ver perfil <ExternalLink className="w-4 h-4 ml-2" />
+                </Link>
               </Button>
             </div>
           </div>

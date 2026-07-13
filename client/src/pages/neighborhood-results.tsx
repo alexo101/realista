@@ -666,6 +666,7 @@ export default function NeighborhoodResultsPage() {
     },
     staleTime: 600000, // 10 minutes cache for better performance
     gcTime: 900000, // 15 minutes in cache
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
     retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -683,6 +684,7 @@ export default function NeighborhoodResultsPage() {
     },
     staleTime: 600000, // 10 minutes cache for better performance
     gcTime: 900000, // 15 minutes in cache
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
     retry: 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
@@ -764,11 +766,11 @@ export default function NeighborhoodResultsPage() {
     isTransitioning 
   });
   const showAgenciesSkeleton = useSkeletonVisibility({ 
-    isFetching: agenciesFetching, 
+    isFetching: agenciesFetching || (!agencies && !agenciesError), 
     isTransitioning 
   });
   const showAgentsSkeleton = useSkeletonVisibility({ 
-    isFetching: agentsFetching, 
+    isFetching: agentsFetching || (!agents && !agentsError), 
     isTransitioning 
   });
 

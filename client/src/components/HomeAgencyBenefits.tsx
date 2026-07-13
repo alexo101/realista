@@ -15,6 +15,7 @@ import { useLanguage } from "@/contexts/language-context";
 
 const benefitCards = [
   { key: "visibility", icon: Home },
+  { key: "property_management", icon: Building2 },
   { key: "crm", icon: Users },
   { key: "operations", icon: CalendarDays },
   { key: "reputation", icon: MessageSquareText },
@@ -40,7 +41,7 @@ export function HomeAgencyBenefits() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-10 md:mb-14">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-10 md:mb-14">
           {benefitCards.map(({ key, icon: Icon }) => (
             <Card key={key} className="h-full border-slate-200 shadow-sm">
               <CardContent className="p-5">
