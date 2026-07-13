@@ -50,6 +50,13 @@
       "when": 1747155600000,
       "tag": "0007_absence_approval_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783945800000,
+      "tag": "0008_client_type_tags",
+      "breakpoints": true
     }
   ]
 }

@@ -2143,6 +2143,8 @@ export default function ManagePage() {
                   email: editingClient.email,
                   phone: editingClient.phone,
                   status: editingClient.status,
+                  clientType: editingClient.clientType,
+                  tags: editingClient.tags || [],
                   contactHistory: (editingClient.contactHistory as any) || []
                 } : undefined}
                 isEditing={!!editingClient}
@@ -2232,6 +2234,26 @@ export default function ManagePage() {
                               )}
                             </div>
 
+                            {(client.clientType || client.tags?.length) && (
+                              <div className="space-y-2 mb-3">
+                                {client.clientType && (
+                                  <div className="text-sm">
+                                    <span className="font-medium">{t("manage.client_type.label")}: </span>
+                                    {t(`manage.client_type.${client.clientType}`)}
+                                  </div>
+                                )}
+                                {!!client.tags?.length && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {client.tags.map((tag) => (
+                                      <Badge key={tag} variant="secondary" className="text-xs">
+                                        {t(`manage.client_tag.${tag}`)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {/* Action buttons */}
                             <div className="flex justify-end gap-2 pt-2 border-t">
                               <Button
@@ -2283,6 +2305,8 @@ export default function ManagePage() {
                           <TableHead>{t("common.surname")}</TableHead>
                           <TableHead>{t("common.email")}</TableHead>
                           <TableHead>{t("common.phone")}</TableHead>
+                          <TableHead>{t("manage.client_type.label")}</TableHead>
+                          <TableHead>{t("manage.client_tags.label")}</TableHead>
                           <TableHead>{t("common.status")}</TableHead>
                           <TableHead className="text-right">{t("common.actions")}</TableHead>
                         </TableRow>
@@ -2316,6 +2340,18 @@ export default function ManagePage() {
                               <TableCell>{client.surname || '-'}</TableCell>
                               <TableCell>{client.email}</TableCell>
                               <TableCell>{client.phone}</TableCell>
+                              <TableCell>
+                                {client.clientType ? t(`manage.client_type.${client.clientType}`) : '-'}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1 max-w-xs">
+                                  {client.tags?.length ? client.tags.map((tag) => (
+                                    <Badge key={tag} variant="secondary" className="text-xs">
+                                      {t(`manage.client_tag.${tag}`)}
+                                    </Badge>
+                                  )) : '-'}
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 {statusConfig && (
                                   <Badge className={`${statusConfig.color}`}>

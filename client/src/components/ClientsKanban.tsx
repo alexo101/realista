@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { Mail, Phone } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { type Client } from "@shared/schema";
 import { useLanguage } from "@/contexts/language-context";
 import { getClientStatuses } from "@/utils/clientStatuses";
@@ -12,6 +13,7 @@ interface ClientCardProps {
 }
 
 function ClientCard({ client, onEdit }: ClientCardProps) {
+  const { t } = useLanguage();
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'CLIENT',
     item: { clientId: client.id, currentStatus: client.status },
@@ -48,6 +50,20 @@ function ClientCard({ client, onEdit }: ClientCardProps) {
             <Phone className="h-3 w-3 flex-shrink-0" />
             <span>{client.phone}</span>
           </div>
+          {client.clientType && (
+            <div className="text-xs text-gray-600">
+              {t(`manage.client_type.${client.clientType}`)}
+            </div>
+          )}
+          {!!client.tags?.length && (
+            <div className="flex flex-wrap gap-1">
+              {client.tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">
+                  {t(`manage.client_tag.${tag}`)}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

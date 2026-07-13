@@ -7,10 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type { ContactHistoryEntry } from "@shared/schema";
+import { useLanguage } from "@/contexts/language-context";
 
 const CLIENT_STATUSES = [
   { value: "Nuevo", label: "Nuevo", color: "bg-blue-100 text-blue-900" },
@@ -21,6 +23,16 @@ const CLIENT_STATUSES = [
   { value: "Perdido", label: "Perdido", color: "bg-gray-500 text-white" }
 ] as const;
 
+const CLIENT_TYPES = ["buyer", "tenant", "seller", "landlord"] as const;
+type ClientType = (typeof CLIENT_TYPES)[number];
+
+const CLIENT_TAGS: Record<ClientType, string[]> = {
+  buyer: ["first_time_buyer", "investor", "cash_buyer", "financing_required", "foreign_buyer", "relocating", "urgent_purchase", "residential", "commercial", "buy_to_let", "fix_and_flip", "portfolio_expansion", "vip", "repeat_client", "referred", "high_priority", "responsive"],
+  tenant: ["student", "professional", "family", "pet_owner", "relocating", "short_term_rental", "long_term_rental", "vip", "repeat_client", "referred", "high_priority", "responsive"],
+  seller: ["urgent_sale", "already_purchased_another_property", "exclusive_listing", "open_to_negotiation", "investment_property", "vip", "repeat_client", "referred", "high_priority", "responsive"],
+  landlord: ["investor", "first_time_landlord", "long_term_rental", "short_term_rental", "looking_for_property_management", "vip", "repeat_client", "referred", "high_priority", "responsive"],
+};
+
 interface AddClientModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,6 +42,8 @@ interface AddClientModalProps {
     email: string; 
     phone: string; 
     status: string;
+    clientType?: string | null;
+    tags?: string[] | null;
     contactHistory?: ContactHistoryEntry[];
   }) => Promise<void>;
   isSubmitting?: boolean;
@@ -39,18 +53,23 @@ interface AddClientModalProps {
     email: string; 
     phone: string; 
     status?: string;
+    clientType?: string | null;
+    tags?: string[] | null;
     contactHistory?: ContactHistoryEntry[];
   };
   isEditing?: boolean;
 }
 
 export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false, initialData, isEditing = false }: AddClientModalProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     surname: initialData?.surname || "",
     email: initialData?.email || "",
     phone: initialData?.phone || "",
-    status: initialData?.status || "Nuevo"
+    status: initialData?.status || "Nuevo",
+    clientType: initialData?.clientType || null,
+    tags: initialData?.tags || []
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [contactHistory, setContactHistory] = useState<ContactHistoryEntry[]>(initialData?.contactHistory || []);
@@ -66,7 +85,9 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
         surname: initialData.surname || "",
         email: initialData.email || "",
         phone: initialData.phone || "",
-        status: initialData.status || "Nuevo"
+        status: initialData.status || "Nuevo",
+        clientType: initialData.clientType || null,
+        tags: initialData.tags || []
       });
       setContactHistory(initialData.contactHistory || []);
     }
@@ -107,7 +128,7 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
     e.preventDefault();
     if (validateForm()) {
       await onSubmit({ ...formData, contactHistory });
-      setFormData({ name: "", surname: "", email: "", phone: "", status: "Nuevo" });
+      setFormData({ name: "", surname: "", email: "", phone: "", status: "Nuevo", clientType: null, tags: [] });
       setContactHistory([]);
       setErrors({});
     }
@@ -141,14 +162,35 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
     }
   };
 
+  const handleClientTypeChange = (value: ClientType) => {
+    setFormData(prev => ({
+      ...prev,
+      clientType: value,
+      tags: (prev.tags || []).filter(tag => CLIENT_TAGS[value].includes(tag)),
+    }));
+  };
+
+  const handleTagChange = (tag: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: checked
+        ? Array.from(new Set([...(prev.tags || []), tag]))
+        : (prev.tags || []).filter(selectedTag => selectedTag !== tag),
+    }));
+  };
+
   const handleClose = () => {
-    setFormData({ name: "", surname: "", email: "", phone: "", status: "Nuevo" });
+    setFormData({ name: "", surname: "", email: "", phone: "", status: "Nuevo", clientType: null, tags: [] });
     setContactHistory([]);
     setIsAddingNote(false);
     setNewNote("");
     setErrors({});
     onClose();
   };
+
+  const selectedClientType = CLIENT_TYPES.includes(formData.clientType as ClientType)
+    ? formData.clientType as ClientType
+    : null;
 
   return (
     <>
@@ -238,6 +280,55 @@ export function AddClientModal({ isOpen, onClose, onSubmit, isSubmitting = false
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="client-type">{t("manage.client_type.label")}</Label>
+            <Select
+              value={formData.clientType || undefined}
+              onValueChange={(value) => handleClientTypeChange(value as ClientType)}
+            >
+              <SelectTrigger id="client-type" className="w-full" data-testid="select-client-type">
+                <SelectValue placeholder={t("manage.client_type.placeholder")} />
+              </SelectTrigger>
+              <SelectContent>
+                {CLIENT_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {t(`manage.client_type.${type}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <Label>{t("manage.client_tags.label")}</Label>
+              <span className="text-xs text-muted-foreground">
+                {t("manage.client_tags.recommendation")}
+              </span>
+            </div>
+              {!selectedClientType ? (
+              <p className="text-sm text-muted-foreground mt-2">
+                {t("manage.client_tags.select_type")}
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                {CLIENT_TAGS[selectedClientType].map((tag) => (
+                  <label
+                    key={tag}
+                    className="flex items-center gap-2 rounded-md border p-2 text-sm cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={(formData.tags || []).includes(tag)}
+                      onCheckedChange={(checked) => handleTagChange(tag, checked === true)}
+                      data-testid={`checkbox-client-tag-${tag}`}
+                    />
+                    <span>{t(`manage.client_tag.${tag}`)}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Contact History Section - Only show in edit mode */}

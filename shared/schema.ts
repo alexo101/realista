@@ -236,6 +236,8 @@ export const clients = pgTable("clients", {
   email: text("email").notNull(),
   phone: text("phone").notNull(),
   status: text("status").notNull().default("Nuevo"), // Client status: Nuevo, Contactado, En seguimiento, etc.
+  clientType: text("client_type"), // Buyer, tenant, seller, or landlord
+  tags: text("tags").array(), // Type-specific CRM tags
   password: text("password"), // Contraseña para clientes auto-registrados
   propertyInterest: text("property_interest"), // Tipo de propiedad de interés
   budget: integer("budget"), // Presupuesto
@@ -389,6 +391,11 @@ export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
 }).extend({
+  clientType: z.string().refine(
+    (value) => ["buyer", "tenant", "seller", "landlord"].includes(value),
+    { message: "Invalid client type" },
+  ).optional().nullable(),
+  tags: z.array(z.string()).optional().nullable(),
   reviewRequestSentAt: dateCoerce,
   moveInDate: dateCoerce,
   lastLoginAt: dateCoerce,
