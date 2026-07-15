@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, Save, Search, User, X } from "lucide-react";
+import { ArrowLeft, Plus, Save, Search, Trash2, User, X } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import {
@@ -48,6 +52,15 @@ const CLIENT_STATUS_TRANSLATION_KEYS: Record<(typeof CLIENT_STATUSES)[number], s
   Perdido: "manage.client_status.lost",
 };
 
+const CLIENT_STATUS_COLORS: Record<string, string> = {
+  Nuevo: "bg-blue-100 text-blue-900",
+  Seguimiento: "bg-blue-300 text-blue-900",
+  "En visitas": "bg-blue-500 text-white",
+  Cerrando: "bg-blue-700 text-white",
+  Ganado: "bg-blue-900 text-white",
+  Perdido: "bg-gray-500 text-white",
+};
+
 const CLIENT_TYPES = ["buyer", "tenant", "seller", "landlord"] as const;
 type ClientType = (typeof CLIENT_TYPES)[number];
 
@@ -78,6 +91,33 @@ export default function ClientDetailPage() {
     contactHistory: [] as ContactHistoryEntry[],
     propertyPreferences: null as ClientPropertyPreferences | null,
   });
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+
+  const handleAddNote = () => {
+    if (newNote.trim()) {
+      const entry: ContactHistoryEntry = {
+        id: crypto.randomUUID(),
+        status: formData.status,
+        timestamp: new Date().toISOString(),
+        note: newNote.trim(),
+      };
+      setFormData((prev) => ({ ...prev, contactHistory: [entry, ...prev.contactHistory] }));
+      setNewNote("");
+      setIsAddingNote(false);
+    }
+  };
+
+  const confirmDeleteNote = () => {
+    if (noteToDelete) {
+      setFormData((prev) => ({
+        ...prev,
+        contactHistory: prev.contactHistory.filter((e) => e.id !== noteToDelete),
+      }));
+      setNoteToDelete(null);
+    }
+  };
 
   useEffect(() => {
     if (isLoadingUser) return;
@@ -187,6 +227,7 @@ export default function ClientDetailPage() {
   }
 
   return (
+    <>
     <main className="min-h-screen bg-gray-50 pt-24 pb-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <Button
@@ -454,31 +495,128 @@ export default function ClientDetailPage() {
 
         <Card data-testid="card-client-contact-history">
           <CardHeader>
-            <CardTitle>{t("manage.client_contact_history.title")}</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Historial de contacto</CardTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsAddingNote(!isAddingNote)}
+                className="text-primary"
+                data-testid="button-add-note"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Añadir nota
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            {formData.contactHistory.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("manage.client_contact_history.empty")}</p>
-            ) : (
-              <div className="space-y-3">
-                {formData.contactHistory.map((entry) => (
-                  <div key={entry.id} className="rounded-lg border p-3">
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <Badge variant="secondary">{entry.status}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(entry.timestamp).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm">{entry.note}</p>
-                  </div>
-                ))}
+            {isAddingNote && (
+              <div className="bg-gray-50 border rounded-lg p-3 mb-4 space-y-3">
+                <div>
+                  <Label htmlFor="note-text">Nota</Label>
+                  <Textarea
+                    id="note-text"
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Describe la interacción con el cliente..."
+                    rows={3}
+                    className="resize-none"
+                    data-testid="textarea-note"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setIsAddingNote(false); setNewNote(""); }}
+                    data-testid="button-cancel-note"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleAddNote}
+                    disabled={!newNote.trim()}
+                    data-testid="button-save-note"
+                  >
+                    Guardar nota
+                  </Button>
+                </div>
               </div>
             )}
+
+            <div className="space-y-4">
+              {formData.contactHistory.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No hay notas en el historial
+                </p>
+              ) : (
+                formData.contactHistory.map((entry, index) => {
+                  const colorClass = CLIENT_STATUS_COLORS[entry.status] || "bg-gray-100 text-gray-800";
+                  return (
+                    <div
+                      key={entry.id}
+                      className="relative pl-8 pb-2"
+                      data-testid={`timeline-note-${entry.id}`}
+                    >
+                      {index < formData.contactHistory.length - 1 && (
+                        <div className="absolute left-[7px] top-6 bottom-0 w-px bg-gray-300" />
+                      )}
+                      <div className="absolute left-0 top-2 w-4 h-4 rounded-full bg-gray-300 border-2 border-white" />
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={`${colorClass} text-xs px-2 py-0.5 rounded-full`}>
+                              {entry.status}
+                            </Badge>
+                            <span className="text-xs text-gray-500">
+                              {format(new Date(entry.timestamp), "dd MMM yyyy, HH:mm", { locale: es })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700">{entry.note}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-gray-400 hover:text-red-600 flex-shrink-0"
+                          onClick={() => setNoteToDelete(entry.id)}
+                          data-testid={`button-delete-note-${entry.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </CardContent>
         </Card>
 
       </div>
     </main>
+
+    <AlertDialog open={!!noteToDelete} onOpenChange={() => setNoteToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar nota?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta acción no se puede deshacer. La nota se eliminará permanentemente del historial de contacto.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDeleteNote} className="bg-red-600 hover:bg-red-700">
+            Eliminar
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }
 
