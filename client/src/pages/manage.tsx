@@ -164,6 +164,7 @@ export default function ManagePage() {
   const [isRequestingReview, setIsRequestingReview] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [viewingProperty, setViewingProperty] = useState<Property | null>(null);
+  const [propertyToReturnTo, setPropertyToReturnTo] = useState<Property | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
@@ -754,7 +755,7 @@ export default function ManagePage() {
                       {!sidebarCollapsed && <span>{t("nav.workday_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Control de jornada
+                          {t("nav.workday_control")}
                         </div>
                       )}
                     </SidebarMenuButton>
@@ -772,7 +773,7 @@ export default function ManagePage() {
                       {!sidebarCollapsed && <span>{t("nav.absence_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Control de ausencias
+                          {t("nav.absence_control")}
                         </div>
                       )}
                     </SidebarMenuButton>
@@ -792,7 +793,7 @@ export default function ManagePage() {
                       {!sidebarCollapsed && <span>{t("nav.agency_section")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Agencia
+                          {t("nav.agency_section")}
                         </div>
                       )}
                     </div>
@@ -809,7 +810,7 @@ export default function ManagePage() {
                       {!sidebarCollapsed && <span>{t("nav.agency_profile")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Perfil de agencia
+                          {t("nav.agency_profile")}
                         </div>
                       )}
                     </SidebarMenuButton>
@@ -820,14 +821,14 @@ export default function ManagePage() {
                       isActive={currentSection === "equipo"}
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
                       className="relative group"
-                      title={sidebarCollapsed ? t("nav.access") : ""}
+                      title={sidebarCollapsed ? t("nav.access_control") : ""}
                       data-testid="sidebar-link-accesos"
                     >
                       <KeyRound className="h-4 w-4 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>{t("nav.access")}</span>}
+                      {!sidebarCollapsed && <span>{t("nav.access_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Accesos
+                          {t("nav.access_control")}
                         </div>
                       )}
                     </SidebarMenuButton>
@@ -845,7 +846,7 @@ export default function ManagePage() {
                       {!sidebarCollapsed && <span>{t("nav.workday_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Control de jornada
+                          {t("nav.workday_control")}
                         </div>
                       )}
                     </SidebarMenuButton>
@@ -863,7 +864,7 @@ export default function ManagePage() {
                       {!sidebarCollapsed && <span>{t("nav.absence_control")}</span>}
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                          Control de ausencias
+                          {t("nav.absence_control")}
                         </div>
                       )}
                     </SidebarMenuButton>
@@ -901,7 +902,7 @@ export default function ManagePage() {
                   {!sidebarCollapsed && <span>{t("nav.account")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Cuenta
+                      {t("nav.account")}
                     </div>
                   )}
                 </div>
@@ -918,7 +919,7 @@ export default function ManagePage() {
                   {!sidebarCollapsed && <span>{t("nav.subscription_billing")}</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
-                      Suscripción y facturación
+                      {t("nav.subscription_billing")}
                     </div>
                   )}
                 </SidebarMenuButton>
@@ -1439,6 +1440,7 @@ export default function ManagePage() {
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={agencyInfluenceNeighborhoods}
+                      city={agencyCity}
                       onChange={(e) => {setAgencyInfluenceNeighborhoods(e); setHasAgencyChanges(true);}} // Added change detection
                       buttonText={t("manage.agency.neighborhoods_button")}
                       title="ZONAS DE OPERACIÓN DE LA AGENCIA"
@@ -1646,6 +1648,7 @@ export default function ManagePage() {
                     queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
                   }}
                   onEdit={() => {
+                    setPropertyToReturnTo(viewingProperty);
                     fetchPropertyForEditMutation.mutate(viewingProperty.uuid);
                     setViewingProperty(null);
                   }}
@@ -1740,6 +1743,13 @@ export default function ManagePage() {
                       }}
                       onClose={() => {
                         setEditingProperty(null);
+                      }}
+                      onBackToProperty={() => {
+                        setEditingProperty(null);
+                        if (propertyToReturnTo) {
+                          fetchPropertyForViewMutation.mutate(propertyToReturnTo.uuid);
+                        }
+                        setPropertyToReturnTo(null);
                       }}
                       initialData={editingProperty ? {
                         isActive: editingProperty.isActive,
@@ -2669,7 +2679,7 @@ export default function ManagePage() {
                           data-testid="button-back-send"
                         >
                           <ChevronLeft className="h-4 w-4 mr-1" />
-                          Volver
+                          {t("common.back")}
                         </Button>
                         <div className="flex gap-2">
                           <Button

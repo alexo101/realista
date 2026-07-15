@@ -2338,6 +2338,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client contract history
+  app.get("/api/clients/:clientId/contracts", requireAuth, async (req, res) => {
+    try {
+      const clientId = Number.parseInt(req.params.clientId, 10);
+      if (!Number.isInteger(clientId)) {
+        return res.status(400).json({ message: "Invalid client id" });
+      }
+
+      const contracts = await storage.getClientPropertyContracts(clientId);
+      res.status(200).json(contracts);
+    } catch (error) {
+      console.error("Error getting client contract history:", error);
+      res.status(500).json({ message: "Failed to get client contract history" });
+    }
+  });
+
   // Get client details
   app.get("/api/clients/:clientId", async (req, res) => {
     try {

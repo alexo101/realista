@@ -319,6 +319,7 @@ export interface IStorage {
   // Property Management
   getPropertyContracts(propertyUuid: string): Promise<PropertyContract[]>;
   getActivePropertyContract(propertyUuid: string): Promise<PropertyContract | undefined>;
+  getClientPropertyContracts(clientId: number): Promise<Array<{ contract: PropertyContract; property: Property }>>;
   createPropertyContract(contract: InsertPropertyContract): Promise<PropertyContract>;
   updatePropertyContract(id: number, data: Partial<InsertPropertyContract>): Promise<PropertyContract | undefined>;
   
@@ -4057,6 +4058,15 @@ export class DatabaseStorage implements IStorage {
   async getActivePropertyContract(propertyUuid: string): Promise<PropertyContract | undefined> {
     const [contract] = await db.select().from(propertyContracts).where(and(eq(propertyContracts.propertyUuid, propertyUuid), eq(propertyContracts.isActive, true)));
     return contract;
+  }
+
+  async getClientPropertyContracts(clientId: number): Promise<Array<{ contract: PropertyContract; property: Property }>> {
+    return db
+      .select({ contract: propertyContracts, property: properties })
+      .from(propertyContracts)
+      .innerJoin(properties, eq(propertyContracts.propertyUuid, properties.uuid))
+      .where(eq(propertyContracts.tenantId, clientId))
+      .orderBy(desc(propertyContracts.createdAt));
   }
 
   async createPropertyContract(contract: InsertPropertyContract): Promise<PropertyContract> {

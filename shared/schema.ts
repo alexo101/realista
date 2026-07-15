@@ -234,7 +234,7 @@ export type ClientPropertyPreferences = {
   housingType?: string | null;
   city?: string | null;
   district?: string | null;
-  neighborhood?: string | null;
+  neighborhood?: string | string[] | null;
   minPrice?: number | null;
   maxPrice?: number | null;
   bedrooms?: number | null;
@@ -423,7 +423,7 @@ export const insertClientSchema = createInsertSchema(clients).omit({
     housingType: z.string().nullable().optional(),
     city: z.string().nullable().optional(),
     district: z.string().nullable().optional(),
-    neighborhood: z.string().nullable().optional(),
+    neighborhood: z.union([z.string(), z.array(z.string())]).nullable().optional(),
     minPrice: z.number().nullable().optional(),
     maxPrice: z.number().nullable().optional(),
     bedrooms: z.number().nullable().optional(),

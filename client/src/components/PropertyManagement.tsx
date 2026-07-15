@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import {
   type Property,
   type Client,
@@ -243,6 +244,7 @@ const COMMUNICATION_TYPES = [
 
 export function PropertyManagement({ property, onBack, onEdit }: PropertyManagementProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const { user } = useUser();
 
@@ -435,11 +437,11 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         const key = query.queryKey[0];
         return typeof key === "string" && key.startsWith("/api/properties");
       }});
-      toast({ title: "Estado actualizado", description: `El estado se ha cambiado a "${newStatus}"` });
+      toast({ title: t("propertyManagement.toast.status_updated"), description: t("propertyManagement.toast.status_changed", { status: t(`propertyManagement.status.${newStatus}`) }) });
       setStatusDialogOpen(false);
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.status_update_error"), variant: "destructive" });
     },
   });
 
@@ -461,13 +463,13 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "contracts", "active"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Contrato creado", description: "El contrato de alquiler ha sido registrado" });
+      toast({ title: t("propertyManagement.toast.contract_created"), description: t("propertyManagement.toast.contract_registered") });
       setContractDialogOpen(false);
       setClientSearch("");
       setContractForm({ tenantName: "", tenantId: null, tenantEmail: "", tenantPhone: "", duration: 12, startDate: "", endDate: "", rentPrice: 0, guarantee: 0 });
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo crear el contrato", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.contract_error"), variant: "destructive" });
     },
   });
 
@@ -485,12 +487,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "payments"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Pago registrado", description: "El pago ha sido añadido correctamente" });
+      toast({ title: t("propertyManagement.toast.payment_created"), description: t("propertyManagement.toast.payment_added") });
       setPaymentDialogOpen(false);
       setPaymentForm({ concept: "", amount: 0, status: "Pendiente", addToHistory: false });
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo registrar el pago", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.payment_create_error"), variant: "destructive" });
     },
   });
 
@@ -506,13 +508,13 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "payments"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Pago actualizado" });
+      toast({ title: t("propertyManagement.toast.payment_updated") });
       setPaymentDialogOpen(false);
       setEditingPayment(null);
       setPaymentForm({ concept: "", amount: 0, status: "Pendiente", addToHistory: false });
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo actualizar el pago", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.payment_update_error"), variant: "destructive" });
     },
   });
 
@@ -523,12 +525,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "payments"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Pago eliminado" });
+      toast({ title: t("propertyManagement.toast.payment_deleted") });
       setDeletePaymentConfirmId(null);
       setDeletePaymentConfirmConcept("");
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo eliminar el pago", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.payment_delete_error"), variant: "destructive" });
     },
   });
 
@@ -561,13 +563,13 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       setDocumentUploading(false);
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "documents"] });
-      toast({ title: "Documento registrado", description: "El documento ha sido subido y añadido" });
+      toast({ title: t("propertyManagement.toast.document_created"), description: t("propertyManagement.toast.document_uploaded") });
       setDocumentDialogOpen(false);
       setDocumentForm({ documentType: "", fileName: "", file: null });
     },
     onError: () => {
       setDocumentUploading(false);
-      toast({ title: "Error", description: "No se pudo subir el documento", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.document_upload_error"), variant: "destructive" });
     },
   });
 
@@ -577,7 +579,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "documents"] });
-      toast({ title: "Documento eliminado" });
+      toast({ title: t("propertyManagement.toast.document_deleted") });
     },
   });
 
@@ -594,12 +596,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "incidents"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Incidencia registrada" });
+      toast({ title: t("propertyManagement.toast.incident_created") });
       setIncidentDialogOpen(false);
       setIncidentForm({ title: "", status: "Nueva", priority: "Media", description: "" });
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo guardar la incidencia", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.incident_save_error"), variant: "destructive" });
     },
   });
 
@@ -640,7 +642,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       setViewingIncident(null);
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo guardar la actualización", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.update_save_error"), variant: "destructive" });
     },
   });
 
@@ -650,12 +652,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "incidents"] });
-      toast({ title: "Incidencia eliminada" });
+      toast({ title: t("propertyManagement.toast.incident_deleted") });
       setDeleteIncidentConfirmId(null);
       setViewingIncident(null);
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo eliminar la incidencia", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.incident_delete_error"), variant: "destructive" });
     },
   });
 
@@ -675,13 +677,13 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "communications"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Comunicación registrada" });
+      toast({ title: t("propertyManagement.toast.communication_created") });
       setCommunicationDialogOpen(false);
       setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false, clientId: null, clientName: "" });
       setCommClientSearch("");
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo registrar la comunicación", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.communication_create_error"), variant: "destructive" });
     },
   });
 
@@ -699,14 +701,14 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "communications"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Comunicación actualizada" });
+      toast({ title: t("propertyManagement.toast.communication_updated") });
       setCommunicationDialogOpen(false);
       setEditingCommunication(null);
       setCommunicationForm({ title: "", communicationType: "", relevantDate: "", addToCalendar: false, description: "", addToHistory: false, clientId: null, clientName: "" });
       setCommClientSearch("");
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo actualizar la comunicación", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.communication_update_error"), variant: "destructive" });
     },
   });
 
@@ -717,12 +719,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "communications"] });
       qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "history"] });
-      toast({ title: "Comunicación eliminada" });
+      toast({ title: t("propertyManagement.toast.communication_deleted") });
       setDeleteCommConfirmId(null);
       setDeleteCommConfirmTitle("");
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo eliminar la comunicación", variant: "destructive" });
+      toast({ title: t("common.error"), description: t("propertyManagement.toast.communication_delete_error"), variant: "destructive" });
     },
   });
 
@@ -770,7 +772,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />
-        Volver a propiedades
+        {t("manage.properties.back_to_list")}
       </button>
       {/* Header Card */}
       <Card className="border" data-testid="card-property-header">
@@ -782,7 +784,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   {property.reference || property.uuid.slice(0, 8).toUpperCase()}
                 </span>
                 <Badge className={`${getStatusBadgeClass(currentManagementStatus)} border-0`} data-testid="badge-management-status">
-                  {currentManagementStatus}
+                  {t(`propertyManagement.status.${currentManagementStatus}`)}
                 </Badge>
               </div>
               <p className="text-sm text-gray-500" data-testid="text-property-city">
@@ -803,16 +805,16 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                     setStatusDialogOpen(true);
                   }}
                 >
-                  Cambiar estado
+                  {t("propertyManagement.action.change_status")}
                 </Button>
                 <Button
-                  variant="outline"
                   size="sm"
                   data-testid="button-edit-property"
                   onClick={onEdit}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <Pencil className="h-4 w-4 mr-1" />
-                  Editar datos
+                  {t("propertyManagement.action.edit_data")}
                 </Button>
               </div>
             </div>
@@ -823,25 +825,25 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Cambiar estado de gestión</DialogTitle>
-            <DialogDescription>Selecciona el nuevo estado para esta propiedad</DialogDescription>
+            <DialogTitle>{t("propertyManagement.dialog.status.title")}</DialogTitle>
+            <DialogDescription>{t("propertyManagement.dialog.status.description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <p className="text-sm text-gray-500 mb-1">Estado actual:</p>
+              <p className="text-sm text-gray-500 mb-1">{t("propertyManagement.label.current_status")}</p>
               <Badge className={`${getStatusBadgeClass(currentManagementStatus)} border-0`}>
-                {currentManagementStatus}
+                {t(`propertyManagement.status.${currentManagementStatus}`)}
               </Badge>
             </div>
             <div>
-              <p className="text-sm text-gray-500 mb-1">Nuevo estado:</p>
+              <p className="text-sm text-gray-500 mb-1">{t("propertyManagement.label.new_status")}</p>
               <Select value={newStatus} onValueChange={setNewStatus}>
                 <SelectTrigger data-testid="select-new-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {MANAGEMENT_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>{t(`propertyManagement.status.${s}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -853,7 +855,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               onClick={() => statusMutation.mutate(newStatus)}
               disabled={statusMutation.isPending}
             >
-              {statusMutation.isPending ? "Guardando..." : "Confirmar cambio"}
+              {statusMutation.isPending ? t("common.saving") : t("propertyManagement.action.confirm_change")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -861,12 +863,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       {/* Tabs */}
       <Tabs defaultValue="resumen" className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto" data-testid="tabs-property-management">
-          <TabsTrigger value="resumen" data-testid="tab-resumen">Resumen</TabsTrigger>
-          <TabsTrigger value="alquiler" data-testid="tab-alquiler">Condiciones y pagos</TabsTrigger>
-          <TabsTrigger value="documentacion" data-testid="tab-documentacion">Documentación</TabsTrigger>
-          <TabsTrigger value="incidencias" data-testid="tab-incidencias">Incidencias</TabsTrigger>
-          <TabsTrigger value="comunicaciones" data-testid="tab-comunicaciones">Comunicaciones</TabsTrigger>
-          <TabsTrigger value="historial" data-testid="tab-historial">Historial</TabsTrigger>
+          <TabsTrigger value="resumen" data-testid="tab-resumen">{t("propertyManagement.tab.summary")}</TabsTrigger>
+          <TabsTrigger value="alquiler" data-testid="tab-alquiler">{t("propertyManagement.tab.rent_payments")}</TabsTrigger>
+          <TabsTrigger value="documentacion" data-testid="tab-documentacion">{t("propertyManagement.tab.documents")}</TabsTrigger>
+          <TabsTrigger value="incidencias" data-testid="tab-incidencias">{t("propertyManagement.tab.incidents")}</TabsTrigger>
+          <TabsTrigger value="comunicaciones" data-testid="tab-comunicaciones">{t("propertyManagement.tab.communications")}</TabsTrigger>
+          <TabsTrigger value="historial" data-testid="tab-historial">{t("propertyManagement.tab.history")}</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Resumen */}
@@ -874,7 +876,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card data-testid="card-next-payment">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Próximo Pago</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-500">{t("propertyManagement.summary.next_payment")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {property.operationType === "Venta" || !activeContract ? (
@@ -885,7 +887,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                       {getNextPaymentDate(activeContract.startDate)}
                     </p>
                     <p className="text-sm text-gray-500" data-testid="text-tenant-name">
-                      {activeContract.tenantName || "Inquilino"}
+                      {activeContract.tenantName || t("propertyManagement.label.tenant")}
                     </p>
                   </>
                 )}
@@ -894,7 +896,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
 
             <Card data-testid="card-open-incidents">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">Incidencias abiertas</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-500">{t("propertyManagement.summary.open_incidents")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
@@ -905,7 +907,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                     {openIncidents.length}
                   </p>
                 </div>
-                <p className="text-sm text-gray-500">Abiertas actualmente</p>
+                <p className="text-sm text-gray-500">{t("propertyManagement.summary.currently_open")}</p>
               </CardContent>
             </Card>
           </div>
@@ -913,28 +915,28 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card data-testid="card-property-details">
               <CardHeader>
-                <CardTitle className="text-base">Detalles de la Propiedad</CardTitle>
+                <CardTitle className="text-base">{t("propertyManagement.summary.property_details")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-xs text-gray-500">Dirección Completa</p>
+                  <p className="text-xs text-gray-500">{t("propertyManagement.summary.full_address")}</p>
                   <p className="text-sm font-medium" data-testid="text-full-address">{property.address}</p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-xs text-gray-500">Características</p>
+                  <p className="text-xs text-gray-500">{t("propertyManagement.summary.features")}</p>
                   <p className="text-sm font-medium" data-testid="text-characteristics">
                     {property.bedrooms || 0} hab. · {property.bathrooms || 0} baños · {property.superficie || 0} m²
                   </p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-xs text-gray-500">Referencia Interna</p>
+                  <p className="text-xs text-gray-500">{t("propertyManagement.summary.internal_reference")}</p>
                   <p className="text-sm font-medium" data-testid="text-internal-reference">{property.reference || "-"}</p>
                 </div>
                 <Separator />
                 <div>
-                  <p className="text-xs text-gray-500">Tipo de Gestión</p>
+                  <p className="text-xs text-gray-500">{t("propertyManagement.summary.management_type")}</p>
                   <p className="text-sm font-medium" data-testid="text-operation-type">{property.operationType}</p>
                 </div>
               </CardContent>
@@ -942,12 +944,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
 
             <Card data-testid="card-agenda">
               <CardHeader>
-                <CardTitle className="text-base">Agenda</CardTitle>
+                <CardTitle className="text-base">{t("propertyManagement.summary.agenda")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center justify-center py-8 text-gray-400">
                   <Calendar className="h-12 w-12 mb-2" />
-                  <p className="text-sm">No hay eventos próximos</p>
+                  <p className="text-sm">{t("propertyManagement.empty.no_upcoming_events")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -957,18 +959,18 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         {/* Tab 2: Alquiler */}
         <TabsContent value="alquiler" className="space-y-4">
           {contractLoading ? (
-            <p className="text-sm text-gray-500">Cargando contrato...</p>
+            <p className="text-sm text-gray-500">{t("propertyManagement.loading.contract")}</p>
           ) : !activeContract ? (
             <Card data-testid="card-no-contract">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <FileText className="h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-gray-500 mb-4">No hay contrato activo</p>
+                <p className="text-gray-500 mb-4">{t("propertyManagement.empty.no_active_contract")}</p>
                 <Button
                   data-testid="button-setup-rental"
                   onClick={() => setContractDialogOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Configurar alquiler
+                  {t("propertyManagement.action.setup_rental")}
                 </Button>
               </CardContent>
             </Card>
@@ -977,26 +979,26 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
-                  Contrato Activo
+                  {t("propertyManagement.rent.active_contract")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500">Inquilino</p>
+                    <p className="text-xs text-gray-500">{t("propertyManagement.label.tenant")}</p>
                     <p className="text-sm font-medium" data-testid="text-contract-tenant">{activeContract.tenantName || "-"}</p>
                     <p className="text-xs text-gray-400">{activeContract.tenantEmail}</p>
                     <p className="text-xs text-gray-400">{activeContract.tenantPhone}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Fechas del contrato</p>
-                    <p className="text-sm font-medium" data-testid="text-contract-start">Inicio: {activeContract.startDate}</p>
-                    <p className="text-sm font-medium" data-testid="text-contract-end">Fin: {activeContract.endDate}</p>
+                    <p className="text-xs text-gray-500">{t("propertyManagement.rent.contract_dates")}</p>
+                    <p className="text-sm font-medium" data-testid="text-contract-start">{t("propertyManagement.rent.start")}: {activeContract.startDate}</p>
+                    <p className="text-sm font-medium" data-testid="text-contract-end">{t("propertyManagement.rent.end")}: {activeContract.endDate}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Condiciones Económicas</p>
-                    <p className="text-sm font-medium" data-testid="text-contract-rent">€{activeContract.rentPrice?.toLocaleString()}/mes</p>
-                    <p className="text-xs font-medium text-[#0c0a09]">Fianza: €{activeContract.guarantee?.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">{t("propertyManagement.rent.economic_terms")}</p>
+                    <p className="text-sm font-medium" data-testid="text-contract-rent">€{activeContract.rentPrice?.toLocaleString()}{t("propertyManagement.rent.per_month")}</p>
+                    <p className="text-xs font-medium text-[#0c0a09]">{t("propertyManagement.rent.deposit")}: €{activeContract.guarantee?.toLocaleString()}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1007,7 +1009,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           <Card data-testid="card-payments">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Historial de Pagos Recientes</CardTitle>
+                <CardTitle className="text-base">{t("propertyManagement.payments.recent_history")}</CardTitle>
                 <Button
                   size="sm"
                   variant="outline"
@@ -1016,25 +1018,25 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   onClick={() => setPaymentDialogOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Añadir pago
+                  {t("propertyManagement.payments.add")}
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               {paymentsLoading ? (
-                <p className="text-sm text-gray-500">Cargando pagos...</p>
+                <p className="text-sm text-gray-500">{t("propertyManagement.loading.payments")}</p>
               ) : payments.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">No hay pagos registrados</p>
+                <p className="text-sm text-gray-400 text-center py-4">{t("propertyManagement.empty.no_payments")}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>CONCEPTO</TableHead>
-                        <TableHead>FECHA</TableHead>
-                        <TableHead>ESTADO</TableHead>
-                        <TableHead className="text-right">IMPORTE</TableHead>
-                        <TableHead>ACCIONES</TableHead>
+                        <TableHead>{t("propertyManagement.table.concept")}</TableHead>
+                        <TableHead>{t("propertyManagement.table.date")}</TableHead>
+                        <TableHead>{t("propertyManagement.table.status")}</TableHead>
+                        <TableHead className="text-right">{t("propertyManagement.table.amount")}</TableHead>
+                        <TableHead>{t("propertyManagement.table.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1044,7 +1046,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                           <TableCell className="text-sm text-gray-500">{p.paymentDate || "-"}</TableCell>
                           <TableCell>
                             <Badge className={`${p.status === "Pagado" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"} border-0`} data-testid={`badge-payment-status-${p.id}`}>
-                              {p.status}
+                              {t(`propertyManagement.payment_status.${p.status}`)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-medium">€{p.amount?.toLocaleString()}</TableCell>
@@ -1093,7 +1095,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         {/* Tab 3: Documentación */}
         <TabsContent value="documentacion" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Documentación</h3>
+            <h3 className="text-lg font-semibold">{t("propertyManagement.documents.title")}</h3>
             <Button
               size="sm"
               variant="outline"
@@ -1102,17 +1104,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               onClick={() => setDocumentDialogOpen(true)}
             >
               <Plus className="h-4 w-4 mr-1" />
-              Subir documento
+              {t("propertyManagement.documents.upload")}
             </Button>
           </div>
 
           {documentsLoading ? (
-            <p className="text-sm text-gray-500">Cargando documentos...</p>
+            <p className="text-sm text-gray-500">{t("propertyManagement.loading.documents")}</p>
           ) : documents.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <FileText className="h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-gray-500">No hay documentos registrados</p>
+                <p className="text-gray-500">{t("propertyManagement.empty.no_documents")}</p>
               </CardContent>
             </Card>
           ) : (
@@ -1184,9 +1186,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         <TabsContent value="incidencias" className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">Incidencias y Mantenimiento</h3>
+              <h3 className="text-lg font-semibold">{t("propertyManagement.incidents.title")}</h3>
               <p className="text-sm text-gray-500" data-testid="text-incidents-count">
-                {openIncidents.length} abiertas de {incidents.length} total
+                {t("propertyManagement.incidents.count_summary", { open: openIncidents.length, total: incidents.length })}
               </p>
             </div>
             <Button
@@ -1198,17 +1200,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               }}
             >
               <Plus className="h-4 w-4 mr-1" />
-              Nueva incidencia
+              {t("propertyManagement.incidents.new")}
             </Button>
           </div>
 
           {incidentsLoading ? (
-            <p className="text-sm text-gray-500">Cargando incidencias...</p>
+            <p className="text-sm text-gray-500">{t("propertyManagement.loading.incidents")}</p>
           ) : incidents.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <AlertTriangle className="h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-gray-500">No hay incidencias registradas</p>
+                <p className="text-gray-500">{t("propertyManagement.empty.no_incidents")}</p>
               </CardContent>
             </Card>
           ) : (
@@ -1216,11 +1218,11 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>INCIDENCIA</TableHead>
-                    <TableHead>ESTADO</TableHead>
-                    <TableHead>PRIORIDAD</TableHead>
-                    <TableHead>FECHA</TableHead>
-                    <TableHead>ACCIONES</TableHead>
+                    <TableHead>{t("propertyManagement.table.incident")}</TableHead>
+                    <TableHead>{t("propertyManagement.table.status")}</TableHead>
+                    <TableHead>{t("propertyManagement.table.priority")}</TableHead>
+                    <TableHead>{t("propertyManagement.table.date")}</TableHead>
+                    <TableHead>{t("propertyManagement.table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1245,12 +1247,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                       </TableCell>
                       <TableCell>
                         <Badge className={`${getIncidentStatusBadgeClass(incident.status)} border-0`} data-testid={`badge-incident-status-${incident.id}`}>
-                          {incident.status}
+                          {t(`propertyManagement.incident_status.${incident.status}`)}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={`${getPriorityBadgeClass(incident.priority)} border-0`} data-testid={`badge-incident-priority-${incident.id}`}>
-                          {incident.priority}
+                          {t(`propertyManagement.priority.${incident.priority}`)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">
@@ -1318,7 +1320,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                                 <div className="text-xs text-gray-400 mb-0.5">
                                   Descripción inicial • {new Date(incident.createdAt).toLocaleDateString("es-ES")}
                                 </div>
-                                <p className="text-gray-600">{incident.description || "Sin descripción"}</p>
+                            <p className="text-gray-600">{incident.description || t("propertyManagement.empty.no_description")}</p>
                               </div>
                             </div>
                           </div>
@@ -1337,9 +1339,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
         <TabsContent value="comunicaciones" className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">Comunicaciones</h3>
+              <h3 className="text-lg font-semibold">{t("propertyManagement.communications.title")}</h3>
               <p className="text-sm text-gray-500" data-testid="text-communications-count">
-                {communications.length} registradas
+                {t("propertyManagement.communications.count_registered", { count: communications.length })}
               </p>
             </div>
             <Button
@@ -1351,17 +1353,17 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               }}
             >
               <Plus className="h-4 w-4 mr-1" />
-              Nueva comunicación
+              {t("propertyManagement.communications.new")}
             </Button>
           </div>
 
           {communicationsLoading ? (
-            <p className="text-sm text-gray-500">Cargando comunicaciones...</p>
+            <p className="text-sm text-gray-500">{t("propertyManagement.loading.communications")}</p>
           ) : communications.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <MessageSquare className="h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-gray-500">No hay comunicaciones registradas</p>
+                <p className="text-gray-500">{t("propertyManagement.empty.no_communications")}</p>
               </CardContent>
             </Card>
           ) : (
@@ -1369,10 +1371,10 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>COMUNICACIÓN</TableHead>
-                    <TableHead>TIPO</TableHead>
-                    <TableHead>FECHA</TableHead>
-                    <TableHead>ACCIONES</TableHead>
+                    <TableHead>{t("propertyManagement.table.communication")}</TableHead>
+                    <TableHead>{t("propertyManagement.table.type")}</TableHead>
+                    <TableHead>{t("propertyManagement.table.date")}</TableHead>
+                    <TableHead>{t("propertyManagement.table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1429,7 +1431,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
 
         {/* Tab 6: Historial */}
         <TabsContent value="historial" className="space-y-4">
-          <h3 className="text-lg font-semibold">Historial de Actividad</h3>
+          <h3 className="text-lg font-semibold">{t("propertyManagement.history.title")}</h3>
 
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <Button
@@ -1438,7 +1440,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="filter-history-all-types"
               onClick={() => setHistoryTypeFilter(null)}
             >
-              Todos
+              {t("propertyManagement.history.all")}
             </Button>
             <Button
               variant={historyTypeFilter === "creation" ? "default" : "outline"}
@@ -1446,7 +1448,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="filter-history-creation"
               onClick={() => setHistoryTypeFilter(historyTypeFilter === "creation" ? null : "creation")}
             >
-              <Home className="h-3 w-3 mr-1" /> Creación
+              <Home className="h-3 w-3 mr-1" /> {t("propertyManagement.history.creation")}
             </Button>
             <Button
               variant={historyTypeFilter === "status_change" ? "default" : "outline"}
@@ -1454,7 +1456,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="filter-history-status"
               onClick={() => setHistoryTypeFilter(historyTypeFilter === "status_change" ? null : "status_change")}
             >
-              <RefreshCw className="h-3 w-3 mr-1" /> Estado
+              <RefreshCw className="h-3 w-3 mr-1" /> {t("propertyManagement.history.status")}
             </Button>
             <Button
               variant={historyTypeFilter === "payment" ? "default" : "outline"}
@@ -1462,7 +1464,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="filter-history-payment"
               onClick={() => setHistoryTypeFilter(historyTypeFilter === "payment" ? null : "payment")}
             >
-              <Euro className="h-3 w-3 mr-1" /> Pago
+              <Euro className="h-3 w-3 mr-1" /> {t("propertyManagement.history.payment")}
             </Button>
             <Button
               variant={historyTypeFilter === "incident" ? "default" : "outline"}
@@ -1470,7 +1472,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="filter-history-incident"
               onClick={() => setHistoryTypeFilter(historyTypeFilter === "incident" ? null : "incident")}
             >
-              <AlertTriangle className="h-3 w-3 mr-1" /> Incidencia
+              <AlertTriangle className="h-3 w-3 mr-1" /> {t("propertyManagement.history.incident")}
             </Button>
             <Button
               variant={historyTypeFilter === "communication" ? "default" : "outline"}
@@ -1478,7 +1480,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="filter-history-communication"
               onClick={() => setHistoryTypeFilter(historyTypeFilter === "communication" ? null : "communication")}
             >
-              <MessageSquare className="h-3 w-3 mr-1" /> Comunicación
+              <MessageSquare className="h-3 w-3 mr-1" /> {t("propertyManagement.history.communication")}
             </Button>
             <div className="flex gap-2 ml-auto">
               {["Todo", "Último mes", "Último año"].map((tf) => (
@@ -1489,19 +1491,19 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   data-testid={`filter-history-time-${tf}`}
                   onClick={() => setHistoryTimeFilter(tf)}
                 >
-                  {tf}
+                  {t(`propertyManagement.history.time.${tf}`)}
                 </Button>
               ))}
             </div>
           </div>
 
           {historyLoading ? (
-            <p className="text-sm text-gray-500">Cargando historial...</p>
+            <p className="text-sm text-gray-500">{t("propertyManagement.loading.history")}</p>
           ) : filteredHistory.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Clock className="h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-gray-500">No hay entradas en el historial</p>
+                <p className="text-gray-500">{t("propertyManagement.empty.no_history")}</p>
               </CardContent>
             </Card>
           ) : (
@@ -1517,7 +1519,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs text-gray-500">{new Date(entry.createdAt).toLocaleDateString("en-US")}</p>
-                    {entry.performedBy && <p className="text-xs text-gray-400">por {entry.performedBy}</p>}
+                    {entry.performedBy && <p className="text-xs text-gray-400">{t("propertyManagement.history.performed_by")} {entry.performedBy}</p>}
                   </div>
                 </div>
               ))}
@@ -1529,12 +1531,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={contractDialogOpen} onOpenChange={setContractDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Configurar alquiler</DialogTitle>
-            <DialogDescription>Introduce los datos del contrato de alquiler</DialogDescription>
+            <DialogTitle>{t("propertyManagement.dialog.contract.title")}</DialogTitle>
+            <DialogDescription>{t("propertyManagement.dialog.contract.description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="relative">
-              <label className="text-sm font-medium">Inquilino</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.tenant")}</label>
               <Input
                 data-testid="input-tenant-name"
                 value={contractForm.tenantId ? contractForm.tenantName : clientSearch}
@@ -1546,7 +1548,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   setShowClientDropdown(true);
                 }}
                 onFocus={() => setShowClientDropdown(true)}
-                placeholder="Buscar cliente por nombre o email..."
+                placeholder={t("propertyManagement.placeholder.search_client")}
               />
               {contractForm.tenantId && (
                 <button
@@ -1564,7 +1566,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               {showClientDropdown && !contractForm.tenantId && (
                 <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-[200px] overflow-y-auto">
                   {filteredClients.length === 0 ? (
-                    <div className="p-3 text-sm text-gray-500">No se encontraron clientes</div>
+                    <div className="p-3 text-sm text-gray-500">{t("propertyManagement.empty.no_clients_found")}</div>
                   ) : (
                     filteredClients.map((client) => (
                       <button
@@ -1592,16 +1594,16 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Fecha inicio</label>
+                <label className="text-sm font-medium">{t("propertyManagement.label.start_date")}</label>
                 <Input data-testid="input-contract-start" type="date" value={contractForm.startDate} onChange={(e) => setContractForm({ ...contractForm, startDate: e.target.value })} />
               </div>
               <div>
-                <label className="text-sm font-medium">Fecha fin</label>
+                <label className="text-sm font-medium">{t("propertyManagement.label.end_date")}</label>
                 <Input data-testid="input-contract-end" type="date" value={contractForm.endDate} onChange={(e) => setContractForm({ ...contractForm, endDate: e.target.value })} />
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Precio de la renta (€/mes)</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.rent_price")}</label>
               <Input
                 data-testid="input-contract-rent"
                 type="text"
@@ -1611,12 +1613,12 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   const val = e.target.value.replace(/^0+|[^0-9]/g, "");
                   setContractForm({ ...contractForm, rentPrice: val ? parseInt(val, 10) : 0 });
                 }}
-                placeholder="Ej: 1200"
+                placeholder={t("propertyManagement.placeholder.amount_example")}
                 min={1}
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Fianza entregada (€)</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.deposit")}</label>
               <Input
                 data-testid="input-contract-guarantee"
                 type="text"
@@ -1626,7 +1628,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   const val = e.target.value.replace(/^0+|[^0-9]/g, "");
                   setContractForm({ ...contractForm, guarantee: val ? parseInt(val, 10) : 0 });
                 }}
-                placeholder="Ej: 2400"
+                placeholder={t("propertyManagement.placeholder.deposit_example")}
                 min={1}
               />
             </div>
@@ -1637,7 +1639,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               onClick={() => contractMutation.mutate(contractForm)}
               disabled={contractMutation.isPending || !contractForm.tenantName || !contractForm.startDate || !contractForm.endDate || contractForm.rentPrice <= 0 || contractForm.guarantee <= 0}
             >
-              {contractMutation.isPending ? "Guardando..." : "Configurar alquiler"}
+              {contractMutation.isPending ? t("common.saving") : t("propertyManagement.dialog.contract.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1652,15 +1654,15 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingPayment ? "Editar pago" : "Añadir pago"}</DialogTitle>
-            <DialogDescription>{editingPayment ? "Modifica los datos del pago" : "Registra un nuevo pago"}</DialogDescription>
+            <DialogTitle>{editingPayment ? t("propertyManagement.dialog.payment.edit_title") : t("propertyManagement.dialog.payment.add_title")}</DialogTitle>
+            <DialogDescription>{editingPayment ? t("propertyManagement.dialog.payment.edit_description") : t("propertyManagement.dialog.payment.add_description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Concepto</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.concept")}</label>
               <Select value={paymentForm.concept} onValueChange={(v) => setPaymentForm({ ...paymentForm, concept: v })}>
                 <SelectTrigger data-testid="select-payment-concept">
-                  <SelectValue placeholder="Seleccionar concepto" />
+                  <SelectValue placeholder={t("propertyManagement.placeholder.select_concept")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   {PAYMENT_CONCEPTS.map((c) => (
@@ -1670,7 +1672,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Importe (€)</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.amount")}</label>
               <Input
                 data-testid="input-payment-amount"
                 type="text"
@@ -1680,18 +1682,18 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   const val = e.target.value.replace(/^0+|[^0-9]/g, "");
                   setPaymentForm({ ...paymentForm, amount: val ? parseInt(val, 10) : 0 });
                 }}
-                placeholder="Ej: 1200"
+                placeholder={t("propertyManagement.placeholder.amount_example")}
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Estado</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.status")}</label>
               <Select value={paymentForm.status} onValueChange={(v) => setPaymentForm({ ...paymentForm, status: v })}>
                 <SelectTrigger data-testid="select-payment-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Pendiente">Pendiente</SelectItem>
-                  <SelectItem value="Pagado">Pagado</SelectItem>
+                  <SelectItem value="Pendiente">{t("propertyManagement.payment_status.Pendiente")}</SelectItem>
+                  <SelectItem value="Pagado">{t("propertyManagement.payment_status.Pagado")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1704,7 +1706,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 onChange={(e) => setPaymentForm({ ...paymentForm, addToHistory: e.target.checked })}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <label htmlFor="payment-add-history" className="text-sm">Añadir a historial</label>
+              <label htmlFor="payment-add-history" className="text-sm">{t("propertyManagement.label.add_to_history")}</label>
             </div>
           </div>
           <DialogFooter>
@@ -1719,7 +1721,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               }}
               disabled={(paymentMutation.isPending || updatePaymentMutation.isPending) || !paymentForm.concept}
             >
-              {(paymentMutation.isPending || updatePaymentMutation.isPending) ? "Guardando..." : editingPayment ? "Guardar cambios" : "Registrar pago"}
+              {(paymentMutation.isPending || updatePaymentMutation.isPending) ? t("common.saving") : editingPayment ? t("common.save_changes") : t("propertyManagement.dialog.payment.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1728,9 +1730,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={deletePaymentConfirmId !== null} onOpenChange={(open) => { if (!open) { setDeletePaymentConfirmId(null); setDeletePaymentConfirmConcept(""); } }}>
         <DialogContent className="w-[95vw] max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Eliminar pago</DialogTitle>
+            <DialogTitle>{t("propertyManagement.dialog.delete_payment.title")}</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que quieres eliminar el pago <span className="font-semibold">{deletePaymentConfirmConcept}</span>? Esta acción no se puede deshacer.
+              {t("propertyManagement.dialog.delete_payment.description", { concept: deletePaymentConfirmConcept })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:justify-end">
@@ -1739,7 +1741,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="button-cancel-delete-payment"
               onClick={() => setDeletePaymentConfirmId(null)}
             >
-              Cancelar
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -1751,7 +1753,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 }
               }}
             >
-              {deletePaymentMutation.isPending ? "Eliminando..." : "Eliminar"}
+              {deletePaymentMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1760,15 +1762,15 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Subir documento</DialogTitle>
-            <DialogDescription>Registra un nuevo documento para esta propiedad</DialogDescription>
+            <DialogTitle>{t("propertyManagement.dialog.document.title")}</DialogTitle>
+            <DialogDescription>{t("propertyManagement.dialog.document.description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Tipo de documento</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.document_type")}</label>
               <Select value={documentForm.documentType} onValueChange={(v) => setDocumentForm({ ...documentForm, documentType: v })}>
                 <SelectTrigger data-testid="select-document-type">
-                  <SelectValue placeholder="Seleccionar tipo" />
+                  <SelectValue placeholder={t("propertyManagement.placeholder.select_type")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   {DOCUMENT_TYPES.map((d) => (
@@ -1778,7 +1780,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Archivo</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.file")}</label>
               <input
                 ref={documentFileInputRef}
                 type="file"
@@ -1820,9 +1822,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 ) : (
                   <div>
                     <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">Haz clic para seleccionar un archivo</p>
-                    <p className="text-xs text-gray-400 mt-1">Formatos permitidos: PDF, PNG, JPG</p>
-                    <p className="text-xs text-gray-400">Tamaño máximo: 5 MB</p>
+                    <p className="text-sm text-gray-500">{t("propertyManagement.documents.dropzone.click")}</p>
+                    <p className="text-xs text-gray-400 mt-1">{t("propertyManagement.documents.dropzone.formats")}</p>
+                    <p className="text-xs text-gray-400">{t("propertyManagement.documents.dropzone.max_size")}</p>
                   </div>
                 )}
               </div>
@@ -1834,7 +1836,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               onClick={() => documentMutation.mutate(documentForm)}
               disabled={documentMutation.isPending || documentUploading || !documentForm.documentType || !documentForm.file}
             >
-              {documentMutation.isPending || documentUploading ? "Subiendo..." : "Subir documento"}
+              {documentMutation.isPending || documentUploading ? t("common.uploading") : t("propertyManagement.documents.upload")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1843,22 +1845,22 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={incidentDialogOpen} onOpenChange={(open) => { setIncidentDialogOpen(open); }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nueva incidencia</DialogTitle>
-            <DialogDescription>Registra una nueva incidencia</DialogDescription>
+            <DialogTitle>{t("propertyManagement.dialog.incident.title")}</DialogTitle>
+            <DialogDescription>{t("propertyManagement.dialog.incident.description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Título</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.title")}</label>
               <Input
                 data-testid="input-incident-title"
                 maxLength={50}
                 value={incidentForm.title}
                 onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })}
-                placeholder="Título de la incidencia"
+                placeholder={t("propertyManagement.placeholder.incident_title")}
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Prioridad</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.priority")}</label>
               <Select value={incidentForm.priority} onValueChange={(v) => setIncidentForm({ ...incidentForm, priority: v })}>
                 <SelectTrigger data-testid="select-incident-priority">
                   <SelectValue />
@@ -1871,13 +1873,13 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Descripción</label>
+              <label className="text-sm font-medium">{t("propertyManagement.label.description")}</label>
               <Textarea
                 data-testid="textarea-incident-description"
                 maxLength={500}
                 value={incidentForm.description}
                 onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })}
-                placeholder="Describe la incidencia..."
+                placeholder={t("propertyManagement.placeholder.incident_description")}
               />
             </div>
           </div>
@@ -1887,7 +1889,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               onClick={() => incidentMutation.mutate({ ...incidentForm })}
               disabled={incidentMutation.isPending || !incidentForm.title}
             >
-              {incidentMutation.isPending ? "Guardando..." : "Registrar incidencia"}
+              {incidentMutation.isPending ? t("common.saving") : t("propertyManagement.dialog.incident.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1945,7 +1947,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                       {(update.newStatus || update.newPriority) && (
                         <div className="flex gap-2 mt-1">
                           {update.newStatus && (
-                            <span className="text-xs text-gray-500">Estado → <Badge className={`${getIncidentStatusBadgeClass(update.newStatus)} border-0 text-xs`}>{update.newStatus}</Badge></span>
+                            <span className="text-xs text-gray-500">{t("propertyManagement.label.status")} → <Badge className={`${getIncidentStatusBadgeClass(update.newStatus)} border-0 text-xs`}>{t(`propertyManagement.incident_status.${update.newStatus}`)}</Badge></span>
                           )}
                           {update.newPriority && (
                             <span className="text-xs text-gray-500">Prioridad → <Badge className={`${getPriorityBadgeClass(update.newPriority)} border-0 text-xs`}>{update.newPriority}</Badge></span>
@@ -1978,7 +1980,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 </SelectTrigger>
                 <SelectContent>
                   {["Nueva", "Asignada", "En espera", "Resuelta", "Verificada", "Cerrada"].map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>{t(`propertyManagement.incident_status.${s}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -2014,9 +2016,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={deleteIncidentConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteIncidentConfirmId(null); }}>
         <DialogContent className="w-[95vw] max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Eliminar incidencia</DialogTitle>
+            <DialogTitle>{t("propertyManagement.dialog.delete_incident.title")}</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que quieres eliminar esta incidencia? Esta acción no se puede deshacer.
+              {t("propertyManagement.dialog.delete_incident.description")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:justify-end">
@@ -2025,7 +2027,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="button-cancel-delete-incident"
               onClick={() => setDeleteIncidentConfirmId(null)}
             >
-              Cancelar
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -2037,7 +2039,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 }
               }}
             >
-              {deleteIncidentMutation.isPending ? "Eliminando..." : "Eliminar"}
+              {deleteIncidentMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2053,7 +2055,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingCommunication ? "Editar comunicación" : "Nueva comunicación"}</DialogTitle>
+            <DialogTitle>{editingCommunication ? t("propertyManagement.dialog.communication.edit_title") : t("propertyManagement.dialog.communication.add_title")}</DialogTitle>
             <DialogDescription>{editingCommunication ? "Modifica los datos de la comunicación" : "Registra una nueva comunicación"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -2064,7 +2066,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 maxLength={50}
                 value={communicationForm.title}
                 onChange={(e) => setCommunicationForm({ ...communicationForm, title: e.target.value })}
-                placeholder="Título de la comunicación"
+                placeholder={t("propertyManagement.placeholder.communication_title")}
               />
             </div>
             <div className="relative">
@@ -2080,7 +2082,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                   setShowCommClientDropdown(true);
                 }}
                 onFocus={() => setShowCommClientDropdown(true)}
-                placeholder="Buscar cliente por nombre o email..."
+                placeholder={t("propertyManagement.placeholder.search_client")}
               />
               {communicationForm.clientId && (
                 <button
@@ -2128,7 +2130,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               <label className="text-sm font-medium">Tipo de comunicación</label>
               <Select value={communicationForm.communicationType} onValueChange={(v) => setCommunicationForm({ ...communicationForm, communicationType: v })}>
                 <SelectTrigger data-testid="select-communication-type">
-                  <SelectValue placeholder="Seleccionar tipo" />
+                  <SelectValue placeholder={t("propertyManagement.placeholder.select_type")} />
                 </SelectTrigger>
                 <SelectContent>
                   {COMMUNICATION_TYPES.map((t) => (
@@ -2163,7 +2165,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 data-testid="textarea-communication-description"
                 value={communicationForm.description}
                 onChange={(e) => setCommunicationForm({ ...communicationForm, description: e.target.value })}
-                placeholder="Descripción (opcional)"
+                placeholder={t("propertyManagement.placeholder.communication_description")}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -2190,7 +2192,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               }}
               disabled={(communicationMutation.isPending || updateCommunicationMutation.isPending) || !communicationForm.title || !communicationForm.communicationType || !communicationForm.relevantDate}
             >
-              {(communicationMutation.isPending || updateCommunicationMutation.isPending) ? "Guardando..." : editingCommunication ? "Guardar cambios" : "Registrar comunicación"}
+              {(communicationMutation.isPending || updateCommunicationMutation.isPending) ? t("common.saving") : editingCommunication ? t("common.save_changes") : t("propertyManagement.dialog.communication.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2199,9 +2201,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={deleteCommConfirmId !== null} onOpenChange={(open) => { if (!open) { setDeleteCommConfirmId(null); setDeleteCommConfirmTitle(""); } }}>
         <DialogContent className="w-[95vw] max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Eliminar comunicación</DialogTitle>
+            <DialogTitle>{t("propertyManagement.dialog.delete_communication.title")}</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que quieres eliminar la comunicación <span className="font-semibold">{deleteCommConfirmTitle}</span>? Esta acción no se puede deshacer.
+              {t("propertyManagement.dialog.delete_communication.description", { title: deleteCommConfirmTitle })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:justify-end">
@@ -2210,7 +2212,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="button-cancel-delete-comm"
               onClick={() => setDeleteCommConfirmId(null)}
             >
-              Cancelar
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -2222,7 +2224,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 }
               }}
             >
-              {deleteCommunicationMutation.isPending ? "Eliminando..." : "Eliminar"}
+              {deleteCommunicationMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2231,9 +2233,9 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
       <Dialog open={deleteDocConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteDocConfirmId(null); }}>
         <DialogContent className="w-[95vw] max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Eliminar documento</DialogTitle>
+            <DialogTitle>{t("propertyManagement.dialog.delete_document.title")}</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que quieres eliminar el documento <span className="font-semibold">{deleteDocConfirmName}</span>? Esta acción no se puede deshacer.
+              {t("propertyManagement.dialog.delete_document.description", { name: deleteDocConfirmName })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:justify-end">
@@ -2242,7 +2244,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               data-testid="button-cancel-delete-doc"
               onClick={() => setDeleteDocConfirmId(null)}
             >
-              Cancelar
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -2256,7 +2258,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 }
               }}
             >
-              {deleteDocumentMutation.isPending ? "Eliminando..." : "Eliminar"}
+              {deleteDocumentMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

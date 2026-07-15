@@ -562,8 +562,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 />
               </div>
 
-              {/* Row 2: Tipo de inmueble, Tipo de vivienda (conditional) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Row 2: Tipo de inmueble, Tipo de vivienda, Planta */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="type"
@@ -620,6 +620,31 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     )}
                   />
                 )}
+
+                <FormField
+                  control={form.control}
+                  name="planta"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Planta</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-planta">
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {plantaOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Row 3: Superficie, Habitaciones, Baños */}
@@ -773,31 +798,6 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                         </FormControl>
                         <SelectContent>
                           {escaleraOptions.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="planta"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Planta</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-planta">
-                            <SelectValue placeholder="Seleccionar" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {plantaOptions.map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}
                             </SelectItem>

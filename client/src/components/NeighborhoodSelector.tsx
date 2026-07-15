@@ -32,25 +32,26 @@ export function NeighborhoodSelector({
   const cityNeighborhoods = getAllNeighborhoodsByCity(city);
   const dynamicTitle = title || `BARRIOS DE ${city.toUpperCase()}`;
   
-  // Filter neighborhoods and city option based on search
-  // Enhanced: match by neighborhood name OR its parent district
-  const filteredResults = search.length >= 3 
-    ? [
-        ...(`${city} (Todos los barrios)`.toLowerCase().includes(search.toLowerCase()) ? [`${city} (Todos los barrios)`] : []),
-        ...cityNeighborhoods.filter((n: string) => {
-          const neighborhoodMatch = n.toLowerCase().includes(search.toLowerCase());
-          const district = findDistrictByNeighborhood(n, city);
-          const districtMatch = district?.toLowerCase().includes(search.toLowerCase());
-          return neighborhoodMatch || districtMatch;
-        })
-      ].slice(0, 10) // Limit to 10 results
-    : [];
+  // Show all neighborhoods when focused, then filter by neighborhood or district
+  // as the user types.
+  const searchTerm = search.trim().toLowerCase();
+  const filteredResults = [
+    ...(`${city} (Todos los barrios)`.toLowerCase().includes(searchTerm) ? [`${city} (Todos los barrios)`] : []),
+    ...cityNeighborhoods.filter((n: string) => {
+      if (!searchTerm) return true;
+
+      const neighborhoodMatch = n.toLowerCase().includes(searchTerm);
+      const district = findDistrictByNeighborhood(n, city);
+      const districtMatch = district?.toLowerCase().includes(searchTerm);
+      return neighborhoodMatch || districtMatch;
+    })
+  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearch(value);
     setHighlightedIndex(-1);
-    setShowResults(value.length >= 3);
+    setShowResults(true);
   };
 
   const toggleNeighborhood = (neighborhood: string) => {
@@ -174,7 +175,7 @@ export function NeighborhoodSelector({
           type="text"
           value={search}
           onChange={handleInputChange}
-          onFocus={() => setShowResults(search.length >= 3)}
+          onFocus={() => setShowResults(true)}
           onKeyDown={handleKeyDown}
           placeholder={buttonText}
           className="w-full min-h-[44px]"

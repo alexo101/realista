@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/contexts/language-context";
 import {
   Form,
   FormControl,
@@ -30,7 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff, Sparkles, Search, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff, Sparkles, Search, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -103,6 +104,37 @@ const managementStatusOptions = [
   "Vendida",
   "En reforma",
 ] as const;
+
+const PROPERTY_OPTION_KEYS: Record<string, string> = {
+  Venta: "manage.client_pref_option.operation.venta",
+  Alquiler: "manage.client_pref_option.operation.alquiler",
+  Vivienda: "manage.client_pref_option.property_type.vivienda",
+  Oficinas: "manage.client_pref_option.property_type.oficinas",
+  Locales: "manage.client_pref_option.property_type.locales",
+  Parking: "manage.client_pref_option.property_type.parking",
+  Terrenos: "manage.client_pref_option.property_type.terrenos",
+  Trasteros: "manage.client_pref_option.property_type.trasteros",
+  Edificios: "manage.client_pref_option.property_type.edificios",
+  Pisos: "manage.client_pref_option.housing_type.pisos",
+  Áticos: "manage.client_pref_option.housing_type.aticos",
+  Dúplex: "manage.client_pref_option.housing_type.duplex",
+  "Casa o chalet independiente": "manage.client_pref_option.housing_type.casa_independiente",
+  "Casa o chalet adosado": "manage.client_pref_option.housing_type.casa_adosada",
+  "Casa o chalet pareado": "manage.client_pref_option.housing_type.casa_pareada",
+  "Última planta": "manage.client_pref_option.floor.ultima_planta",
+  "Plantas intermedias": "manage.client_pref_option.floor.planta_intermedia",
+  Bajos: "manage.client_pref_option.floor.bajo",
+  "Obra nueva": "manage.client_pref_option.condition.obra_nueva",
+  "Buen estado": "manage.client_pref_option.condition.buen_estado",
+  "A reformar": "manage.client_pref_option.condition.a_reformar",
+  Reformado: "manage.client_pref_option.condition.reformado",
+  Inmediatamente: "manage.client_pref_option.availability.inmediatamente",
+  "A partir de": "manage.client_pref_option.availability.a_partir_de",
+};
+
+function getPropertyOptionLabel(value: string, t: (key: string) => string): string {
+  return PROPERTY_OPTION_KEYS[value] ? t(PROPERTY_OPTION_KEYS[value]) : value;
+}
 
 // Escalera options
 const escaleraOptions = ["A", "B", "C"] as const;
@@ -182,12 +214,20 @@ const formSchema = z.object({
 interface PropertyFormProps {
   onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>;
   onClose: () => void;
+  onBackToProperty?: () => void;
   initialData?: z.infer<typeof formSchema> & { id?: number; isActive?: boolean };
   isEditing?: boolean;
 }
 
-export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false }: PropertyFormProps) {
+export function PropertyForm({
+  onSubmit,
+  onClose,
+  onBackToProperty,
+  initialData,
+  isEditing = false,
+}: PropertyFormProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
@@ -220,8 +260,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     },
     onSuccess: () => {
       toast({
-        title: "Propiedad eliminada",
-        description: "La propiedad ha sido eliminada permanentemente.",
+        title: t("propertyForm.toast.deleted"),
+        description: t("propertyForm.toast.deleted_desc"),
       });
       // Invalidate ALL property-related queries using predicate to match complex query keys
       queryClient.invalidateQueries({ 
@@ -237,8 +277,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar la propiedad.",
+        title: t("common.error"),
+        description: t("propertyForm.toast.delete_error"),
         variant: "destructive",
       });
     },
@@ -255,10 +295,10 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       setIsActive(data.isActive);
       
       toast({
-        title: data.isActive ? "Propiedad activada" : "Propiedad desactivada",
+        title: data.isActive ? t("propertyForm.toast.activated") : t("propertyForm.toast.deactivated"),
         description: data.isActive 
-          ? "La propiedad ahora es visible para los clientes." 
-          : "La propiedad está oculta para los clientes.",
+          ? t("propertyForm.toast.activated_desc")
+          : t("propertyForm.toast.deactivated_desc"),
       });
       
       // Invalidate ALL property-related queries to refresh all lists
@@ -275,8 +315,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: "No se pudo cambiar el estado de la propiedad.",
+        title: t("common.error"),
+        description: t("propertyForm.toast.toggle_error"),
         variant: "destructive",
       });
     },
@@ -310,15 +350,15 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       });
       
       toast({
-        title: "Descripción generada",
-        description: "La descripción ha sido generada con éxito.",
+        title: t("propertyForm.toast.description_generated"),
+        description: t("propertyForm.toast.description_generated_desc"),
       });
       
     } catch (error) {
       console.error('Error generating description:', error);
       toast({
-        title: "Error",
-        description: "No se pudo generar la descripción. Inténtalo de nuevo.",
+        title: t("common.error"),
+        description: t("propertyForm.toast.description_error"),
         variant: "destructive",
       });
     } finally {
@@ -375,13 +415,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       setIsSubmitting(true);
       await onSubmit(data);
       toast({
-        title: `La propiedad ha sido ${isEditing ? 'actualizada' : 'creada'}`,
+        title: isEditing ? t("propertyForm.toast.updated") : t("propertyForm.toast.created"),
         duration: 3000,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Ha ocurrido un error al guardar la propiedad.",
+        title: t("common.error"),
+        description: t("propertyForm.toast.save_error"),
         variant: "destructive",
       });
     } finally {
@@ -392,8 +432,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
   const handleFormError = (errors: any) => {
     console.log('Form validation errors:', errors);
     toast({
-      title: "Error de validación",
-      description: "Por favor revisa los campos marcados en rojo",
+      title: t("propertyForm.toast.validation_error"),
+      description: t("propertyForm.toast.validation_error_desc"),
       variant: "destructive",
     });
   };
@@ -403,9 +443,22 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit, handleFormError)} className="space-y-8">
+            {isEditing && onBackToProperty && (
+              <div className="flex justify-start">
+                <Button
+                  variant="outline"
+                  onClick={onBackToProperty}
+                  type="button"
+                  data-testid="button-back-to-property"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  {t("common.back")}
+                </Button>
+              </div>
+            )}
             {/* SECTION 1: INFORMACIÓN BÁSICA */}
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold border-b pb-2">Información básica</h2>
+              <h2 className="text-2xl font-bold border-b pb-2">{t("propertyForm.section.basic_info")}</h2>
 
               {/* Row 1: Referencia, Tipo de operación, Precio */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -414,9 +467,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="reference"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Referencia</FormLabel>
+                      <FormLabel>{t("common.reference")}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Ej: REF-001" data-testid="input-reference" />
+                        <Input {...field} placeholder={t("propertyForm.placeholder.reference")} data-testid="input-reference" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -428,16 +481,16 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="operationType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo de operación</FormLabel>
+                      <FormLabel>{t("common.operation_type")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-operation-type">
-                            <SelectValue placeholder="Selecciona" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Venta">Venta</SelectItem>
-                          <SelectItem value="Alquiler">Alquiler</SelectItem>
+                          <SelectItem value="Venta">{getPropertyOptionLabel("Venta", t)}</SelectItem>
+                          <SelectItem value="Alquiler">{getPropertyOptionLabel("Alquiler", t)}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -450,12 +503,12 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Precio (€)</FormLabel>
+                      <FormLabel>{t("propertyForm.label.price_eur")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type="number"
-                          placeholder="Precio"
+                          placeholder={t("propertyForm.placeholder.price")}
                           data-testid="input-price"
                         />
                       </FormControl>
@@ -465,24 +518,24 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 />
               </div>
 
-              {/* Row 2: Tipo de inmueble, Tipo de vivienda (conditional) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Row 2: Tipo de inmueble, Tipo de vivienda, Planta */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo de inmueble</FormLabel>
+                      <FormLabel>{t("propertyForm.label.property_type")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-type">
-                            <SelectValue placeholder="Selecciona el tipo" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_type")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {propertyTypes.map((type) => (
                             <SelectItem key={type} value={type}>
-                              {type}
+                              {getPropertyOptionLabel(type, t)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -498,17 +551,17 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     name="housingType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tipo de vivienda</FormLabel>
+                        <FormLabel>{t("propertyForm.label.housing_type")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-housing-type">
-                              <SelectValue placeholder="Selecciona el tipo de vivienda" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_housing_type")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {housingTypes.map((type) => (
                               <SelectItem key={type} value={type}>
-                                {type}
+                              {getPropertyOptionLabel(type, t)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -518,6 +571,31 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     )}
                   />
                 )}
+
+                <FormField
+                  control={form.control}
+                  name="floor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("propertyForm.label.floor_category")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-floor">
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_floor")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {floorOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {getPropertyOptionLabel(option, t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Row 3: Superficie, Habitaciones, Baños */}
@@ -527,14 +605,14 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="superficie"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Superficie (m²)</FormLabel>
+                      <FormLabel>{t("propertyForm.label.surface")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
                           type="number"
-                          placeholder="m²"
+                          placeholder={t("propertyForm.placeholder.surface")}
                           data-testid="input-superficie"
                         />
                       </FormControl>
@@ -548,14 +626,14 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="bedrooms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Habitaciones</FormLabel>
+                      <FormLabel>{t("propertyForm.label.bedrooms")}</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(value === "" ? undefined : Number(value))}
                         value={field.value?.toString() || ""}
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-bedrooms">
-                            <SelectValue placeholder="Selecciona" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -576,14 +654,14 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="bathrooms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Baños</FormLabel>
+                      <FormLabel>{t("propertyForm.label.bathrooms")}</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(value === "" ? undefined : Number(value))}
                         value={field.value?.toString() || ""}
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-bathrooms">
-                            <SelectValue placeholder="Selecciona" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -600,35 +678,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="floor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Planta</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-floor">
-                          <SelectValue placeholder="Selecciona la planta" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {floorOptions.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
-            {/* SECTION 2: UBICACIÓN */}
+            {/* SECTION 2: LOCATION */}
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold border-b pb-2">Ubicación</h2>
+              <h2 className="text-2xl font-bold border-b pb-2">{t("propertyForm.section.location")}</h2>
 
               <AddressValidator
                 onAddressValidated={(data) => {
@@ -668,11 +722,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                     </FormControl>
                     <div className="flex items-center gap-2">
                       <FormLabel className="font-medium cursor-pointer">
-                        No mostrar la dirección
+                        {t("propertyForm.label.hide_address")}
                       </FormLabel>
                       <div className="flex items-center gap-1 bg-gradient-to-r from-amber-400 to-yellow-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                         <Sparkles className="h-3 w-3" />
-                        <span>gratis</span>
+                        <span>{t("propertyForm.badge.free")}</span>
                       </div>
                     </div>
                   </FormItem>
@@ -685,11 +739,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="escalera"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Escalera</FormLabel>
+                      <FormLabel>{t("propertyForm.label.staircase")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-escalera">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.choose")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -710,11 +764,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="planta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Planta</FormLabel>
+                      <FormLabel>{t("propertyForm.label.floor")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-planta">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.choose")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -735,11 +789,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   name="puerta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Puerta</FormLabel>
+                      <FormLabel>{t("propertyForm.label.door")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-puerta">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.choose")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -757,7 +811,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               </div>
 
               <p className="text-sm text-muted-foreground">
-                * Los campos Escalera, Planta y Puerta son opcionales y no se mostrarán públicamente
+                {t("propertyForm.help.private_address_fields")}
               </p>
 
               <FormField
@@ -782,13 +836,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
                   return (
                     <FormItem>
-                      <FormLabel>Barrio</FormLabel>
+                      <FormLabel>{t("propertyForm.label.neighborhood")}</FormLabel>
                       <div className="relative">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                           <Input
                             id="neighborhood-search"
-                            placeholder="Buscar barrio..."
+                            placeholder={t("propertyForm.placeholder.search_neighborhood")}
                             value={neighborhoodDropdownOpen ? neighborhoodSearchTerm : (field.value || "")}
                             onChange={(e) => {
                               setNeighborhoodSearchTerm(e.target.value);
@@ -848,7 +902,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                                 ))
                               ) : (
                                 <div className="px-4 py-2 text-sm text-gray-500">
-                                  No se encontraron barrios
+                                  {t("propertyForm.empty.no_neighborhoods")}
                                 </div>
                               )}
                             </div>
@@ -864,11 +918,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
             {/* SECTION 3: CARACTERÍSTICAS */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold border-b pb-2">Características</h2>
+              <h2 className="text-2xl font-bold border-b pb-2">{t("propertyForm.section.features")}</h2>
 
               {/* Comodidades */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Comodidades</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.amenities")}</h3>
                 <FormField
                   control={form.control}
                   name="features"
@@ -896,7 +950,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                                     data-testid={`checkbox-${feature.id}`}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">{feature.label}</FormLabel>
+                                <FormLabel className="font-normal">{t(`manage.property_feature.${feature.id}`)}</FormLabel>
                               </FormItem>
                             )}
                           />
@@ -909,7 +963,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
               {/* Adicionales */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Adicionales</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.extras")}</h3>
                 <FormField
                   control={form.control}
                   name="features"
@@ -937,7 +991,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                                     data-testid={`checkbox-${feature.id}`}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">{feature.label}</FormLabel>
+                                <FormLabel className="font-normal">{t(`manage.property_feature.${feature.id}`)}</FormLabel>
                               </FormItem>
                             )}
                           />
@@ -950,7 +1004,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
               {/* Características especiales */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Características especiales</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.special_features")}</h3>
                 <FormField
                   control={form.control}
                   name="features"
@@ -978,7 +1032,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                                     data-testid={`checkbox-${feature.id}`}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">{feature.label}</FormLabel>
+                                <FormLabel className="font-normal">{t(`manage.property_feature.${feature.id}`)}</FormLabel>
                               </FormItem>
                             )}
                           />
@@ -993,7 +1047,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Disponibilidad */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Disponibilidad</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.availability")}</h3>
                   <FormField
                     control={form.control}
                     name="availability"
@@ -1009,13 +1063,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                               <FormControl>
                                 <RadioGroupItem value="Inmediatamente" data-testid="radio-inmediatamente" />
                               </FormControl>
-                              <FormLabel className="font-normal">Inmediatamente</FormLabel>
+                              <FormLabel className="font-normal">{getPropertyOptionLabel("Inmediatamente", t)}</FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl>
                                 <RadioGroupItem value="A partir de" data-testid="radio-a-partir-de" />
                               </FormControl>
-                              <FormLabel className="font-normal">A partir de</FormLabel>
+                              <FormLabel className="font-normal">{getPropertyOptionLabel("A partir de", t)}</FormLabel>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
@@ -1030,7 +1084,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       name="availabilityDate"
                       render={({ field }) => (
                         <FormItem className="flex flex-col mt-4">
-                          <FormLabel>Fecha de disponibilidad</FormLabel>
+                          <FormLabel>{t("propertyForm.label.availability_date")}</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -1041,7 +1095,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                                   }`}
                                   data-testid="button-availability-date"
                                 >
-                                  {field.value ? format(field.value, "PPP", { locale: es }) : "Selecciona una fecha"}
+                                  {field.value ? format(field.value, "PPP", { locale: es }) : t("propertyForm.placeholder.select_date")}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
@@ -1066,7 +1120,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
                 {/* Visibilidad */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Visibilidad</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.visibility")}</h3>
                   <FormField
                     control={form.control}
                     name="isActive"
@@ -1082,13 +1136,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                               <FormControl>
                                 <RadioGroupItem value="visible" data-testid="radio-visible" />
                               </FormControl>
-                              <FormLabel className="font-normal">Visible para clientes</FormLabel>
+                              <FormLabel className="font-normal">{t("propertyForm.visibility.visible")}</FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl>
                                 <RadioGroupItem value="hidden" data-testid="radio-hidden" />
                               </FormControl>
-                              <FormLabel className="font-normal">No visible para clientes</FormLabel>
+                              <FormLabel className="font-normal">{t("propertyForm.visibility.hidden")}</FormLabel>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
@@ -1101,7 +1155,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
               {/* Estado de conservación */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Estado de conservación</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.condition")}</h3>
                 <FormField
                   control={form.control}
                   name="propertyCondition"
@@ -1113,13 +1167,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-property-condition">
-                            <SelectValue placeholder="Selecciona el estado" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_condition")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {propertyConditionOptions.map((option) => (
                             <SelectItem key={option} value={option}>
-                              {option}
+                              {getPropertyOptionLabel(option, t)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1132,7 +1186,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
               {/* Situación de la vivienda */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Situación de la vivienda</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.housing_situation")}</h3>
                 <FormField
                   control={form.control}
                   name="housingStatus"
@@ -1144,13 +1198,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-housing-status">
-                            <SelectValue placeholder="Selecciona la situación" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_housing_situation")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {housingStatus.map((option) => (
                             <SelectItem key={option} value={option}>
-                              {option}
+                              {t(`propertyForm.housingStatus.${option}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1163,7 +1217,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
               {/* Estado de gestión */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Estado de gestión</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.management_status")}</h3>
                 <FormField
                   control={form.control}
                   name="managementStatus"
@@ -1175,13 +1229,13 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-management-status">
-                            <SelectValue placeholder="Selecciona el estado de gestión" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_management_status")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {managementStatusOptions.map((option) => (
                             <SelectItem key={option} value={option} data-testid={`option-management-status-${option.toLowerCase().replace(/\s+/g, '-')}`}>
-                              {option}
+                              {t(`propertyForm.managementStatus.${option}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1194,7 +1248,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
               {/* Cédula de habitabilidad */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Cédula de habitabilidad</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.cedula")}</h3>
                 <FormField
                   control={form.control}
                   name="hasCedulaHabitabilidad"
@@ -1210,8 +1264,8 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="yes" data-testid="option-cedula-yes">Sí, dispone de cédula de habitabilidad</SelectItem>
-                          <SelectItem value="no" data-testid="option-cedula-no">No</SelectItem>
+                          <SelectItem value="yes" data-testid="option-cedula-yes">{t("propertyForm.cedula.yes")}</SelectItem>
+                          <SelectItem value="no" data-testid="option-cedula-no">{t("common.no")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -1223,9 +1277,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
             {/* SECTION 4: IMÁGENES */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold border-b pb-2">Imágenes</h2>
+              <h2 className="text-2xl font-bold border-b pb-2">{t("propertyForm.section.images")}</h2>
               <p className="text-sm text-muted-foreground">
-                Añade imágenes de alta calidad de tu propiedad. Puedes reorganizarlas arrastrándolas y seleccionar la imagen principal.
+                {t("propertyForm.help.images_intro")}
               </p>
 
               <ImageUploader
@@ -1246,9 +1300,9 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
               {form.watch("imageUrls") && form.watch("imageUrls").length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Organizar imágenes</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.organize_images")}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Arrastra las imágenes para reorganizarlas. Haz clic en el icono de check para establecer la imagen principal.
+                    {t("propertyForm.help.organize_images")}
                   </p>
                   <DraggableImageGallery
                     images={form.watch("imageUrls")}
@@ -1261,18 +1315,18 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
 
             {/* SECTION 5: DESCRIPCIÓN */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold border-b pb-2">Descripción</h2>
+              <h2 className="text-2xl font-bold border-b pb-2">{t("propertyForm.section.description")}</h2>
 
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título del anuncio *</FormLabel>
+                    <FormLabel>{t("propertyForm.label.title")} *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Ej: Piso luminoso en el corazón de Barcelona"
+                        placeholder={t("propertyForm.placeholder.title")}
                         data-testid="input-title"
                       />
                     </FormControl>
@@ -1289,7 +1343,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   return (
                     <FormItem>
                       <div className="flex items-center justify-between mb-2">
-                        <FormLabel>Descripción *</FormLabel>
+                        <FormLabel>{t("propertyForm.label.description")} *</FormLabel>
                         {user?.subscriptionPlan === "basica" ? (
                           <TooltipProvider>
                             <Tooltip>
@@ -1302,11 +1356,11 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                                   data-testid="button-generate-disabled"
                                 >
                                   <Sparkles className="mr-2 h-4 w-4" />
-                                  Generar
+                                  {t("propertyForm.button.generate")}
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>La generación con IA está disponible en los planes Premium y Pro</p>
+                                <p>{t("propertyForm.tooltip.ai_premium_only")}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -1320,14 +1374,14 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                             data-testid="button-generate-description"
                           >
                             <Sparkles className="mr-2 h-4 w-4" />
-                            {isGeneratingDescription ? "Generando..." : "Generar"}
+                            {isGeneratingDescription ? t("propertyForm.button.generating") : t("propertyForm.button.generate")}
                           </Button>
                         )}
                       </div>
                       <FormControl>
                         <Textarea
                           {...field}
-                          placeholder="Describe la propiedad de manera atractiva..."
+                          placeholder={t("propertyForm.placeholder.description")}
                           rows={8}
                           data-testid="textarea-description"
                         />
@@ -1352,19 +1406,18 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                       disabled={deleteMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Eliminar Propiedad
+                      {t("propertyForm.button.delete")}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("propertyForm.dialog.delete_title")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta acción eliminará permanentemente la propiedad y no se puede deshacer.
-                        Toda la información y las imágenes asociadas se perderán.
+                        {t("propertyForm.dialog.delete_desc")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => {
                           if (initialData?.id) {
@@ -1373,7 +1426,7 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                         }}
                         className="bg-red-600 hover:bg-red-700"
                       >
-                        Sí, eliminar
+                        {t("propertyForm.dialog.delete_confirm")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -1389,14 +1442,14 @@ export function PropertyForm({ onSubmit, onClose, initialData, isEditing = false
                   onClick={onClose}
                   type="button"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmitting}
                   data-testid="button-submit"
                 >
-                  {isSubmitting ? 'Guardando...' : 'Actualizar propiedad'}
+                  {isSubmitting ? t("propertyForm.button.saving") : isEditing ? t("propertyForm.button.update") : t("propertyForm.button.create")}
                 </Button>
               </div>
             </div>

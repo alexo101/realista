@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, Save, User } from "lucide-react";
+import { ArrowLeft, Save, Search, User, X } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import {
+  getCities,
+  searchNeighborhoods,
+} from "@/utils/neighborhoods";
+import {
   PREFERENCE_AVAILABILITY_OPTIONS,
   PREFERENCE_CONDITION_OPTIONS,
   PREFERENCE_FLOOR_OPTIONS,
@@ -23,7 +27,7 @@ import {
   PREFERENCE_PROPERTY_TYPE_OPTIONS,
   type PreferenceOption,
 } from "@/utils/client-preference-options";
-import type { Client, ClientPropertyPreferences, ContactHistoryEntry } from "@shared/schema";
+import type { Client, ClientPropertyPreferences, ContactHistoryEntry, Property, PropertyContract } from "@shared/schema";
 
 const CLIENT_STATUSES = [
   "Nuevo",
@@ -33,6 +37,15 @@ const CLIENT_STATUSES = [
   "Ganado",
   "Perdido",
 ] as const;
+
+const CLIENT_STATUS_TRANSLATION_KEYS: Record<(typeof CLIENT_STATUSES)[number], string> = {
+  Nuevo: "manage.client_status.new",
+  Seguimiento: "manage.client_status.follow_up",
+  "En visitas": "manage.client_status.visiting",
+  Cerrando: "manage.client_status.closing",
+  Ganado: "manage.client_status.won",
+  Perdido: "manage.client_status.lost",
+};
 
 const CLIENT_TYPES = ["buyer", "tenant", "seller", "landlord"] as const;
 type ClientType = (typeof CLIENT_TYPES)[number];
@@ -87,6 +100,15 @@ export default function ClientDetailPage() {
     queryKey: [`/api/clients/${clientId}`],
     queryFn: () => apiRequest("GET", `/api/clients/${clientId}`),
     enabled: !!user?.agentUuid && agentUuid === user.agentUuid && Number.isInteger(clientId),
+  });
+
+  const { data: contractHistory = [], isLoading: isLoadingContractHistory } = useQuery<
+    Array<{ contract: PropertyContract; property: Property }>
+  >({
+    queryKey: [`/api/clients/${clientId}/contracts`],
+    queryFn: () => apiRequest("GET", `/api/clients/${clientId}/contracts`),
+    enabled: !!user?.agentUuid && agentUuid === user.agentUuid && Number.isInteger(clientId),
+    select: (data) => (Array.isArray(data) ? data : []),
   });
 
   const updateClientMutation = useMutation({
@@ -182,7 +204,7 @@ export default function ClientDetailPage() {
           data-testid="button-back-client-detail"
         >
           <ArrowLeft className="h-4 w-4" />
-          Volver a clientes
+          {t("manage.clients.back_to_list")}
         </Button>
 
         <Card data-testid="card-client-edit-page">
@@ -195,7 +217,7 @@ export default function ClientDetailPage() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="client-name">Nombre</Label>
+                <Label htmlFor="client-name">{t("common.name")}</Label>
                 <Input
                   id="client-name"
                   value={formData.name}
@@ -204,7 +226,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="client-surname">Apellido</Label>
+                <Label htmlFor="client-surname">{t("common.surname")}</Label>
                 <Input
                   id="client-surname"
                   value={formData.surname}
@@ -213,7 +235,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="client-email">Email</Label>
+                <Label htmlFor="client-email">{t("common.email")}</Label>
                 <Input
                   id="client-email"
                   type="email"
@@ -223,7 +245,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="client-phone">Teléfono</Label>
+                <Label htmlFor="client-phone">{t("common.phone")}</Label>
                 <Input
                   id="client-phone"
                   value={formData.phone}
@@ -232,7 +254,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="client-status">Estado</Label>
+                <Label htmlFor="client-status">{t("common.status")}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
@@ -243,7 +265,7 @@ export default function ClientDetailPage() {
                   <SelectContent>
                     {CLIENT_STATUSES.map((status) => (
                       <SelectItem key={status} value={status}>
-                        {status}
+                        {t(CLIENT_STATUS_TRANSLATION_KEYS[status])}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -368,11 +390,36 @@ export default function ClientDetailPage() {
                   <PreferenceNumber label={t("manage.client_preferences.max_area")} value={formData.propertyPreferences?.maxArea} onChange={(value) => updatePropertyPreference("maxArea", value)} />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <PreferenceText label={t("manage.client_preferences.city")} value={formData.propertyPreferences?.city} onChange={(value) => updatePropertyPreference("city", value)} />
-                  <PreferenceText label={t("manage.client_preferences.district")} value={formData.propertyPreferences?.district} onChange={(value) => updatePropertyPreference("district", value)} />
-                  <PreferenceText label={t("manage.client_preferences.neighborhood")} value={formData.propertyPreferences?.neighborhood} onChange={(value) => updatePropertyPreference("neighborhood", value)} />
+                <div>
+                  <Label>{t("manage.client_preferences.city")}</Label>
+                  <Select
+                    value={formData.propertyPreferences?.city || undefined}
+                    onValueChange={(value) => {
+                      updatePropertyPreference("city", value || null);
+                      updatePropertyPreference("neighborhood", null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("manage.client_preferences.select_placeholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getCities().map((city, index) => (
+                        <SelectItem key={`${city}-${index}`} value={city}>
+                          {city}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                <NeighborhoodPreferenceInput
+                  label={t("manage.client_preferences.neighborhood")}
+                  value={formData.propertyPreferences?.neighborhood}
+                  city={formData.propertyPreferences?.city}
+                  onCityChange={(value) => updatePropertyPreference("city", value)}
+                  onChange={(value) => updatePropertyPreference("neighborhood", value)}
+                  t={t}
+                />
 
                 <div>
                   <Label>{t("manage.client_preferences.features")}</Label>
@@ -408,6 +455,61 @@ export default function ClientDetailPage() {
                 {updateClientMutation.isPending ? "Guardando..." : "Guardar cambios"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-client-contract-history">
+          <CardHeader>
+            <CardTitle>{t("manage.client_contract_history.title")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingContractHistory ? (
+              <p className="text-sm text-muted-foreground">{t("manage.client_contract_history.loading")}</p>
+            ) : contractHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("manage.client_contract_history.empty")}</p>
+            ) : (
+              <div className="space-y-3">
+                {contractHistory.map(({ contract, property }) => (
+                  <div
+                    key={contract.id}
+                    className="rounded-lg border p-4 space-y-3"
+                    data-testid={`card-client-contract-${contract.id}`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{property.title || property.reference || property.address}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {property.city || property.locality || property.address}
+                        </p>
+                      </div>
+                      <Badge variant={contract.isActive ? "default" : "secondary"}>
+                        {contract.isActive
+                          ? t("manage.client_contract_history.active")
+                          : t("manage.client_contract_history.inactive")}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">{t("propertyManagement.rent.start")}</p>
+                        <p>{contract.startDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">{t("propertyManagement.rent.end")}</p>
+                        <p>{contract.endDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">{t("propertyManagement.label.rent_price")}</p>
+                        <p>€{contract.rentPrice?.toLocaleString()}{t("propertyManagement.rent.per_month")}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">{t("propertyManagement.rent.deposit")}</p>
+                        <p>€{contract.guarantee?.toLocaleString() || "0"}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -481,6 +583,139 @@ function PreferenceText({
     <div>
       <Label>{label}</Label>
       <Input value={value || ""} onChange={(event) => onChange(event.target.value || null)} />
+    </div>
+  );
+}
+
+function NeighborhoodPreferenceInput({
+  label,
+  value,
+  city,
+  onCityChange,
+  onChange,
+  t,
+}: {
+  label: string;
+  value?: string | string[] | null;
+  city?: string | null;
+  onCityChange: (value: string | null) => void;
+  onChange: (value: string[] | null) => void;
+  t: (key: string) => string;
+}) {
+  const selectedNeighborhoods = Array.isArray(value) ? value : value ? [value] : [];
+  const [searchValue, setSearchValue] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    setSearchValue("");
+    setShowSuggestions(false);
+  }, [city, selectedNeighborhoods.join("|")]);
+
+  const suggestions = searchNeighborhoods(searchValue, city || undefined);
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      setShowSuggestions(false);
+      return;
+    }
+
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedIndex((previous) =>
+        previous < suggestions.length - 1 ? previous + 1 : previous,
+      );
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedIndex((previous) => (previous > 0 ? previous - 1 : 0));
+    } else if (event.key === "Enter" && highlightedIndex >= 0) {
+      event.preventDefault();
+      const selectedLocation = suggestions[highlightedIndex];
+      setSearchValue("");
+      if (!city || selectedLocation.city !== city) onCityChange(selectedLocation.city);
+      onChange(Array.from(new Set([...selectedNeighborhoods, selectedLocation.neighborhood])));
+      setShowSuggestions(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <Label>{label}</Label>
+      {selectedNeighborhoods.length > 0 && (
+        <div className="mt-1 mb-2 flex flex-wrap gap-2">
+          {selectedNeighborhoods.map((neighborhood) => (
+            <span
+              key={neighborhood}
+              className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm"
+            >
+              {neighborhood}
+              {city && <span className="text-muted-foreground">({city})</span>}
+              <button
+                type="button"
+                aria-label={`Remove ${neighborhood} neighborhood preference`}
+                className="hover:text-red-500"
+                onClick={() =>
+                  onChange(selectedNeighborhoods.filter((item) => item !== neighborhood))
+                }
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Input
+          value={searchValue}
+          placeholder={t("manage.client_preferences.neighborhood_placeholder")}
+          className="pl-9"
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setSearchValue(nextValue);
+            setHighlightedIndex(-1);
+            setShowSuggestions(Boolean(city));
+          }}
+          onFocus={() => {
+            setHighlightedIndex(-1);
+            setShowSuggestions(Boolean(city));
+          }}
+          onKeyDown={handleKeyDown}
+          onBlur={() =>
+            setTimeout(() => {
+              setShowSuggestions(false);
+              setSearchValue("");
+            }, 150)
+          }
+        />
+      </div>
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-md border bg-white shadow-lg">
+          {suggestions.map((suggestion, index) => (
+            <button
+              key={`${suggestion.city}-${suggestion.district}-${suggestion.neighborhood}`}
+              type="button"
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 ${
+                highlightedIndex === index ? "bg-gray-100" : ""
+              }`}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              onClick={() => {
+                setSearchValue("");
+                if (!city || suggestion.city !== city) onCityChange(suggestion.city);
+                onChange(Array.from(new Set([...selectedNeighborhoods, suggestion.neighborhood])));
+                setShowSuggestions(false);
+              }}
+            >
+              <Search className="h-4 w-4 shrink-0 text-gray-400" />
+              {suggestion.neighborhood}
+              {!city && <span className="text-gray-500">({suggestion.city})</span>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
