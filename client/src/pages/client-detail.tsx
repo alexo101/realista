@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import {
   getCities,
@@ -27,7 +28,7 @@ import {
   PREFERENCE_PROPERTY_TYPE_OPTIONS,
   type PreferenceOption,
 } from "@/utils/client-preference-options";
-import type { Client, ClientPropertyPreferences, ContactHistoryEntry, Property, PropertyContract } from "@shared/schema";
+import type { Client, ClientPropertyPreferences, ContactHistoryEntry } from "@shared/schema";
 
 const CLIENT_STATUSES = [
   "Nuevo",
@@ -100,15 +101,6 @@ export default function ClientDetailPage() {
     queryKey: [`/api/clients/${clientId}`],
     queryFn: () => apiRequest("GET", `/api/clients/${clientId}`),
     enabled: !!user?.agentUuid && agentUuid === user.agentUuid && Number.isInteger(clientId),
-  });
-
-  const { data: contractHistory = [], isLoading: isLoadingContractHistory } = useQuery<
-    Array<{ contract: PropertyContract; property: Property }>
-  >({
-    queryKey: [`/api/clients/${clientId}/contracts`],
-    queryFn: () => apiRequest("GET", `/api/clients/${clientId}/contracts`),
-    enabled: !!user?.agentUuid && agentUuid === user.agentUuid && Number.isInteger(clientId),
-    select: (data) => (Array.isArray(data) ? data : []),
   });
 
   const updateClientMutation = useMutation({
@@ -458,60 +450,33 @@ export default function ClientDetailPage() {
           </CardContent>
         </Card>
 
-        <Card data-testid="card-client-contract-history">
+        <ClientHistoryTimeline clientId={clientId} agentId={user.id} />
+
+        <Card data-testid="card-client-contact-history">
           <CardHeader>
-            <CardTitle>{t("manage.client_contract_history.title")}</CardTitle>
+            <CardTitle>{t("manage.client_contact_history.title")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoadingContractHistory ? (
-              <p className="text-sm text-muted-foreground">{t("manage.client_contract_history.loading")}</p>
-            ) : contractHistory.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("manage.client_contract_history.empty")}</p>
+            {formData.contactHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("manage.client_contact_history.empty")}</p>
             ) : (
               <div className="space-y-3">
-                {contractHistory.map(({ contract, property }) => (
-                  <div
-                    key={contract.id}
-                    className="rounded-lg border p-4 space-y-3"
-                    data-testid={`card-client-contract-${contract.id}`}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium">{property.title || property.reference || property.address}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {property.city || property.locality || property.address}
-                        </p>
-                      </div>
-                      <Badge variant={contract.isActive ? "default" : "secondary"}>
-                        {contract.isActive
-                          ? t("manage.client_contract_history.active")
-                          : t("manage.client_contract_history.inactive")}
-                      </Badge>
+                {formData.contactHistory.map((entry) => (
+                  <div key={entry.id} className="rounded-lg border p-3">
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <Badge variant="secondary">{entry.status}</Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(entry.timestamp).toLocaleString()}
+                      </span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">{t("propertyManagement.rent.start")}</p>
-                        <p>{contract.startDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">{t("propertyManagement.rent.end")}</p>
-                        <p>{contract.endDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">{t("propertyManagement.label.rent_price")}</p>
-                        <p>€{contract.rentPrice?.toLocaleString()}{t("propertyManagement.rent.per_month")}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">{t("propertyManagement.rent.deposit")}</p>
-                        <p>€{contract.guarantee?.toLocaleString() || "0"}</p>
-                      </div>
-                    </div>
+                    <p className="mt-2 text-sm">{entry.note}</p>
                   </div>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
+
       </div>
     </main>
   );

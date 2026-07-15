@@ -2219,9 +2219,8 @@ export default function ManagePage() {
                                 />
                                 <div>
                                   <div
-                                    className="font-semibold text-lg text-primary hover:underline cursor-pointer"
-                                    onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
-                                    data-testid={`link-client-mobile-${client.id}`}
+                                    className="font-semibold text-lg"
+                                    data-testid={`client-name-mobile-${client.id}`}
                                   >
                                     {client.name} {client.surname || ''}
                                   </div>
@@ -2351,14 +2350,12 @@ export default function ManagePage() {
                                 />
                               </TableCell>
                               <TableCell>
-                                <button
-                                  type="button"
-                                  className="font-medium text-primary hover:underline text-left"
-                                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
-                                  data-testid={`link-client-table-${client.id}`}
+                                <span
+                                  className="font-medium"
+                                  data-testid={`client-name-table-${client.id}`}
                                 >
                                   {client.name}
-                                </button>
+                                </span>
                               </TableCell>
                               <TableCell>{client.surname || '-'}</TableCell>
                               <TableCell>{client.email}</TableCell>
