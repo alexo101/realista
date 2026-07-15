@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { AgentEventForm } from "@/components/AgentEventForm";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import {
@@ -118,6 +119,25 @@ export default function ClientDetailPage() {
       setNoteToDelete(null);
     }
   };
+
+  const [showEventForm, setShowEventForm] = useState(false);
+
+  const createEventMutation = useMutation({
+    mutationFn: async (eventData: any) =>
+      apiRequest("POST", "/api/agent-events", { agentId: user?.id, ...eventData }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "/api/agents" &&
+          query.queryKey[2] === "events",
+      });
+      setShowEventForm(false);
+      toast({ title: "Interacción registrada", description: "El evento se ha guardado correctamente." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "No se pudo registrar la interacción.", variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
     if (isLoadingUser) return;
@@ -489,6 +509,43 @@ export default function ClientDetailPage() {
               </Button>
             </div>
           </CardContent>
+        </Card>
+
+        <Card data-testid="card-add-interaction">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Registrar interacción</CardTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEventForm(!showEventForm)}
+                className="text-primary"
+                data-testid="button-toggle-event-form"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {showEventForm ? "Cancelar" : "Añadir interacción"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showEventForm && (
+            <CardContent className="pt-0">
+              <AgentEventForm
+                agentId={user.id}
+                defaultClientId={clientId}
+                hideClientField
+                onSubmit={(eventData) => {
+                  createEventMutation.mutate({
+                    ...eventData,
+                    clientId,
+                    propertyId: eventData.propertyUuid,
+                  });
+                }}
+                onCancel={() => setShowEventForm(false)}
+                isLoading={createEventMutation.isPending}
+              />
+            </CardContent>
+          )}
         </Card>
 
         <ClientHistoryTimeline clientId={clientId} agentId={user.id} />

@@ -44,9 +44,11 @@ interface AgentEventFormProps {
   onSubmit: (data: EventFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  defaultClientId?: number;
+  hideClientField?: boolean;
 }
 
-export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }: AgentEventFormProps) {
+export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, defaultClientId, hideClientField }: AgentEventFormProps) {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [contactOpen, setContactOpen] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
@@ -57,7 +59,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
       eventType: event?.eventType as "Llamada" | "Visita" | "Seguimiento" || "Visita",
       eventDate: event?.eventDate || "",
       eventTime: event?.eventTime || "",
-      clientId: event?.clientId || undefined,
+      clientId: event?.clientId || defaultClientId || undefined,
       propertyUuid: event?.propertyUuid || undefined,
       comments: event?.comments || "",
     },
@@ -172,6 +174,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
         />
 
         {/* Client */}
+        {!hideClientField && (
         <FormField
           control={form.control}
           name="clientId"
@@ -255,6 +258,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading }
             </FormItem>
           )}
         />
+        )}
 
         {/* Date */}
         <FormField
