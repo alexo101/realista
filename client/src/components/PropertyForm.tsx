@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/contexts/language-context";
+import { useAutosave } from "@/hooks/use-autosave";
 import {
   Form,
   FormControl,
@@ -32,6 +33,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeft, Check, ChevronsUpDown, CalendarIcon, Trash2, Eye, EyeOff, Sparkles, Search, X } from "lucide-react";
+import { SavedIndicator } from "@/components/SavedIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -160,6 +162,9 @@ const formSchema = z.object({
   planta: z.enum(plantaOptions).nullable().optional(), 
   puerta: z.enum(puertaOptions).nullable().optional(),
   neighborhood: z.string().min(1, "Selecciona un barrio"),
+  // Catalog city/district used for client↔property matching (not Google locality)
+  city: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
   type: z.enum(propertyTypes, {
     required_error: "Selecciona el tipo de inmueble",
   }),
@@ -381,6 +386,8 @@ export function PropertyForm({
       planta: initialData?.planta || undefined,
       puerta: initialData?.puerta || undefined,
       neighborhood: initialData?.neighborhood || (undefined as any),
+      city: initialData?.city || null,
+      district: initialData?.district || null,
       type: initialData?.type || (undefined as any),
       housingType: initialData?.housingType || undefined,
       floor: initialData?.floor || undefined,
@@ -406,8 +413,8 @@ export function PropertyForm({
 
   // Handler for URL-based image changes with main image index
   const handleImageUrlChange = (newImageUrls: string[], mainImageIndex: number) => {
-    form.setValue("imageUrls", newImageUrls);
-    form.setValue("mainImageIndex", mainImageIndex);
+    form.setValue("imageUrls", newImageUrls, { shouldDirty: true });
+    form.setValue("mainImageIndex", mainImageIndex, { shouldDirty: true });
   };
 
   const handleSubmit = async (data: z.infer<typeof formSchema>) => {
@@ -415,7 +422,7 @@ export function PropertyForm({
       setIsSubmitting(true);
       await onSubmit(data);
       toast({
-        title: isEditing ? t("propertyForm.toast.updated") : t("propertyForm.toast.created"),
+        title: t("propertyForm.toast.created"),
         duration: 3000,
       });
     } catch (error) {
@@ -438,11 +445,42 @@ export function PropertyForm({
     });
   };
 
+  const watchedValues = form.watch();
+
+  const autosaveFn = useCallback(
+    async (data: z.infer<typeof formSchema>) => {
+      const valid = await form.trigger();
+      if (!valid) {
+        throw new Error("VALIDATION");
+      }
+      await onSubmit(data);
+    },
+    [form, onSubmit],
+  );
+
+  const { savedFields } = useAutosave(watchedValues, autosaveFn, {
+    enabled: isEditing,
+  });
+
+  const labelWithSaved = (field: string, text: React.ReactNode) => (
+    <FormLabel className="inline-flex items-center">
+      {text}
+      <SavedIndicator visible={savedFields.has(field)} />
+    </FormLabel>
+  );
+
   return (
     <Card>
       <CardContent className="pt-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit, handleFormError)} className="space-y-8">
+          <form
+            onSubmit={
+              isEditing
+                ? (event) => event.preventDefault()
+                : form.handleSubmit(handleSubmit, handleFormError)
+            }
+            className="space-y-8"
+          >
             {isEditing && onBackToProperty && (
               <div className="flex justify-start">
                 <Button
@@ -467,7 +505,7 @@ export function PropertyForm({
                   name="reference"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("common.reference")}</FormLabel>
+                      {labelWithSaved("reference", t("common.reference"))}
                       <FormControl>
                         <Input {...field} placeholder={t("propertyForm.placeholder.reference")} data-testid="input-reference" />
                       </FormControl>
@@ -481,7 +519,7 @@ export function PropertyForm({
                   name="operationType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("common.operation_type")}</FormLabel>
+                      {labelWithSaved("operationType", t("common.operation_type"))}
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-operation-type">
@@ -503,7 +541,7 @@ export function PropertyForm({
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.price_eur")}</FormLabel>
+                      {labelWithSaved("price", t("propertyForm.label.price_eur"))}
                       <FormControl>
                         <Input
                           {...field}
@@ -525,7 +563,7 @@ export function PropertyForm({
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.property_type")}</FormLabel>
+                      {labelWithSaved("type", t("propertyForm.label.property_type"))}
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-type">
@@ -551,7 +589,7 @@ export function PropertyForm({
                     name="housingType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("propertyForm.label.housing_type")}</FormLabel>
+                        {labelWithSaved("housingType", t("propertyForm.label.housing_type"))}
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-housing-type">
@@ -577,7 +615,7 @@ export function PropertyForm({
                   name="floor"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.floor_category")}</FormLabel>
+                      {labelWithSaved("floor", t("propertyForm.label.floor_category"))}
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-floor">
@@ -605,7 +643,7 @@ export function PropertyForm({
                   name="superficie"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.surface")}</FormLabel>
+                      {labelWithSaved("superficie", t("propertyForm.label.surface"))}
                       <FormControl>
                         <Input
                           {...field}
@@ -626,7 +664,7 @@ export function PropertyForm({
                   name="bedrooms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.bedrooms")}</FormLabel>
+                      {labelWithSaved("bedrooms", t("propertyForm.label.bedrooms"))}
                       <Select
                         onValueChange={(value) => field.onChange(value === "" ? undefined : Number(value))}
                         value={field.value?.toString() || ""}
@@ -654,7 +692,7 @@ export function PropertyForm({
                   name="bathrooms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.bathrooms")}</FormLabel>
+                      {labelWithSaved("bathrooms", t("propertyForm.label.bathrooms"))}
                       <Select
                         onValueChange={(value) => field.onChange(value === "" ? undefined : Number(value))}
                         value={field.value?.toString() || ""}
@@ -686,19 +724,21 @@ export function PropertyForm({
 
               <AddressValidator
                 onAddressValidated={(data) => {
-                  form.setValue("locality", data.locality);
-                  form.setValue("streetName", data.streetName);
-                  form.setValue("streetNumber", data.streetNumber);
-                  form.setValue("address", data.formattedAddress);
-                  form.setValue("latitude", data.latitude);
-                  form.setValue("longitude", data.longitude);
+                  const opts = { shouldDirty: true } as const;
+                  form.setValue("locality", data.locality, opts);
+                  form.setValue("streetName", data.streetName, opts);
+                  form.setValue("streetNumber", data.streetNumber, opts);
+                  form.setValue("address", data.formattedAddress, opts);
+                  form.setValue("latitude", data.latitude, opts);
+                  form.setValue("longitude", data.longitude, opts);
                   setIsAddressValid(true);
                 }}
                 onAddressInvalidated={() => {
                   setIsAddressValid(false);
-                  form.setValue("address", "");
-                  form.setValue("latitude", null);
-                  form.setValue("longitude", null);
+                  const opts = { shouldDirty: true } as const;
+                  form.setValue("address", "", opts);
+                  form.setValue("latitude", null, opts);
+                  form.setValue("longitude", null, opts);
                 }}
                 initialLocality={form.getValues("locality")}
                 initialStreetName={form.getValues("streetName")}
@@ -721,8 +761,9 @@ export function PropertyForm({
                       />
                     </FormControl>
                     <div className="flex items-center gap-2">
-                      <FormLabel className="font-medium cursor-pointer">
+                      <FormLabel className="font-medium cursor-pointer inline-flex items-center">
                         {t("propertyForm.label.hide_address")}
+                        <SavedIndicator visible={savedFields.has("hideAddress")} />
                       </FormLabel>
                       <div className="flex items-center gap-1 bg-gradient-to-r from-amber-400 to-yellow-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                         <Sparkles className="h-3 w-3" />
@@ -739,7 +780,7 @@ export function PropertyForm({
                   name="escalera"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.staircase")}</FormLabel>
+                      {labelWithSaved("escalera", t("propertyForm.label.staircase"))}
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-escalera">
@@ -764,7 +805,7 @@ export function PropertyForm({
                   name="planta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.floor")}</FormLabel>
+                      {labelWithSaved("planta", t("propertyForm.label.floor"))}
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-planta">
@@ -789,7 +830,7 @@ export function PropertyForm({
                   name="puerta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.door")}</FormLabel>
+                      {labelWithSaved("puerta", t("propertyForm.label.door"))}
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-puerta">
@@ -836,7 +877,7 @@ export function PropertyForm({
 
                   return (
                     <FormItem>
-                      <FormLabel>{t("propertyForm.label.neighborhood")}</FormLabel>
+                      {labelWithSaved("neighborhood", t("propertyForm.label.neighborhood"))}
                       <div className="relative">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -859,7 +900,9 @@ export function PropertyForm({
                             <button
                               type="button"
                               onClick={() => {
-                                form.setValue("neighborhood", "");
+                                form.setValue("neighborhood", "", { shouldDirty: true });
+                                form.setValue("city", null, { shouldDirty: true });
+                                form.setValue("district", null, { shouldDirty: true });
                                 setLocalNeighborhood(undefined);
                                 setNeighborhoodDropdownOpen(true);
                                 setNeighborhoodSearchTerm("");
@@ -889,7 +932,9 @@ export function PropertyForm({
                                       field.value === item.neighborhood ? 'bg-primary/10 text-primary font-medium' : ''
                                     }`}
                                     onClick={() => {
-                                      form.setValue("neighborhood", item.neighborhood);
+                                      form.setValue("neighborhood", item.neighborhood, { shouldDirty: true });
+                                      form.setValue("city", item.city, { shouldDirty: true });
+                                      form.setValue("district", item.district, { shouldDirty: true });
                                       setLocalNeighborhood(item.neighborhood);
                                       setNeighborhoodDropdownOpen(false);
                                       setNeighborhoodSearchTerm("");
@@ -922,7 +967,10 @@ export function PropertyForm({
 
               {/* Comodidades */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.amenities")}</h3>
+                <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
+                  {t("propertyForm.section.amenities")}
+                  <SavedIndicator visible={savedFields.has("features")} />
+                </h3>
                 <FormField
                   control={form.control}
                   name="features"
@@ -1047,7 +1095,10 @@ export function PropertyForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Disponibilidad */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.availability")}</h3>
+                  <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
+                    {t("propertyForm.section.availability")}
+                    <SavedIndicator visible={savedFields.has("availability") || savedFields.has("availabilityDate")} />
+                  </h3>
                   <FormField
                     control={form.control}
                     name="availability"
@@ -1084,7 +1135,7 @@ export function PropertyForm({
                       name="availabilityDate"
                       render={({ field }) => (
                         <FormItem className="flex flex-col mt-4">
-                          <FormLabel>{t("propertyForm.label.availability_date")}</FormLabel>
+                          {labelWithSaved("availabilityDate", t("propertyForm.label.availability_date"))}
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -1120,7 +1171,10 @@ export function PropertyForm({
 
                 {/* Visibilidad */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.visibility")}</h3>
+                  <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
+                    {t("propertyForm.section.visibility")}
+                    <SavedIndicator visible={savedFields.has("isActive")} />
+                  </h3>
                   <FormField
                     control={form.control}
                     name="isActive"
@@ -1155,7 +1209,10 @@ export function PropertyForm({
 
               {/* Estado de conservación */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.condition")}</h3>
+                <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
+                  {t("propertyForm.section.condition")}
+                  <SavedIndicator visible={savedFields.has("propertyCondition")} />
+                </h3>
                 <FormField
                   control={form.control}
                   name="propertyCondition"
@@ -1186,7 +1243,10 @@ export function PropertyForm({
 
               {/* Situación de la vivienda */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.housing_situation")}</h3>
+                <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
+                  {t("propertyForm.section.housing_situation")}
+                  <SavedIndicator visible={savedFields.has("housingStatus")} />
+                </h3>
                 <FormField
                   control={form.control}
                   name="housingStatus"
@@ -1217,7 +1277,10 @@ export function PropertyForm({
 
               {/* Estado de gestión */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.management_status")}</h3>
+                <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
+                  {t("propertyForm.section.management_status")}
+                  <SavedIndicator visible={savedFields.has("managementStatus")} />
+                </h3>
                 <FormField
                   control={form.control}
                   name="managementStatus"
@@ -1248,7 +1311,10 @@ export function PropertyForm({
 
               {/* Cédula de habitabilidad */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.cedula")}</h3>
+                <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
+                  {t("propertyForm.section.cedula")}
+                  <SavedIndicator visible={savedFields.has("hasCedulaHabitabilidad")} />
+                </h3>
                 <FormField
                   control={form.control}
                   name="hasCedulaHabitabilidad"
@@ -1285,11 +1351,11 @@ export function PropertyForm({
               <ImageUploader
                 onImageUploaded={(url) => {
                   const currentImages = form.getValues("imageUrls") || [];
-                  form.setValue("imageUrls", [...currentImages, url]);
+                  form.setValue("imageUrls", [...currentImages, url], { shouldDirty: true });
                 }}
                 onMultipleImagesUploaded={(urls) => {
                   const currentImages = form.getValues("imageUrls") || [];
-                  form.setValue("imageUrls", [...currentImages, ...urls]);
+                  form.setValue("imageUrls", [...currentImages, ...urls], { shouldDirty: true });
                 }}
                 multiple={true}
                 maxFiles={20}
@@ -1322,7 +1388,7 @@ export function PropertyForm({
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("propertyForm.label.title")} *</FormLabel>
+                    {labelWithSaved("title", <>{t("propertyForm.label.title")} *</>)}
                     <FormControl>
                       <Input
                         {...field}
@@ -1343,7 +1409,7 @@ export function PropertyForm({
                   return (
                     <FormItem>
                       <div className="flex items-center justify-between mb-2">
-                        <FormLabel>{t("propertyForm.label.description")} *</FormLabel>
+                        {labelWithSaved("description", <>{t("propertyForm.label.description")} *</>)}
                         {user?.subscriptionPlan === "basica" ? (
                           <TooltipProvider>
                             <Tooltip>
@@ -1393,7 +1459,7 @@ export function PropertyForm({
               />
             </div>
 
-            {/* Submit buttons */}
+            {/* Footer actions */}
             <div className="flex justify-between items-center pt-6 border-t">
               {/* Delete button - only show when editing */}
               {isEditing && initialData?.id ? (
@@ -1435,7 +1501,6 @@ export function PropertyForm({
                 <div></div>
               )}
               
-              {/* Right side buttons */}
               <div className="flex gap-3">
                 <Button
                   variant="outline"
@@ -1444,13 +1509,15 @@ export function PropertyForm({
                 >
                   {t("common.cancel")}
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  data-testid="button-submit"
-                >
-                  {isSubmitting ? t("propertyForm.button.saving") : isEditing ? t("propertyForm.button.update") : t("propertyForm.button.create")}
-                </Button>
+                {!isEditing && (
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    data-testid="button-submit"
+                  >
+                    {isSubmitting ? t("propertyForm.button.saving") : t("propertyForm.button.create")}
+                  </Button>
+                )}
               </div>
             </div>
           </form>

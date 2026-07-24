@@ -1,27 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, Plus, Save, Search, Trash2, User, X } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { ArrowLeft, MinusCircle, Plus, Search, ShieldAlert, Star, User, X } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
+import { useAutosave } from "@/hooks/use-autosave";
 import { apiRequest } from "@/lib/queryClient";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgentEventForm } from "@/components/AgentEventForm";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
+import { CitySearchSelect } from "@/components/CitySearchSelect";
+import { SavedIndicator } from "@/components/SavedIndicator";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import {
-  getCities,
   searchNeighborhoods,
 } from "@/utils/neighborhoods";
 import {
@@ -33,7 +31,7 @@ import {
   PREFERENCE_PROPERTY_TYPE_OPTIONS,
   type PreferenceOption,
 } from "@/utils/client-preference-options";
-import type { Client, ClientPropertyPreferences, ContactHistoryEntry } from "@shared/schema";
+import type { AgentEvent, Client, ClientPropertyPreferences, ContactHistoryEntry } from "@shared/schema";
 
 const CLIENT_STATUSES = [
   "Nuevo",
@@ -51,15 +49,6 @@ const CLIENT_STATUS_TRANSLATION_KEYS: Record<(typeof CLIENT_STATUSES)[number], s
   Cerrando: "manage.client_status.closing",
   Ganado: "manage.client_status.won",
   Perdido: "manage.client_status.lost",
-};
-
-const CLIENT_STATUS_COLORS: Record<string, string> = {
-  Nuevo: "bg-blue-100 text-blue-900",
-  Seguimiento: "bg-blue-300 text-blue-900",
-  "En visitas": "bg-blue-500 text-white",
-  Cerrando: "bg-blue-700 text-white",
-  Ganado: "bg-blue-900 text-white",
-  Perdido: "bg-gray-500 text-white",
 };
 
 const CLIENT_TYPES = ["buyer", "tenant", "seller", "landlord"] as const;
@@ -92,35 +81,11 @@ export default function ClientDetailPage() {
     contactHistory: [] as ContactHistoryEntry[],
     propertyPreferences: null as ClientPropertyPreferences | null,
   });
-  const [isAddingNote, setIsAddingNote] = useState(false);
-  const [newNote, setNewNote] = useState("");
-  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
-
-  const handleAddNote = () => {
-    if (newNote.trim()) {
-      const entry: ContactHistoryEntry = {
-        id: crypto.randomUUID(),
-        status: formData.status,
-        timestamp: new Date().toISOString(),
-        note: newNote.trim(),
-      };
-      setFormData((prev) => ({ ...prev, contactHistory: [entry, ...prev.contactHistory] }));
-      setNewNote("");
-      setIsAddingNote(false);
-    }
-  };
-
-  const confirmDeleteNote = () => {
-    if (noteToDelete) {
-      setFormData((prev) => ({
-        ...prev,
-        contactHistory: prev.contactHistory.filter((e) => e.id !== noteToDelete),
-      }));
-      setNoteToDelete(null);
-    }
-  };
-
   const [showEventForm, setShowEventForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<AgentEvent | null>(null);
+  const [activeTab, setActiveTab] = useState("profile");
+  const [formReady, setFormReady] = useState(false);
+  const initializedClientIdRef = useRef<number | null>(null);
 
   const createEventMutation = useMutation({
     mutationFn: async (eventData: any) =>
@@ -132,10 +97,68 @@ export default function ClientDetailPage() {
           query.queryKey[2] === "events",
       });
       setShowEventForm(false);
-      toast({ title: "Interacción registrada", description: "El evento se ha guardado correctamente." });
+      toast({
+        title: t("manage.client_history.interaction_saved"),
+        description: t("manage.client_history.interaction_saved_desc"),
+      });
     },
     onError: () => {
-      toast({ title: "Error", description: "No se pudo registrar la interacción.", variant: "destructive" });
+      toast({
+        title: t("common.error"),
+        description: t("manage.client_history.interaction_error"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateEventMutation = useMutation({
+    mutationFn: async ({ id, eventData }: { id: number; eventData: Record<string, unknown> }) =>
+      apiRequest("PATCH", `/api/agent-events/${id}`, {
+        ...eventData,
+        agentId: user?.id,
+        clientId,
+        propertyUuid: eventData.propertyUuid || null,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "/api/agents" &&
+          query.queryKey[2] === "events",
+      });
+      setEditingEvent(null);
+      toast({
+        title: t("manage.client_history.interaction_updated"),
+        description: t("manage.client_history.interaction_updated_desc"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: t("manage.client_history.interaction_update_error"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteEventMutation = useMutation({
+    mutationFn: async (eventId: number) => apiRequest("DELETE", `/api/agent-events/${eventId}`),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "/api/agents" &&
+          query.queryKey[2] === "events",
+      });
+      toast({
+        title: t("manage.client_history.interaction_deleted"),
+        description: t("manage.client_history.interaction_deleted_desc"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: t("manage.client_history.interaction_delete_error"),
+        variant: "destructive",
+      });
     },
   });
 
@@ -164,18 +187,15 @@ export default function ClientDetailPage() {
   });
 
   const updateClientMutation = useMutation({
-    mutationFn: async () =>
+    mutationFn: async (data: typeof formData) =>
       apiRequest("PATCH", `/api/clients/${clientId}`, {
-        ...formData,
+        ...data,
         id: clientId,
         agentId: user?.id,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}`] });
-      toast({
-        title: "Cliente actualizado",
-        description: "Los cambios se han guardado correctamente.",
-      });
+      await queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
     },
     onError: () => {
       toast({
@@ -188,6 +208,8 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     if (!client) return;
+    if (initializedClientIdRef.current === client.id) return;
+    initializedClientIdRef.current = client.id;
     setFormData({
       name: client.name || "",
       surname: client.surname || "",
@@ -199,14 +221,32 @@ export default function ClientDetailPage() {
       contactHistory: (client.contactHistory as ContactHistoryEntry[]) || [],
       propertyPreferences: client.propertyPreferences || null,
     });
+    setFormReady(true);
   }, [client]);
+
+  const { savedFields, markChanged } = useAutosave(
+    formData,
+    async (data) => {
+      await updateClientMutation.mutateAsync(data);
+    },
+    { enabled: formReady },
+  );
 
   const selectedType = useMemo(
     () => (CLIENT_TYPES.includes(formData.clientType as ClientType) ? (formData.clientType as ClientType) : null),
     [formData.clientType],
   );
+  const showPreferencesTab = selectedType === "buyer" || selectedType === "tenant";
+
+  useEffect(() => {
+    if (!showPreferencesTab && activeTab === "preferences") {
+      setActiveTab("profile");
+    }
+  }, [activeTab, showPreferencesTab]);
 
   const handleClientTypeChange = (value: ClientType) => {
+    markChanged("clientType");
+    markChanged("tags");
     setFormData((prev) => ({
       ...prev,
       clientType: value,
@@ -215,6 +255,7 @@ export default function ClientDetailPage() {
   };
 
   const toggleTag = (tag: string, checked: boolean) => {
+    markChanged("tags");
     setFormData((prev) => ({
       ...prev,
       tags: checked ? Array.from(new Set([...prev.tags, tag])) : prev.tags.filter((value) => value !== tag),
@@ -225,11 +266,25 @@ export default function ClientDetailPage() {
     key: K,
     value: ClientPropertyPreferences[K],
   ) => {
+    markChanged(`propertyPreferences.${String(key)}`);
+    markChanged("propertyPreferences");
     setFormData((prev) => ({
       ...prev,
       propertyPreferences: {
         ...(prev.propertyPreferences || {}),
         [key]: value,
+      },
+    }));
+  };
+
+  const updatePropertyPreferences = (updates: Partial<ClientPropertyPreferences>) => {
+    Object.keys(updates).forEach((key) => markChanged(`propertyPreferences.${key}`));
+    markChanged("propertyPreferences");
+    setFormData((prev) => ({
+      ...prev,
+      propertyPreferences: {
+        ...(prev.propertyPreferences || {}),
+        ...updates,
       },
     }));
   };
@@ -260,419 +315,351 @@ export default function ClientDetailPage() {
           {t("manage.clients.back_to_list")}
         </Button>
 
-        <Card data-testid="card-client-edit-page">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Perfil del cliente
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="client-name">{t("common.name")}</Label>
-                <Input
-                  id="client-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  data-testid="input-client-detail-name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="client-surname">{t("common.surname")}</Label>
-                <Input
-                  id="client-surname"
-                  value={formData.surname}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, surname: e.target.value }))}
-                  data-testid="input-client-detail-surname"
-                />
-              </div>
-              <div>
-                <Label htmlFor="client-email">{t("common.email")}</Label>
-                <Input
-                  id="client-email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                  data-testid="input-client-detail-email"
-                />
-              </div>
-              <div>
-                <Label htmlFor="client-phone">{t("common.phone")}</Label>
-                <Input
-                  id="client-phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                  data-testid="input-client-detail-phone"
-                />
-              </div>
-              <div>
-                <Label htmlFor="client-status">{t("common.status")}</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger id="client-status" data-testid="select-client-detail-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CLIENT_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {t(CLIENT_STATUS_TRANSLATION_KEYS[status])}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="client-type">{t("manage.client_type.label")}</Label>
-                <Select
-                  value={formData.clientType || undefined}
-                  onValueChange={(value) => handleClientTypeChange(value as ClientType)}
-                >
-                  <SelectTrigger id="client-type" data-testid="select-client-detail-type">
-                    <SelectValue placeholder={t("manage.client_type.placeholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="buyer">{t("manage.client_type.buyer")}</SelectItem>
-                    <SelectItem value="tenant">{t("manage.client_type.tenant")}</SelectItem>
-                    <SelectItem value="seller">{t("manage.client_type.seller")}</SelectItem>
-                    <SelectItem value="landlord">{t("manage.client_type.landlord")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 p-1">
+            <TabsTrigger value="profile" className="flex-1" data-testid="tab-client-profile">
+              {t("manage.client_profile.title")}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1" data-testid="tab-client-history">
+              {t("manage.client_history.title")}
+            </TabsTrigger>
+            {showPreferencesTab && (
+              <TabsTrigger value="preferences" className="flex-1" data-testid="tab-client-preferences">
+                {t("manage.client_preferences.title")}
+              </TabsTrigger>
+            )}
+          </TabsList>
 
-            <div>
-              <div className="flex items-baseline justify-between gap-2">
-                <Label>{t("manage.client_tags.label")}</Label>
-                <span className="text-xs text-muted-foreground">{t("manage.client_tags.recommendation")}</span>
-              </div>
-              {!selectedType ? (
-                <p className="text-sm text-muted-foreground mt-2">{t("manage.client_tags.select_type")}</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                  {CLIENT_TAGS[selectedType].map((tag) => (
-                    <label key={tag} className="flex items-center gap-2 rounded-md border p-2 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={formData.tags.includes(tag)}
-                        onCheckedChange={(checked) => toggleTag(tag, checked === true)}
-                      />
-                      <span>{t(`manage.client_tag.${tag}`)}</span>
-                    </label>
-                  ))}
+          <TabsContent value="profile" className="mt-0">
+            <Card data-testid="card-client-edit-page">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  {t("manage.client_profile.title")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="client-name" className="inline-flex items-center">
+                      {t("common.name")}
+                      <SavedIndicator visible={savedFields.has("name")} />
+                    </Label>
+                    <Input
+                      id="client-name"
+                      value={formData.name}
+                      onChange={(e) => {
+                        markChanged("name");
+                        setFormData((prev) => ({ ...prev, name: e.target.value }));
+                      }}
+                      data-testid="input-client-detail-name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="client-surname" className="inline-flex items-center">
+                      {t("common.surname")}
+                      <SavedIndicator visible={savedFields.has("surname")} />
+                    </Label>
+                    <Input
+                      id="client-surname"
+                      value={formData.surname}
+                      onChange={(e) => {
+                        markChanged("surname");
+                        setFormData((prev) => ({ ...prev, surname: e.target.value }));
+                      }}
+                      data-testid="input-client-detail-surname"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="client-email" className="inline-flex items-center">
+                      {t("common.email")}
+                      <SavedIndicator visible={savedFields.has("email")} />
+                    </Label>
+                    <Input
+                      id="client-email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => {
+                        markChanged("email");
+                        setFormData((prev) => ({ ...prev, email: e.target.value }));
+                      }}
+                      data-testid="input-client-detail-email"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="client-phone" className="inline-flex items-center">
+                      {t("common.phone")}
+                      <SavedIndicator visible={savedFields.has("phone")} />
+                    </Label>
+                    <Input
+                      id="client-phone"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        markChanged("phone");
+                        setFormData((prev) => ({ ...prev, phone: e.target.value }));
+                      }}
+                      data-testid="input-client-detail-phone"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="client-status" className="inline-flex items-center">
+                      {t("common.status")}
+                      <SavedIndicator visible={savedFields.has("status")} />
+                    </Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => {
+                        markChanged("status");
+                        setFormData((prev) => ({ ...prev, status: value }));
+                      }}
+                    >
+                      <SelectTrigger id="client-status" data-testid="select-client-detail-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CLIENT_STATUSES.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {t(CLIENT_STATUS_TRANSLATION_KEYS[status])}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="client-type" className="inline-flex items-center">
+                      {t("manage.client_type.label")}
+                      <SavedIndicator visible={savedFields.has("clientType")} />
+                    </Label>
+                    <Select
+                      value={formData.clientType || undefined}
+                      onValueChange={(value) => handleClientTypeChange(value as ClientType)}
+                    >
+                      <SelectTrigger id="client-type" data-testid="select-client-detail-type">
+                        <SelectValue placeholder={t("manage.client_type.placeholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="buyer">{t("manage.client_type.buyer")}</SelectItem>
+                        <SelectItem value="tenant">{t("manage.client_type.tenant")}</SelectItem>
+                        <SelectItem value="seller">{t("manage.client_type.seller")}</SelectItem>
+                        <SelectItem value="landlord">{t("manage.client_type.landlord")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <Label className="inline-flex items-center">
+                      {t("manage.client_tags.label")}
+                      <SavedIndicator visible={savedFields.has("tags")} />
+                    </Label>
+                    <span className="text-xs text-muted-foreground">{t("manage.client_tags.recommendation")}</span>
+                  </div>
+                  {!selectedType ? (
+                    <p className="text-sm text-muted-foreground mt-2">{t("manage.client_tags.select_type")}</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                      {CLIENT_TAGS[selectedType].map((tag) => (
+                        <label key={tag} className="flex items-center gap-2 rounded-md border p-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={formData.tags.includes(tag)}
+                            onCheckedChange={(checked) => toggleTag(tag, checked === true)}
+                          />
+                          <span>{t(`manage.client_tag.${tag}`)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-0">
+            <ClientHistoryTimeline
+              clientId={clientId}
+              agentId={user.id}
+              onEditEvent={(event) => {
+                setShowEventForm(false);
+                setEditingEvent(event);
+              }}
+              onDeleteEvent={(event) => deleteEventMutation.mutate(event.id)}
+              headerAction={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingEvent(null);
+                    setShowEventForm(!showEventForm);
+                  }}
+                  className="text-primary"
+                  data-testid="button-toggle-event-form"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {showEventForm ? t("common.cancel") : t("manage.client_history.add_interaction")}
+                </Button>
+              }
+            >
+              {(showEventForm || editingEvent) && (
+                <div className="mb-4">
+                  <AgentEventForm
+                    agentId={user.id}
+                    event={editingEvent}
+                    defaultClientId={clientId}
+                    hideClientField
+                    onSubmit={(eventData) => {
+                      if (editingEvent) {
+                        updateEventMutation.mutate({ id: editingEvent.id, eventData });
+                      } else {
+                        createEventMutation.mutate({
+                          ...eventData,
+                          clientId,
+                          propertyUuid: eventData.propertyUuid,
+                        });
+                      }
+                    }}
+                    onCancel={() => {
+                      setShowEventForm(false);
+                      setEditingEvent(null);
+                    }}
+                    isLoading={createEventMutation.isPending || updateEventMutation.isPending}
+                  />
                 </div>
               )}
-            </div>
+            </ClientHistoryTimeline>
+          </TabsContent>
 
-            {formData.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {t(`manage.client_tag.${tag}`)}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            {(selectedType === "buyer" || selectedType === "tenant") && (
-              <section className="border-t pt-6 space-y-4">
-                <div>
-                  <h2 className="text-lg font-semibold">{t("manage.client_preferences.title")}</h2>
+          {showPreferencesTab && (
+            <TabsContent value="preferences" className="mt-0">
+              <Card data-testid="card-client-preferences">
+                <CardHeader>
+                  <CardTitle>{t("manage.client_preferences.title")}</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {t("manage.client_preferences.description")}
                   </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PreferenceSelect
-                    label={t("manage.client_preferences.operation")}
-                    value={formData.propertyPreferences?.operationType}
-                    options={PREFERENCE_OPERATION_OPTIONS}
-                    onChange={(value) => updatePropertyPreference("operationType", value)}
-                    t={t}
-                  />
-                  <PreferenceSelect
-                    label={t("manage.client_preferences.property_type")}
-                    value={formData.propertyPreferences?.propertyType}
-                    options={PREFERENCE_PROPERTY_TYPE_OPTIONS}
-                    onChange={(value) => updatePropertyPreference("propertyType", value)}
-                    t={t}
-                  />
-                  <PreferenceSelect
-                    label={t("manage.client_preferences.housing_type")}
-                    value={formData.propertyPreferences?.housingType}
-                    options={PREFERENCE_HOUSING_TYPE_OPTIONS}
-                    onChange={(value) => updatePropertyPreference("housingType", value)}
-                    t={t}
-                  />
-                  <PreferenceSelect
-                    label={t("manage.client_preferences.floor")}
-                    value={formData.propertyPreferences?.floor}
-                    options={PREFERENCE_FLOOR_OPTIONS}
-                    onChange={(value) => updatePropertyPreference("floor", value)}
-                    t={t}
-                  />
-                  <PreferenceSelect
-                    label={t("manage.client_preferences.condition")}
-                    value={formData.propertyPreferences?.propertyCondition}
-                    options={PREFERENCE_CONDITION_OPTIONS}
-                    onChange={(value) => updatePropertyPreference("propertyCondition", value)}
-                    t={t}
-                  />
-                  <PreferenceSelect
-                    label={t("manage.client_preferences.availability")}
-                    value={formData.propertyPreferences?.availability}
-                    options={PREFERENCE_AVAILABILITY_OPTIONS}
-                    onChange={(value) => updatePropertyPreference("availability", value)}
-                    t={t}
-                  />
-                  <PreferenceDate
-                    label={t("manage.client_preferences.availability_date")}
-                    value={formData.propertyPreferences?.availabilityDate}
-                    onChange={(value) => updatePropertyPreference("availabilityDate", value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                  <PreferenceNumber label={t("manage.client_preferences.min_price")} value={formData.propertyPreferences?.minPrice} onChange={(value) => updatePropertyPreference("minPrice", value)} />
-                  <PreferenceNumber label={t("manage.client_preferences.max_price")} value={formData.propertyPreferences?.maxPrice} onChange={(value) => updatePropertyPreference("maxPrice", value)} />
-                  <PreferenceNumber label={t("manage.client_preferences.bedrooms")} value={formData.propertyPreferences?.bedrooms} onChange={(value) => updatePropertyPreference("bedrooms", value)} />
-                  <PreferenceNumber label={t("manage.client_preferences.bathrooms")} value={formData.propertyPreferences?.bathrooms} onChange={(value) => updatePropertyPreference("bathrooms", value)} />
-                  <PreferenceNumber label={t("manage.client_preferences.min_area")} value={formData.propertyPreferences?.minArea} onChange={(value) => updatePropertyPreference("minArea", value)} />
-                  <PreferenceNumber label={t("manage.client_preferences.max_area")} value={formData.propertyPreferences?.maxArea} onChange={(value) => updatePropertyPreference("maxArea", value)} />
-                </div>
-
-                <div>
-                  <Label>{t("manage.client_preferences.city")}</Label>
-                  <Select
-                    value={formData.propertyPreferences?.city || undefined}
-                    onValueChange={(value) => {
-                      updatePropertyPreference("city", value || null);
-                      updatePropertyPreference("neighborhood", null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("manage.client_preferences.select_placeholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getCities().map((city, index) => (
-                        <SelectItem key={`${city}-${index}`} value={city}>
-                          {city}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <NeighborhoodPreferenceInput
-                  label={t("manage.client_preferences.neighborhood")}
-                  value={formData.propertyPreferences?.neighborhood}
-                  city={formData.propertyPreferences?.city}
-                  onCityChange={(value) => updatePropertyPreference("city", value)}
-                  onChange={(value) => updatePropertyPreference("neighborhood", value)}
-                  t={t}
-                />
-
-                <div>
-                  <Label>{t("manage.client_preferences.features")}</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                    {PROPERTY_FEATURES.map((feature) => (
-                      <label key={feature.id} className="flex items-center gap-2 rounded-md border p-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={formData.propertyPreferences?.features?.includes(feature.id) || false}
-                          onCheckedChange={(checked) => {
-                            const current = formData.propertyPreferences?.features || [];
-                            updatePropertyPreference(
-                              "features",
-                              checked ? Array.from(new Set([...current, feature.id])) : current.filter((value) => value !== feature.id),
-                            );
-                          }}
-                        />
-                        <span>{t(`manage.property_feature.${feature.id}`)}</span>
-                      </label>
-                    ))}
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                    <h3 className="text-sm font-semibold text-primary">
+                      {t("manage.client_preferences.important_title")}
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("manage.client_preferences.important_description")}
+                    </p>
                   </div>
-                </div>
-              </section>
-            )}
 
-            <div className="pt-2">
-              <Button
-                className="gap-2"
-                onClick={() => updateClientMutation.mutate()}
-                disabled={updateClientMutation.isPending}
-                data-testid="button-save-client-detail"
-              >
-                <Save className="h-4 w-4" />
-                {updateClientMutation.isPending ? "Guardando..." : "Guardar cambios"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <PreferenceSelect
+                      label={t("manage.client_preferences.operation")}
+                      value={formData.propertyPreferences?.operationType}
+                      options={PREFERENCE_OPERATION_OPTIONS}
+                      onChange={(value) => updatePropertyPreference("operationType", value)}
+                      showSaved={savedFields.has("propertyPreferences.operationType")}
+                      t={t}
+                    />
+                    <PreferenceSelect
+                      label={t("manage.client_preferences.property_type")}
+                      value={formData.propertyPreferences?.propertyType}
+                      options={PREFERENCE_PROPERTY_TYPE_OPTIONS}
+                      onChange={(value) => {
+                        updatePropertyPreference("propertyType", value);
+                        if (value !== "Vivienda") {
+                          updatePropertyPreference("housingType", null);
+                        }
+                      }}
+                      showSaved={savedFields.has("propertyPreferences.propertyType")}
+                      t={t}
+                    />
+                    {formData.propertyPreferences?.propertyType === "Vivienda" && (
+                      <PreferenceSelect
+                        label={t("manage.client_preferences.housing_type")}
+                        value={formData.propertyPreferences?.housingType}
+                        options={PREFERENCE_HOUSING_TYPE_OPTIONS}
+                        onChange={(value) => updatePropertyPreference("housingType", value)}
+                        showSaved={savedFields.has("propertyPreferences.housingType")}
+                        t={t}
+                      />
+                    )}
+                  </div>
 
-        <Card data-testid="card-add-interaction">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Registrar interacción</CardTitle>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowEventForm(!showEventForm)}
-                className="text-primary"
-                data-testid="button-toggle-event-form"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                {showEventForm ? "Cancelar" : "Añadir interacción"}
-              </Button>
-            </div>
-          </CardHeader>
-          {showEventForm && (
-            <CardContent className="pt-0">
-              <AgentEventForm
-                agentId={user.id}
-                defaultClientId={clientId}
-                hideClientField
-                onSubmit={(eventData) => {
-                  createEventMutation.mutate({
-                    ...eventData,
-                    clientId,
-                    propertyId: eventData.propertyUuid,
-                  });
-                }}
-                onCancel={() => setShowEventForm(false)}
-                isLoading={createEventMutation.isPending}
-              />
-            </CardContent>
-          )}
-        </Card>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <PreferenceNumber label={t("manage.client_preferences.min_price")} value={formData.propertyPreferences?.minPrice} onChange={(value) => updatePropertyPreference("minPrice", value)} showSaved={savedFields.has("propertyPreferences.minPrice")} />
+                    <PreferenceNumber label={t("manage.client_preferences.max_price")} value={formData.propertyPreferences?.maxPrice} onChange={(value) => updatePropertyPreference("maxPrice", value)} showSaved={savedFields.has("propertyPreferences.maxPrice")} />
+                    <PreferenceNumber label={t("manage.client_preferences.bedrooms")} value={formData.propertyPreferences?.bedrooms} onChange={(value) => updatePropertyPreference("bedrooms", value)} showSaved={savedFields.has("propertyPreferences.bedrooms")} />
+                  </div>
 
-        <ClientHistoryTimeline clientId={clientId} agentId={user.id} />
-
-        <Card data-testid="card-client-contact-history">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Historial de contacto</CardTitle>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsAddingNote(!isAddingNote)}
-                className="text-primary"
-                data-testid="button-add-note"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Añadir nota
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isAddingNote && (
-              <div className="bg-gray-50 border rounded-lg p-3 mb-4 space-y-3">
-                <div>
-                  <Label htmlFor="note-text">Nota</Label>
-                  <Textarea
-                    id="note-text"
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Describe la interacción con el cliente..."
-                    rows={3}
-                    className="resize-none"
-                    data-testid="textarea-note"
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setIsAddingNote(false); setNewNote(""); }}
-                    data-testid="button-cancel-note"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={handleAddNote}
-                    disabled={!newNote.trim()}
-                    data-testid="button-save-note"
-                  >
-                    Guardar nota
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {formData.contactHistory.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No hay notas en el historial
-                </p>
-              ) : (
-                formData.contactHistory.map((entry, index) => {
-                  const colorClass = CLIENT_STATUS_COLORS[entry.status] || "bg-gray-100 text-gray-800";
-                  return (
-                    <div
-                      key={entry.id}
-                      className="relative pl-8 pb-2"
-                      data-testid={`timeline-note-${entry.id}`}
-                    >
-                      {index < formData.contactHistory.length - 1 && (
-                        <div className="absolute left-[7px] top-6 bottom-0 w-px bg-gray-300" />
-                      )}
-                      <div className="absolute left-0 top-2 w-4 h-4 rounded-full bg-gray-300 border-2 border-white" />
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className={`${colorClass} text-xs px-2 py-0.5 rounded-full`}>
-                              {entry.status}
-                            </Badge>
-                            <span className="text-xs text-gray-500">
-                              {format(new Date(entry.timestamp), "dd MMM yyyy, HH:mm", { locale: es })}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700">{entry.note}</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-gray-400 hover:text-red-600 flex-shrink-0"
-                          onClick={() => setNoteToDelete(entry.id)}
-                          data-testid={`button-delete-note-${entry.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <Label className="inline-flex items-center">
+                        {t("manage.client_preferences.city")}
+                        <SavedIndicator visible={savedFields.has("propertyPreferences.city")} />
+                      </Label>
+                      <CitySearchSelect
+                        value={formData.propertyPreferences?.city}
+                        placeholder={t("manage.client_preferences.select_placeholder")}
+                        onChange={(value) => {
+                          updatePropertyPreference("city", value);
+                          updatePropertyPreference("neighborhood", null);
+                        }}
+                        testId="input-client-city-search"
+                      />
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
+                    <NeighborhoodPreferenceInput
+                      label={t("manage.client_preferences.neighborhood")}
+                      value={formData.propertyPreferences?.neighborhood}
+                      city={formData.propertyPreferences?.city}
+                      onCityChange={(value) => updatePropertyPreference("city", value)}
+                      onChange={(value) => updatePropertyPreference("neighborhood", value)}
+                      showSaved={savedFields.has("propertyPreferences.neighborhood")}
+                      t={t}
+                    />
+                  </div>
+
+                  <div className="space-y-5 border-t pt-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <PreferenceSelect label={t("manage.client_preferences.floor")} value={formData.propertyPreferences?.floor} options={PREFERENCE_FLOOR_OPTIONS} onChange={(value) => updatePropertyPreference("floor", value)} showSaved={savedFields.has("propertyPreferences.floor")} t={t} />
+                      <PreferenceSelect label={t("manage.client_preferences.condition")} value={formData.propertyPreferences?.propertyCondition} options={PREFERENCE_CONDITION_OPTIONS} onChange={(value) => updatePropertyPreference("propertyCondition", value)} showSaved={savedFields.has("propertyPreferences.propertyCondition")} t={t} />
+                      <PreferenceSelect label={t("manage.client_preferences.availability")} value={formData.propertyPreferences?.availability} options={PREFERENCE_AVAILABILITY_OPTIONS} onChange={(value) => updatePropertyPreference("availability", value)} showSaved={savedFields.has("propertyPreferences.availability")} t={t} />
+                      <PreferenceDate label={t("manage.client_preferences.availability_date")} value={formData.propertyPreferences?.availabilityDate} onChange={(value) => updatePropertyPreference("availabilityDate", value)} showSaved={savedFields.has("propertyPreferences.availabilityDate")} />
+                    </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <PreferenceNumber label={t("manage.client_preferences.bathrooms")} value={formData.propertyPreferences?.bathrooms} onChange={(value) => updatePropertyPreference("bathrooms", value)} showSaved={savedFields.has("propertyPreferences.bathrooms")} />
+                        <PreferenceNumber label={t("manage.client_preferences.min_area")} value={formData.propertyPreferences?.minArea} onChange={(value) => updatePropertyPreference("minArea", value)} showSaved={savedFields.has("propertyPreferences.minArea")} />
+                        <PreferenceNumber label={t("manage.client_preferences.max_area")} value={formData.propertyPreferences?.maxArea} onChange={(value) => updatePropertyPreference("maxArea", value)} showSaved={savedFields.has("propertyPreferences.maxArea")} />
+                      </div>
+
+                      <PreferenceFeatureClassifier
+                        features={PROPERTY_FEATURES}
+                        preferred={formData.propertyPreferences?.preferredFeatures
+                          || formData.propertyPreferences?.features
+                          || []}
+                        essential={formData.propertyPreferences?.essentialFeatures || []}
+                        onChange={({ preferredFeatures, essentialFeatures }) => {
+                          updatePropertyPreferences({
+                            preferredFeatures,
+                            essentialFeatures,
+                            // Keep legacy features as the union for backward compatibility.
+                            features: Array.from(new Set([...preferredFeatures, ...essentialFeatures])),
+                          });
+                        }}
+                        showSaved={
+                          savedFields.has("propertyPreferences.preferredFeatures")
+                          || savedFields.has("propertyPreferences.essentialFeatures")
+                          || savedFields.has("propertyPreferences.features")
+                        }
+                        t={t}
+                      />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </main>
-
-    <AlertDialog open={!!noteToDelete} onOpenChange={() => setNoteToDelete(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar nota?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta acción no se puede deshacer. La nota se eliminará permanentemente del historial de contacto.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={confirmDeleteNote} className="bg-red-600 hover:bg-red-700">
-            Eliminar
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   </>
   );
 }
@@ -682,17 +669,22 @@ function PreferenceSelect({
   value,
   options,
   onChange,
+  showSaved = false,
   t,
 }: {
   label: string;
   value?: string | null;
   options: PreferenceOption[];
   onChange: (value: string | null) => void;
+  showSaved?: boolean;
   t: (key: string) => string;
 }) {
   return (
     <div>
-      <Label>{label}</Label>
+      <Label className="inline-flex items-center">
+        {label}
+        <SavedIndicator visible={showSaved} />
+      </Label>
       <Select value={value || undefined} onValueChange={(selected) => onChange(selected || null)}>
         <SelectTrigger>
           <SelectValue placeholder={t("manage.client_preferences.select_placeholder")} />
@@ -713,14 +705,19 @@ function PreferenceNumber({
   label,
   value,
   onChange,
+  showSaved = false,
 }: {
   label: string;
   value?: number | null;
   onChange: (value: number | null) => void;
+  showSaved?: boolean;
 }) {
   return (
     <div>
-      <Label>{label}</Label>
+      <Label className="inline-flex items-center">
+        {label}
+        <SavedIndicator visible={showSaved} />
+      </Label>
       <Input
         type="number"
         value={value ?? ""}
@@ -730,19 +727,146 @@ function PreferenceNumber({
   );
 }
 
-function PreferenceText({
-  label,
-  value,
+type FeatureInterest = "none" | "preferred" | "essential";
+
+function PreferenceFeatureClassifier({
+  features,
+  preferred,
+  essential,
   onChange,
+  showSaved = false,
+  t,
 }: {
-  label: string;
-  value?: string | null;
-  onChange: (value: string | null) => void;
+  features: readonly { id: string; label: string }[];
+  preferred: string[];
+  essential: string[];
+  onChange: (value: { preferredFeatures: string[]; essentialFeatures: string[] }) => void;
+  showSaved?: boolean;
+  t: (key: string) => string;
 }) {
+  const essentialIds = useMemo(
+    () => new Set(essential.filter((id) => features.some((feature) => feature.id === id))),
+    [essential, features],
+  );
+  const preferredIds = useMemo(
+    () => new Set(
+      preferred.filter(
+        (id) => features.some((feature) => feature.id === id) && !essentialIds.has(id),
+      ),
+    ),
+    [preferred, features, essentialIds],
+  );
+
+  const columns: Record<FeatureInterest, typeof features[number][]> = {
+    none: features.filter((feature) => !preferredIds.has(feature.id) && !essentialIds.has(feature.id)),
+    preferred: features.filter((feature) => preferredIds.has(feature.id)),
+    essential: features.filter((feature) => essentialIds.has(feature.id)),
+  };
+
+  const moveFeature = (featureId: string, interest: FeatureInterest) => {
+    const nextPreferred = new Set(preferredIds);
+    const nextEssential = new Set(essentialIds);
+    nextPreferred.delete(featureId);
+    nextEssential.delete(featureId);
+
+    if (interest === "preferred") nextPreferred.add(featureId);
+    if (interest === "essential") nextEssential.add(featureId);
+
+    onChange({
+      preferredFeatures: Array.from(nextPreferred),
+      essentialFeatures: Array.from(nextEssential),
+    });
+  };
+
+  const destinationOrder: FeatureInterest[] = ["none", "preferred", "essential"];
+  const destinationIcons: Record<FeatureInterest, React.ReactNode> = {
+    none: <MinusCircle className="h-3.5 w-3.5" />,
+    preferred: <Star className="h-3.5 w-3.5" />,
+    essential: <ShieldAlert className="h-3.5 w-3.5" />,
+  };
+  const destinationClasses: Record<FeatureInterest, string> = {
+    none: "text-muted-foreground hover:bg-muted",
+    preferred: "text-blue-600 hover:bg-blue-50 hover:text-blue-700",
+    essential: "text-rose-600 hover:bg-rose-50 hover:text-rose-700",
+  };
+
+  const columnMeta: Record<
+    FeatureInterest,
+    { titleKey: string; icon: React.ReactNode; className: string }
+  > = {
+    none: {
+      titleKey: "manage.client_preferences.features_none",
+      icon: <MinusCircle className="h-4 w-4" />,
+      className: "border-muted bg-muted/30",
+    },
+    preferred: {
+      titleKey: "manage.client_preferences.features_preferred",
+      icon: <Star className="h-4 w-4" />,
+      className: "border-blue-200 bg-blue-50/60",
+    },
+    essential: {
+      titleKey: "manage.client_preferences.features_essential",
+      icon: <ShieldAlert className="h-4 w-4" />,
+      className: "border-rose-200 bg-rose-50/60",
+    },
+  };
+
   return (
     <div>
-      <Label>{label}</Label>
-      <Input value={value || ""} onChange={(event) => onChange(event.target.value || null)} />
+      <Label className="inline-flex items-center">
+        {t("manage.client_preferences.features")}
+        <SavedIndicator visible={showSaved} />
+      </Label>
+      <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        {(["none", "preferred", "essential"] as FeatureInterest[]).map((column) => {
+          const meta = columnMeta[column];
+          return (
+            <div key={column} className={`rounded-lg border p-3 ${meta.className}`}>
+              <div className="mb-3 flex items-start gap-2">
+                <div className="mt-0.5 text-foreground/80">{meta.icon}</div>
+                <div>
+                  <h4 className="text-sm font-semibold">{t(meta.titleKey)}</h4>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {columns[column].length === 0 ? (
+                  <p className="rounded-md border border-dashed bg-background/50 px-3 py-4 text-center text-xs text-muted-foreground">
+                    {t("manage.client_preferences.features_empty")}
+                  </p>
+                ) : (
+                  columns[column].map((feature) => (
+                    <div
+                      key={feature.id}
+                      className="flex items-center justify-between gap-2 rounded-md border bg-background px-2.5 py-2 text-sm shadow-sm"
+                    >
+                      <span className="min-w-0 truncate font-medium">
+                        {t(`manage.property_feature.${feature.id}`)}
+                      </span>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        {destinationOrder
+                          .filter((destination) => destination !== column)
+                          .map((destination) => (
+                            <Button
+                              key={destination}
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className={`h-7 w-7 ${destinationClasses[destination]}`}
+                              title={t(`manage.client_preferences.features_${destination}`)}
+                              onClick={() => moveFeature(feature.id, destination)}
+                            >
+                              {destinationIcons[destination]}
+                            </Button>
+                          ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -753,6 +877,7 @@ function NeighborhoodPreferenceInput({
   city,
   onCityChange,
   onChange,
+  showSaved = false,
   t,
 }: {
   label: string;
@@ -760,6 +885,7 @@ function NeighborhoodPreferenceInput({
   city?: string | null;
   onCityChange: (value: string | null) => void;
   onChange: (value: string[] | null) => void;
+  showSaved?: boolean;
   t: (key: string) => string;
 }) {
   const selectedNeighborhoods = Array.isArray(value) ? value : value ? [value] : [];
@@ -802,7 +928,10 @@ function NeighborhoodPreferenceInput({
 
   return (
     <div className="relative">
-      <Label>{label}</Label>
+      <Label className="inline-flex items-center">
+        {label}
+        <SavedIndicator visible={showSaved} />
+      </Label>
       {selectedNeighborhoods.length > 0 && (
         <div className="mt-1 mb-2 flex flex-wrap gap-2">
           {selectedNeighborhoods.map((neighborhood) => (
@@ -884,14 +1013,19 @@ function PreferenceDate({
   label,
   value,
   onChange,
+  showSaved = false,
 }: {
   label: string;
   value?: string | null;
   onChange: (value: string | null) => void;
+  showSaved?: boolean;
 }) {
   return (
     <div>
-      <Label>{label}</Label>
+      <Label className="inline-flex items-center">
+        {label}
+        <SavedIndicator visible={showSaved} />
+      </Label>
       <Input type="date" value={value || ""} onChange={(event) => onChange(event.target.value || null)} />
     </div>
   );

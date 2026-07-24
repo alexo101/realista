@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Redirect, useLocation, useRoute, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/contexts/user-context";
@@ -18,9 +18,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, CheckCircle, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound, CalendarDays } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound, CalendarDays } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAutosave } from "@/hooks/use-autosave";
 import { PropertyForm } from "@/components/PropertyForm";
 import { PropertyFormMultiStep } from "@/components/PropertyFormMultiStep";
 import { ClientForm } from "@/components/ClientForm";
@@ -29,9 +30,10 @@ import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { ClientsKanban } from "@/components/ClientsKanban";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
-import { getCities } from "@/utils/neighborhoods";
+import { CitySearchSelect } from "@/components/CitySearchSelect";
 import { AgencyAgentsList } from "@/components/AgencyAgentsList";
 import { AgenciesList } from "@/components/AgenciesList";
+import { SavedIndicator } from "@/components/SavedIndicator";
 
 import { ConversationalMessages } from "@/components/ConversationalMessages";
 import { ReviewManagement } from "@/components/ReviewManagement";
@@ -54,6 +56,19 @@ import {
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { type Property, type Client } from "@shared/schema";
+import {
+  rankProperties,
+  type RecommendationLabel,
+  type RecommendationResult,
+  type RankedProperty,
+} from "@shared/recommendation-engine";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 // Valid dashboard sections
 const VALID_SECTIONS = [
@@ -183,10 +198,6 @@ export default function ManagePage() {
   const [agentFacebookUrl, setAgentFacebookUrl] = useState("");
   const [agentInstagramUrl, setAgentInstagramUrl] = useState("");
   const [agentLinkedinUrl, setAgentLinkedinUrl] = useState("");
-  
-  // City search state
-  const [citySearchTerm, setCitySearchTerm] = useState("");
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
 
   // Estados para los campos de perfil de agencia
   const [agencyName, setAgencyName] = useState("");
@@ -203,12 +214,10 @@ export default function ManagePage() {
   const [twitterUrl, setTwitterUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
 
-  // Estado para mostrar indicador de guardado exitoso
-  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingAgencyLogo, setIsUploadingAgencyLogo] = useState(false);
-  const [hasAgentChanges, setHasAgentChanges] = useState(false); // Added
-  const [hasAgencyChanges, setHasAgencyChanges] = useState(false); // Added
+  const [agentProfileReady, setAgentProfileReady] = useState(false);
+  const agentProfileInitializedRef = useRef(false);
 
   // Clients view mode (list or kanban)
   const [clientsView, setClientsView] = useState<'list' | 'kanban'>(() => {
@@ -225,6 +234,7 @@ export default function ManagePage() {
   const [propertySearch, setPropertySearch] = useState("");
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<Set<string>>(new Set());
   const [emailMessage, setEmailMessage] = useState("");
+  const [showRecommendedOnly, setShowRecommendedOnly] = useState(true);
 
   // Properties view mode (grid or table)
   const [propertiesView, setPropertiesView] = useState<'grid' | 'table'>(() => {
@@ -243,25 +253,24 @@ export default function ManagePage() {
   }, [propertiesView]);
 
 
-  // Cargar valores iniciales cuando el usuario cambia
+  // Initialize agent profile fields once (avoid overwriting in-progress edits after autosave)
   useEffect(() => {
-    if (user) {
-      // Cargar datos de perfil de agente
-      setName(user.name || "");
-      setSurname(user.surname || "");
-      setDescription(user.description || "");
-      setPhone(user.phone || "");
-      setCity(user.city || "Barcelona");
-      setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
-      setYearsOfExperience(user.yearsOfExperience);
-      setLanguagesSpoken(user.languagesSpoken || []);
-      
-      // Cargar redes sociales si existen
-      const socialMedia = (user as any).socialMedia || {};
-      setAgentFacebookUrl(socialMedia.facebook || "");
-      setAgentInstagramUrl(socialMedia.instagram || "");
-      setAgentLinkedinUrl(socialMedia.linkedin || "");
-    }
+    if (!user || agentProfileInitializedRef.current) return;
+    agentProfileInitializedRef.current = true;
+    setName(user.name || "");
+    setSurname(user.surname || "");
+    setDescription(user.description || "");
+    setPhone(user.phone || "");
+    setCity(user.city || "Barcelona");
+    setInfluenceNeighborhoods(user.influenceNeighborhoods || []);
+    setYearsOfExperience(user.yearsOfExperience);
+    setLanguagesSpoken(user.languagesSpoken || []);
+
+    const socialMedia = (user as any).socialMedia || {};
+    setAgentFacebookUrl(socialMedia.facebook || "");
+    setAgentInstagramUrl(socialMedia.instagram || "");
+    setAgentLinkedinUrl(socialMedia.linkedin || "");
+    setAgentProfileReady(true);
   }, [user]);
 
   // Fetch agencies for admin user
@@ -321,6 +330,48 @@ export default function ManagePage() {
     enabled: isSendModalOpen && Boolean(user?.id),
   });
 
+  const recommendationClient = useMemo(() => {
+    if (selectedClientIds.size !== 1 || !clients?.length) return null;
+    const onlyId = Array.from(selectedClientIds)[0];
+    return clients.find((c) => c.id === onlyId) ?? null;
+  }, [selectedClientIds, clients]);
+
+  const recommendationsEnabled = selectedClientIds.size === 1 && recommendationClient != null;
+
+  type SendPropertyRow = Property & { recommendation?: RecommendationResult };
+
+  const sendModalProperties = useMemo((): SendPropertyRow[] => {
+    if (!agencyProperties?.length) return [];
+
+    const matchesSearch = (property: Property) =>
+      !propertySearch ||
+      property.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+      property.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
+      property.type?.toLowerCase().includes(propertySearch.toLowerCase());
+
+    if (recommendationsEnabled && recommendationClient) {
+      let ranked: RankedProperty<Property>[] = rankProperties(
+        recommendationClient.propertyPreferences,
+        agencyProperties,
+      );
+      if (showRecommendedOnly) {
+        ranked = ranked.filter((p) => p.recommendation.eligible);
+      }
+      return ranked.filter(matchesSearch);
+    }
+
+    return agencyProperties.filter(matchesSearch);
+  }, [
+    agencyProperties,
+    propertySearch,
+    recommendationsEnabled,
+    recommendationClient,
+    showRecommendedOnly,
+  ]);
+
+  const matchLabelKey = (label: RecommendationLabel) =>
+    `manage.clients.match_${label}` as const;
+
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
       // apiRequest already returns parsed JSON data, not a Response object
@@ -358,11 +409,6 @@ export default function ManagePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/properties?agentId=${user?.id}&includeInactive=true`] });
-      setEditingProperty(null);
-      toast({
-        title: t("manage.properties.updated"),
-        description: t("manage.changes_saved"),
-      });
     },
     onError: (error) => {
       console.error('Error updating property:', error);
@@ -497,16 +543,6 @@ export default function ManagePage() {
     onSuccess: (updatedUser) => {
       if (updatedUser) {
         setUser(updatedUser);
-        setShowSavedIndicator(true);
-        setHasAgentChanges(false); // Added
-        toast({
-          title: t("manage.profile.updated"),
-          description: t("manage.changes_saved"),
-        });
-
-        setTimeout(() => {
-          setShowSavedIndicator(false);
-        }, 3000);
       }
     },
     onError: (error) => {
@@ -527,16 +563,6 @@ export default function ManagePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/agencies?adminAgentId=${user?.id}`] });
-      setShowSavedIndicator(true);
-      setHasAgencyChanges(false);
-      toast({
-        title: t("manage.agency.updated"),
-        description: t("manage.changes_saved"),
-      });
-
-      setTimeout(() => {
-        setShowSavedIndicator(false);
-      }, 3000);
     },
     onError: (error) => {
       toast({
@@ -546,6 +572,75 @@ export default function ManagePage() {
       });
     }
   });
+
+  const agentProfileData = useMemo(
+    () => ({
+      name,
+      surname,
+      description,
+      phone,
+      city,
+      influenceNeighborhoods,
+      yearsOfExperience,
+      languagesSpoken,
+      agentFacebookUrl,
+      agentInstagramUrl,
+      agentLinkedinUrl,
+    }),
+    [
+      name,
+      surname,
+      description,
+      phone,
+      city,
+      influenceNeighborhoods,
+      yearsOfExperience,
+      languagesSpoken,
+      agentFacebookUrl,
+      agentInstagramUrl,
+      agentLinkedinUrl,
+    ],
+  );
+
+  const saveAgentProfile = useCallback(
+    async (data: typeof agentProfileData) => {
+      if (data.phone && data.phone.trim() !== "") {
+        const phoneRegex = /^(\+34|0034|34)?[\s\-]?[6789]\d{2}[\s\-]?\d{3}[\s\-]?\d{3}$/;
+        if (!phoneRegex.test(data.phone.replace(/\s/g, ""))) {
+          toast({
+            title: t("manage.invalid_phone"),
+            description: t("manage.invalid_phone_desc"),
+            variant: "destructive",
+          });
+          throw new Error("INVALID_PHONE");
+        }
+      }
+
+      const socialMedia: Record<string, string> = {};
+      if (data.agentFacebookUrl) socialMedia.facebook = data.agentFacebookUrl;
+      if (data.agentInstagramUrl) socialMedia.instagram = data.agentInstagramUrl;
+      if (data.agentLinkedinUrl) socialMedia.linkedin = data.agentLinkedinUrl;
+
+      await updateProfileMutation.mutateAsync({
+        name: data.name,
+        surname: data.surname,
+        description: data.description,
+        phone: data.phone,
+        city: data.city,
+        influenceNeighborhoods: data.influenceNeighborhoods,
+        yearsOfExperience: data.yearsOfExperience,
+        languagesSpoken: data.languagesSpoken,
+        socialMedia: Object.keys(socialMedia).length > 0 ? socialMedia : undefined,
+      });
+    },
+    [t, toast, updateProfileMutation],
+  );
+
+  const { savedFields: agentSavedFields, markChanged: markAgentChanged } = useAutosave(
+    agentProfileData,
+    saveAgentProfile,
+    { enabled: agentProfileReady && currentSection === "perfil-agente" },
+  );
 
   // Mutation for sending review requests
   const sendReviewRequestMutation = useMutation({
@@ -1026,42 +1121,54 @@ export default function ManagePage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">{t("common.name")}</Label>
+                    <Label htmlFor="name" className="inline-flex items-center">
+                      {t("common.name")}
+                      <SavedIndicator visible={agentSavedFields.has("name")} />
+                    </Label>
                     <Input 
                       id="name" 
                       placeholder={t("manage.profile.name_placeholder")} 
                       value={name}
-                      onChange={(e) => {setName(e.target.value); setHasAgentChanges(true);}}
+                      onChange={(e) => { markAgentChanged("name"); setName(e.target.value); }}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="surname">{t("common.surname")}</Label>
+                    <Label htmlFor="surname" className="inline-flex items-center">
+                      {t("common.surname")}
+                      <SavedIndicator visible={agentSavedFields.has("surname")} />
+                    </Label>
                     <Input 
                       id="surname" 
                       placeholder={t("manage.profile.surname_placeholder")} 
                       value={surname}
-                      onChange={(e) => {setSurname(e.target.value); setHasAgentChanges(true);}}
+                      onChange={(e) => { markAgentChanged("surname"); setSurname(e.target.value); }}
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="description">{t("manage.profile.public_description")}</Label>
+                  <Label htmlFor="description" className="inline-flex items-center">
+                    {t("manage.profile.public_description")}
+                    <SavedIndicator visible={agentSavedFields.has("description")} />
+                  </Label>
                   <Textarea 
                     id="description" 
                     placeholder={t("manage.profile.public_description_placeholder")}
                     className="min-h-[100px]"
                     value={description}
-                    onChange={(e) => {setDescription(e.target.value); setHasAgentChanges(true);}}
+                    onChange={(e) => { markAgentChanged("description"); setDescription(e.target.value); }}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="agent-phone">{t("manage.profile.phone")}</Label>
+                    <Label htmlFor="agent-phone" className="inline-flex items-center">
+                      {t("manage.profile.phone")}
+                      <SavedIndicator visible={agentSavedFields.has("phone")} />
+                    </Label>
                     <Input 
                       id="agent-phone" 
                       placeholder={t("manage.profile.phone_placeholder")} 
                       value={phone}
-                      onChange={(e) => {setPhone(e.target.value); setHasAgentChanges(true);}}
+                      onChange={(e) => { markAgentChanged("phone"); setPhone(e.target.value); }}
                       data-testid="input-agent-phone"
                     />
                     <p className="text-sm text-gray-500 mt-1">
@@ -1069,7 +1176,10 @@ export default function ManagePage() {
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="yearsOfExperience">{t("manage.profile.years_experience")}</Label>
+                    <Label htmlFor="yearsOfExperience" className="inline-flex items-center">
+                      {t("manage.profile.years_experience")}
+                      <SavedIndicator visible={agentSavedFields.has("yearsOfExperience")} />
+                    </Label>
                     <Input 
                       id="yearsOfExperience" 
                       type="number"
@@ -1077,6 +1187,7 @@ export default function ManagePage() {
                       value={yearsOfExperience !== undefined ? yearsOfExperience : ''}
                       onChange={(e) => {
                         const value = e.target.value;
+                        markAgentChanged("yearsOfExperience");
                         if (value === '') {
                           setYearsOfExperience(undefined);
                         } else {
@@ -1085,13 +1196,15 @@ export default function ManagePage() {
                             setYearsOfExperience(numValue);
                           }
                         }
-                        setHasAgentChanges(true);
                       }}
                     />
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="languagesSpoken">{t("manage.profile.languages")}</Label>
+                  <Label htmlFor="languagesSpoken" className="inline-flex items-center">
+                    {t("manage.profile.languages")}
+                    <SavedIndicator visible={agentSavedFields.has("languagesSpoken")} />
+                  </Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
                       <Button 
@@ -1100,12 +1213,12 @@ export default function ManagePage() {
                         variant={languagesSpoken.includes(lang) ? "default" : "outline"}
                         size="sm"
                         onClick={() => {
+                          markAgentChanged("languagesSpoken");
                           if (languagesSpoken.includes(lang)) {
                             setLanguagesSpoken(languagesSpoken.filter(l => l !== lang));
                           } else {
                             setLanguagesSpoken([...languagesSpoken, lang]);
                           }
-                          setHasAgentChanges(true); // Added change detection
                         }}
                       >
                         {lang}
@@ -1114,95 +1227,32 @@ export default function ManagePage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="city">{t("manage.profile.city")}</Label>
-                  <div className="relative">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="city-search"
-                        placeholder={t("manage.profile.search_city")}
-                        value={cityDropdownOpen ? citySearchTerm : city}
-                        onChange={(e) => {
-                          setCitySearchTerm(e.target.value);
-                          if (!cityDropdownOpen) setCityDropdownOpen(true);
-                        }}
-                        onFocus={() => {
-                          setCityDropdownOpen(true);
-                          setCitySearchTerm("");
-                        }}
-                        className="pl-9 pr-8"
-                        data-testid="input-city-search"
-                      />
-                      {city && !cityDropdownOpen && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCity("");
-                            setInfluenceNeighborhoods([]);
-                            setHasAgentChanges(true);
-                            setCityDropdownOpen(true);
-                            setCitySearchTerm("");
-                          }}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                    {cityDropdownOpen && (
-                      <>
-                        <div 
-                          className="fixed inset-0 z-40" 
-                          onClick={() => {
-                            setCityDropdownOpen(false);
-                            setCitySearchTerm("");
-                          }}
-                        />
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                          {getCities()
-                            .filter((cityOption) => 
-                              cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
-                            )
-                            .slice(0, 50) // Limit results for performance
-                            .map((cityOption, index) => (
-                              <button
-                                key={`${cityOption}-${index}`}
-                                type="button"
-                                className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                  city === cityOption ? 'bg-primary/10 text-primary font-medium' : ''
-                                }`}
-                                onClick={() => {
-                                  setCity(cityOption);
-                                  setInfluenceNeighborhoods([]); // Clear neighborhoods when city changes
-                                  setHasAgentChanges(true);
-                                  setCityDropdownOpen(false);
-                                  setCitySearchTerm("");
-                                }}
-                                data-testid={`city-option-${cityOption}`}
-                              >
-                                {cityOption}
-                              </button>
-                            ))
-                          }
-                          {getCities().filter((cityOption) => 
-                            cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
-                          ).length === 0 && (
-                            <div className="px-4 py-2 text-sm text-gray-500">
-                              No se encontraron ciudades
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <Label htmlFor="city" className="inline-flex items-center">
+                    {t("manage.profile.city")}
+                    <SavedIndicator visible={agentSavedFields.has("city")} />
+                  </Label>
+                  <CitySearchSelect
+                    value={city || null}
+                    placeholder={t("manage.profile.search_city")}
+                    onChange={(nextCity) => {
+                      markAgentChanged("city");
+                      markAgentChanged("influenceNeighborhoods");
+                      setCity(nextCity || "");
+                      setInfluenceNeighborhoods([]);
+                    }}
+                    testId="input-city-search"
+                  />
                 </div>
                 <div className="w-full">
-                  <Label htmlFor="influence-neighborhoods">{t("manage.profile.influence_neighborhoods")}</Label>
+                  <Label htmlFor="influence-neighborhoods" className="inline-flex items-center">
+                    {t("manage.profile.influence_neighborhoods")}
+                    <SavedIndicator visible={agentSavedFields.has("influenceNeighborhoods")} />
+                  </Label>
                   <div className="mt-1">
                     <NeighborhoodSelector
                       selectedNeighborhoods={influenceNeighborhoods}
                       city={city}
-                      onChange={(e) => {setInfluenceNeighborhoods(e); setHasAgentChanges(true);}} // Added change detection
+                      onChange={(e) => { markAgentChanged("influenceNeighborhoods"); setInfluenceNeighborhoods(e); }}
                       buttonText={t("manage.profile.neighborhoods_button")}
                     />
                   </div>
@@ -1212,7 +1262,16 @@ export default function ManagePage() {
                 </div>
 
                 <div className="space-y-3 md:space-y-4">
-                  <Label>{t("manage.profile.social_media")}</Label>
+                  <Label className="inline-flex items-center">
+                    {t("manage.profile.social_media")}
+                    <SavedIndicator
+                      visible={
+                        agentSavedFields.has("agentFacebookUrl") ||
+                        agentSavedFields.has("agentInstagramUrl") ||
+                        agentSavedFields.has("agentLinkedinUrl")
+                      }
+                    />
+                  </Label>
                   <p className="text-sm text-gray-500">
                     Añade tus perfiles de redes sociales para que aparezcan en tu perfil público.
                   </p>
@@ -1227,7 +1286,7 @@ export default function ManagePage() {
                       <Input
                         placeholder={t("manage.profile.facebook_placeholder")}
                         value={agentFacebookUrl}
-                        onChange={(e) => {setAgentFacebookUrl(e.target.value); setHasAgentChanges(true);}}
+                        onChange={(e) => { markAgentChanged("agentFacebookUrl"); setAgentFacebookUrl(e.target.value); }}
                         className="min-h-[44px]"
                       />
                     </div>
@@ -1243,7 +1302,7 @@ export default function ManagePage() {
                       <Input
                         placeholder={t("manage.profile.instagram_placeholder")}
                         value={agentInstagramUrl}
-                        onChange={(e) => {setAgentInstagramUrl(e.target.value); setHasAgentChanges(true);}}
+                        onChange={(e) => { markAgentChanged("agentInstagramUrl"); setAgentInstagramUrl(e.target.value); }}
                         className="min-h-[44px]"
                       />
                     </div>
@@ -1259,58 +1318,12 @@ export default function ManagePage() {
                       <Input
                         placeholder={t("manage.profile.linkedin_placeholder")}
                         value={agentLinkedinUrl}
-                        onChange={(e) => {setAgentLinkedinUrl(e.target.value); setHasAgentChanges(true);}}
+                        onChange={(e) => { markAgentChanged("agentLinkedinUrl"); setAgentLinkedinUrl(e.target.value); }}
                         className="min-h-[44px]"
                       />
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex justify-center md:justify-end mt-4 md:mt-6">
-                <Button
-                  type="button"
-                  className="relative w-full md:w-auto min-h-[48px] md:min-h-0"
-                  onClick={() => {
-                    // Validate phone number if provided
-                    if (phone && phone.trim() !== '') {
-                      const phoneRegex = /^(\+34|0034|34)?[\s\-]?[6789]\d{2}[\s\-]?\d{3}[\s\-]?\d{3}$/;
-                      if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-                        toast({
-                          title: t("manage.invalid_phone"),
-                          description: t("manage.invalid_phone_desc"),
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                    }
-
-                    // Crear el objeto de redes sociales
-                    const socialMedia: Record<string, string> = {};
-                    if (agentFacebookUrl) socialMedia.facebook = agentFacebookUrl;
-                    if (agentInstagramUrl) socialMedia.instagram = agentInstagramUrl;
-                    if (agentLinkedinUrl) socialMedia.linkedin = agentLinkedinUrl;
-
-                    updateProfileMutation.mutate({
-                      name,
-                      surname,
-                      description,
-                      phone,
-                      city,
-                      influenceNeighborhoods,
-                      yearsOfExperience,
-                      languagesSpoken,
-                      socialMedia: Object.keys(socialMedia).length > 0 ? socialMedia : undefined
-                    });
-                  }}
-                  disabled={updateProfileMutation.isPending || !hasAgentChanges} // Added disable logic
-                  data-testid="button-save-agent-profile"
-                >
-                  {showSavedIndicator && (
-                    <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
-                  )}
-                  {t("common.save_changes")}
-                </Button>
               </div>
             </div>
           )}
@@ -1404,7 +1417,7 @@ export default function ManagePage() {
                     id="agency-name" 
                     placeholder={t("manage.agency.name_placeholder")} 
                     value={agencyName}
-                    onChange={(e) => {setAgencyName(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                    onChange={(e) => {setAgencyName(e.target.value);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -1413,7 +1426,7 @@ export default function ManagePage() {
                     id="agency-address" 
                     placeholder={t("manage.agency.address_placeholder")} 
                     value={agencyAddress}
-                    onChange={(e) => {setAgencyAddress(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                    onChange={(e) => {setAgencyAddress(e.target.value);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -1423,7 +1436,7 @@ export default function ManagePage() {
                     placeholder={t("manage.agency.description_placeholder")}
                     className="min-h-[120px]"
                     value={agencyDescription}
-                    onChange={(e) => {setAgencyDescription(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                    onChange={(e) => {setAgencyDescription(e.target.value);}} // Added change detection
                   />
                 </div>
                 <div>
@@ -1432,7 +1445,7 @@ export default function ManagePage() {
                     id="agency-phone" 
                     placeholder={t("manage.agency.phone_placeholder")} 
                     value={agencyPhone}
-                    onChange={(e) => {setAgencyPhone(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                    onChange={(e) => {setAgencyPhone(e.target.value);}} // Added change detection
                   />
                 </div>
                 <div className="w-full">
@@ -1441,7 +1454,7 @@ export default function ManagePage() {
                     <NeighborhoodSelector
                       selectedNeighborhoods={agencyInfluenceNeighborhoods}
                       city={agencyCity}
-                      onChange={(e) => {setAgencyInfluenceNeighborhoods(e); setHasAgencyChanges(true);}} // Added change detection
+                      onChange={(e) => {setAgencyInfluenceNeighborhoods(e);}} // Added change detection
                       buttonText={t("manage.agency.neighborhoods_button")}
                       title="ZONAS DE OPERACIÓN DE LA AGENCIA"
                     />
@@ -1486,7 +1499,7 @@ export default function ManagePage() {
                       } else {
                         setYearEstablished(parseInt(value, 10));
                       }
-                      setHasAgencyChanges(true); // Added change detection
+                      // Added change detection
                     }}
                   >
                     <SelectTrigger>
@@ -1525,7 +1538,7 @@ export default function ManagePage() {
                           } else {
                             setAgencySupportedLanguages([...agencySupportedLanguages, lang]);
                           }
-                          setHasAgencyChanges(true); // Added change detection
+                          // Added change detection
                         }}
                       >
                         {lang}
@@ -1540,7 +1553,7 @@ export default function ManagePage() {
                     id="agency-website" 
                     placeholder={t("manage.agency.website_placeholder")} 
                     value={agencyWebsite}
-                    onChange={(e) => {setAgencyWebsite(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                    onChange={(e) => {setAgencyWebsite(e.target.value);}} // Added change detection
                   />
                 </div>
 
@@ -1556,7 +1569,7 @@ export default function ManagePage() {
                       <Input 
                         placeholder={t("manage.profile.facebook_placeholder")} 
                         value={facebookUrl}
-                        onChange={(e) => {setFacebookUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                        onChange={(e) => {setFacebookUrl(e.target.value);}} // Added change detection
                       />
                     </div>
 
@@ -1571,7 +1584,7 @@ export default function ManagePage() {
                       <Input 
                         placeholder={t("manage.profile.instagram_placeholder")} 
                         value={instagramUrl}
-                        onChange={(e) => {setInstagramUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                        onChange={(e) => {setInstagramUrl(e.target.value);}} // Added change detection
                       />
                     </div>
 
@@ -1584,7 +1597,7 @@ export default function ManagePage() {
                       <Input 
                         placeholder={t("manage.agency.twitter_placeholder")} 
                         value={twitterUrl}
-                        onChange={(e) => {setTwitterUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                        onChange={(e) => {setTwitterUrl(e.target.value);}} // Added change detection
                       />
                     </div>
 
@@ -1599,7 +1612,7 @@ export default function ManagePage() {
                       <Input 
                         placeholder={t("manage.profile.linkedin_placeholder")} 
                         value={linkedinUrl}
-                        onChange={(e) => {setLinkedinUrl(e.target.value); setHasAgencyChanges(true);}} // Added change detection
+                        onChange={(e) => {setLinkedinUrl(e.target.value);}} // Added change detection
                       />
                     </div>
                   </div>
@@ -1627,11 +1640,8 @@ export default function ManagePage() {
                       linkedin: linkedinUrl
                     }
                   })}
-                  disabled={updateAgencyMutation.isPending || !hasAgencyChanges || !currentAgency} // Added disable logic
+                  disabled={updateAgencyMutation.isPending || !currentAgency}
                 >
-                  {showSavedIndicator && (
-                    <CheckCircle className="w-4 h-4 absolute -left-6 text-green-500" />
-                  )}
                   {t("common.save_changes")}
                 </Button>
               </div>
@@ -1775,6 +1785,8 @@ export default function ManagePage() {
                         propertyCondition: editingProperty.propertyCondition || undefined,
                         floor: editingProperty.floor || undefined,
                         neighborhood: editingProperty.neighborhood,
+                        city: editingProperty.city || null,
+                        district: editingProperty.district || null,
                         reference: editingProperty.reference,
                         operationType: editingProperty.operationType as "Venta" | "Alquiler",
                         features: editingProperty.features || [],
@@ -2453,19 +2465,20 @@ export default function ManagePage() {
                     setPropertySearch("");
                     setSelectedPropertyIds(new Set());
                     setEmailMessage("");
+                    setShowRecommendedOnly(true);
                   }
                 }}
               >
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] h-[90vh] overflow-hidden flex flex-col">
                   {sendModalStep === 1 ? (
                     <>
                       <DialogHeader>
                         <DialogTitle>{t("manage.clients.select_properties")}</DialogTitle>
                       </DialogHeader>
                       
-                      <div className="flex-1 overflow-hidden flex flex-col">
-                        {/* Search input */}
-                        <div className="mb-4">
+                      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                        {/* Search + recommendation filter */}
+                        <div className="mb-4 space-y-3 shrink-0">
                           <div className="relative">
                             <Input
                               placeholder={t("manage.clients.search_properties")}
@@ -2484,10 +2497,31 @@ export default function ManagePage() {
                               <path d="m21 21-4.35-4.35" />
                             </svg>
                           </div>
+
+                          {recommendationsEnabled && (
+                            <div className="flex flex-wrap gap-4 text-sm" data-testid="recommendation-filter">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={showRecommendedOnly}
+                                  onCheckedChange={(checked) => setShowRecommendedOnly(checked === true)}
+                                  data-testid="checkbox-show-recommended-only"
+                                />
+                                <span>{t("manage.clients.show_recommended_only")}</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <Checkbox
+                                  checked={!showRecommendedOnly}
+                                  onCheckedChange={(checked) => setShowRecommendedOnly(checked !== true)}
+                                  data-testid="checkbox-show-all-properties"
+                                />
+                                <span>{t("manage.clients.show_all_properties")}</span>
+                              </label>
+                            </div>
+                          )}
                         </div>
 
                         {/* Properties table */}
-                        <div className="flex-1 overflow-auto border rounded-lg">
+                        <div className="flex-1 overflow-auto border rounded-lg min-h-0">
                           {isLoadingAgencyProperties ? (
                             <div className="flex items-center justify-center h-48">
                               <p className="text-muted-foreground">{t("manage.properties.loading_list")}</p>
@@ -2496,57 +2530,47 @@ export default function ManagePage() {
                             <div className="flex items-center justify-center h-48">
                               <p className="text-muted-foreground">No hay propiedades disponibles</p>
                             </div>
+                          ) : sendModalProperties.length === 0 ? (
+                            <div className="flex items-center justify-center h-48">
+                              <p className="text-muted-foreground">
+                                {recommendationsEnabled && showRecommendedOnly
+                                  ? t("manage.clients.no_recommended")
+                                  : t("manage.clients.search_properties")}
+                              </p>
+                            </div>
                           ) : (
+                            <TooltipProvider delayDuration={200}>
                             <Table>
                               <TableHeader>
                                 <TableRow>
                                   <TableHead className="w-[50px]">
                                     <Checkbox
-                                      checked={agencyProperties.filter(p => 
-                                        !propertySearch || 
-                                        p.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                        p.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                        p.type?.toLowerCase().includes(propertySearch.toLowerCase())
-                                      ).length > 0 && 
-                                      agencyProperties.filter(p => 
-                                        !propertySearch || 
-                                        p.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                        p.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                        p.type?.toLowerCase().includes(propertySearch.toLowerCase())
-                                      ).every(p => selectedPropertyIds.has(p.uuid))}
+                                      checked={sendModalProperties.length > 0 &&
+                                        sendModalProperties.every(p => selectedPropertyIds.has(p.uuid))}
                                       onCheckedChange={(checked) => {
-                                        const filteredProps = agencyProperties.filter(p => 
-                                          !propertySearch || 
-                                          p.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                          p.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                          p.type?.toLowerCase().includes(propertySearch.toLowerCase())
-                                        );
                                         if (checked) {
-                                          setSelectedPropertyIds(new Set([...Array.from(selectedPropertyIds), ...filteredProps.map(p => p.uuid)]));
+                                          setSelectedPropertyIds(new Set([...Array.from(selectedPropertyIds), ...sendModalProperties.map(p => p.uuid)]));
                                         } else {
                                           const newSet = new Set(selectedPropertyIds);
-                                          filteredProps.forEach(p => newSet.delete(p.uuid));
+                                          sendModalProperties.forEach(p => newSet.delete(p.uuid));
                                           setSelectedPropertyIds(newSet);
                                         }
                                       }}
                                       data-testid="checkbox-select-all-properties"
                                     />
                                   </TableHead>
-                                  <TableHead>Referencia</TableHead>
-                                  <TableHead>{t("common.address")}</TableHead>
-                                  <TableHead className="text-right">Precio</TableHead>
+                                  <TableHead className="min-w-[220px]">Referencia</TableHead>
+                                  <TableHead className="min-w-[320px]">{t("common.address")}</TableHead>
+                                  {recommendationsEnabled && (
+                                    <TableHead className="w-[140px]">{t("manage.clients.match")}</TableHead>
+                                  )}
+                                  <TableHead className="w-[120px] text-right">Precio</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {agencyProperties
-                                  .filter(property => 
-                                    !propertySearch || 
-                                    property.title?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                    property.address?.toLowerCase().includes(propertySearch.toLowerCase()) ||
-                                    property.type?.toLowerCase().includes(propertySearch.toLowerCase())
-                                  )
-                                  .map((property) => {
+                                {sendModalProperties.map((property) => {
                                     const isSelected = selectedPropertyIds.has(property.uuid);
+                                    const rec = property.recommendation;
                                     return (
                                       <TableRow 
                                         key={property.uuid}
@@ -2577,7 +2601,71 @@ export default function ManagePage() {
                                         <TableCell className="text-muted-foreground">
                                           {property.address || 'Sin dirección'}
                                         </TableCell>
-                                        <TableCell className="text-right font-medium">
+                                        {recommendationsEnabled && (
+                                          <TableCell>
+                                            {rec ? (
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <div className="inline-flex items-center gap-2 cursor-default">
+                                                    {rec.eligible ? (
+                                                      <>
+                                                        <Badge
+                                                          variant={
+                                                            rec.label === "excellent"
+                                                              ? "default"
+                                                              : rec.label === "good"
+                                                                ? "secondary"
+                                                                : "outline"
+                                                          }
+                                                          className={cn(
+                                                            "w-fit",
+                                                            rec.label === "excellent" && "bg-emerald-600 hover:bg-emerald-600",
+                                                            rec.label === "possible" && "border-amber-500 text-amber-700",
+                                                            rec.label === "low" && "text-muted-foreground",
+                                                          )}
+                                                          data-testid={`badge-match-${property.uuid}`}
+                                                        >
+                                                          {t(matchLabelKey(rec.label))}
+                                                        </Badge>
+                                                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                                          {t("manage.clients.match_score", { score: String(rec.score) })}
+                                                        </span>
+                                                      </>
+                                                    ) : (
+                                                      <Badge
+                                                        variant="outline"
+                                                        className="text-muted-foreground w-fit"
+                                                        data-testid={`badge-match-${property.uuid}`}
+                                                      >
+                                                        {t("manage.clients.match_ineligible")}
+                                                      </Badge>
+                                                    )}
+                                                  </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent className="max-w-xs">
+                                                  {rec.eligible ? (
+                                                    <ul className="text-xs space-y-1">
+                                                      {rec.breakdown.map((item) => (
+                                                        <li key={item.category}>
+                                                          {t(`manage.clients.category_${item.category}` as "manage.clients.category_budget")}: {item.earned}/{Math.round(item.weight * 100)}
+                                                        </li>
+                                                      ))}
+                                                    </ul>
+                                                  ) : (
+                                                    <ul className="text-xs space-y-1">
+                                                      {(rec.exclusionReasons ?? []).map((reason) => (
+                                                        <li key={reason}>
+                                                          {t(`manage.clients.exclusion_${reason}` as "manage.clients.exclusion_city")}
+                                                        </li>
+                                                      ))}
+                                                    </ul>
+                                                  )}
+                                                </TooltipContent>
+                                              </Tooltip>
+                                            ) : null}
+                                          </TableCell>
+                                        )}
+                                        <TableCell className="text-right font-medium whitespace-nowrap">
                                           {property.price ? `$${property.price.toLocaleString()}` : '-'}
                                         </TableCell>
                                       </TableRow>
@@ -2585,6 +2673,7 @@ export default function ManagePage() {
                                   })}
                               </TableBody>
                             </Table>
+                            </TooltipProvider>
                           )}
                         </div>
                       </div>
@@ -2596,6 +2685,7 @@ export default function ManagePage() {
                             setIsSendModalOpen(false);
                             setSendModalStep(1);
                             setSelectedPropertyIds(new Set());
+                            setShowRecommendedOnly(true);
                           }}
                           data-testid="button-cancel-send"
                         >

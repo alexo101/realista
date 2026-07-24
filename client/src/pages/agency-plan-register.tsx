@@ -2,13 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Building, Users, Star, Sparkles, Eye, EyeOff, Search, X } from "lucide-react";
+import { Check, Building, Users, Star, Sparkles, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
-import { getCities } from "@/utils/neighborhoods";
+import { CitySearchSelect } from "@/components/CitySearchSelect";
 
 const agencyPlans = {
   basica: {
@@ -82,8 +82,6 @@ export default function AgencyPlanRegister() {
   const { setUser } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
-  const [citySearchTerm, setCitySearchTerm] = useState("");
   const [formData, setFormData] = useState({
     agencyName: "",
     city: undefined as string | undefined,
@@ -293,83 +291,16 @@ export default function AgencyPlanRegister() {
 
                 <div className="space-y-2">
                   <Label htmlFor="city">Zona *</Label>
-                  <div className="relative">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="city-search"
-                        placeholder="Buscar zona..."
-                        value={cityDropdownOpen ? citySearchTerm : (formData.city || "")}
-                        onChange={(e) => {
-                          setCitySearchTerm(e.target.value);
-                          if (!cityDropdownOpen) setCityDropdownOpen(true);
-                        }}
-                        onFocus={() => {
-                          setCityDropdownOpen(true);
-                          setCitySearchTerm("");
-                        }}
-                        onBlur={() => handleBlur('city')}
-                        className={`pl-9 pr-8 w-full ${shouldShowError('city') ? 'border-red-500' : ''}`}
-                        data-testid="input-city-search"
-                      />
-                      {formData.city && !cityDropdownOpen && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormData({ ...formData, city: undefined });
-                            setCityDropdownOpen(true);
-                            setCitySearchTerm("");
-                          }}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                    {cityDropdownOpen && (
-                      <>
-                        <div 
-                          className="fixed inset-0 z-40" 
-                          onClick={() => {
-                            setCityDropdownOpen(false);
-                            setCitySearchTerm("");
-                          }}
-                        />
-                        <div className="absolute left-0 z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                          {getCities()
-                            .filter((cityOption) => 
-                              cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
-                            )
-                            .slice(0, 50)
-                            .map((cityOption, index) => (
-                              <button
-                                key={`${cityOption}-${index}`}
-                                type="button"
-                                className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                  formData.city === cityOption ? 'bg-primary/10 text-primary font-medium' : ''
-                                }`}
-                                onClick={() => {
-                                  setFormData({ ...formData, city: cityOption });
-                                  setCityDropdownOpen(false);
-                                  setCitySearchTerm("");
-                                }}
-                                data-testid={`city-option-${cityOption}`}
-                              >
-                                {cityOption}
-                              </button>
-                            ))
-                          }
-                          {getCities().filter((cityOption) => 
-                            cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
-                          ).length === 0 && (
-                            <div className="px-4 py-2 text-sm text-gray-500">
-                              No se encontraron zonas
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <CitySearchSelect
+                    value={formData.city || null}
+                    placeholder="Buscar zona..."
+                    emptyLabel="No se encontraron zonas"
+                    onChange={(nextCity) => {
+                      setFormData({ ...formData, city: nextCity || undefined });
+                      handleBlur("city");
+                    }}
+                    testId="input-city-search"
+                  />
                   {shouldShowError('city') && (
                     <p className="text-sm text-red-500">{errors.city}</p>
                   )}

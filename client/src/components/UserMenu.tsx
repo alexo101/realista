@@ -7,8 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
-import { Heart, LogOut, User } from "lucide-react";
-import { Link } from "wouter";
+import { LogOut, User } from "lucide-react";
 
 export function UserMenu() {
   const { user, logout } = useUser();
@@ -19,7 +18,7 @@ export function UserMenu() {
   const displayName = user.name || (user.email ? user.email.split('@')[0] : t('nav.user_default'));
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
           <User className="h-5 w-5" />

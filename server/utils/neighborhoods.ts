@@ -147,8 +147,13 @@ const MADRID_STRUCTURE: CityStructure = {
   ]
 };
 
-// All cities
-export const ALL_CITIES: CityStructure[] = [BARCELONA_STRUCTURE, MADRID_STRUCTURE];
+// Import Spain-wide locations (excludes Barcelona and Madrid which are defined above)
+import { SPAIN_LOCATIONS } from "../../client/src/utils/spain-locations.generated";
+
+// All cities (Barcelona and Madrid curated + rest of Spain), sorted alphabetically
+export const ALL_CITIES: CityStructure[] = [BARCELONA_STRUCTURE, MADRID_STRUCTURE, ...SPAIN_LOCATIONS].sort(
+  (a, b) => a.city.localeCompare(b.city, "es", { sensitivity: "base" })
+);
 
 // Legacy Barcelona exports for backward compatibility
 export const BARCELONA_DISTRICTS_AND_NEIGHBORHOODS = BARCELONA_STRUCTURE.districts;
@@ -251,9 +256,89 @@ export function expandNeighborhoodSearch(queryNeighborhood: string, city: string
   return [];
 }
 
+export type LocationMatch = {
+  city: string;
+  district: string;
+  neighborhood: string;
+};
+
+/**
+ * Resolve catalog city + district from a neighborhood name.
+ * Uses optional hintCity when the same barrio name exists in multiple cities.
+ */
+export function findLocationByNeighborhood(
+  neighborhood: string,
+  hintCity?: string | null,
+): LocationMatch | null {
+  if (!neighborhood?.trim()) return null;
+
+  const matches: LocationMatch[] = [];
+
+  for (const cityData of ALL_CITIES) {
+    for (const district of cityData.districts) {
+      if (district.neighborhoods.includes(neighborhood)) {
+        matches.push({
+          city: cityData.city,
+          district: district.district,
+          neighborhood,
+        });
+        continue;
+      }
+      if (district.neighborhoods.length === 0 && district.district === neighborhood) {
+        matches.push({
+          city: cityData.city,
+          district: district.district,
+          neighborhood,
+        });
+      }
+    }
+  }
+
+  if (matches.length === 0) return null;
+
+  if (hintCity) {
+    const hinted = matches.find((m) => m.city === hintCity);
+    if (hinted) return hinted;
+  }
+
+  if (matches.length === 1) return matches[0];
+
+  // Same barrio name can appear in province-area cities (e.g. El Raval in Barcelona
+  // and Barcelonés). Prefer curated metro cities for legacy listings without a city.
+  const curated = matches.find((m) => m.city === "Barcelona" || m.city === "Madrid");
+  if (curated) return curated;
+
+  return null;
+}
+
+export function resolvePropertyLocation(input: {
+  neighborhood: string;
+  city?: string | null;
+  district?: string | null;
+  locality?: string | null;
+}): { city: string | null; district: string | null } {
+  const cityNames = getCities();
+  const hintCity =
+    input.city ||
+    (input.locality && cityNames.includes(input.locality) ? input.locality : null);
+
+  const match = findLocationByNeighborhood(input.neighborhood, hintCity);
+  if (!match) {
+    return {
+      city: input.city ?? null,
+      district: input.district ?? null,
+    };
+  }
+
+  return {
+    city: match.city,
+    district: match.district,
+  };
+}
+
 // New hierarchical utility functions
 export function getCities(): string[] {
-  return ALL_CITIES.map(city => city.city);
+  return ALL_CITIES.map((city) => city.city);
 }
 
 export function getDistrictsByCity(city: string): string[] {

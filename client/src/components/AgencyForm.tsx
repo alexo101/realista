@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, X, Check, Search } from "lucide-react";
+import { Building, X, Check } from "lucide-react";
 import { SiGooglemaps } from "react-icons/si";
 import { NeighborhoodSelector } from "./NeighborhoodSelector";
 import { AddressAutocomplete } from "./AddressAutocomplete";
-import { getCities } from "@/utils/neighborhoods";
+import { CitySearchSelect } from "./CitySearchSelect";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SavedIndicator } from "@/components/SavedIndicator";
 
 export interface Agency {
   id: number;
@@ -37,6 +39,8 @@ interface AgencyFormProps {
 }
 
 export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyFormProps) {
+  const isEditMode = !!agency;
+
   // Estados para los campos del formulario
   const [agencyName, setAgencyName] = useState("");
   const [agencyAddress, setAgencyAddress] = useState("");
@@ -55,10 +59,8 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-
-  // City search state
-  const [citySearchTerm, setCitySearchTerm] = useState("");
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const [formReady, setFormReady] = useState(false);
+  const initializedAgencyIdRef = useRef<number | null>(null);
 
   // Estados para errores de validación
   const [phoneError, setPhoneError] = useState<string>("");
@@ -78,48 +80,49 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     return websiteRegex.test(website);
   };
 
-  // Si estamos editando, cargar los datos de la agencia
+  // Si estamos editando, cargar los datos de la agencia una sola vez
   useEffect(() => {
-    if (agency) {
-      setAgencyName(agency.agencyName || "");
-      setAgencyAddress(agency.agencyAddress || "");
-      setLatitude(agency.latitude ?? null);
-      setLongitude(agency.longitude ?? null);
-      setAgencyDescription(agency.agencyDescription || "");
-      setAgencyPhone(agency.agencyPhone || "");
-      setAgencyWebsite(agency.agencyWebsite || "");
-      setYearEstablished(agency.yearEstablished);
-      setAgencySupportedLanguages(agency.agencySupportedLanguages || []);
-      setAgencyLogo(agency.agencyLogo);
-      setCity((agency as any).city || "");
-      setInfluenceNeighborhoods(agency.agencyInfluenceNeighborhoods || []);
-      setLogoPreview(agency.agencyLogo || null);
-      
-      // Cargar redes sociales si existen
-      const socialMedia = agency.agencySocialMedia || {};
-      setFacebookUrl(socialMedia.facebook || "");
-      setInstagramUrl(socialMedia.instagram || "");
-      setGoogleMapsUrl(socialMedia.googleMaps || "");
-      setLinkedinUrl(socialMedia.linkedin || "");
+    if (!agency) {
+      setFormReady(false);
+      initializedAgencyIdRef.current = null;
+      return;
     }
+    if (initializedAgencyIdRef.current === agency.id) return;
+    initializedAgencyIdRef.current = agency.id;
+
+    setAgencyName(agency.agencyName || "");
+    setAgencyAddress(agency.agencyAddress || "");
+    setLatitude(agency.latitude ?? null);
+    setLongitude(agency.longitude ?? null);
+    setAgencyDescription(agency.agencyDescription || "");
+    setAgencyPhone(agency.agencyPhone || "");
+    setAgencyWebsite(agency.agencyWebsite || "");
+    setYearEstablished(agency.yearEstablished);
+    setAgencySupportedLanguages(agency.agencySupportedLanguages || []);
+    setAgencyLogo(agency.agencyLogo);
+    setCity((agency as any).city || "");
+    setInfluenceNeighborhoods(agency.agencyInfluenceNeighborhoods || []);
+    setLogoPreview(agency.agencyLogo || null);
+
+    const socialMedia = agency.agencySocialMedia || {};
+    setFacebookUrl(socialMedia.facebook || "");
+    setInstagramUrl(socialMedia.instagram || "");
+    setGoogleMapsUrl(socialMedia.googleMaps || "");
+    setLinkedinUrl(socialMedia.linkedin || "");
+    setFormReady(true);
   }, [agency]);
 
   // Validación completa del formulario
   const isValid = agencyName.trim().length > 0 && !phoneError && !websiteError;
 
-  // Manejar el envío del formulario
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isValid) return;
-
-    // Crear el objeto para guardar las redes sociales
+  const buildPayload = useCallback((): Partial<Agency> => {
     const socialMedia: Record<string, string> = {};
     if (facebookUrl) socialMedia.facebook = facebookUrl;
     if (instagramUrl) socialMedia.instagram = instagramUrl;
     if (googleMapsUrl) socialMedia.googleMaps = googleMapsUrl;
     if (linkedinUrl) socialMedia.linkedin = linkedinUrl;
 
-    const data: Partial<Agency> = {
+    return {
       agencyName,
       agencyAddress,
       latitude,
@@ -134,8 +137,80 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
       agencyInfluenceNeighborhoods: influenceNeighborhoods,
       agencySocialMedia: Object.keys(socialMedia).length > 0 ? socialMedia : undefined,
     };
+  }, [
+    agencyName,
+    agencyAddress,
+    latitude,
+    longitude,
+    agencyDescription,
+    agencyPhone,
+    agencyWebsite,
+    yearEstablished,
+    agencySupportedLanguages,
+    agencyLogo,
+    city,
+    influenceNeighborhoods,
+    facebookUrl,
+    instagramUrl,
+    googleMapsUrl,
+    linkedinUrl,
+  ]);
 
-    await onSubmit(data);
+  const formData = useMemo(
+    () => ({
+      agencyName,
+      agencyAddress,
+      latitude,
+      longitude,
+      agencyDescription,
+      agencyPhone,
+      agencyWebsite,
+      yearEstablished,
+      agencySupportedLanguages,
+      agencyLogo,
+      city,
+      influenceNeighborhoods,
+      facebookUrl,
+      instagramUrl,
+      googleMapsUrl,
+      linkedinUrl,
+    }),
+    [
+      agencyName,
+      agencyAddress,
+      latitude,
+      longitude,
+      agencyDescription,
+      agencyPhone,
+      agencyWebsite,
+      yearEstablished,
+      agencySupportedLanguages,
+      agencyLogo,
+      city,
+      influenceNeighborhoods,
+      facebookUrl,
+      instagramUrl,
+      googleMapsUrl,
+      linkedinUrl,
+    ],
+  );
+
+  const saveAgency = useCallback(async () => {
+    if (!isValid) {
+      throw new Error("VALIDATION");
+    }
+    await onSubmit(buildPayload());
+  }, [isValid, onSubmit, buildPayload]);
+
+  const { savedFields, markChanged } = useAutosave(formData, saveAgency, {
+    enabled: isEditMode && formReady,
+  });
+
+  // Manejar el envío del formulario (create mode)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValid) return;
+    await onSubmit(buildPayload());
   };
 
   // Manejar la subida de la imagen del logo
@@ -147,12 +222,20 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     reader.onload = (event) => {
       if (event.target?.result) {
         const base64String = event.target.result.toString();
+        markChanged("agencyLogo");
         setAgencyLogo(base64String);
         setLogoPreview(base64String);
       }
     };
     reader.readAsDataURL(file);
   };
+
+  const labelWithSaved = (field: string, text: React.ReactNode, className?: string) => (
+    <Label htmlFor={typeof field === "string" ? field : undefined} className={`inline-flex items-center ${className || ""}`}>
+      {text}
+      <SavedIndicator visible={savedFields.has(field)} />
+    </Label>
+  );
 
   return (
     <Card className="mb-6">
@@ -172,6 +255,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
             <Label htmlFor="agency-logo-upload" className="cursor-pointer text-sm text-primary py-2 px-4 min-h-[44px] flex items-center">
               {logoPreview ? "Cambiar logo" : "Subir logo"}
+              <SavedIndicator visible={savedFields.has("agencyLogo")} />
             </Label>
             <Input
               id="agency-logo-upload"
@@ -184,11 +268,14 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="agencyName" className="required">Nombre de la agencia</Label>
+              {labelWithSaved("agencyName", "Nombre de la agencia", "required")}
               <Input
                 id="agencyName"
                 value={agencyName}
-                onChange={(e) => setAgencyName(e.target.value)}
+                onChange={(e) => {
+                  markChanged("agencyName");
+                  setAgencyName(e.target.value);
+                }}
                 placeholder="Introduce el nombre de la agencia"
                 required
                 className="min-h-[44px] w-full"
@@ -196,18 +283,24 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label htmlFor="agencyAddress">Dirección de la agencia</Label>
+              {labelWithSaved("agencyAddress", "Dirección de la agencia")}
               <AddressAutocomplete
                 value={agencyAddress}
                 onChange={(val) => {
+                  markChanged("agencyAddress");
                   setAgencyAddress(val);
                   // If user is editing the text manually, drop stale coords
                   if (val !== agencyAddress) {
+                    markChanged("latitude");
+                    markChanged("longitude");
                     setLatitude(null);
                     setLongitude(null);
                   }
                 }}
                 onPlaceSelected={({ address, latitude: lat, longitude: lng }) => {
+                  markChanged("agencyAddress");
+                  markChanged("latitude");
+                  markChanged("longitude");
                   setAgencyAddress(address);
                   setLatitude(lat);
                   setLongitude(lng);
@@ -217,11 +310,14 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label htmlFor="agencyDescription">Descripción pública</Label>
+              {labelWithSaved("agencyDescription", "Descripción pública")}
               <Textarea
                 id="agencyDescription"
                 value={agencyDescription}
-                onChange={(e) => setAgencyDescription(e.target.value)}
+                onChange={(e) => {
+                  markChanged("agencyDescription");
+                  setAgencyDescription(e.target.value);
+                }}
                 placeholder="Describe tu agencia inmobiliaria a clientes potenciales"
                 className="min-h-[120px] w-full"
               />
@@ -229,12 +325,13 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="agencyPhone">Número de teléfono</Label>
+                {labelWithSaved("agencyPhone", "Número de teléfono")}
                 <Input
                   id="agencyPhone"
                   value={agencyPhone}
                   onChange={(e) => {
                     const value = e.target.value;
+                    markChanged("agencyPhone");
                     setAgencyPhone(value);
                     if (value && !validateSpanishPhone(value)) {
                       setPhoneError("Formato inválido. Ejemplos: +34 600 123 456 o 600123456");
@@ -248,10 +345,11 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
               </div>
               <div>
-                <Label htmlFor="yearEstablished">Año de fundación</Label>
+                {labelWithSaved("yearEstablished", "Año de fundación")}
                 <Select
                   value={yearEstablished ? yearEstablished.toString() : 'none'}
                   onValueChange={(value) => {
+                    markChanged("yearEstablished");
                     if (value === 'none') {
                       setYearEstablished(undefined);
                     } else {
@@ -282,7 +380,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label htmlFor="agencySupportedLanguages">Idiomas que se hablan en la agencia</Label>
+              {labelWithSaved("agencySupportedLanguages", "Idiomas que se hablan en la agencia")}
               <div className="mt-2 flex flex-wrap gap-2">
                 {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
                   <Button
@@ -292,6 +390,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     size="sm"
                     className="min-h-[40px] px-3"
                     onClick={() => {
+                      markChanged("agencySupportedLanguages");
                       if (agencySupportedLanguages.includes(lang)) {
                         setAgencySupportedLanguages(agencySupportedLanguages.filter(l => l !== lang));
                       } else {
@@ -306,93 +405,28 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label htmlFor="city">Ciudad donde opera la agencia</Label>
-              <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="agency-city-search"
-                    placeholder="Buscar ciudad..."
-                    value={cityDropdownOpen ? citySearchTerm : city}
-                    onChange={(e) => {
-                      setCitySearchTerm(e.target.value);
-                      if (!cityDropdownOpen) setCityDropdownOpen(true);
-                    }}
-                    onFocus={() => {
-                      setCityDropdownOpen(true);
-                      setCitySearchTerm("");
-                    }}
-                    className="pl-9 pr-8 min-h-[44px] w-full"
-                    data-testid="input-agency-city-search"
-                  />
-                  {city && !cityDropdownOpen && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCity("");
-                        setInfluenceNeighborhoods([]);
-                        setCityDropdownOpen(true);
-                        setCitySearchTerm("");
-                      }}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                {cityDropdownOpen && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => {
-                        setCityDropdownOpen(false);
-                        setCitySearchTerm("");
-                      }}
-                    />
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {getCities()
-                        .filter((cityOption) => 
-                          cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
-                        )
-                        .slice(0, 50)
-                        .map((cityOption, index) => (
-                          <button
-                            key={`${cityOption}-${index}`}
-                            type="button"
-                            className={`w-full px-4 py-3 min-h-[44px] text-left text-sm hover:bg-gray-100 ${
-                              city === cityOption ? 'bg-primary/10 text-primary font-medium' : ''
-                            }`}
-                            onClick={() => {
-                              setCity(cityOption);
-                              setInfluenceNeighborhoods([]);
-                              setCityDropdownOpen(false);
-                              setCitySearchTerm("");
-                            }}
-                            data-testid={`agency-city-option-${cityOption}`}
-                          >
-                            {cityOption}
-                          </button>
-                        ))
-                      }
-                      {getCities().filter((cityOption) => 
-                        cityOption.toLowerCase().includes(citySearchTerm.toLowerCase())
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                          No se encontraron ciudades
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
+              {labelWithSaved("city", "Ciudad donde opera la agencia")}
+              <CitySearchSelect
+                value={city || null}
+                onChange={(nextCity) => {
+                  markChanged("city");
+                  markChanged("influenceNeighborhoods");
+                  setCity(nextCity || "");
+                  setInfluenceNeighborhoods([]);
+                }}
+                testId="input-agency-city-search"
+              />
             </div>
 
             <div>
-              <Label htmlFor="influenceNeighborhoods">Barrios de influencia (el perfil de tu agencia aparecerá en estos barrios)</Label>
+              {labelWithSaved("influenceNeighborhoods", "Barrios de influencia (el perfil de tu agencia aparecerá en estos barrios)")}
               <NeighborhoodSelector
                 selectedNeighborhoods={influenceNeighborhoods}
                 city={city}
-                onChange={setInfluenceNeighborhoods}
+                onChange={(neighborhoods) => {
+                  markChanged("influenceNeighborhoods");
+                  setInfluenceNeighborhoods(neighborhoods);
+                }}
                 buttonText="Selecciona los barrios donde opera la agencia"
                 title="ZONAS DE OPERACIÓN DE LA AGENCIA"
               />
@@ -402,7 +436,18 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              <Label>Enlaces a página web y redes sociales</Label>
+              <Label className="inline-flex items-center">
+                Enlaces a página web y redes sociales
+                <SavedIndicator
+                  visible={
+                    savedFields.has("agencyWebsite") ||
+                    savedFields.has("facebookUrl") ||
+                    savedFields.has("instagramUrl") ||
+                    savedFields.has("googleMapsUrl") ||
+                    savedFields.has("linkedinUrl")
+                  }
+                />
+              </Label>
               <div className="space-y-3 mt-2">
                 <div>
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -418,6 +463,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                       value={agencyWebsite}
                       onChange={(e) => {
                         const value = e.target.value;
+                        markChanged("agencyWebsite");
                         setAgencyWebsite(value);
                         if (value && !validateWebsite(value)) {
                           setWebsiteError("URL inválida. Debe incluir http:// o https://");
@@ -441,7 +487,10 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   <Input
                     placeholder="URL de Facebook"
                     value={facebookUrl}
-                    onChange={(e) => setFacebookUrl(e.target.value)}
+                    onChange={(e) => {
+                      markChanged("facebookUrl");
+                      setFacebookUrl(e.target.value);
+                    }}
                     className="min-h-[44px] flex-1"
                   />
                 </div>
@@ -457,7 +506,10 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   <Input
                     placeholder="URL de Instagram"
                     value={instagramUrl}
-                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    onChange={(e) => {
+                      markChanged("instagramUrl");
+                      setInstagramUrl(e.target.value);
+                    }}
                     className="min-h-[44px] flex-1"
                   />
                 </div>
@@ -469,7 +521,10 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   <Input
                     placeholder="URL de Google Maps"
                     value={googleMapsUrl}
-                    onChange={(e) => setGoogleMapsUrl(e.target.value)}
+                    onChange={(e) => {
+                      markChanged("googleMapsUrl");
+                      setGoogleMapsUrl(e.target.value);
+                    }}
                     className="min-h-[44px] flex-1"
                   />
                 </div>
@@ -485,43 +540,48 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   <Input
                     placeholder="URL de LinkedIn"
                     value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    onChange={(e) => {
+                      markChanged("linkedinUrl");
+                      setLinkedinUrl(e.target.value);
+                    }}
                     className="min-h-[44px] flex-1"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onCancel}
-                className="w-full sm:w-auto min-h-[44px]"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={!isValid || isSubmitting}
-                className="w-full sm:w-auto min-h-[44px]"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Guardando...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center">
-                    <Check className="mr-2 h-4 w-4" />
-                    {agency ? "Actualizar agencia" : "Crear agencia"}
-                  </span>
-                )}
-              </Button>
-            </div>
+            {!isEditMode && (
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  className="w-full sm:w-auto min-h-[44px]"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!isValid || isSubmitting}
+                  className="w-full sm:w-auto min-h-[44px]"
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Guardando...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <Check className="mr-2 h-4 w-4" />
+                      Crear agencia
+                    </span>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </form>
       </CardContent>

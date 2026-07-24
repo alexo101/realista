@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, ChevronLeft, ChevronRight, Clock, MapPin, Phone, Plus, Pencil, Trash2, User } from "lucide-react";
 import { AgentEventForm } from "@/components/AgentEventForm";
+import { EventStatusBadge } from "@/components/EventStatusBadge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { apiRequest } from "@/lib/queryClient";
@@ -70,12 +71,24 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
   const totalEvents = eventsResponse.total || 0;
   const totalPages = Math.ceil(totalEvents / eventsPerPage);
 
-  // Fetch properties to get addresses
-  const { data: properties = [] } = useQuery({
-    queryKey: ["/api/properties"],
+  // Fetch the agent's agency so event properties use the same complete
+  // property source as the event form, including inactive and draft properties.
+  const { data: agent } = useQuery<{ agencyId?: number | null }>({
+    queryKey: ["/api/agents", agentId],
     queryFn: async () => {
-      const response = await fetch("/api/properties");
-      if (!response.ok) throw new Error("Failed to fetch properties");
+      const response = await fetch(`/api/agents/${agentId}`);
+      if (!response.ok) throw new Error("Failed to fetch agent details");
+      return response.json();
+    },
+  });
+
+  // Fetch all agency properties to resolve event property UUIDs.
+  const { data: properties = [] } = useQuery({
+    queryKey: ["/api/agencies", agent?.agencyId, "properties"],
+    enabled: !!agent?.agencyId,
+    queryFn: async () => {
+      const response = await fetch(`/api/agencies/${agent?.agencyId}/properties`);
+      if (!response.ok) throw new Error("Failed to fetch agency properties");
       return response.json();
     }
   });
@@ -315,9 +328,11 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                           {formatEventTime(event.eventTime)}
                         </div>
                       </div>
-                      <Badge variant={event.status === "scheduled" ? "default" : "secondary"}>
-                        {event.status === "scheduled" ? "Programado" : "Completado"}
-                      </Badge>
+                      <EventStatusBadge
+                        status={event.status}
+                        eventDate={event.eventDate}
+                        eventTime={event.eventTime}
+                      />
                     </div>
 
                     {/* Event type badge */}
@@ -461,9 +476,11 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
                             )}
                           </td>
                           <td className="p-2">
-                            <Badge variant={event.status === "scheduled" ? "default" : "secondary"}>
-                              {event.status === "scheduled" ? "Programado" : "Completado"}
-                            </Badge>
+                            <EventStatusBadge
+                              status={event.status}
+                              eventDate={event.eventDate}
+                              eventTime={event.eventTime}
+                            />
                           </td>
                           <td className="p-2">
                             <div className="flex gap-2">

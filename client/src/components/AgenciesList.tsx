@@ -31,10 +31,6 @@ export function AgenciesList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/agencies', user?.id] });
-      toast({
-        title: "Agencia actualizada",
-        description: "La agencia se ha actualizado correctamente",
-      });
     },
     onError: (error) => {
       toast({

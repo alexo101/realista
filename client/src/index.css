@@ -141,3 +141,13 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+.event-time-input,
+.event-time-input::-webkit-datetime-edit,
+.event-time-input::-webkit-datetime-edit-text,
+.event-time-input::-webkit-datetime-edit-hour-field,
+.event-time-input::-webkit-datetime-edit-minute-field,
+.event-time-input::-webkit-datetime-edit-second-field,
+.event-time-input::-webkit-datetime-edit-ampm-field {
+  color: hsl(var(--primary));
+}

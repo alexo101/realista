@@ -93,6 +93,9 @@ const step2Schema = step1Schema.extend({
   planta: z.enum(plantaOptions).nullable().optional(),
   puerta: z.enum(puertaOptions).nullable().optional(),
   neighborhood: z.string({ required_error: "Campo requerido" }).min(1, "Selecciona un barrio"),
+  // Catalog city/district used for client↔property matching (not Google locality)
+  city: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
 });
 
 // Step 3 schema: Features
@@ -196,6 +199,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       planta: undefined,
       puerta: undefined,
       neighborhood: undefined as any,
+      city: null,
+      district: null,
       features: [],
       availability: "Inmediatamente",
       availabilityDate: undefined,
@@ -870,9 +875,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                                   {district.neighborhoods.map((neighborhood) => (
                                     <CommandItem
                                       key={`${cityData.city}-${district.district}-${neighborhood}`}
-                                      value={neighborhood}
+                                      value={`${neighborhood} ${district.district} ${cityData.city}`}
                                       onSelect={() => {
                                         form.setValue("neighborhood", neighborhood);
+                                        form.setValue("city", cityData.city);
+                                        form.setValue("district", district.district);
                                         setLocalNeighborhood(neighborhood);
                                       }}
                                       data-testid={`neighborhood-${neighborhood}`}

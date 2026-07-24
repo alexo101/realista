@@ -245,7 +245,10 @@ export type ClientPropertyPreferences = {
   propertyCondition?: string | null;
   availability?: string | null;
   availabilityDate?: string | null;
+  /** @deprecated Prefer preferredFeatures / essentialFeatures. Kept for backward compatibility. */
   features?: string[];
+  preferredFeatures?: string[];
+  essentialFeatures?: string[];
 };
 
 export const clients = pgTable("clients", {
@@ -435,6 +438,8 @@ export const insertClientSchema = createInsertSchema(clients).omit({
     availability: z.string().nullable().optional(),
     availabilityDate: z.string().nullable().optional(),
     features: z.array(z.string()).optional(),
+    preferredFeatures: z.array(z.string()).optional(),
+    essentialFeatures: z.array(z.string()).optional(),
   }).nullable().optional(),
   reviewRequestSentAt: dateCoerce,
   moveInDate: dateCoerce,
@@ -670,6 +675,9 @@ export type PropertyVisitRequest = typeof propertyVisitRequests.$inferSelect;
 export type InsertPropertyVisitRequest = z.infer<typeof insertPropertyVisitRequestSchema>;
 
 // Agent Calendar Events
+export const EVENT_STATUSES = ["scheduled", "due", "completed", "cancelled"] as const;
+export type EventStatus = (typeof EVENT_STATUSES)[number];
+
 export const agentEvents = pgTable("agent_events", {
   id: serial("id").primaryKey(),
   agentId: integer("agent_id").notNull().references(() => agents.id),
@@ -686,6 +694,8 @@ export const agentEvents = pgTable("agent_events", {
 export const insertAgentEventSchema = createInsertSchema(agentEvents).omit({
   id: true,
   createdAt: true,
+}).extend({
+  status: z.enum(["scheduled", "completed", "cancelled"]).default("scheduled"),
 });
 
 export type AgentEvent = typeof agentEvents.$inferSelect;

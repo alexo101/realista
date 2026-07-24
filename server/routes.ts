@@ -61,7 +61,7 @@ const updateClientProfileSchema = insertClientSchema.pick({
 import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail } from "./emailService";
 import { randomUUID } from 'crypto';
 import { comparePassword, hashPassword } from "./security/password";
-import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName } from "./utils/neighborhoods";
+import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName, resolvePropertyLocation } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 import multer from 'multer';
@@ -1491,6 +1491,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Attempting to create property with data:', req.body);
       const property = insertPropertySchema.parse(req.body);
+
+      // Derive catalog city/district from neighborhood so client matching stays consistent.
+      // Google locality is address-only and must not drive matching.
+      if (property.neighborhood) {
+        const resolved = resolvePropertyLocation({
+          neighborhood: property.neighborhood,
+          city: property.city,
+          district: property.district,
+          locality: property.locality,
+        });
+        property.city = resolved.city;
+        property.district = resolved.district;
+      }
       
       // Check active properties limit for agencies
       if (property.agencyId) {
@@ -1528,6 +1541,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Attempting to update property:', req.params.id, req.body);
       const property = insertPropertySchema.parse(req.body);
+
+      if (property.neighborhood) {
+        const resolved = resolvePropertyLocation({
+          neighborhood: property.neighborhood,
+          city: property.city,
+          district: property.district,
+          locality: property.locality,
+        });
+        property.city = resolved.city;
+        property.district = resolved.district;
+      }
+
       const result = await storage.updateProperty(req.params.id, property);
       console.log('Property updated successfully:', result);
       res.json(result);
@@ -2231,12 +2256,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventData = {
         agentId: req.body.agentId,
         clientId: req.body.clientId || null,
-        propertyId: req.body.propertyId || null,
+        propertyUuid: req.body.propertyUuid || null,
         eventType: req.body.eventType,
         eventDate: req.body.eventDate,
         eventTime: req.body.eventTime,
         comments: req.body.comments || null,
-        status: req.body.status || "scheduled",
+        status: "scheduled" as const,
       };
 
       const event = await storage.createAgentEvent(eventData);
@@ -2304,7 +2329,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/agent-events/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const eventData = req.body;
+      const eventData = { ...req.body };
+
+      if (eventData.status !== undefined) {
+        const statusResult = z.enum(["scheduled", "completed", "cancelled"]).safeParse(eventData.status);
+        if (!statusResult.success) {
+          return res.status(400).json({
+            message: "Event status must be scheduled, completed, or cancelled",
+          });
+        }
+        eventData.status = statusResult.data;
+      }
 
       const updatedEvent = await storage.updateAgentEvent(id, eventData);
       res.status(200).json(updatedEvent);

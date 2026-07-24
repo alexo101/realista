@@ -16,7 +16,15 @@ import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { computeEffectiveStatus } from "@shared/event-status";
 import { type AgentEvent } from "@shared/schema";
+
+const STATUS_LABELS = {
+  scheduled: "Programado",
+  due: "Vencido",
+  completed: "Completado",
+  cancelled: "Cancelado",
+} as const;
 
 const eventFormSchema = z.object({
   eventType: z.enum(["Llamada", "Visita", "Seguimiento"]),
@@ -24,6 +32,7 @@ const eventFormSchema = z.object({
   eventTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:MM)"),
   clientId: z.number().optional(),
   propertyUuid: z.string().optional(),
+  status: z.enum(["scheduled", "due", "completed", "cancelled"]).optional(),
   comments: z.string().optional(),
 }).refine((data) => {
   // Property is mandatory for "Visita" events
@@ -38,10 +47,15 @@ const eventFormSchema = z.object({
 
 type EventFormData = z.infer<typeof eventFormSchema>;
 
+function getFormStatus(event?: AgentEvent | null): EventFormData["status"] {
+  if (!event) return "scheduled";
+  return computeEffectiveStatus(event).status as EventFormData["status"];
+}
+
 interface AgentEventFormProps {
   agentId: number;
   event?: AgentEvent | null;
-  onSubmit: (data: EventFormData) => void;
+  onSubmit: (data: Omit<EventFormData, "status"> & { status?: "scheduled" | "completed" | "cancelled" }) => void;
   onCancel: () => void;
   isLoading?: boolean;
   defaultClientId?: number;
@@ -61,6 +75,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
       eventTime: event?.eventTime || "",
       clientId: event?.clientId || defaultClientId || undefined,
       propertyUuid: event?.propertyUuid || undefined,
+      status: getFormStatus(event),
       comments: event?.comments || "",
     },
   });
@@ -96,26 +111,41 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
     }
   });
 
-  // Generate time slots
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour <= 19; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        if (hour === 19 && minute > 30) break;
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(timeString);
-      }
-    }
-    return slots;
-  };
-
-  const timeSlots = generateTimeSlots();
-
   useEffect(() => {
+    form.reset({
+      eventType: event?.eventType as "Llamada" | "Visita" | "Seguimiento" || "Visita",
+      eventDate: event?.eventDate || "",
+      eventTime: event?.eventTime || "",
+      clientId: event?.clientId || defaultClientId || undefined,
+      propertyUuid: event?.propertyUuid || undefined,
+      status: getFormStatus(event),
+      comments: event?.comments || "",
+    });
     if (event?.eventDate) {
       setSelectedDate(new Date(event.eventDate));
+    } else {
+      setSelectedDate(undefined);
     }
-  }, [event]);
+  }, [defaultClientId, event, form]);
+
+  const watchedDate = form.watch("eventDate");
+  const watchedTime = form.watch("eventTime");
+  const watchedStatus = form.watch("status");
+
+  useEffect(() => {
+    if (!watchedDate || !watchedTime) return;
+    if (watchedStatus === "completed" || watchedStatus === "cancelled") return;
+
+    const effective = computeEffectiveStatus({
+      status: "scheduled",
+      eventDate: watchedDate,
+      eventTime: watchedTime,
+    }).status;
+
+    if (effective !== watchedStatus) {
+      form.setValue("status", effective as EventFormData["status"]);
+    }
+  }, [watchedDate, watchedTime, watchedStatus, form]);
 
   const handleSubmit = (data: EventFormData) => {
     // Validate that all mandatory fields are filled
@@ -123,7 +153,14 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
       return;
     }
 
-    onSubmit(data);
+    const { status, ...rest } = data;
+    // "due" is computed server-side and must never be written to the DB.
+    const payload =
+      status && status !== "due"
+        ? { ...rest, status }
+        : rest;
+
+    onSubmit(payload);
   };
 
   const isFormValid = () => {
@@ -296,7 +333,9 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                         field.onChange(format(date, "yyyy-MM-dd"));
                       }
                     }}
-                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                    disabled={(date) =>
+                      !event && date < new Date(new Date().setHours(0, 0, 0, 0))
+                    }
                     initialFocus
                     locale={es}
                   />
@@ -314,20 +353,9 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Hora</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar hora" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent className="max-h-[200px] overflow-y-auto">
-                  {timeSlots.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <Input type="time" step="60" className="event-time-input text-primary accent-primary" {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -368,6 +396,41 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
             );
           }}
         />
+
+        {/* Status — edit only; new events are always created as scheduled */}
+        {event && (
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Estado</FormLabel>
+                <Select
+                  value={field.value || "scheduled"}
+                  onValueChange={(value) => {
+                    if (value === "due") return;
+                    field.onChange(value);
+                  }}
+                >
+                  <FormControl>
+                    <SelectTrigger data-testid="select-event-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="scheduled">{STATUS_LABELS.scheduled}</SelectItem>
+                    <SelectItem value="due" disabled>
+                      {STATUS_LABELS.due}
+                    </SelectItem>
+                    <SelectItem value="completed">{STATUS_LABELS.completed}</SelectItem>
+                    <SelectItem value="cancelled">{STATUS_LABELS.cancelled}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Comments */}
         <FormField

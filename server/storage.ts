@@ -17,6 +17,8 @@ import {
   count,
 } from "drizzle-orm";
 import { generateAgentSlug, generateAgencySlug, generatePropertySlug } from "@shared/slug-utils";
+import { computeEffectiveStatus } from "@shared/event-status";
+export { computeEffectiveStatus } from "@shared/event-status";
 import {
   agents,
   agencies,
@@ -2316,12 +2318,15 @@ export class DatabaseStorage implements IStorage {
       housingStatus: properties.housingStatus,
       managementStatus: properties.managementStatus,
       hasCedulaHabitabilidad: properties.hasCedulaHabitabilidad,
+      propertyCondition: properties.propertyCondition,
       floor: properties.floor,
       features: properties.features,
       availability: properties.availability,
       availabilityDate: properties.availabilityDate,
       previousPrice: properties.previousPrice,
       price: properties.price,
+      city: properties.city,
+      district: properties.district,
       neighborhood: properties.neighborhood,
       bedrooms: properties.bedrooms,
       bathrooms: properties.bathrooms,
@@ -3295,7 +3300,7 @@ export class DatabaseStorage implements IStorage {
       .insert(agentEvents)
       .values(eventData)
       .returning();
-    return result;
+    return computeEffectiveStatus(result);
   }
 
   async getAgentEvents(agentId: number, startDate?: string, endDate?: string): Promise<AgentEvent[]> {
@@ -3314,7 +3319,8 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    return await query.orderBy(agentEvents.eventDate, agentEvents.eventTime);
+    const events = await query.orderBy(agentEvents.eventDate, agentEvents.eventTime);
+    return events.map(computeEffectiveStatus);
   }
 
   async getAllAgentEventsPaginated(agentId: number, page: number, limit: number): Promise<{ events: AgentEvent[], total: number }> {
@@ -3336,7 +3342,7 @@ export class DatabaseStorage implements IStorage {
       .offset(offset);
     
     return {
-      events,
+      events: events.map(computeEffectiveStatus),
       total: totalResult.count
     };
   }
@@ -3352,7 +3358,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Agent event not found");
     }
     
-    return result;
+    return computeEffectiveStatus(result);
   }
 
   async deleteAgentEvent(id: number): Promise<void> {
