@@ -55,7 +55,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
-import { type Property, type Client } from "@shared/schema";
+import { type Property, type Client, type ClientPropertyStatus } from "@shared/schema";
 import {
   rankProperties,
   type RecommendationLabel,
@@ -69,6 +69,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { formatAgentPropertyAddress } from "@/utils/format-property-address";
 
 // Valid dashboard sections
 const VALID_SECTIONS = [
@@ -85,6 +86,18 @@ const VALID_SECTIONS = [
   'red',
   'facturacion'
 ] as const;
+
+const CLIENT_PROPERTY_STATUS_OPTIONS: Array<{
+  value: ClientPropertyStatus;
+  labelKey: string;
+}> = [
+  { value: "recommended", labelKey: "manage.clients.property_status.recommended" },
+  { value: "sent", labelKey: "manage.clients.property_status.sent" },
+  { value: "visit_scheduled", labelKey: "manage.clients.property_status.visit_scheduled" },
+  { value: "interested", labelKey: "manage.clients.property_status.interested" },
+  { value: "rejected", labelKey: "manage.clients.property_status.rejected" },
+  { value: "purchased_rented", labelKey: "manage.clients.property_status.purchased_rented" },
+];
 
 type DashboardSection = typeof VALID_SECTIONS[number];
 
@@ -225,14 +238,15 @@ export default function ManagePage() {
     return (saved === 'kanban' || saved === 'list') ? saved : 'list';
   });
 
-  // Selected clients for bulk actions
-  const [selectedClientIds, setSelectedClientIds] = useState<Set<number>>(new Set());
+  // Selected client for send-properties flow (single selection)
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
 
   // Send properties modal state
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
   const [propertySearch, setPropertySearch] = useState("");
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<Set<string>>(new Set());
+  const [propertyStatuses, setPropertyStatuses] = useState<Record<string, ClientPropertyStatus>>({});
   const [emailMessage, setEmailMessage] = useState("");
   const [showRecommendedOnly, setShowRecommendedOnly] = useState(true);
 
@@ -330,13 +344,99 @@ export default function ManagePage() {
     enabled: isSendModalOpen && Boolean(user?.id),
   });
 
-  const recommendationClient = useMemo(() => {
-    if (selectedClientIds.size !== 1 || !clients?.length) return null;
-    const onlyId = Array.from(selectedClientIds)[0];
-    return clients.find((c) => c.id === onlyId) ?? null;
-  }, [selectedClientIds, clients]);
+  const clientPropertyStatusesQuery = useQuery<Array<{
+    propertyUuid: string;
+    status: ClientPropertyStatus;
+  }>>({
+    queryKey: ["/api/clients", selectedClientId, "property-statuses"],
+    queryFn: async () => {
+      const response = await fetch(`/api/clients/${selectedClientId}/property-statuses`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch property statuses");
+      return response.json();
+    },
+    enabled: isSendModalOpen && selectedClientId != null,
+  });
 
-  const recommendationsEnabled = selectedClientIds.size === 1 && recommendationClient != null;
+  useEffect(() => {
+    const nextStatuses: Record<string, ClientPropertyStatus> = {};
+    for (const record of clientPropertyStatusesQuery.data ?? []) {
+      nextStatuses[record.propertyUuid] = record.status;
+    }
+    setPropertyStatuses(nextStatuses);
+  }, [clientPropertyStatusesQuery.data]);
+
+  const updatePropertyStatusMutation = useMutation({
+    mutationFn: async ({
+      clientId,
+      propertyUuid,
+      status,
+    }: {
+      clientId: number;
+      propertyUuid: string;
+      status: ClientPropertyStatus;
+    }) =>
+      apiRequest(
+        "PATCH",
+        `/api/clients/${clientId}/property-statuses/${propertyUuid}`,
+        { status },
+      ),
+    onMutate: ({ propertyUuid, status }) => {
+      const previousStatus = propertyStatuses[propertyUuid];
+      const statusQueryKey = ["/api/clients", selectedClientId, "property-statuses"];
+      const previousRecords = queryClient.getQueryData<Array<{
+        propertyUuid: string;
+        status: ClientPropertyStatus;
+      }>>(statusQueryKey);
+      queryClient.setQueryData(statusQueryKey, (records: Array<{
+        propertyUuid: string;
+        status: ClientPropertyStatus;
+      }> = []) => {
+        const existing = records.find((record) => record.propertyUuid === propertyUuid);
+        if (existing) {
+          return records.map((record) =>
+            record.propertyUuid === propertyUuid ? { ...record, status } : record,
+          );
+        }
+        return [...records, { propertyUuid, status }];
+      });
+      setPropertyStatuses((current) => ({ ...current, [propertyUuid]: status }));
+      return { propertyUuid, previousStatus, previousRecords };
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(
+        ["/api/clients", selectedClientId, "property-statuses"],
+        context?.previousRecords,
+      );
+      setPropertyStatuses((current) => {
+        const next = { ...current };
+        if (context?.previousStatus) {
+          next[context.propertyUuid] = context.previousStatus;
+        } else {
+          delete next[context?.propertyUuid ?? ""];
+        }
+        return next;
+      });
+      toast({
+        title: t("common.error"),
+        description: t("manage.clients.property_status_update_error"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/clients", selectedClientId, "property-statuses"],
+      });
+    },
+  });
+
+  const recommendationClient = useMemo(() => {
+    if (selectedClientId == null || !clients?.length) return null;
+    return clients.find((c) => c.id === selectedClientId) ?? null;
+  }, [selectedClientId, clients]);
+
+  const recommendationsEnabled = selectedClientId != null && recommendationClient != null;
 
   type SendPropertyRow = Property & { recommendation?: RecommendationResult };
 
@@ -367,6 +467,25 @@ export default function ManagePage() {
     recommendationsEnabled,
     recommendationClient,
     showRecommendedOnly,
+  ]);
+
+  useEffect(() => {
+    if (!isSendModalOpen || selectedClientId == null || !recommendationsEnabled) return;
+    for (const property of sendModalProperties) {
+      if (property.recommendation?.eligible && !propertyStatuses[property.uuid]) {
+        updatePropertyStatusMutation.mutate({
+          clientId: selectedClientId,
+          propertyUuid: property.uuid,
+          status: "recommended",
+        });
+      }
+    }
+  }, [
+    isSendModalOpen,
+    selectedClientId,
+    recommendationsEnabled,
+    sendModalProperties,
+    propertyStatuses,
   ]);
 
   const matchLabelKey = (label: RecommendationLabel) =>
@@ -515,14 +634,14 @@ export default function ManagePage() {
     onSuccess: (result: any) => {
       toast({
         title: t("manage.clients.emails_sent"),
-        description: t("manage.clients.emails_sent_desc", { count: String(result.sentCount || selectedClientIds.size) }),
+        description: t("manage.clients.emails_sent_desc", { count: String(result.sentCount || (selectedClientId != null ? 1 : 0)) }),
       });
       // Reset modal state
       setIsSendModalOpen(false);
       setSendModalStep(1);
       setSelectedPropertyIds(new Set());
       setEmailMessage("");
-      setSelectedClientIds(new Set());
+      setSelectedClientId(null);
     },
     onError: (error) => {
       toast({
@@ -1840,7 +1959,9 @@ export default function ManagePage() {
                                     {property.reference || '-'}
                                   </TableCell>
                                   <TableCell>
-                                    <div className="line-clamp-1">{property.address}</div>
+                                    <div className="line-clamp-1">
+                                      {formatAgentPropertyAddress(property) || "-"}
+                                    </div>
                                   </TableCell>
                                   <TableCell className="font-semibold text-primary">
                                     €{property.price?.toLocaleString()}
@@ -2048,7 +2169,7 @@ export default function ManagePage() {
                     {/* Enviar button - slides out from behind {t("manage.clients.add")} */}
                     <div 
                       className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
-                        selectedClientIds.size > 0 
+                        selectedClientId != null
                           ? 'max-w-[150px] opacity-100 mr-2 pointer-events-auto' 
                           : 'max-w-0 opacity-0 mr-0 pointer-events-none'
                       }`}
@@ -2066,7 +2187,7 @@ export default function ManagePage() {
                         data-testid="button-send-to-clients"
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        {t("manage.clients.send_to", { count: String(selectedClientIds.size) })}
+                        {t("manage.clients.send_to", { count: "1" })}
                       </Button>
                     </div>
                     
@@ -2110,7 +2231,7 @@ export default function ManagePage() {
 
               {/* Mobile action buttons - full width */}
               <div className="md:hidden flex flex-col gap-2">
-                {selectedClientIds.size > 0 && (
+                {selectedClientId != null && (
                   <Button 
                     variant="outline"
                     className="w-full border-primary text-primary hover:bg-primary hover:text-white"
@@ -2124,7 +2245,7 @@ export default function ManagePage() {
                     data-testid="button-send-to-clients-mobile"
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    {t("manage.clients.send_to", { count: String(selectedClientIds.size) })}
+                    {t("manage.clients.send_to", { count: "1" })}
                   </Button>
                 )}
                 <Button 
@@ -2205,7 +2326,7 @@ export default function ManagePage() {
                   <div className="md:hidden space-y-4">
                     {clients.map((client) => {
                       const statusConfig = clientStatuses.find(s => s.value === client.status);
-                      const isSelected = selectedClientIds.has(client.id);
+                      const isSelected = selectedClientId === client.id;
                       return (
                         <Card 
                           key={client.id} 
@@ -2219,13 +2340,7 @@ export default function ManagePage() {
                                 <Checkbox
                                   checked={isSelected}
                                   onCheckedChange={(checked) => {
-                                    const newSelected = new Set(selectedClientIds);
-                                    if (checked) {
-                                      newSelected.add(client.id);
-                                    } else {
-                                      newSelected.delete(client.id);
-                                    }
-                                    setSelectedClientIds(newSelected);
+                                    setSelectedClientId(checked ? client.id : null);
                                   }}
                                   data-testid={`checkbox-client-mobile-${client.id}`}
                                 />
@@ -2313,19 +2428,7 @@ export default function ManagePage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[50px]">
-                            <Checkbox
-                              checked={clients.length > 0 && selectedClientIds.size === clients.length}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedClientIds(new Set(clients.map(c => c.id)));
-                                } else {
-                                  setSelectedClientIds(new Set());
-                                }
-                              }}
-                              data-testid="checkbox-select-all-clients"
-                            />
-                          </TableHead>
+                          <TableHead className="w-[50px]" />
                           <TableHead>{t("common.name")}</TableHead>
                           <TableHead>{t("common.surname")}</TableHead>
                           <TableHead>{t("common.email")}</TableHead>
@@ -2339,7 +2442,7 @@ export default function ManagePage() {
                       <TableBody>
                         {clients.map((client) => {
                           const statusConfig = clientStatuses.find(s => s.value === client.status);
-                          const isSelected = selectedClientIds.has(client.id);
+                          const isSelected = selectedClientId === client.id;
                           return (
                             <TableRow 
                               key={client.id} 
@@ -2350,13 +2453,7 @@ export default function ManagePage() {
                                 <Checkbox
                                   checked={isSelected}
                                   onCheckedChange={(checked) => {
-                                    const newSelected = new Set(selectedClientIds);
-                                    if (checked) {
-                                      newSelected.add(client.id);
-                                    } else {
-                                      newSelected.delete(client.id);
-                                    }
-                                    setSelectedClientIds(newSelected);
+                                    setSelectedClientId(checked ? client.id : null);
                                   }}
                                   data-testid={`checkbox-client-${client.id}`}
                                 />
@@ -2559,11 +2656,11 @@ export default function ManagePage() {
                                       data-testid="checkbox-select-all-properties"
                                     />
                                   </TableHead>
-                                  <TableHead className="min-w-[220px]">Referencia</TableHead>
-                                  <TableHead className="min-w-[320px]">{t("common.address")}</TableHead>
                                   {recommendationsEnabled && (
                                     <TableHead className="w-[140px]">{t("manage.clients.match")}</TableHead>
                                   )}
+                                  <TableHead className="w-[190px]">{t("manage.clients.property_status.title")}</TableHead>
+                                  <TableHead className="min-w-[320px]">{t("common.address")}</TableHead>
                                   <TableHead className="w-[120px] text-right">Precio</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -2591,15 +2688,6 @@ export default function ManagePage() {
                                             }}
                                             data-testid={`checkbox-property-${property.uuid}`}
                                           />
-                                        </TableCell>
-                                        <TableCell>
-                                          <div>
-                                            <p className="font-medium">{property.title || 'Sin título'}</p>
-                                            <p className="text-sm text-muted-foreground">{property.type || 'Vivienda'}</p>
-                                          </div>
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                          {property.address || 'Sin dirección'}
                                         </TableCell>
                                         {recommendationsEnabled && (
                                           <TableCell>
@@ -2665,6 +2753,36 @@ export default function ManagePage() {
                                             ) : null}
                                           </TableCell>
                                         )}
+                                        <TableCell>
+                                          <Select
+                                            value={propertyStatuses[property.uuid] || undefined}
+                                            onValueChange={(status) => {
+                                              if (selectedClientId == null) return;
+                                              updatePropertyStatusMutation.mutate({
+                                                clientId: selectedClientId,
+                                                propertyUuid: property.uuid,
+                                                status: status as ClientPropertyStatus,
+                                              });
+                                            }}
+                                          >
+                                            <SelectTrigger
+                                              className="h-8 min-w-[170px]"
+                                              data-testid={`select-property-status-${property.uuid}`}
+                                            >
+                                              <SelectValue placeholder={t("manage.clients.property_status.select")} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {CLIENT_PROPERTY_STATUS_OPTIONS.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                  {t(option.labelKey)}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                          {formatAgentPropertyAddress(property) || 'Sin dirección'}
+                                        </TableCell>
                                         <TableCell className="text-right font-medium whitespace-nowrap">
                                           {property.price ? `$${property.price.toLocaleString()}` : '-'}
                                         </TableCell>
@@ -2709,9 +2827,9 @@ export default function ManagePage() {
                       <div className="flex-1 overflow-auto space-y-4">
                         {/* Selected Clients */}
                         <div>
-                          <h4 className="font-medium mb-2">{t("manage.clients.selected_clients", { count: String(selectedClientIds.size) })}</h4>
+                          <h4 className="font-medium mb-2">{t("manage.clients.selected_clients", { count: "1" })}</h4>
                           <div className="space-y-2 max-h-32 overflow-auto">
-                            {clients?.filter(c => selectedClientIds.has(c.id)).map((client) => (
+                            {clients?.filter(c => c.id === selectedClientId).map((client) => (
                               <div 
                                 key={client.id} 
                                 className="p-3 border rounded-lg"
@@ -2784,7 +2902,7 @@ export default function ManagePage() {
                           <Button
                             onClick={() => {
                               sendPropertiesMutation.mutate({
-                                clientIds: Array.from(selectedClientIds),
+                                clientIds: selectedClientId != null ? [selectedClientId] : [],
                                 propertyUuids: Array.from(selectedPropertyIds),
                                 message: emailMessage,
                               });

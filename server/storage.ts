@@ -18,6 +18,7 @@ import {
 } from "drizzle-orm";
 import { generateAgentSlug, generateAgencySlug, generatePropertySlug } from "@shared/slug-utils";
 import { computeEffectiveStatus } from "@shared/event-status";
+import { preservesFinalClientPropertyStatus } from "@shared/client-property-status";
 export { computeEffectiveStatus } from "@shared/event-status";
 import {
   agents,
@@ -64,6 +65,7 @@ import {
   clientFavoriteAgents,
   clientFavoriteAgencies,
   clientFavoriteProperties,
+  clientPropertyStatuses,
   agentFavoriteProperties,
   propertyVisitRequests,
   type ClientFavoriteAgent,
@@ -72,6 +74,8 @@ import {
   type InsertClientFavoriteAgency,
   type ClientFavoriteProperty,
   type InsertClientFavoriteProperty,
+  type ClientPropertyStatusRecord,
+  type ClientPropertyStatus,
   type PropertyVisitRequest,
   type InsertPropertyVisitRequest,
   agentEvents,
@@ -196,6 +200,13 @@ export interface IStorage {
   updateClient(id: number, client: InsertClient): Promise<Client>;
   updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined>;
   deleteClient(id: number): Promise<void>;
+  getClientPropertyStatuses(clientId: number): Promise<ClientPropertyStatusRecord[]>;
+  upsertClientPropertyStatus(
+    clientId: number,
+    propertyUuid: string,
+    status: ClientPropertyStatus,
+    options?: { preserveFinal?: boolean },
+  ): Promise<ClientPropertyStatusRecord>;
 
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string, city?: string, district?: string): Promise<NeighborhoodRating[]>;
@@ -2596,6 +2607,50 @@ export class DatabaseStorage implements IStorage {
 
   async deleteClient(id: number): Promise<void> {
     await db.delete(clients).where(eq(clients.id, id));
+  }
+
+  async getClientPropertyStatuses(clientId: number): Promise<ClientPropertyStatusRecord[]> {
+    return db
+      .select()
+      .from(clientPropertyStatuses)
+      .where(eq(clientPropertyStatuses.clientId, clientId))
+      .orderBy(desc(clientPropertyStatuses.updatedAt));
+  }
+
+  async upsertClientPropertyStatus(
+    clientId: number,
+    propertyUuid: string,
+    status: ClientPropertyStatus,
+    options: { preserveFinal?: boolean } = {},
+  ): Promise<ClientPropertyStatusRecord> {
+    const existing = await db
+      .select()
+      .from(clientPropertyStatuses)
+      .where(
+        and(
+          eq(clientPropertyStatuses.clientId, clientId),
+          eq(clientPropertyStatuses.propertyUuid, propertyUuid),
+        ),
+      )
+      .limit(1);
+
+    if (
+      options.preserveFinal &&
+      existing[0] &&
+      preservesFinalClientPropertyStatus(existing[0].status as ClientPropertyStatus, status)
+    ) {
+      return existing[0];
+    }
+
+    const [result] = await db
+      .insert(clientPropertyStatuses)
+      .values({ clientId, propertyUuid, status })
+      .onConflictDoUpdate({
+        target: [clientPropertyStatuses.clientId, clientPropertyStatuses.propertyUuid],
+        set: { status, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
   }
 
   // Neighborhood Ratings

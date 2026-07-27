@@ -650,6 +650,41 @@ export const insertClientFavoritePropertySchema = createInsertSchema(clientFavor
 export type ClientFavoriteProperty = typeof clientFavoriteProperties.$inferSelect;
 export type InsertClientFavoriteProperty = z.infer<typeof insertClientFavoritePropertySchema>;
 
+export const CLIENT_PROPERTY_STATUSES = [
+  "recommended",
+  "sent",
+  "visit_scheduled",
+  "interested",
+  "rejected",
+  "purchased_rented",
+] as const;
+export type ClientPropertyStatus = (typeof CLIENT_PROPERTY_STATUSES)[number];
+
+// Per-client property workflow status table
+export const clientPropertyStatuses = pgTable("client_property_statuses", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
+  status: text("status").notNull().default("recommended"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  clientPropertyUnique: uniqueIndex("client_property_statuses_client_property_idx")
+    .on(table.clientId, table.propertyUuid),
+  statusCheck: check(
+    "client_property_statuses_status_check",
+    sql`${table.status} IN ('recommended', 'sent', 'visit_scheduled', 'interested', 'rejected', 'purchased_rented')`,
+  ),
+}));
+
+export const insertClientPropertyStatusSchema = createInsertSchema(clientPropertyStatuses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type ClientPropertyStatusRecord = typeof clientPropertyStatuses.$inferSelect;
+export type InsertClientPropertyStatus = z.infer<typeof insertClientPropertyStatusSchema>;
+
 // Property visit requests table
 export const propertyVisitRequests = pgTable("property_visit_requests", {
   id: serial("id").primaryKey(),

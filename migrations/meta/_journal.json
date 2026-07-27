@@ -64,6 +64,13 @@
       "when": 1783947600000,
       "tag": "0009_client_property_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783950000000,
+      "tag": "0010_client_property_statuses",
+      "breakpoints": true
     }
   ]
 }

@@ -1827,6 +1827,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       if (result.success) {
+        await Promise.all(
+          validClients.flatMap((client) =>
+            validProperties.map((property) =>
+              storage.upsertClientPropertyStatus(client.id, property.uuid, "sent", { preserveFinal: true }),
+            ),
+          ),
+        );
         res.json({
           success: true,
           sentCount: result.sentCount,
@@ -1843,6 +1850,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error sending properties to clients:', error);
       res.status(500).json({ message: "Error al enviar correos" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/property-statuses", requireAuth, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId, 10);
+      const agentId = (req.user as any).id;
+      const client = (await storage.getClientsByAgent(agentId)).find((item) => item.id === clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+
+      const visitRequests = await storage.getPropertyVisitRequestsByClient(clientId);
+      const scheduledVisits = visitRequests.filter((visit) =>
+        ["pending", "confirmed"].includes(visit.status),
+      );
+      await Promise.all(
+        scheduledVisits.map((visit) =>
+          storage.upsertClientPropertyStatus(clientId, visit.propertyUuid, "visit_scheduled", {
+            preserveFinal: true,
+          }),
+        ),
+      );
+
+      const statuses = await storage.getClientPropertyStatuses(clientId);
+      res.json(statuses);
+    } catch (error) {
+      console.error("Error getting client property statuses:", error);
+      res.status(500).json({ message: "No se pudieron cargar los estados de las propiedades" });
+    }
+  });
+
+  app.patch("/api/clients/:clientId/property-statuses/:propertyUuid", requireAuth, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId, 10);
+      const agentId = (req.user as any).id;
+      const client = (await storage.getClientsByAgent(agentId)).find((item) => item.id === clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+
+      const status = z.enum([
+        "recommended",
+        "sent",
+        "visit_scheduled",
+        "interested",
+        "rejected",
+        "purchased_rented",
+      ]).parse(req.body.status);
+      const property = await storage.getPropertyByUuid(req.params.propertyUuid);
+      if (!property) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+
+      const updated = await storage.upsertClientPropertyStatus(
+        clientId,
+        req.params.propertyUuid,
+        status,
+      );
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating client property status:", error);
+      res.status(400).json({ message: "Estado de propiedad no válido" });
     }
   });
 
@@ -2144,6 +2214,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const visitRequest = await storage.createPropertyVisitRequest(visitRequestData);
+      await storage.upsertClientPropertyStatus(
+        visitRequest.clientId,
+        visitRequest.propertyUuid,
+        "visit_scheduled",
+        { preserveFinal: true },
+      );
       res.status(201).json(visitRequest);
     } catch (error) {
       console.error('Error creating property visit request:', error);
