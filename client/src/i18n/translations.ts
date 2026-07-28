@@ -1,4 +1,5 @@
 import { manageTranslations } from "./manage-translations";
+import { calendarTranslations } from "./calendar-translations";
 
 export type TranslationMap = Record<string, string>;
 
@@ -378,6 +379,7 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Por favor, califica todas las categorías antes de enviar.",
 
     ...manageTranslations.es,
+    ...calendarTranslations.es,
   },
   en: {
     // Navbar
@@ -756,6 +758,7 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Please rate all categories before submitting.",
 
     ...manageTranslations.en,
+    ...calendarTranslations.en,
   },
   fr: {
     // Navbar
@@ -1134,6 +1137,7 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Veuillez évaluer toutes les catégories avant d'envoyer.",
 
     ...manageTranslations.fr,
+    ...calendarTranslations.fr,
   },
   it: {
     // Navbar
@@ -1512,5 +1516,6 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
       "Valuta tutte le categorie prima di inviare.",
 
     ...manageTranslations.it,
+    ...calendarTranslations.it,
   },
 };

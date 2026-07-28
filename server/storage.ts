@@ -201,6 +201,10 @@ export interface IStorage {
   updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined>;
   deleteClient(id: number): Promise<void>;
   getClientPropertyStatuses(clientId: number): Promise<ClientPropertyStatusRecord[]>;
+  getClientPropertyStatusesForProperty(
+    propertyUuid: string,
+    clientIds: number[],
+  ): Promise<ClientPropertyStatusRecord[]>;
   upsertClientPropertyStatus(
     clientId: number,
     propertyUuid: string,
@@ -270,6 +274,7 @@ export interface IStorage {
   createPropertyVisitRequest(visitRequest: InsertPropertyVisitRequest): Promise<PropertyVisitRequest>;
   getPropertyVisitRequestsByClient(clientId: number): Promise<PropertyVisitRequest[]>;
   getPropertyVisitRequestsByAgent(agentId: number): Promise<PropertyVisitRequest[]>;
+  getPropertyVisitRequestsByProperty(propertyUuid: string): Promise<PropertyVisitRequest[]>;
   updatePropertyVisitRequestStatus(id: number, status: string, agentNotes?: string): Promise<PropertyVisitRequest>;
 
   // Agent Calendar Events
@@ -2617,6 +2622,23 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(clientPropertyStatuses.updatedAt));
   }
 
+  async getClientPropertyStatusesForProperty(
+    propertyUuid: string,
+    clientIds: number[],
+  ): Promise<ClientPropertyStatusRecord[]> {
+    if (clientIds.length === 0) return [];
+    return db
+      .select()
+      .from(clientPropertyStatuses)
+      .where(
+        and(
+          eq(clientPropertyStatuses.propertyUuid, propertyUuid),
+          inArray(clientPropertyStatuses.clientId, clientIds),
+        ),
+      )
+      .orderBy(desc(clientPropertyStatuses.updatedAt));
+  }
+
   async upsertClientPropertyStatus(
     clientId: number,
     propertyUuid: string,
@@ -3333,6 +3355,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(propertyVisitRequests)
       .where(eq(propertyVisitRequests.agentId, agentId))
+      .orderBy(desc(propertyVisitRequests.createdAt));
+  }
+
+  async getPropertyVisitRequestsByProperty(propertyUuid: string): Promise<PropertyVisitRequest[]> {
+    return await db
+      .select()
+      .from(propertyVisitRequests)
+      .where(eq(propertyVisitRequests.propertyUuid, propertyUuid))
       .orderBy(desc(propertyVisitRequests.createdAt));
   }
 

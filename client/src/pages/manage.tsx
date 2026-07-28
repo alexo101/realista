@@ -57,9 +57,11 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { type Property, type Client, type ClientPropertyStatus } from "@shared/schema";
 import {
+  rankClients,
   rankProperties,
   type RecommendationLabel,
   type RecommendationResult,
+  type RankedClient,
   type RankedProperty,
 } from "@shared/recommendation-engine";
 import {
@@ -246,9 +248,23 @@ export default function ManagePage() {
   const [sendModalStep, setSendModalStep] = useState<1 | 2>(1);
   const [propertySearch, setPropertySearch] = useState("");
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<Set<string>>(new Set());
+  const [propertiesToSendIds, setPropertiesToSendIds] = useState<Set<string>>(new Set());
+  const [confirmImageIndexes, setConfirmImageIndexes] = useState<Record<string, number>>({});
   const [propertyStatuses, setPropertyStatuses] = useState<Record<string, ClientPropertyStatus>>({});
   const [emailMessage, setEmailMessage] = useState("");
   const [showRecommendedOnly, setShowRecommendedOnly] = useState(true);
+
+  // Property → clients send flow (reverse of clients → properties)
+  const [selectedPropertyUuid, setSelectedPropertyUuid] = useState<string | null>(null);
+  const [isPropertySendModalOpen, setIsPropertySendModalOpen] = useState(false);
+  const [propertySendModalStep, setPropertySendModalStep] = useState<1 | 2>(1);
+  const [clientSearch, setClientSearch] = useState("");
+  const [showRecommendedClientsOnly, setShowRecommendedClientsOnly] = useState(true);
+  const [selectedClientIdsForProperty, setSelectedClientIdsForProperty] = useState<Set<number>>(new Set());
+  const [clientsToSendIds, setClientsToSendIds] = useState<Set<number>>(new Set());
+  const [propertyClientStatuses, setPropertyClientStatuses] = useState<Record<number, ClientPropertyStatus>>({});
+  const [propertySendEmailMessage, setPropertySendEmailMessage] = useState("");
+  const [propertySendImageIndex, setPropertySendImageIndex] = useState(0);
 
   // Properties view mode (grid or table)
   const [propertiesView, setPropertiesView] = useState<'grid' | 'table'>(() => {
@@ -327,7 +343,12 @@ export default function ManagePage() {
 
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: [`/api/clients?agentId=${user?.id}`],
-    enabled: (currentSection === 'clientes' || currentSection === 'resenas') && Boolean(user?.id),
+    enabled:
+      (currentSection === 'clientes' ||
+        currentSection === 'resenas' ||
+        currentSection === 'propiedades' ||
+        isPropertySendModalOpen) &&
+      Boolean(user?.id),
   });
 
   // Fetch agency properties for sending to clients (includes all active agency properties)
@@ -491,6 +512,157 @@ export default function ManagePage() {
   const matchLabelKey = (label: RecommendationLabel) =>
     `manage.clients.match_${label}` as const;
 
+  const selectedPropertyForSend = useMemo(() => {
+    if (!selectedPropertyUuid || !properties?.length) return null;
+    return properties.find((property) => property.uuid === selectedPropertyUuid) ?? null;
+  }, [selectedPropertyUuid, properties]);
+
+  const propertyClientStatusesQuery = useQuery<Array<{
+    clientId: number;
+    status: ClientPropertyStatus;
+  }>>({
+    queryKey: ["/api/properties", selectedPropertyUuid, "client-statuses"],
+    queryFn: async () => {
+      const response = await fetch(`/api/properties/${selectedPropertyUuid}/client-statuses`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch client statuses");
+      return response.json();
+    },
+    enabled: isPropertySendModalOpen && selectedPropertyUuid != null,
+  });
+
+  useEffect(() => {
+    const nextStatuses: Record<number, ClientPropertyStatus> = {};
+    for (const record of propertyClientStatusesQuery.data ?? []) {
+      nextStatuses[record.clientId] = record.status;
+    }
+    setPropertyClientStatuses(nextStatuses);
+  }, [propertyClientStatusesQuery.data]);
+
+  const updatePropertyClientStatusMutation = useMutation({
+    mutationFn: async ({
+      clientId,
+      propertyUuid,
+      status,
+    }: {
+      clientId: number;
+      propertyUuid: string;
+      status: ClientPropertyStatus;
+    }) =>
+      apiRequest(
+        "PATCH",
+        `/api/clients/${clientId}/property-statuses/${propertyUuid}`,
+        { status },
+      ),
+    onMutate: ({ clientId, status }) => {
+      const previousStatus = propertyClientStatuses[clientId];
+      const statusQueryKey = ["/api/properties", selectedPropertyUuid, "client-statuses"];
+      const previousRecords = queryClient.getQueryData<Array<{
+        clientId: number;
+        status: ClientPropertyStatus;
+      }>>(statusQueryKey);
+      queryClient.setQueryData(statusQueryKey, (records: Array<{
+        clientId: number;
+        status: ClientPropertyStatus;
+      }> = []) => {
+        const existing = records.find((record) => record.clientId === clientId);
+        if (existing) {
+          return records.map((record) =>
+            record.clientId === clientId ? { ...record, status } : record,
+          );
+        }
+        return [...records, { clientId, status }];
+      });
+      setPropertyClientStatuses((current) => ({ ...current, [clientId]: status }));
+      return { clientId, previousStatus, previousRecords };
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(
+        ["/api/properties", selectedPropertyUuid, "client-statuses"],
+        context?.previousRecords,
+      );
+      setPropertyClientStatuses((current) => {
+        const next = { ...current };
+        if (context?.previousStatus) {
+          next[context.clientId] = context.previousStatus;
+        } else {
+          delete next[context?.clientId ?? -1];
+        }
+        return next;
+      });
+      toast({
+        title: t("common.error"),
+        description: t("manage.clients.property_status_update_error"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/properties", selectedPropertyUuid, "client-statuses"],
+      });
+    },
+  });
+
+  type SendClientRow = Client & { recommendation?: RecommendationResult };
+
+  const sendModalClients = useMemo((): SendClientRow[] => {
+    if (!clients?.length || !selectedPropertyForSend) return [];
+
+    const matchesSearch = (client: Client) => {
+      if (!clientSearch) return true;
+      const q = clientSearch.toLowerCase();
+      const fullName = `${client.name ?? ""} ${client.surname ?? ""}`.toLowerCase();
+      return (
+        fullName.includes(q) ||
+        client.email?.toLowerCase().includes(q) ||
+        client.phone?.toLowerCase().includes(q)
+      );
+    };
+
+    let ranked: RankedClient<Client>[] = rankClients(selectedPropertyForSend, clients);
+    if (showRecommendedClientsOnly) {
+      ranked = ranked.filter((client) => client.recommendation.eligible);
+    }
+    return ranked.filter(matchesSearch);
+  }, [
+    clients,
+    selectedPropertyForSend,
+    clientSearch,
+    showRecommendedClientsOnly,
+  ]);
+
+  useEffect(() => {
+    if (!isPropertySendModalOpen || selectedPropertyUuid == null || !selectedPropertyForSend) return;
+    for (const client of sendModalClients) {
+      if (client.recommendation?.eligible && !propertyClientStatuses[client.id]) {
+        updatePropertyClientStatusMutation.mutate({
+          clientId: client.id,
+          propertyUuid: selectedPropertyUuid,
+          status: "recommended",
+        });
+      }
+    }
+  }, [
+    isPropertySendModalOpen,
+    selectedPropertyUuid,
+    selectedPropertyForSend,
+    sendModalClients,
+    propertyClientStatuses,
+  ]);
+
+  const resetPropertySendModalState = useCallback(() => {
+    setIsPropertySendModalOpen(false);
+    setPropertySendModalStep(1);
+    setClientSearch("");
+    setSelectedClientIdsForProperty(new Set());
+    setClientsToSendIds(new Set());
+    setPropertyClientStatuses({});
+    setPropertySendEmailMessage("");
+    setPropertySendImageIndex(0);
+    setShowRecommendedClientsOnly(true);
+  }, []);
+
   const createPropertyMutation = useMutation({
     mutationFn: async (data: any) => {
       // apiRequest already returns parsed JSON data, not a Response object
@@ -634,14 +806,28 @@ export default function ManagePage() {
     onSuccess: (result: any) => {
       toast({
         title: t("manage.clients.emails_sent"),
-        description: t("manage.clients.emails_sent_desc", { count: String(result.sentCount || (selectedClientId != null ? 1 : 0)) }),
+        description: t("manage.clients.emails_sent_desc", {
+          count: String(
+            result.sentCount ||
+              (isPropertySendModalOpen
+                ? clientsToSendIds.size
+                : selectedClientId != null
+                  ? 1
+                  : 0),
+          ),
+        }),
       });
-      // Reset modal state
+      // Reset client → properties modal state
       setIsSendModalOpen(false);
       setSendModalStep(1);
       setSelectedPropertyIds(new Set());
+      setPropertiesToSendIds(new Set());
+      setConfirmImageIndexes({});
       setEmailMessage("");
       setSelectedClientId(null);
+      // Reset property → clients modal state
+      resetPropertySendModalState();
+      setSelectedPropertyUuid(null);
     },
     onError: (error) => {
       toast({
@@ -1790,6 +1976,32 @@ export default function ManagePage() {
                   <div className="hidden md:flex justify-between items-center">
                     <h2 className="text-2xl font-bold">{t("manage.properties.title")}</h2>
                     <div className="flex items-center gap-2">
+                      <div
+                        className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
+                          selectedPropertyUuid != null
+                            ? 'max-w-[200px] opacity-100 mr-0 pointer-events-auto'
+                            : 'max-w-0 opacity-0 pointer-events-none'
+                        }`}
+                      >
+                        <Button
+                          variant="outline"
+                          className="border-primary text-primary hover:bg-primary hover:text-white whitespace-nowrap"
+                          onClick={() => {
+                            setIsPropertySendModalOpen(true);
+                            setPropertySendModalStep(1);
+                            setClientSearch("");
+                            setSelectedClientIdsForProperty(new Set());
+                            setClientsToSendIds(new Set());
+                            setPropertySendEmailMessage("");
+                            setPropertySendImageIndex(0);
+                            setShowRecommendedClientsOnly(true);
+                          }}
+                          data-testid="button-send-property-to-clients"
+                        >
+                          <Send className="mr-2 h-4 w-4" />
+                          {t("manage.properties.send_to")}
+                        </Button>
+                      </div>
                       {/* View Toggle Buttons */}
                       <div className="flex border rounded-md">
                         <Button
@@ -1827,6 +2039,26 @@ export default function ManagePage() {
                   <div className="md:hidden space-y-3">
                     <h2 className="text-xl font-bold">{t("manage.properties.title_mobile")}</h2>
                     <div className="flex flex-col gap-2">
+                      {selectedPropertyUuid != null && (
+                        <Button
+                          variant="outline"
+                          className="w-full border-primary text-primary hover:bg-primary hover:text-white"
+                          onClick={() => {
+                            setIsPropertySendModalOpen(true);
+                            setPropertySendModalStep(1);
+                            setClientSearch("");
+                            setSelectedClientIdsForProperty(new Set());
+                            setClientsToSendIds(new Set());
+                            setPropertySendEmailMessage("");
+                            setPropertySendImageIndex(0);
+                            setShowRecommendedClientsOnly(true);
+                          }}
+                          data-testid="button-send-property-to-clients-mobile"
+                        >
+                          <Send className="mr-2 h-4 w-4" />
+                          {t("manage.properties.send_to")}
+                        </Button>
+                      )}
                       <Button 
                         onClick={() => {
                           setIsAddingProperty(true);
@@ -1943,6 +2175,7 @@ export default function ManagePage() {
                           <Table>
                             <TableHeader>
                               <TableRow>
+                                <TableHead className="w-[48px]"></TableHead>
                                 <TableHead className="w-[120px]">{t("common.reference")}</TableHead>
                                 <TableHead>{t("common.address")}</TableHead>
                                 <TableHead className="w-[120px]">{t("common.price")}</TableHead>
@@ -1953,8 +2186,22 @@ export default function ManagePage() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {properties.map((property) => (
-                                <TableRow key={property.uuid} className="hover:bg-gray-50">
+                              {properties.map((property) => {
+                                const isSelected = selectedPropertyUuid === property.uuid;
+                                return (
+                                <TableRow
+                                  key={property.uuid}
+                                  className={cn("hover:bg-gray-50", isSelected && "bg-primary/5")}
+                                >
+                                  <TableCell>
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => {
+                                        setSelectedPropertyUuid(checked ? property.uuid : null);
+                                      }}
+                                      data-testid={`checkbox-select-property-${property.uuid}`}
+                                    />
+                                  </TableCell>
                                   <TableCell className="font-medium">
                                     {property.reference || '-'}
                                   </TableCell>
@@ -1998,28 +2245,46 @@ export default function ManagePage() {
                                     </div>
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         </div>
                       )}
 
                       {/* Grid View - Always on mobile, on desktop when grid view is selected */}
-                      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 ${propertiesView === 'table' ? 'md:hidden' : ''}`}>
+                      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 ${propertiesView === 'table' ? 'md:hidden' : ''}`}>
                       {properties.map((property) => {
                         const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
                           ? property.imageUrls
                           : [];
+                        const isSelected = selectedPropertyUuid === property.uuid;
                         
                         return (
                           <div 
                             key={property.uuid} 
-                            className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
+                            className={cn(
+                              "bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-100 relative",
+                              isSelected && "ring-2 ring-primary border-primary",
+                            )}
                             onClick={() => {
                               fetchPropertyForViewMutation.mutate(property.uuid);
                             }}
                           >
-                            <div className="h-48 overflow-hidden relative">
+                            <div
+                              className="absolute top-2 left-2 z-20"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  setSelectedPropertyUuid(checked ? property.uuid : null);
+                                }}
+                                className="bg-white/90 border-gray-300"
+                                data-testid={`checkbox-select-property-grid-${property.uuid}`}
+                              />
+                            </div>
+                            <div className="h-36 overflow-hidden relative">
                               {propertyImages.length > 0 ? (
                                 <img 
                                   src={propertyImages[0]} 
@@ -2028,52 +2293,52 @@ export default function ManagePage() {
                                 />
                               ) : (
                                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                  <Building2 className="h-12 w-12 text-gray-400" />
+                                  <Building2 className="h-8 w-8 text-gray-400" />
                                 </div>
                               )}
 
                               {property.operationType && (
-                                <div className="absolute top-0 left-0 bg-primary text-white px-2 py-1 text-xs m-2 rounded-sm">
+                                <div className="absolute top-0 right-0 bg-primary text-white px-1.5 py-0.5 text-[10px] m-1.5 rounded-sm">
                                   {property.operationType === 'Venta' || property.operationType === 'venta' ? 'Venta' : 'Alquiler'}
                                 </div>
                               )}
 
                               {property.reference && (
-                                <div className="absolute bottom-0 right-0 bg-black/70 text-white px-2 py-1 text-xs m-2 rounded-sm">
+                                <div className="absolute bottom-0 right-0 bg-black/70 text-white px-1.5 py-0.5 text-[10px] m-1.5 rounded-sm">
                                   Ref: {property.reference}
                                 </div>
                               )}
                             </div>
 
-                            <div className="p-3 md:p-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <h3 className="font-semibold text-base line-clamp-1 flex-1 mr-2">{property.title || property.address}</h3>
+                            <div className="p-2.5">
+                              <div className="flex items-start justify-between mb-1">
+                                <h3 className="font-semibold text-sm line-clamp-1 flex-1 mr-1">{property.title || property.address}</h3>
                               </div>
 
-                              <div className="flex items-center gap-2 mb-2">
-                                <p className="text-xl md:text-2xl font-bold text-primary">€{property.price?.toLocaleString()}</p>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <p className="text-lg font-bold text-primary">€{property.price?.toLocaleString()}</p>
                                 {property.previousPrice && property.previousPrice > property.price && (
-                                  <span className="text-sm font-medium text-red-600">
+                                  <span className="text-xs font-medium text-red-600">
                                     {Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100)}% ↓
                                   </span>
                                 )}
                               </div>
                               
                               {property.superficie && (
-                                <p className="text-sm font-medium text-gray-800 mb-2">
+                                <p className="text-xs font-medium text-gray-800 mb-1">
                                   {Math.round(property.price / property.superficie)}€/m²
                                 </p>
                               )}
                               
-                              <div className="flex items-center gap-2 md:gap-4 text-sm text-gray-600 mb-2 flex-wrap">
+                              <div className="flex items-center gap-2 text-xs text-gray-600 mb-1 flex-wrap">
                                 <span className="truncate">{property.type}</span>
                                 {property.housingType && <span className="truncate">{property.housingType}</span>}
                                 <span className="truncate">{property.neighborhood}</span>
                               </div>
                               
-                              <p className="text-sm text-gray-600 line-clamp-1 mb-3">{property.address}</p>
+                              <p className="text-xs text-gray-600 line-clamp-1 mb-2">{property.address}</p>
 
-                              <div className="flex gap-2 md:gap-4 text-sm text-gray-500 mb-3 flex-wrap">
+                              <div className="flex gap-2 text-xs text-gray-500 mb-2 flex-wrap">
                                 {property.superficie && (
                                   <div className="whitespace-nowrap">{property.superficie}m²</div>
                                 )}
@@ -2090,24 +2355,24 @@ export default function ManagePage() {
 
                               {property.features && property.features.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
-                                  {property.features.slice(0, 3).map(feature => (
-                                    <span key={feature} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                                  {property.features.slice(0, 2).map(feature => (
+                                    <span key={feature} className="inline-block bg-gray-100 text-gray-800 text-[10px] px-1.5 py-0.5 rounded">
                                       {feature}
                                     </span>
                                   ))}
-                                  {property.features.length > 3 && (
-                                    <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                                      +{property.features.length - 3}
+                                  {property.features.length > 2 && (
+                                    <span className="inline-block bg-gray-100 text-gray-800 text-[10px] px-1.5 py-0.5 rounded">
+                                      +{property.features.length - 2}
                                     </span>
                                   )}
                                 </div>
                               )}
 
                               {/* Mobile touch-friendly action button */}
-                              <div className="md:hidden mt-3 pt-3 border-t">
+                              <div className="md:hidden mt-2 pt-2 border-t">
                                 <Button
                                   variant="outline"
-                                  className="w-full h-11"
+                                  className="w-full h-10"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     fetchPropertyForViewMutation.mutate(property.uuid);
@@ -2129,6 +2394,434 @@ export default function ManagePage() {
               )}
               </>
               )}
+
+              {/* Property → Clients Send Modal */}
+              <Dialog
+                open={isPropertySendModalOpen}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    resetPropertySendModalState();
+                  }
+                }}
+              >
+                <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] h-[90vh] overflow-hidden flex flex-col">
+                  {propertySendModalStep === 1 ? (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>{t("manage.properties.select_clients")}</DialogTitle>
+                      </DialogHeader>
+
+                      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                        <div className="mb-4 space-y-3 shrink-0">
+                          <div className="relative">
+                            <Input
+                              placeholder={t("manage.properties.search_clients")}
+                              value={clientSearch}
+                              onChange={(e) => setClientSearch(e.target.value)}
+                              className="pl-9"
+                              data-testid="input-search-clients-for-property"
+                            />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex flex-wrap gap-4">
+                            <label className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={showRecommendedClientsOnly}
+                                onCheckedChange={(checked) => setShowRecommendedClientsOnly(checked === true)}
+                                data-testid="checkbox-show-recommended-clients"
+                              />
+                              {t("manage.properties.show_recommended_clients_only")}
+                            </label>
+                            <label className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={!showRecommendedClientsOnly}
+                                onCheckedChange={(checked) => setShowRecommendedClientsOnly(checked !== true)}
+                                data-testid="checkbox-show-all-clients"
+                              />
+                              {t("manage.properties.show_all_clients")}
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="flex-1 overflow-auto min-h-0 border rounded-lg">
+                          {isLoadingClients ? (
+                            <div className="flex items-center justify-center py-12">
+                              <p className="text-muted-foreground">{t("manage.clients.loading")}</p>
+                            </div>
+                          ) : !clients?.length ? (
+                            <div className="flex items-center justify-center py-12">
+                              <p className="text-muted-foreground">{t("manage.clients.empty_title")}</p>
+                            </div>
+                          ) : sendModalClients.length === 0 ? (
+                            <div className="flex items-center justify-center py-12">
+                              <p className="text-muted-foreground">{t("manage.properties.no_recommended_clients")}</p>
+                            </div>
+                          ) : (
+                            <TooltipProvider>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="w-[48px]">
+                                      <Checkbox
+                                        checked={
+                                          sendModalClients.length > 0 &&
+                                          sendModalClients.every((c) => selectedClientIdsForProperty.has(c.id))
+                                        }
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedClientIdsForProperty(
+                                              new Set([
+                                                ...Array.from(selectedClientIdsForProperty),
+                                                ...sendModalClients.map((c) => c.id),
+                                              ]),
+                                            );
+                                          } else {
+                                            const next = new Set(selectedClientIdsForProperty);
+                                            sendModalClients.forEach((c) => next.delete(c.id));
+                                            setSelectedClientIdsForProperty(next);
+                                          }
+                                        }}
+                                        data-testid="checkbox-select-all-clients-for-property"
+                                      />
+                                    </TableHead>
+                                    <TableHead>{t("manage.clients.match")}</TableHead>
+                                    <TableHead>{t("manage.clients.property_status.title")}</TableHead>
+                                    <TableHead>{t("common.name")}</TableHead>
+                                    <TableHead>{t("common.email")}</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {sendModalClients.map((client) => {
+                                    const isSelected = selectedClientIdsForProperty.has(client.id);
+                                    const rec = client.recommendation;
+                                    return (
+                                      <TableRow
+                                        key={client.id}
+                                        className={isSelected ? "bg-primary/5" : ""}
+                                        data-testid={`row-client-for-property-${client.id}`}
+                                      >
+                                        <TableCell>
+                                          <Checkbox
+                                            checked={isSelected}
+                                            onCheckedChange={(checked) => {
+                                              const next = new Set(selectedClientIdsForProperty);
+                                              if (checked) next.add(client.id);
+                                              else next.delete(client.id);
+                                              setSelectedClientIdsForProperty(next);
+                                            }}
+                                            data-testid={`checkbox-client-for-property-${client.id}`}
+                                          />
+                                        </TableCell>
+                                        <TableCell>
+                                          {rec ? (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <div className="inline-flex items-center gap-2 cursor-default">
+                                                  {rec.eligible ? (
+                                                    <>
+                                                      <Badge
+                                                        variant={
+                                                          rec.label === "excellent"
+                                                            ? "default"
+                                                            : rec.label === "good"
+                                                              ? "secondary"
+                                                              : "outline"
+                                                        }
+                                                        className={cn(
+                                                          "w-fit",
+                                                          rec.label === "excellent" && "bg-emerald-600 hover:bg-emerald-600",
+                                                          rec.label === "possible" && "border-amber-500 text-amber-700",
+                                                          rec.label === "low" && "text-muted-foreground",
+                                                        )}
+                                                        data-testid={`badge-client-match-${client.id}`}
+                                                      >
+                                                        {t(matchLabelKey(rec.label))}
+                                                      </Badge>
+                                                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                                        {t("manage.clients.match_score", { score: String(rec.score) })}
+                                                      </span>
+                                                    </>
+                                                  ) : (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="text-muted-foreground w-fit"
+                                                      data-testid={`badge-client-match-${client.id}`}
+                                                    >
+                                                      {t("manage.clients.match_ineligible")}
+                                                    </Badge>
+                                                  )}
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent className="max-w-xs">
+                                                {rec.eligible ? (
+                                                  <ul className="text-xs space-y-1">
+                                                    {rec.breakdown.map((item) => (
+                                                      <li key={item.category}>
+                                                        {t(`manage.clients.category_${item.category}` as "manage.clients.category_budget")}: {item.earned}/{Math.round(item.weight * 100)}
+                                                      </li>
+                                                    ))}
+                                                  </ul>
+                                                ) : (
+                                                  <ul className="text-xs space-y-1">
+                                                    {(rec.exclusionReasons ?? []).map((reason) => (
+                                                      <li key={reason}>
+                                                        {t(`manage.clients.exclusion_${reason}` as "manage.clients.exclusion_city")}
+                                                      </li>
+                                                    ))}
+                                                  </ul>
+                                                )}
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          ) : null}
+                                        </TableCell>
+                                        <TableCell>
+                                          <Select
+                                            value={propertyClientStatuses[client.id] || undefined}
+                                            onValueChange={(status) => {
+                                              if (selectedPropertyUuid == null) return;
+                                              updatePropertyClientStatusMutation.mutate({
+                                                clientId: client.id,
+                                                propertyUuid: selectedPropertyUuid,
+                                                status: status as ClientPropertyStatus,
+                                              });
+                                            }}
+                                          >
+                                            <SelectTrigger
+                                              className="h-8 min-w-[170px]"
+                                              data-testid={`select-client-property-status-${client.id}`}
+                                            >
+                                              <SelectValue placeholder={t("manage.clients.property_status.select")} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {CLIENT_PROPERTY_STATUS_OPTIONS.map((option) => (
+                                                <SelectItem key={option.value} value={option.value}>
+                                                  {t(option.labelKey)}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </TableCell>
+                                        <TableCell className="font-medium">
+                                          {client.name} {client.surname || ""}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">
+                                          {client.email}
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </div>
+
+                      <DialogFooter className="mt-4">
+                        <Button
+                          variant="ghost"
+                          onClick={() => resetPropertySendModalState()}
+                          data-testid="button-cancel-property-send"
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setClientsToSendIds(new Set(selectedClientIdsForProperty));
+                            setPropertySendImageIndex(0);
+                            setPropertySendModalStep(2);
+                          }}
+                          disabled={selectedClientIdsForProperty.size === 0}
+                          data-testid="button-continue-property-send"
+                        >
+                          {t("manage.clients.customize_email")}
+                        </Button>
+                      </DialogFooter>
+                    </>
+                  ) : (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>{t("manage.clients.confirm_send")}</DialogTitle>
+                      </DialogHeader>
+
+                      <div className="flex-1 overflow-auto space-y-4">
+                        {selectedPropertyForSend && (() => {
+                          const propertyImages =
+                            selectedPropertyForSend.imageUrls && selectedPropertyForSend.imageUrls.length > 0
+                              ? selectedPropertyForSend.imageUrls
+                              : [];
+                          const hasMultipleImages = propertyImages.length > 1;
+                          const safeImageIndex =
+                            propertyImages.length > 0
+                              ? Math.min(propertySendImageIndex, propertyImages.length - 1)
+                              : 0;
+
+                          return (
+                            <div>
+                              <h4 className="font-medium mb-2">{t("manage.properties.selected_property")}</h4>
+                              <div className="flex gap-3 p-3 border rounded-lg">
+                                <div className="relative group h-36 w-48 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                                  {propertyImages.length > 0 ? (
+                                    <img
+                                      src={propertyImages[safeImageIndex]}
+                                      alt={selectedPropertyForSend.title || selectedPropertyForSend.address || "Propiedad"}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center">
+                                      <Building2 className="h-10 w-10 text-gray-400" />
+                                    </div>
+                                  )}
+                                  {hasMultipleImages && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setPropertySendImageIndex(
+                                            safeImageIndex === 0
+                                              ? propertyImages.length - 1
+                                              : safeImageIndex - 1,
+                                          )
+                                        }
+                                        className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                                        aria-label="Imagen anterior"
+                                      >
+                                        <ChevronLeft className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setPropertySendImageIndex(
+                                            safeImageIndex === propertyImages.length - 1
+                                              ? 0
+                                              : safeImageIndex + 1,
+                                          )
+                                        }
+                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                                        aria-label="Siguiente imagen"
+                                      >
+                                        <ChevronRight className="h-4 w-4" />
+                                      </button>
+                                      <div className="absolute left-1.5 top-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
+                                        {safeImageIndex + 1}/{propertyImages.length}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1 self-center">
+                                  <p className="font-medium line-clamp-2">
+                                    {selectedPropertyForSend.title || "Sin título"}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                    {formatAgentPropertyAddress(selectedPropertyForSend) || "Sin dirección"}
+                                  </p>
+                                  <p className="text-base font-semibold text-primary mt-2">
+                                    {selectedPropertyForSend.price
+                                      ? `€${selectedPropertyForSend.price.toLocaleString()}`
+                                      : "-"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        <div>
+                          <h4 className="font-medium mb-2">
+                            {t("manage.clients.selected_clients", {
+                              count: `${clientsToSendIds.size}/${selectedClientIdsForProperty.size}`,
+                            })}
+                          </h4>
+                          <div className="space-y-2 max-h-64 overflow-auto">
+                            {clients
+                              ?.filter((c) => selectedClientIdsForProperty.has(c.id))
+                              .map((client) => {
+                                const isIncluded = clientsToSendIds.has(client.id);
+                                return (
+                                  <div
+                                    key={client.id}
+                                    className={`flex gap-3 p-3 border rounded-lg ${isIncluded ? "" : "opacity-60 bg-muted/30"}`}
+                                    data-testid={`confirm-client-${client.id}`}
+                                  >
+                                    <Checkbox
+                                      checked={isIncluded}
+                                      onCheckedChange={(checked) => {
+                                        const next = new Set(clientsToSendIds);
+                                        if (checked) next.add(client.id);
+                                        else next.delete(client.id);
+                                        setClientsToSendIds(next);
+                                      }}
+                                      data-testid={`checkbox-include-client-${client.id}`}
+                                      aria-label={t("manage.clients.include_in_send")}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-medium">
+                                        {client.name} {client.surname || ""}
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">{client.email}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="propertySendEmailMessage" className="font-medium">
+                            {t("manage.clients.email_message_label")}
+                          </Label>
+                          <Textarea
+                            id="propertySendEmailMessage"
+                            placeholder={t("manage.clients.email_message_placeholder")}
+                            value={propertySendEmailMessage}
+                            onChange={(e) => setPropertySendEmailMessage(e.target.value)}
+                            className="mt-2 min-h-[100px]"
+                            data-testid="textarea-property-send-email-message"
+                          />
+                        </div>
+                      </div>
+
+                      <DialogFooter className="mt-4 flex justify-between">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setPropertySendModalStep(1)}
+                          className="mr-auto"
+                          data-testid="button-back-property-send"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          {t("common.back")}
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            onClick={() => resetPropertySendModalState()}
+                            data-testid="button-cancel-property-confirm"
+                          >
+                            {t("common.cancel")}
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              if (selectedPropertyUuid == null) return;
+                              sendPropertiesMutation.mutate({
+                                clientIds: Array.from(clientsToSendIds),
+                                propertyUuids: [selectedPropertyUuid],
+                                message: propertySendEmailMessage,
+                              });
+                            }}
+                            disabled={
+                              sendPropertiesMutation.isPending || clientsToSendIds.size === 0
+                            }
+                            data-testid="button-confirm-property-send"
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            {sendPropertiesMutation.isPending ? "Enviando..." : "Confirmar Envío"}
+                          </Button>
+                        </div>
+                      </DialogFooter>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 
@@ -2182,6 +2875,8 @@ export default function ManagePage() {
                           setSendModalStep(1);
                           setPropertySearch("");
                           setSelectedPropertyIds(new Set());
+                          setPropertiesToSendIds(new Set());
+                          setConfirmImageIndexes({});
                           setEmailMessage("");
                         }}
                         data-testid="button-send-to-clients"
@@ -2240,6 +2935,8 @@ export default function ManagePage() {
                       setSendModalStep(1);
                       setPropertySearch("");
                       setSelectedPropertyIds(new Set());
+                      setPropertiesToSendIds(new Set());
+                      setConfirmImageIndexes({});
                       setEmailMessage("");
                     }}
                     data-testid="button-send-to-clients-mobile"
@@ -2561,6 +3258,8 @@ export default function ManagePage() {
                     setSendModalStep(1);
                     setPropertySearch("");
                     setSelectedPropertyIds(new Set());
+                    setPropertiesToSendIds(new Set());
+                    setConfirmImageIndexes({});
                     setEmailMessage("");
                     setShowRecommendedOnly(true);
                   }
@@ -2803,6 +3502,8 @@ export default function ManagePage() {
                             setIsSendModalOpen(false);
                             setSendModalStep(1);
                             setSelectedPropertyIds(new Set());
+                            setPropertiesToSendIds(new Set());
+                            setConfirmImageIndexes({});
                             setShowRecommendedOnly(true);
                           }}
                           data-testid="button-cancel-send"
@@ -2810,11 +3511,15 @@ export default function ManagePage() {
                           {t("common.cancel")}
                         </Button>
                         <Button
-                          onClick={() => setSendModalStep(2)}
+                          onClick={() => {
+                            setPropertiesToSendIds(new Set(selectedPropertyIds));
+                            setConfirmImageIndexes({});
+                            setSendModalStep(2);
+                          }}
                           disabled={selectedPropertyIds.size === 0}
                           data-testid="button-continue-send"
                         >
-                          Continuar
+                          {t("manage.clients.customize_email")}
                         </Button>
                       </DialogFooter>
                     </>
@@ -2844,21 +3549,140 @@ export default function ManagePage() {
 
                         {/* Selected Properties */}
                         <div>
-                          <h4 className="font-medium mb-2">Propiedades ({selectedPropertyIds.size})</h4>
-                          <div className="space-y-2 max-h-32 overflow-auto">
-                            {agencyProperties?.filter(p => selectedPropertyIds.has(p.uuid)).map((property) => (
-                              <div 
-                                key={property.uuid} 
-                                className="p-3 border rounded-lg"
-                                data-testid={`selected-property-${property.uuid}`}
-                              >
-                                <p className="font-medium">{property.title || 'Sin título'}</p>
-                                <p className="text-sm text-muted-foreground">{property.address || 'Sin dirección'}</p>
-                                <p className="text-sm font-medium text-primary">
-                                  {property.price ? `$${property.price.toLocaleString()}` : '-'}
-                                </p>
-                              </div>
-                            ))}
+                          <h4 className="font-medium mb-2">
+                            Propiedades ({propertiesToSendIds.size}/{selectedPropertyIds.size})
+                          </h4>
+                          <div className="space-y-3 max-h-80 overflow-auto">
+                            {agencyProperties?.filter(p => selectedPropertyIds.has(p.uuid)).map((property) => {
+                              const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
+                                ? property.imageUrls
+                                : [];
+                              const hasMultipleImages = propertyImages.length > 1;
+                              const currentImageIndex = confirmImageIndexes[property.uuid]
+                                ?? property.mainImageIndex
+                                ?? 0;
+                              const safeImageIndex = propertyImages.length > 0
+                                ? Math.min(currentImageIndex, propertyImages.length - 1)
+                                : 0;
+                              const isIncluded = propertiesToSendIds.has(property.uuid);
+
+                              return (
+                                <div 
+                                  key={property.uuid} 
+                                  className={`flex gap-3 p-3 border rounded-lg ${isIncluded ? '' : 'opacity-60 bg-muted/30'}`}
+                                  data-testid={`selected-property-${property.uuid}`}
+                                >
+                                  <div className="pt-1">
+                                    <Checkbox
+                                      checked={isIncluded}
+                                      onCheckedChange={(checked) => {
+                                        const next = new Set(propertiesToSendIds);
+                                        if (checked) {
+                                          next.add(property.uuid);
+                                        } else {
+                                          next.delete(property.uuid);
+                                        }
+                                        setPropertiesToSendIds(next);
+                                      }}
+                                      data-testid={`checkbox-include-property-${property.uuid}`}
+                                      aria-label={t("manage.clients.include_in_send")}
+                                    />
+                                  </div>
+
+                                  <div className="relative group h-36 w-48 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                                    {propertyImages.length > 0 ? (
+                                      <img
+                                        src={propertyImages[safeImageIndex]}
+                                        alt={property.title || property.address || "Propiedad"}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center">
+                                        <Building2 className="h-10 w-10 text-gray-400" />
+                                      </div>
+                                    )}
+
+                                    {hasMultipleImages && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setConfirmImageIndexes((prev) => ({
+                                              ...prev,
+                                              [property.uuid]:
+                                                safeImageIndex === 0
+                                                  ? propertyImages.length - 1
+                                                  : safeImageIndex - 1,
+                                            }));
+                                          }}
+                                          className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                                          aria-label="Imagen anterior"
+                                          data-testid={`button-prev-image-${property.uuid}`}
+                                        >
+                                          <ChevronLeft className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setConfirmImageIndexes((prev) => ({
+                                              ...prev,
+                                              [property.uuid]:
+                                                safeImageIndex === propertyImages.length - 1
+                                                  ? 0
+                                                  : safeImageIndex + 1,
+                                            }));
+                                          }}
+                                          className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                                          aria-label="Siguiente imagen"
+                                          data-testid={`button-next-image-${property.uuid}`}
+                                        >
+                                          <ChevronRight className="h-4 w-4" />
+                                        </button>
+                                        <div className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 gap-1">
+                                          {propertyImages.map((_, index) => (
+                                            <button
+                                              key={index}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setConfirmImageIndexes((prev) => ({
+                                                  ...prev,
+                                                  [property.uuid]: index,
+                                                }));
+                                              }}
+                                              className={`h-1.5 w-1.5 rounded-full transition-all ${
+                                                index === safeImageIndex
+                                                  ? 'bg-white scale-110'
+                                                  : 'bg-white/50 hover:bg-white/75'
+                                              }`}
+                                              aria-label={`Ver imagen ${index + 1}`}
+                                            />
+                                          ))}
+                                        </div>
+                                        <div className="absolute left-1.5 top-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
+                                          {safeImageIndex + 1}/{propertyImages.length}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  <div className="min-w-0 flex-1 self-center">
+                                    <p className="font-medium line-clamp-2">{property.title || 'Sin título'}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                      {formatAgentPropertyAddress(property) || 'Sin dirección'}
+                                    </p>
+                                    <p className="text-base font-semibold text-primary mt-2">
+                                      {property.price ? `€${property.price.toLocaleString()}` : '-'}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -2893,6 +3717,8 @@ export default function ManagePage() {
                               setIsSendModalOpen(false);
                               setSendModalStep(1);
                               setSelectedPropertyIds(new Set());
+                              setPropertiesToSendIds(new Set());
+                              setConfirmImageIndexes({});
                               setEmailMessage("");
                             }}
                             data-testid="button-cancel-confirm"
@@ -2903,11 +3729,11 @@ export default function ManagePage() {
                             onClick={() => {
                               sendPropertiesMutation.mutate({
                                 clientIds: selectedClientId != null ? [selectedClientId] : [],
-                                propertyUuids: Array.from(selectedPropertyIds),
+                                propertyUuids: Array.from(propertiesToSendIds),
                                 message: emailMessage,
                               });
                             }}
-                            disabled={sendPropertiesMutation.isPending}
+                            disabled={sendPropertiesMutation.isPending || propertiesToSendIds.size === 0}
                             data-testid="button-confirm-send"
                           >
                             <Send className="h-4 w-4 mr-2" />

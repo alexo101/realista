@@ -1,13 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { computeEffectiveStatus } from "@shared/event-status";
 import { EVENT_STATUSES, type EventStatus } from "@shared/schema";
-
-const STATUS_LABELS: Record<EventStatus, string> = {
-  scheduled: "Programado",
-  due: "Vencido",
-  completed: "Completado",
-  cancelled: "Cancelado",
-};
+import { useLanguage } from "@/contexts/language-context";
 
 const STATUS_CLASSES: Record<EventStatus, string> = {
   scheduled: "border-blue-200 bg-blue-50 text-blue-700",
@@ -23,6 +17,7 @@ interface EventStatusBadgeProps {
 }
 
 export function EventStatusBadge({ status, eventDate, eventTime }: EventStatusBadgeProps) {
+  const { t } = useLanguage();
   const resolved =
     eventDate && eventTime
       ? computeEffectiveStatus({ status, eventDate, eventTime }).status
@@ -34,7 +29,7 @@ export function EventStatusBadge({ status, eventDate, eventTime }: EventStatusBa
 
   return (
     <Badge variant="outline" className={STATUS_CLASSES[effectiveStatus]}>
-      {STATUS_LABELS[effectiveStatus]}
+      {t(`calendar.status.${effectiveStatus}`)}
     </Badge>
   );
 }

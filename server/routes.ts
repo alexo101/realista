@@ -1916,6 +1916,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/properties/:propertyUuid/client-statuses", requireAuth, async (req, res) => {
+    try {
+      const propertyUuid = req.params.propertyUuid;
+      const agentId = (req.user as any).id;
+      const property = await storage.getPropertyByUuid(propertyUuid);
+      if (!property) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+
+      const agentClients = await storage.getClientsByAgent(agentId);
+      const clientIds = agentClients.map((client) => client.id);
+      if (clientIds.length === 0) {
+        return res.json([]);
+      }
+
+      const visitRequests = await storage.getPropertyVisitRequestsByProperty(propertyUuid);
+      const scheduledVisits = visitRequests.filter(
+        (visit) =>
+          ["pending", "confirmed"].includes(visit.status) &&
+          visit.clientId != null &&
+          clientIds.includes(visit.clientId),
+      );
+      await Promise.all(
+        scheduledVisits.map((visit) =>
+          storage.upsertClientPropertyStatus(visit.clientId!, propertyUuid, "visit_scheduled", {
+            preserveFinal: true,
+          }),
+        ),
+      );
+
+      const statuses = await storage.getClientPropertyStatusesForProperty(propertyUuid, clientIds);
+      res.json(statuses);
+    } catch (error) {
+      console.error("Error getting property client statuses:", error);
+      res.status(500).json({ message: "No se pudieron cargar los estados de los clientes" });
+    }
+  });
+
   app.get("/api/clients", async (req, res) => {
     try {
       const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : null;

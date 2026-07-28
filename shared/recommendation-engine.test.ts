@@ -6,6 +6,7 @@ import {
   budgetScoreFraction,
   effectiveWeights,
   labelForScore,
+  rankClients,
   rankProperties,
   scoreProperty,
   type ScorableProperty,
@@ -242,6 +243,21 @@ describe("labels and ranking", () => {
     assert.equal(ranked[0].recommendation.eligible, true);
     assert.ok(ranked[0].recommendation.score >= ranked[1].recommendation.score);
     assert.equal(ranked[ranked.length - 1].uuid, "excluded");
+    assert.equal(ranked[ranked.length - 1].recommendation.eligible, false);
+  });
+
+  it("ranks eligible clients above ineligible and by score desc", () => {
+    const property = baseProperty();
+    const ranked = rankClients(property, [
+      { id: 1, propertyPreferences: basePrefs({ bedrooms: 1, neighborhood: "Other" }) },
+      { id: 2, propertyPreferences: basePrefs() },
+      { id: 3, propertyPreferences: basePrefs({ essentialFeatures: ["ascensor", "piscina"] }) },
+    ]);
+
+    assert.equal(ranked[0].id, 2);
+    assert.equal(ranked[0].recommendation.eligible, true);
+    assert.ok(ranked[0].recommendation.score >= ranked[1].recommendation.score);
+    assert.equal(ranked[ranked.length - 1].id, 3);
     assert.equal(ranked[ranked.length - 1].recommendation.eligible, false);
   });
 

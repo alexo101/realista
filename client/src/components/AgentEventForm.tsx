@@ -14,22 +14,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es, fr, it } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { computeEffectiveStatus } from "@shared/event-status";
 import { type AgentEvent } from "@shared/schema";
+import { useLanguage } from "@/contexts/language-context";
 
-const STATUS_LABELS = {
-  scheduled: "Programado",
-  due: "Vencido",
-  completed: "Completado",
-  cancelled: "Cancelado",
-} as const;
-
-const eventFormSchema = z.object({
+const createEventFormSchema = (requiredDate: string, invalidTime: string, requiredProperty: string) => z.object({
   eventType: z.enum(["Llamada", "Visita", "Seguimiento"]),
-  eventDate: z.string().min(1, "La fecha es obligatoria"),
-  eventTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:MM)"),
+  eventDate: z.string().min(1, requiredDate),
+  eventTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, invalidTime),
   clientId: z.number().optional(),
   propertyUuid: z.string().optional(),
   status: z.enum(["scheduled", "due", "completed", "cancelled"]).optional(),
@@ -41,11 +35,11 @@ const eventFormSchema = z.object({
   }
   return true;
 }, {
-  message: "La propiedad es obligatoria para eventos de tipo 'Visita'",
+  message: requiredProperty,
   path: ["propertyUuid"],
 });
 
-type EventFormData = z.infer<typeof eventFormSchema>;
+type EventFormData = z.infer<ReturnType<typeof createEventFormSchema>>;
 
 function getFormStatus(event?: AgentEvent | null): EventFormData["status"] {
   if (!event) return "scheduled";
@@ -59,11 +53,22 @@ interface AgentEventFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   defaultClientId?: number;
+  defaultDate?: string;
   hideClientField?: boolean;
 }
 
-export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, defaultClientId, hideClientField }: AgentEventFormProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>();
+export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, defaultClientId, defaultDate, hideClientField }: AgentEventFormProps) {
+  const { language, t } = useLanguage();
+  const dateLocale = language === "en" ? enUS : language === "fr" ? fr : language === "it" ? it : es;
+  const eventFormSchema = createEventFormSchema(
+    t("calendar.form.required_date"),
+    t("calendar.form.invalid_time"),
+    t("calendar.form.required_property"),
+  );
+  const initialDate = event?.eventDate || defaultDate || "";
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    initialDate ? new Date(initialDate) : undefined
+  );
   const [contactOpen, setContactOpen] = useState(false);
   const [contactSearch, setContactSearch] = useState("");
 
@@ -71,7 +76,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       eventType: event?.eventType as "Llamada" | "Visita" | "Seguimiento" || "Visita",
-      eventDate: event?.eventDate || "",
+      eventDate: initialDate,
       eventTime: event?.eventTime || "",
       clientId: event?.clientId || defaultClientId || undefined,
       propertyUuid: event?.propertyUuid || undefined,
@@ -112,21 +117,22 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
   });
 
   useEffect(() => {
+    const dateValue = event?.eventDate || defaultDate || "";
     form.reset({
       eventType: event?.eventType as "Llamada" | "Visita" | "Seguimiento" || "Visita",
-      eventDate: event?.eventDate || "",
+      eventDate: dateValue,
       eventTime: event?.eventTime || "",
       clientId: event?.clientId || defaultClientId || undefined,
       propertyUuid: event?.propertyUuid || undefined,
       status: getFormStatus(event),
       comments: event?.comments || "",
     });
-    if (event?.eventDate) {
-      setSelectedDate(new Date(event.eventDate));
+    if (dateValue) {
+      setSelectedDate(new Date(dateValue));
     } else {
       setSelectedDate(undefined);
     }
-  }, [defaultClientId, event, form]);
+  }, [defaultClientId, defaultDate, event, form]);
 
   const watchedDate = form.watch("eventDate");
   const watchedTime = form.watch("eventTime");
@@ -178,7 +184,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
           name="eventType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo de evento</FormLabel>
+              <FormLabel>{t("calendar.form.event_type")}</FormLabel>
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
@@ -188,19 +194,19 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Visita" id="visita" />
                     <FormLabel htmlFor="visita" className="font-normal cursor-pointer">
-                      Visita
+                      {t("calendar.form.visit")}
                     </FormLabel>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Llamada" id="llamada" />
                     <FormLabel htmlFor="llamada" className="font-normal cursor-pointer">
-                      Llamada
+                      {t("calendar.form.call")}
                     </FormLabel>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="Seguimiento" id="seguimiento" />
                     <FormLabel htmlFor="seguimiento" className="font-normal cursor-pointer">
-                      Seguimiento
+                      {t("calendar.form.follow_up")}
                     </FormLabel>
                   </div>
                 </RadioGroup>
@@ -217,7 +223,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
           name="clientId"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Contacto</FormLabel>
+              <FormLabel>{t("calendar.form.contact")}</FormLabel>
               <Popover open={contactOpen} onOpenChange={setContactOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -234,11 +240,11 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                             const selectedClient = clients.find((client: any) => client.id === field.value);
                             if (selectedClient) {
                               const fullName = `${selectedClient.name || ''} ${selectedClient.surname || ''}`.trim();
-                              return fullName || selectedClient.email || "Cliente seleccionado";
+                              return fullName || selectedClient.email || t("calendar.form.selected_client");
                             }
-                            return "Cliente seleccionado";
+                            return t("calendar.form.selected_client");
                           })()
-                        : "Sin contacto seleccionado"}
+                        : t("calendar.form.no_contact")}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </FormControl>
@@ -246,12 +252,12 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                 <PopoverContent className="w-[--radix-popover-trigger-width] max-h-[200px] p-0">
                   <Command shouldFilter={false}>
                     <CommandInput 
-                      placeholder="Buscar contacto por nombre o apellido..."
+                      placeholder={t("calendar.form.search_contact")}
                       value={contactSearch}
                       onValueChange={setContactSearch}
                     />
                     <CommandList>
-                      <CommandEmpty>No se encontraron contactos.</CommandEmpty>
+                      <CommandEmpty>{t("calendar.form.no_contacts")}</CommandEmpty>
                       <CommandGroup>
                         {clients
                           .filter((client: any) => {
@@ -303,7 +309,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
           name="eventDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Fecha</FormLabel>
+              <FormLabel>{t("calendar.form.date")}</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -315,9 +321,9 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                       )}
                     >
                       {field.value ? (
-                        format(new Date(field.value), "PPP", { locale: es })
+                        format(new Date(field.value), "PPP", { locale: dateLocale })
                       ) : (
-                        <span>Seleccionar fecha</span>
+                        <span>{t("calendar.form.select_date")}</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
@@ -337,7 +343,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                       !event && date < new Date(new Date().setHours(0, 0, 0, 0))
                     }
                     initialFocus
-                    locale={es}
+                    locale={dateLocale}
                   />
                 </PopoverContent>
               </Popover>
@@ -352,7 +358,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
           name="eventTime"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Hora</FormLabel>
+              <FormLabel>{t("calendar.form.time")}</FormLabel>
               <FormControl>
                 <Input type="time" step="60" className="event-time-input text-primary accent-primary" {...field} />
               </FormControl>
@@ -372,7 +378,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
             return (
               <FormItem>
                 <FormLabel>
-                  Propiedad {isPropertyMandatory && <span className="text-red-500">*</span>}
+                  {t("calendar.form.property")} {isPropertyMandatory && <span className="text-red-500">*</span>}
                 </FormLabel>
                 <Select 
                   onValueChange={(value) => field.onChange(value || undefined)} 
@@ -380,7 +386,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={isPropertyMandatory ? "Selecciona una propiedad" : "Sin propiedad seleccionada"} />
+                      <SelectValue placeholder={isPropertyMandatory ? t("calendar.form.select_property") : t("calendar.form.no_property")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -404,7 +410,7 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Estado</FormLabel>
+                <FormLabel>{t("calendar.form.status")}</FormLabel>
                 <Select
                   value={field.value || "scheduled"}
                   onValueChange={(value) => {
@@ -418,12 +424,12 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="scheduled">{STATUS_LABELS.scheduled}</SelectItem>
+                    <SelectItem value="scheduled">{t("calendar.status.scheduled")}</SelectItem>
                     <SelectItem value="due" disabled>
-                      {STATUS_LABELS.due}
+                      {t("calendar.status.due")}
                     </SelectItem>
-                    <SelectItem value="completed">{STATUS_LABELS.completed}</SelectItem>
-                    <SelectItem value="cancelled">{STATUS_LABELS.cancelled}</SelectItem>
+                    <SelectItem value="completed">{t("calendar.status.completed")}</SelectItem>
+                    <SelectItem value="cancelled">{t("calendar.status.cancelled")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -438,10 +444,10 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
           name="comments"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Comentarios (opcional)</FormLabel>
+              <FormLabel>{t("calendar.form.comments")}</FormLabel>
               <FormControl>
                 <Textarea 
-                  placeholder="Introduce comentarios sobre el evento"
+                  placeholder={t("calendar.form.comments_placeholder")}
                   className="resize-none"
                   {...field}
                 />
@@ -454,13 +460,13 @@ export function AgentEventForm({ agentId, event, onSubmit, onCancel, isLoading, 
         {/* Actions */}
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {t("calendar.form.cancel")}
           </Button>
           <Button 
             type="submit" 
             disabled={!isFormValid() || isLoading}
           >
-            {isLoading ? "Guardando..." : (event ? "Actualizar Evento" : "Crear Evento")}
+            {isLoading ? t("calendar.form.saving") : (event ? t("calendar.form.update") : t("calendar.form.create"))}
           </Button>
         </div>
       </form>

@@ -497,3 +497,33 @@ export function rankProperties<T extends ScorableProperty>(
 
   return ranked;
 }
+
+/** Minimal client shape required for ranking against a property. */
+export type ScorableClient = {
+  id: number;
+  propertyPreferences?: ClientPropertyPreferences | null;
+};
+
+export type RankedClient<T extends ScorableClient> = T & {
+  recommendation: RecommendationResult;
+};
+
+/** Rank clients against one property: eligible first (by score desc), then ineligible. */
+export function rankClients<T extends ScorableClient>(
+  property: ScorableProperty,
+  clients: T[],
+): RankedClient<T>[] {
+  const ranked: RankedClient<T>[] = clients.map((client) => ({
+    ...client,
+    recommendation: scoreProperty(client.propertyPreferences, property),
+  }));
+
+  ranked.sort((a, b) => {
+    if (a.recommendation.eligible !== b.recommendation.eligible) {
+      return a.recommendation.eligible ? -1 : 1;
+    }
+    return b.recommendation.score - a.recommendation.score;
+  });
+
+  return ranked;
+}
