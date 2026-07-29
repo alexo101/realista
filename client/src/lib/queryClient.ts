@@ -43,6 +43,14 @@ export async function apiRequest(
   if (contentType && contentType.includes('application/json')) {
     return await res.json();
   }
+
+  // API routes must return JSON (or empty). HTML 200 from a SPA fallback
+  // must not be treated as a successful mutation/query.
+  if (url.startsWith("/api")) {
+    throw new Error(
+      `${res.status}: Expected JSON from ${url}, got ${contentType || "unknown content-type"}`,
+    );
+  }
   
   // Default to returning text for non-JSON responses
   return await res.text();

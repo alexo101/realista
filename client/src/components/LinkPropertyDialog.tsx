@@ -120,9 +120,14 @@ export function LinkPropertyDialog({
               {t("common.loading")}
             </p>
           ) : filteredProperties.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              {t("manage.client_transactions.no_properties")}
-            </p>
+            <div
+              className="flex flex-col items-center justify-center py-12 text-center"
+              data-testid="link-property-empty-state"
+            >
+              <p className="text-sm text-muted-foreground">
+                {t("manage.client_transactions.no_properties")}
+              </p>
+            </div>
           ) : (
             filteredProperties.map((property) => (
               <PropertyPreviewCard

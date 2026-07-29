@@ -33,7 +33,13 @@ import {
   PREFERENCE_PROPERTY_TYPE_OPTIONS,
   type PreferenceOption,
 } from "@/utils/client-preference-options";
-import type { AgentEvent, Client, ClientPropertyPreferences, ContactHistoryEntry, Property } from "@shared/schema";
+import type {
+  AgentEvent,
+  Client,
+  ClientPropertyPreferences,
+  ContactHistoryEntry,
+  Property,
+} from "@shared/schema";
 
 const CLIENT_STATUSES = [
   "Nuevo",
@@ -93,13 +99,6 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
   const [linkedProperties, setLinkedProperties] = useState<Property[]>([]);
   const [linkedImageIndexes, setLinkedImageIndexes] = useState<Record<string, number>>({});
   const initializedClientIdRef = useRef<number | null>(null);
-
-  const openLinkPropertyModal = () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H4',location:'client-detail.tsx:openLinkPropertyModal',message:'Link property CTA pressed',data:{clientId,activeTab,linkedCount:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    setIsLinkPropertyOpen(true);
-  };
 
   const createEventMutation = useMutation({
     mutationFn: async (eventData: any) =>
@@ -200,24 +199,43 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
     enabled: !!user?.agentUuid && agentUuid === user.agentUuid && Number.isInteger(clientId),
   });
 
+  const { data: persistedLinkedProperties = [] } = useQuery<Property[]>({
+    queryKey: ["/api/clients", clientId, "linked-properties"],
+    queryFn: async () => {
+      const response = await fetch(`/api/clients/${clientId}/linked-properties`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch linked properties");
+      return response.json();
+    },
+    enabled: Number.isInteger(clientId) && !!user?.id,
+  });
+
+  useEffect(() => {
+    setLinkedProperties(persistedLinkedProperties);
+  }, [persistedLinkedProperties]);
+
+  useEffect(() => {
+    setLinkedImageIndexes({});
+  }, [clientId]);
+
   const linkPropertyMutation = useMutation({
     mutationFn: async (property: Property) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H1',location:'client-detail.tsx:linkPropertyMutationFn',message:'Submitting property link patch',data:{clientId,propertyUuid:property.uuid,status:'recommended'},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-      await apiRequest("PATCH", `/api/clients/${clientId}/property-statuses/${property.uuid}`, {
-        status: "recommended",
-      });
+      await apiRequest("PATCH", `/api/clients/${clientId}/linked-properties/${property.uuid}`, {});
       return property;
     },
-    onSuccess: (property) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H1',location:'client-detail.tsx:linkPropertyOnSuccess',message:'Property linked in mutation success',data:{clientId,propertyUuid:property.uuid,beforeCount:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
+    onSuccess: async (property) => {
+      const linkedKey = ["/api/clients", clientId, "linked-properties"] as const;
+      queryClient.setQueryData<Property[]>(linkedKey, (current = []) =>
+        current.some((p) => p.uuid === property.uuid) ? current : [...current, property],
+      );
       setLinkedProperties((prev) =>
         prev.some((p) => p.uuid === property.uuid) ? prev : [...prev, property],
       );
       setIsLinkPropertyOpen(false);
+      await queryClient.invalidateQueries({
+        queryKey: linkedKey,
+      });
       toast({
         title: t("manage.client_transactions.link_success"),
         description: t("manage.client_transactions.link_success_desc"),
@@ -257,11 +275,6 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
     if (!client) return;
     if (initializedClientIdRef.current === client.id) return;
     initializedClientIdRef.current = client.id;
-    // #region agent log
-    fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H3',location:'client-detail.tsx:clientInitEffect',message:'Client init clears linked properties local state',data:{clientId:client.id,linkedCountBeforeReset:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    setLinkedProperties([]);
-    setLinkedImageIndexes({});
     setFormData({
       name: client.name || "",
       surname: client.surname || "",
@@ -289,13 +302,6 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
     [formData.clientType],
   );
   const showPreferencesTab = selectedType === "buyer" || selectedType === "tenant";
-
-  useEffect(() => {
-    if (activeTab !== "transactions" && !isLinkPropertyOpen) return;
-    // #region agent log
-    fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H4',location:'client-detail.tsx:transactionsStateEffect',message:'Transactions tab state snapshot',data:{clientId,activeTab,isLinkPropertyOpen,linkedCount:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }, [activeTab, clientId, isLinkPropertyOpen, linkedProperties.length]);
 
   useEffect(() => {
     if (!showPreferencesTab && activeTab === "preferences") {
@@ -655,7 +661,7 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
                   </p>
                   <Button
                     type="button"
-                    onClick={openLinkPropertyModal}
+                    onClick={() => setIsLinkPropertyOpen(true)}
                     data-testid="button-link-property"
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -671,7 +677,7 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={openLinkPropertyModal}
+                      onClick={() => setIsLinkPropertyOpen(true)}
                       data-testid="button-link-property"
                     >
                       <Plus className="h-4 w-4 mr-1" />

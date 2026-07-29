@@ -668,6 +668,7 @@ export const clientPropertyStatuses = pgTable("client_property_statuses", {
   clientId: integer("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
   status: text("status").notNull().default("recommended"),
+  linkedForTransaction: boolean("linked_for_transaction").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

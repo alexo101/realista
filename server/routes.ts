@@ -1875,9 +1875,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const statuses = await storage.getClientPropertyStatuses(clientId);
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H5',location:'server/routes.ts:getClientPropertyStatuses',message:'GET client-property statuses served',data:{clientId,count:statuses.length},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       res.json(statuses);
     } catch (error) {
       console.error("Error getting client property statuses:", error);
@@ -1902,9 +1899,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "rejected",
         "purchased_rented",
       ]).parse(req.body.status);
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H2',location:'server/routes.ts:patchClientPropertyStatusEntry',message:'PATCH client-property status received',data:{clientId,propertyUuid:req.params.propertyUuid,status,agentId},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       const property = await storage.getPropertyByUuid(req.params.propertyUuid);
       if (!property) {
         return res.status(404).json({ message: "Propiedad no encontrada" });
@@ -1915,13 +1909,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.params.propertyUuid,
         status,
       );
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H2',location:'server/routes.ts:patchClientPropertyStatusSuccess',message:'PATCH client-property status persisted',data:{recordId:updated.id,clientId:updated.clientId,propertyUuid:updated.propertyUuid,status:updated.status},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       res.json(updated);
     } catch (error) {
       console.error("Error updating client property status:", error);
       res.status(400).json({ message: "Estado de propiedad no válido" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/linked-properties", requireAuth, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId, 10);
+      const agentId = (req.user as any).id;
+      const client = (await storage.getClientsByAgent(agentId)).find((item) => item.id === clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+
+      const linkedProperties = await storage.getLinkedPropertiesForClient(clientId);
+      res.json(linkedProperties);
+    } catch (error) {
+      console.error("Error getting linked properties:", error);
+      res.status(500).json({ message: "No se pudieron cargar las propiedades vinculadas" });
+    }
+  });
+
+  app.patch("/api/clients/:clientId/linked-properties/:propertyUuid", requireAuth, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId, 10);
+      const agentId = (req.user as any).id;
+      const client = (await storage.getClientsByAgent(agentId)).find((item) => item.id === clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+
+      const property = await storage.getPropertyByUuid(req.params.propertyUuid);
+      if (!property) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+
+      await storage.setClientPropertyLinkedForTransaction(clientId, req.params.propertyUuid, true);
+      res.json(property);
+    } catch (error) {
+      console.error("Error linking property to client:", error);
+      res.status(400).json({ message: "No se pudo vincular la propiedad" });
     }
   });
 

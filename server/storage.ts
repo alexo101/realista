@@ -212,6 +212,12 @@ export interface IStorage {
     status: ClientPropertyStatus,
     options?: { preserveFinal?: boolean },
   ): Promise<ClientPropertyStatusRecord>;
+  getLinkedPropertiesForClient(clientId: number): Promise<Property[]>;
+  setClientPropertyLinkedForTransaction(
+    clientId: number,
+    propertyUuid: string,
+    linked: boolean,
+  ): Promise<ClientPropertyStatusRecord>;
 
   // Neighborhood Ratings
   getNeighborhoodRatings(neighborhood: string, city?: string, district?: string): Promise<NeighborhoodRating[]>;
@@ -2712,6 +2718,37 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({
         target: [clientPropertyStatuses.clientId, clientPropertyStatuses.propertyUuid],
         set: { status, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async getLinkedPropertiesForClient(clientId: number): Promise<Property[]> {
+    const rows = await db
+      .select({ property: properties })
+      .from(clientPropertyStatuses)
+      .innerJoin(properties, eq(clientPropertyStatuses.propertyUuid, properties.uuid))
+      .where(
+        and(
+          eq(clientPropertyStatuses.clientId, clientId),
+          eq(clientPropertyStatuses.linkedForTransaction, true),
+        ),
+      )
+      .orderBy(desc(clientPropertyStatuses.updatedAt));
+    return rows.map((row) => row.property);
+  }
+
+  async setClientPropertyLinkedForTransaction(
+    clientId: number,
+    propertyUuid: string,
+    linked: boolean,
+  ): Promise<ClientPropertyStatusRecord> {
+    const [result] = await db
+      .insert(clientPropertyStatuses)
+      .values({ clientId, propertyUuid, linkedForTransaction: linked })
+      .onConflictDoUpdate({
+        target: [clientPropertyStatuses.clientId, clientPropertyStatuses.propertyUuid],
+        set: { linkedForTransaction: linked, updatedAt: new Date() },
       })
       .returning();
     return result;
