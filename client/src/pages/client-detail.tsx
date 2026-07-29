@@ -63,6 +63,7 @@ const CLIENT_STATUS_TRANSLATION_KEYS: Record<(typeof CLIENT_STATUSES)[number], s
 
 const CLIENT_TYPES = ["buyer", "tenant", "seller", "landlord"] as const;
 type ClientType = (typeof CLIENT_TYPES)[number];
+const EMPTY_LINKED_PROPERTIES: Property[] = [];
 
 const CLIENT_TAGS: Record<ClientType, string[]> = {
   buyer: ["first_time_buyer", "investor", "cash_buyer", "financing_required", "foreign_buyer", "relocating", "urgent_purchase", "residential", "commercial", "buy_to_let", "fix_and_flip", "portfolio_expansion", "vip", "repeat_client", "referred", "high_priority", "responsive"],
@@ -199,7 +200,7 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
     enabled: !!user?.agentUuid && agentUuid === user.agentUuid && Number.isInteger(clientId),
   });
 
-  const { data: persistedLinkedProperties = [] } = useQuery<Property[]>({
+  const { data: persistedLinkedProperties = EMPTY_LINKED_PROPERTIES } = useQuery<Property[]>({
     queryKey: ["/api/clients", clientId, "linked-properties"],
     queryFn: async () => {
       const response = await fetch(`/api/clients/${clientId}/linked-properties`, {
