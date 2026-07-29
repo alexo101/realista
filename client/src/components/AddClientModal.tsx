@@ -18,6 +18,7 @@ const CLIENT_STATUSES = [
   { value: "Nuevo", label: "Nuevo", color: "bg-blue-100 text-blue-900" },
   { value: "Seguimiento", label: "Seguimiento", color: "bg-blue-300 text-blue-900" },
   { value: "En visitas", label: "En visitas", color: "bg-blue-500 text-white" },
+  { value: "Oferta hecha", label: "Oferta hecha", color: "bg-blue-600 text-white" },
   { value: "Cerrando", label: "Cerrando", color: "bg-blue-700 text-white" },
   { value: "Ganado", label: "Ganado", color: "bg-blue-900 text-white" },
   { value: "Perdido", label: "Perdido", color: "bg-gray-500 text-white" }

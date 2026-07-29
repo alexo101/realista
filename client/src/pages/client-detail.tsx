@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { MinusCircle, Plus, Search, ShieldAlert, Star, X, ChevronLeft } from "lucide-react";
+import { FileText, MinusCircle, Plus, Search, ShieldAlert, Star, X, ChevronLeft } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgentEventForm } from "@/components/AgentEventForm";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { CitySearchSelect } from "@/components/CitySearchSelect";
+import { LinkPropertyDialog } from "@/components/LinkPropertyDialog";
+import { PropertyPreviewCard } from "@/components/PropertyPreviewCard";
 import { SavedIndicator } from "@/components/SavedIndicator";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import {
@@ -31,12 +33,13 @@ import {
   PREFERENCE_PROPERTY_TYPE_OPTIONS,
   type PreferenceOption,
 } from "@/utils/client-preference-options";
-import type { AgentEvent, Client, ClientPropertyPreferences, ContactHistoryEntry } from "@shared/schema";
+import type { AgentEvent, Client, ClientPropertyPreferences, ContactHistoryEntry, Property } from "@shared/schema";
 
 const CLIENT_STATUSES = [
   "Nuevo",
   "Seguimiento",
   "En visitas",
+  "Oferta hecha",
   "Cerrando",
   "Ganado",
   "Perdido",
@@ -46,6 +49,7 @@ const CLIENT_STATUS_TRANSLATION_KEYS: Record<(typeof CLIENT_STATUSES)[number], s
   Nuevo: "manage.client_status.new",
   Seguimiento: "manage.client_status.follow_up",
   "En visitas": "manage.client_status.visiting",
+  "Oferta hecha": "manage.client_status.offer_made",
   Cerrando: "manage.client_status.closing",
   Ganado: "manage.client_status.won",
   Perdido: "manage.client_status.lost",
@@ -85,7 +89,17 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
   const [editingEvent, setEditingEvent] = useState<AgentEvent | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [formReady, setFormReady] = useState(false);
+  const [isLinkPropertyOpen, setIsLinkPropertyOpen] = useState(false);
+  const [linkedProperties, setLinkedProperties] = useState<Property[]>([]);
+  const [linkedImageIndexes, setLinkedImageIndexes] = useState<Record<string, number>>({});
   const initializedClientIdRef = useRef<number | null>(null);
+
+  const openLinkPropertyModal = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H4',location:'client-detail.tsx:openLinkPropertyModal',message:'Link property CTA pressed',data:{clientId,activeTab,linkedCount:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    setIsLinkPropertyOpen(true);
+  };
 
   const createEventMutation = useMutation({
     mutationFn: async (eventData: any) =>
@@ -186,6 +200,38 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
     enabled: !!user?.agentUuid && agentUuid === user.agentUuid && Number.isInteger(clientId),
   });
 
+  const linkPropertyMutation = useMutation({
+    mutationFn: async (property: Property) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H1',location:'client-detail.tsx:linkPropertyMutationFn',message:'Submitting property link patch',data:{clientId,propertyUuid:property.uuid,status:'recommended'},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      await apiRequest("PATCH", `/api/clients/${clientId}/property-statuses/${property.uuid}`, {
+        status: "recommended",
+      });
+      return property;
+    },
+    onSuccess: (property) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H1',location:'client-detail.tsx:linkPropertyOnSuccess',message:'Property linked in mutation success',data:{clientId,propertyUuid:property.uuid,beforeCount:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      setLinkedProperties((prev) =>
+        prev.some((p) => p.uuid === property.uuid) ? prev : [...prev, property],
+      );
+      setIsLinkPropertyOpen(false);
+      toast({
+        title: t("manage.client_transactions.link_success"),
+        description: t("manage.client_transactions.link_success_desc"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: t("manage.client_transactions.link_error"),
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateClientMutation = useMutation({
     mutationFn: async (data: typeof formData) =>
       apiRequest("PATCH", `/api/clients/${clientId}`, {
@@ -211,6 +257,11 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
     if (!client) return;
     if (initializedClientIdRef.current === client.id) return;
     initializedClientIdRef.current = client.id;
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H3',location:'client-detail.tsx:clientInitEffect',message:'Client init clears linked properties local state',data:{clientId:client.id,linkedCountBeforeReset:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    setLinkedProperties([]);
+    setLinkedImageIndexes({});
     setFormData({
       name: client.name || "",
       surname: client.surname || "",
@@ -238,6 +289,13 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
     [formData.clientType],
   );
   const showPreferencesTab = selectedType === "buyer" || selectedType === "tenant";
+
+  useEffect(() => {
+    if (activeTab !== "transactions" && !isLinkPropertyOpen) return;
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2b57ca'},body:JSON.stringify({sessionId:'2b57ca',runId:'persist-investigation-1',hypothesisId:'H4',location:'client-detail.tsx:transactionsStateEffect',message:'Transactions tab state snapshot',data:{clientId,activeTab,isLinkPropertyOpen,linkedCount:linkedProperties.length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+  }, [activeTab, clientId, isLinkPropertyOpen, linkedProperties.length]);
 
   useEffect(() => {
     if (!showPreferencesTab && activeTab === "preferences") {
@@ -319,14 +377,17 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
             <TabsTrigger value="profile" className="flex-1" data-testid="tab-client-profile">
               {t("manage.client_profile.title")}
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1" data-testid="tab-client-history">
-              {t("manage.client_history.title")}
-            </TabsTrigger>
             {showPreferencesTab && (
               <TabsTrigger value="preferences" className="flex-1" data-testid="tab-client-preferences">
                 {t("manage.client_preferences.title")}
               </TabsTrigger>
             )}
+            <TabsTrigger value="transactions" className="flex-1" data-testid="tab-client-transactions">
+              {t("manage.client_transactions.title")}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex-1" data-testid="tab-client-history">
+              {t("manage.client_history.title")}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="mt-0">
@@ -468,61 +529,6 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
             </Card>
           </TabsContent>
 
-          <TabsContent value="history" className="mt-0">
-            <ClientHistoryTimeline
-              clientId={clientId}
-              agentId={user.id}
-              onEditEvent={(event) => {
-                setShowEventForm(false);
-                setEditingEvent(event);
-              }}
-              onDeleteEvent={(event) => deleteEventMutation.mutate(event.id)}
-              headerAction={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingEvent(null);
-                    setShowEventForm(!showEventForm);
-                  }}
-                  className="text-primary"
-                  data-testid="button-toggle-event-form"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  {showEventForm ? t("common.cancel") : t("manage.client_history.add_interaction")}
-                </Button>
-              }
-            >
-              {(showEventForm || editingEvent) && (
-                <div className="mb-4">
-                  <AgentEventForm
-                    agentId={user.id}
-                    event={editingEvent}
-                    defaultClientId={clientId}
-                    hideClientField
-                    onSubmit={(eventData) => {
-                      if (editingEvent) {
-                        updateEventMutation.mutate({ id: editingEvent.id, eventData });
-                      } else {
-                        createEventMutation.mutate({
-                          ...eventData,
-                          clientId,
-                          propertyUuid: eventData.propertyUuid,
-                        });
-                      }
-                    }}
-                    onCancel={() => {
-                      setShowEventForm(false);
-                      setEditingEvent(null);
-                    }}
-                    isLoading={createEventMutation.isPending || updateEventMutation.isPending}
-                  />
-                </div>
-              )}
-            </ClientHistoryTimeline>
-          </TabsContent>
-
           {showPreferencesTab && (
             <TabsContent value="preferences" className="mt-0">
               <Card data-testid="card-client-preferences">
@@ -635,6 +641,128 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
               </Card>
             </TabsContent>
           )}
+
+          <TabsContent value="transactions" className="mt-0">
+            {linkedProperties.length === 0 ? (
+              <Card data-testid="card-client-transactions-empty">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {t("manage.client_transactions.empty_title")}
+                  </h3>
+                  <p className="mt-1 mb-4 text-center text-gray-500">
+                    {t("manage.client_transactions.empty_desc")}
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={openLinkPropertyModal}
+                    data-testid="button-link-property"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t("manage.client_transactions.link_property")}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card data-testid="card-client-transactions">
+                <CardContent className="space-y-4 pt-6">
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={openLinkPropertyModal}
+                      data-testid="button-link-property"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {t("manage.client_transactions.link_property")}
+                    </Button>
+                  </div>
+                  <div className="space-y-3">
+                    {linkedProperties.map((property) => (
+                      <PropertyPreviewCard
+                        key={property.uuid}
+                        property={property}
+                        imageIndex={linkedImageIndexes[property.uuid] ?? property.mainImageIndex ?? 0}
+                        onImageIndexChange={(index) =>
+                          setLinkedImageIndexes((prev) => ({
+                            ...prev,
+                            [property.uuid]: index,
+                          }))
+                        }
+                        data-testid={`linked-property-${property.uuid}`}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <LinkPropertyDialog
+              open={isLinkPropertyOpen}
+              onOpenChange={setIsLinkPropertyOpen}
+              agentId={user.id}
+              agencyId={user.agencyId}
+              excludePropertyUuids={linkedProperties.map((p) => p.uuid)}
+              onLink={(property) => linkPropertyMutation.mutate(property)}
+              isLinking={linkPropertyMutation.isPending}
+            />
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-0">
+            <ClientHistoryTimeline
+              clientId={clientId}
+              agentId={user.id}
+              onEditEvent={(event) => {
+                setShowEventForm(false);
+                setEditingEvent(event);
+              }}
+              onDeleteEvent={(event) => deleteEventMutation.mutate(event.id)}
+              headerAction={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingEvent(null);
+                    setShowEventForm(!showEventForm);
+                  }}
+                  className="text-primary"
+                  data-testid="button-toggle-event-form"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {showEventForm ? t("common.cancel") : t("manage.client_history.add_interaction")}
+                </Button>
+              }
+            >
+              {(showEventForm || editingEvent) && (
+                <div className="mb-4">
+                  <AgentEventForm
+                    agentId={user.id}
+                    event={editingEvent}
+                    defaultClientId={clientId}
+                    hideClientField
+                    onSubmit={(eventData) => {
+                      if (editingEvent) {
+                        updateEventMutation.mutate({ id: editingEvent.id, eventData });
+                      } else {
+                        createEventMutation.mutate({
+                          ...eventData,
+                          clientId,
+                          propertyUuid: eventData.propertyUuid,
+                        });
+                      }
+                    }}
+                    onCancel={() => {
+                      setShowEventForm(false);
+                      setEditingEvent(null);
+                    }}
+                    isLoading={createEventMutation.isPending || updateEventMutation.isPending}
+                  />
+                </div>
+              )}
+            </ClientHistoryTimeline>
+          </TabsContent>
         </Tabs>
       </div>
   );

@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatAgentPropertyAddress } from "@/utils/format-property-address";
+import { PropertyPreviewCard } from "@/components/PropertyPreviewCard";
 
 // Valid dashboard sections
 const VALID_SECTIONS = [
@@ -2656,86 +2657,16 @@ export default function ManagePage() {
                       </DialogHeader>
 
                       <div className="flex-1 overflow-auto space-y-4">
-                        {selectedPropertyForSend && (() => {
-                          const propertyImages =
-                            selectedPropertyForSend.imageUrls && selectedPropertyForSend.imageUrls.length > 0
-                              ? selectedPropertyForSend.imageUrls
-                              : [];
-                          const hasMultipleImages = propertyImages.length > 1;
-                          const safeImageIndex =
-                            propertyImages.length > 0
-                              ? Math.min(propertySendImageIndex, propertyImages.length - 1)
-                              : 0;
-
-                          return (
-                            <div>
-                              <h4 className="font-medium mb-2">{t("manage.properties.selected_property")}</h4>
-                              <div className="flex gap-3 p-3 border rounded-lg">
-                                <div className="relative group h-36 w-48 shrink-0 overflow-hidden rounded-md bg-gray-100">
-                                  {propertyImages.length > 0 ? (
-                                    <img
-                                      src={propertyImages[safeImageIndex]}
-                                      alt={selectedPropertyForSend.title || selectedPropertyForSend.address || "Propiedad"}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center">
-                                      <Building2 className="h-10 w-10 text-gray-400" />
-                                    </div>
-                                  )}
-                                  {hasMultipleImages && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setPropertySendImageIndex(
-                                            safeImageIndex === 0
-                                              ? propertyImages.length - 1
-                                              : safeImageIndex - 1,
-                                          )
-                                        }
-                                        className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-                                        aria-label="Imagen anterior"
-                                      >
-                                        <ChevronLeft className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setPropertySendImageIndex(
-                                            safeImageIndex === propertyImages.length - 1
-                                              ? 0
-                                              : safeImageIndex + 1,
-                                          )
-                                        }
-                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-                                        aria-label="Siguiente imagen"
-                                      >
-                                        <ChevronRight className="h-4 w-4" />
-                                      </button>
-                                      <div className="absolute left-1.5 top-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
-                                        {safeImageIndex + 1}/{propertyImages.length}
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                                <div className="min-w-0 flex-1 self-center">
-                                  <p className="font-medium line-clamp-2">
-                                    {selectedPropertyForSend.title || "Sin título"}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                    {formatAgentPropertyAddress(selectedPropertyForSend) || "Sin dirección"}
-                                  </p>
-                                  <p className="text-base font-semibold text-primary mt-2">
-                                    {selectedPropertyForSend.price
-                                      ? `€${selectedPropertyForSend.price.toLocaleString()}`
-                                      : "-"}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()}
+                        {selectedPropertyForSend && (
+                          <div>
+                            <h4 className="font-medium mb-2">{t("manage.properties.selected_property")}</h4>
+                            <PropertyPreviewCard
+                              property={selectedPropertyForSend}
+                              imageIndex={propertySendImageIndex}
+                              onImageIndexChange={setPropertySendImageIndex}
+                            />
+                          </div>
+                        )}
 
                         <div>
                           <h4 className="font-medium mb-2">
@@ -3602,25 +3533,25 @@ export default function ManagePage() {
                           </h4>
                           <div className="space-y-3 max-h-80 overflow-auto">
                             {agencyProperties?.filter(p => selectedPropertyIds.has(p.uuid)).map((property) => {
-                              const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
-                                ? property.imageUrls
-                                : [];
-                              const hasMultipleImages = propertyImages.length > 1;
+                              const isIncluded = propertiesToSendIds.has(property.uuid);
                               const currentImageIndex = confirmImageIndexes[property.uuid]
                                 ?? property.mainImageIndex
                                 ?? 0;
-                              const safeImageIndex = propertyImages.length > 0
-                                ? Math.min(currentImageIndex, propertyImages.length - 1)
-                                : 0;
-                              const isIncluded = propertiesToSendIds.has(property.uuid);
 
                               return (
-                                <div 
-                                  key={property.uuid} 
-                                  className={`flex gap-3 p-3 border rounded-lg ${isIncluded ? '' : 'opacity-60 bg-muted/30'}`}
+                                <PropertyPreviewCard
+                                  key={property.uuid}
+                                  property={property}
+                                  imageIndex={currentImageIndex}
+                                  onImageIndexChange={(index) =>
+                                    setConfirmImageIndexes((prev) => ({
+                                      ...prev,
+                                      [property.uuid]: index,
+                                    }))
+                                  }
+                                  dimmed={!isIncluded}
                                   data-testid={`selected-property-${property.uuid}`}
-                                >
-                                  <div className="pt-1">
+                                  leading={
                                     <Checkbox
                                       checked={isIncluded}
                                       onCheckedChange={(checked) => {
@@ -3635,100 +3566,8 @@ export default function ManagePage() {
                                       data-testid={`checkbox-include-property-${property.uuid}`}
                                       aria-label={t("manage.clients.include_in_send")}
                                     />
-                                  </div>
-
-                                  <div className="relative group h-36 w-48 shrink-0 overflow-hidden rounded-md bg-gray-100">
-                                    {propertyImages.length > 0 ? (
-                                      <img
-                                        src={propertyImages[safeImageIndex]}
-                                        alt={property.title || property.address || "Propiedad"}
-                                        className="h-full w-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="flex h-full w-full items-center justify-center">
-                                        <Building2 className="h-10 w-10 text-gray-400" />
-                                      </div>
-                                    )}
-
-                                    {hasMultipleImages && (
-                                      <>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setConfirmImageIndexes((prev) => ({
-                                              ...prev,
-                                              [property.uuid]:
-                                                safeImageIndex === 0
-                                                  ? propertyImages.length - 1
-                                                  : safeImageIndex - 1,
-                                            }));
-                                          }}
-                                          className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-                                          aria-label="Imagen anterior"
-                                          data-testid={`button-prev-image-${property.uuid}`}
-                                        >
-                                          <ChevronLeft className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setConfirmImageIndexes((prev) => ({
-                                              ...prev,
-                                              [property.uuid]:
-                                                safeImageIndex === propertyImages.length - 1
-                                                  ? 0
-                                                  : safeImageIndex + 1,
-                                            }));
-                                          }}
-                                          className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
-                                          aria-label="Siguiente imagen"
-                                          data-testid={`button-next-image-${property.uuid}`}
-                                        >
-                                          <ChevronRight className="h-4 w-4" />
-                                        </button>
-                                        <div className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 gap-1">
-                                          {propertyImages.map((_, index) => (
-                                            <button
-                                              key={index}
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setConfirmImageIndexes((prev) => ({
-                                                  ...prev,
-                                                  [property.uuid]: index,
-                                                }));
-                                              }}
-                                              className={`h-1.5 w-1.5 rounded-full transition-all ${
-                                                index === safeImageIndex
-                                                  ? 'bg-white scale-110'
-                                                  : 'bg-white/50 hover:bg-white/75'
-                                              }`}
-                                              aria-label={`Ver imagen ${index + 1}`}
-                                            />
-                                          ))}
-                                        </div>
-                                        <div className="absolute left-1.5 top-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
-                                          {safeImageIndex + 1}/{propertyImages.length}
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
-
-                                  <div className="min-w-0 flex-1 self-center">
-                                    <p className="font-medium line-clamp-2">{property.title || 'Sin título'}</p>
-                                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                      {formatAgentPropertyAddress(property) || 'Sin dirección'}
-                                    </p>
-                                    <p className="text-base font-semibold text-primary mt-2">
-                                      {property.price ? `€${property.price.toLocaleString()}` : '-'}
-                                    </p>
-                                  </div>
-                                </div>
+                                  }
+                                />
                               );
                             })}
                           </div>
