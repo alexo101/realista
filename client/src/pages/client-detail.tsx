@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, MinusCircle, Plus, Search, ShieldAlert, Star, User, X } from "lucide-react";
+import { MinusCircle, Plus, Search, ShieldAlert, Star, X, ChevronLeft } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
 import { useAutosave } from "@/hooks/use-autosave";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,7 +61,7 @@ const CLIENT_TAGS: Record<ClientType, string[]> = {
   landlord: ["investor", "first_time_landlord", "long_term_rental", "short_term_rental", "looking_for_property_management", "vip", "repeat_client", "referred", "high_priority", "responsive"],
 };
 
-export default function ClientDetailPage() {
+export default function ClientDetailPage({ embedded = false }: { embedded?: boolean }) {
   const { user, isLoading: isLoadingUser } = useUser();
   const { t } = useLanguage();
   const [, navigate] = useLocation();
@@ -195,6 +195,7 @@ export default function ClientDetailPage() {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}`] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
       await queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
     },
     onError: () => {
@@ -290,30 +291,28 @@ export default function ClientDetailPage() {
   };
 
   if (isLoadingUser || !user || !user.agentUuid) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">Cargando...</div>;
+    return <div className="flex items-center justify-center py-12 text-gray-500">Cargando...</div>;
   }
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">Cargando información del cliente...</div>;
+    return <div className="flex items-center justify-center py-12 text-gray-500">Cargando información del cliente...</div>;
   }
 
   if (!client) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500">No se pudo cargar la información del cliente.</div>;
+    return <div className="flex items-center justify-center py-12 text-red-500">No se pudo cargar la información del cliente.</div>;
   }
 
-  return (
-    <>
-    <main className="min-h-screen bg-gray-50 pt-24 pb-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Button
-          variant="ghost"
-          className="gap-2"
+  const content = (
+      <div className={embedded ? "space-y-6" : "max-w-4xl mx-auto space-y-6"}>
+        <button
+          type="button"
+          className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-2"
           onClick={() => navigate(`/gestionar/${user.agentUuid}/clientes`)}
           data-testid="button-back-client-detail"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4 mr-1" />
           {t("manage.clients.back_to_list")}
-        </Button>
+        </button>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 p-1">
@@ -332,13 +331,7 @@ export default function ClientDetailPage() {
 
           <TabsContent value="profile" className="mt-0">
             <Card data-testid="card-client-edit-page">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  {t("manage.client_profile.title")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="client-name" className="inline-flex items-center">
@@ -533,22 +526,7 @@ export default function ClientDetailPage() {
           {showPreferencesTab && (
             <TabsContent value="preferences" className="mt-0">
               <Card data-testid="card-client-preferences">
-                <CardHeader>
-                  <CardTitle>{t("manage.client_preferences.title")}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {t("manage.client_preferences.description")}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <h3 className="text-sm font-semibold text-primary">
-                      {t("manage.client_preferences.important_title")}
-                    </h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {t("manage.client_preferences.important_description")}
-                    </p>
-                  </div>
-
+                <CardContent className="space-y-5 pt-6">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <PreferenceSelect
                       label={t("manage.client_preferences.operation")}
@@ -659,8 +637,16 @@ export default function ClientDetailPage() {
           )}
         </Tabs>
       </div>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 pt-24 pb-8 px-4">
+      {content}
     </main>
-  </>
   );
 }
 

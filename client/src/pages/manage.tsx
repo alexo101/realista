@@ -28,6 +28,7 @@ import { ClientForm } from "@/components/ClientForm";
 import { AddClientModal } from "@/components/AddClientModal";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { ClientsKanban } from "@/components/ClientsKanban";
+import ClientDetailPage from "@/pages/client-detail";
 import { ReviewRequestForm } from "@/components/ReviewRequestForm";
 import { NeighborhoodSelector } from "@/components/NeighborhoodSelector";
 import { CitySearchSelect } from "@/components/CitySearchSelect";
@@ -110,12 +111,15 @@ export default function ManagePage() {
   const clientStatuses = getClientStatuses(t);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   
   // Extract route parameters
-  const [match, params] = useRoute("/gestionar/:agentUuid/:section");
-  const urlAgentUuid = params?.agentUuid;
-  const urlSection = params?.section as DashboardSection | undefined;
+  const [sectionMatch, sectionParams] = useRoute("/gestionar/:agentUuid/:section");
+  const [clientDetailMatch, clientDetailParams] = useRoute("/gestionar/:agentUuid/clientes/:clientId");
+  const match = sectionMatch || clientDetailMatch;
+  const urlAgentUuid = clientDetailParams?.agentUuid ?? sectionParams?.agentUuid;
+  const urlSection = (clientDetailMatch ? "clientes" : sectionParams?.section) as DashboardSection | undefined;
+  const viewingClientId = clientDetailMatch ? Number(clientDetailParams?.clientId) : null;
 
   // Route guards
   useEffect(() => {
@@ -177,13 +181,13 @@ export default function ManagePage() {
       return;
     }
 
-    // Validate section is valid
-    if (!urlSection || !VALID_SECTIONS.includes(urlSection)) {
+    // Validate section is valid (client detail is treated as clientes)
+    if (!clientDetailMatch && (!urlSection || !VALID_SECTIONS.includes(urlSection))) {
       // Invalid section - redirect to calendar
       navigate(`/gestionar/${user.agentUuid}/calendario`);
       return;
     }
-  }, [user, match, urlAgentUuid, urlSection, navigate, toast, isLoading]);
+  }, [user, match, clientDetailMatch, urlAgentUuid, urlSection, navigate, toast, isLoading]);
 
   // Determine current section from URL or default to calendar
   const currentSection = urlSection && VALID_SECTIONS.includes(urlSection) ? urlSection : 'calendario';
@@ -775,6 +779,12 @@ export default function ManagePage() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients?agentId=${user?.id}`] });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === "/api/clients" ||
+          (typeof query.queryKey[0] === "string" &&
+            query.queryKey[0].startsWith("/api/clients")),
+      });
     },
   });
 
@@ -2182,7 +2192,7 @@ export default function ManagePage() {
                                 <TableHead className="w-[100px]">{t("common.status")}</TableHead>
                                 <TableHead className="w-[120px]">{t("common.operation_type")}</TableHead>
                                 <TableHead className="w-[100px]">{t("common.tenant")}</TableHead>
-                                <TableHead className="w-[100px] text-center">{t("common.actions")}</TableHead>
+                                <TableHead className="w-[120px] text-center">{t("common.actions")}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -2240,7 +2250,8 @@ export default function ManagePage() {
                                         onClick={() => fetchPropertyForViewMutation.mutate(property.uuid)}
                                         data-testid={`button-edit-property-${property.uuid}`}
                                       >
-                                        <LogIn className="h-4 w-4" />
+                                        <LogIn className="h-4 w-4 mr-1" />
+                                        {t("manage.properties.enter")}
                                       </Button>
                                     </div>
                                   </TableCell>
@@ -2825,7 +2836,11 @@ export default function ManagePage() {
             </div>
           )}
 
-          {currentSection === "clientes" && (
+          {currentSection === "clientes" && viewingClientId != null && (
+            <ClientDetailPage embedded />
+          )}
+
+          {currentSection === "clientes" && viewingClientId == null && (
             <div className="space-y-4">
               {/* Header - responsive */}
               <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
@@ -2833,6 +2848,33 @@ export default function ManagePage() {
                 
                 {/* Desktop buttons */}
                 <div className="hidden md:flex items-center gap-2">
+                  {/* Enviar button - appears to the left of the view toggle */}
+                  <div
+                    className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
+                      selectedClientId != null
+                        ? 'max-w-[200px] opacity-100 pointer-events-auto'
+                        : 'max-w-0 opacity-0 pointer-events-none'
+                    }`}
+                  >
+                    <Button
+                      variant="outline"
+                      className="border-primary text-primary hover:bg-primary hover:text-white whitespace-nowrap"
+                      onClick={() => {
+                        setIsSendModalOpen(true);
+                        setSendModalStep(1);
+                        setPropertySearch("");
+                        setSelectedPropertyIds(new Set());
+                        setPropertiesToSendIds(new Set());
+                        setConfirmImageIndexes({});
+                        setEmailMessage("");
+                      }}
+                      data-testid="button-send-to-clients"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {t("manage.clients.send_to")}
+                    </Button>
+                  </div>
+
                   {/* View toggle buttons */}
                   <div className="flex items-center border rounded-md">
                     <Button 
@@ -2856,47 +2898,17 @@ export default function ManagePage() {
                       {t("common.panel")}
                     </Button>
                   </div>
-                  
-                  {/* Container for Enviar button sliding animation */}
-                  <div className="relative flex items-center">
-                    {/* Enviar button - slides out from behind {t("manage.clients.add")} */}
-                    <div 
-                      className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
-                        selectedClientId != null
-                          ? 'max-w-[150px] opacity-100 mr-2 pointer-events-auto' 
-                          : 'max-w-0 opacity-0 mr-0 pointer-events-none'
-                      }`}
-                    >
-                      <Button 
-                        variant="outline"
-                        className="border-primary text-primary hover:bg-primary hover:text-white whitespace-nowrap"
-                        onClick={() => {
-                          setIsSendModalOpen(true);
-                          setSendModalStep(1);
-                          setPropertySearch("");
-                          setSelectedPropertyIds(new Set());
-                          setPropertiesToSendIds(new Set());
-                          setConfirmImageIndexes({});
-                          setEmailMessage("");
-                        }}
-                        data-testid="button-send-to-clients"
-                      >
-                        <Send className="mr-2 h-4 w-4" />
-                        {t("manage.clients.send_to", { count: "1" })}
-                      </Button>
-                    </div>
-                    
-                    <Button 
-                      onClick={() => {
-                        setIsAddingClient(true);
-                        setEditingClient(null);
-                      }}
-                      data-testid="button-add-client"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      {t("manage.clients.add")}
-                    </Button>
-                  </div>
+
+                  <Button 
+                    onClick={() => {
+                      setIsAddingClient(true);
+                      setEditingClient(null);
+                    }}
+                    data-testid="button-add-client"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("manage.clients.add")}
+                  </Button>
                 </div>
               </div>
 
@@ -2942,7 +2954,7 @@ export default function ManagePage() {
                     data-testid="button-send-to-clients-mobile"
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    {t("manage.clients.send_to", { count: "1" })}
+                    {t("manage.clients.send_to")}
                   </Button>
                 )}
                 <Button 
@@ -3050,11 +3062,29 @@ export default function ManagePage() {
                                   </div>
                                 </div>
                               </div>
-                              {statusConfig && (
-                                <Badge className={`${statusConfig.color}`}>
-                                  {statusConfig.label}
-                                </Badge>
-                              )}
+                              <Select
+                                value={client.status}
+                                onValueChange={(newStatus) => {
+                                  updateClientMutation.mutate({
+                                    ...client,
+                                    status: newStatus,
+                                  });
+                                }}
+                              >
+                                <SelectTrigger
+                                  className={`h-8 min-w-[140px] border-0 ${statusConfig?.color ?? ""}`}
+                                  data-testid={`select-client-status-mobile-${client.id}`}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {clientStatuses.map((status) => (
+                                    <SelectItem key={status.value} value={status.value}>
+                                      {status.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
 
                             {/* Contact info with icons */}
@@ -3179,11 +3209,29 @@ export default function ManagePage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {statusConfig && (
-                                  <Badge className={`${statusConfig.color}`}>
-                                    {statusConfig.label}
-                                  </Badge>
-                                )}
+                                <Select
+                                  value={client.status}
+                                  onValueChange={(newStatus) => {
+                                    updateClientMutation.mutate({
+                                      ...client,
+                                      status: newStatus,
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger
+                                    className={`h-8 min-w-[150px] border-0 ${statusConfig?.color ?? ""}`}
+                                    data-testid={`select-client-status-${client.id}`}
+                                  >
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {clientStatuses.map((status) => (
+                                      <SelectItem key={status.value} value={status.value}>
+                                        {status.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex gap-2 justify-end">

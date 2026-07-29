@@ -489,8 +489,10 @@ export type Client = typeof clients.$inferSelect;
 export type ContactHistoryEntry = {
   id: string;
   status: string;
+  previousStatus?: string;
   timestamp: string;
   note: string;
+  type?: "status_change" | "note";
 };
 
 export type NeighborhoodRating = typeof neighborhoodRatings.$inferSelect;

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { format } from "date-fns";
 import { es, enUS, fr, it } from "date-fns/locale";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, Phone, Home, Users, UserCheck, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Phone, Home, Users, UserCheck, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
-import { type AgentEvent, type PropertyVisitRequest, type Client } from "@shared/schema";
+import { type AgentEvent, type PropertyVisitRequest, type Client, type ContactHistoryEntry } from "@shared/schema";
 import { EventStatusBadge } from "@/components/EventStatusBadge";
+import { getClientStatuses } from "@/utils/clientStatuses";
 
 interface ClientHistoryTimelineProps {
   clientId: number;
@@ -31,7 +32,7 @@ interface ClientHistoryTimelineProps {
 
 interface TimelineEvent {
   id: string;
-  type: "event" | "visit_request" | "client_created";
+  type: "event" | "visit_request" | "client_created" | "status_change";
   date: string;
   time?: string;
   title: string;
@@ -71,6 +72,7 @@ export function ClientHistoryTimeline({
   const { t, language } = useLanguage();
   const dateLocale = DATE_LOCALES[language];
   const dateFormat = DATE_FORMATS[language];
+  const clientStatuses = getClientStatuses(t);
   const [eventToDelete, setEventToDelete] = useState<AgentEvent | null>(null);
 
   const { data: events = [] } = useQuery<AgentEvent[]>({
@@ -144,6 +146,14 @@ export function ClientHistoryTimeline({
     return translated === key ? type : translated;
   };
 
+  const getStatusLabel = (status: string) => {
+    return clientStatuses.find((item) => item.value === status)?.label || status;
+  };
+
+  const contactHistory: ContactHistoryEntry[] = Array.isArray(client?.contactHistory)
+    ? (client!.contactHistory as ContactHistoryEntry[])
+    : [];
+
   const timelineEvents: TimelineEvent[] = [
     ...events.map((event) => {
       const property = properties.find((p: { uuid: string }) => p.uuid === event.propertyUuid);
@@ -193,6 +203,34 @@ export function ClientHistoryTimeline({
       };
     }),
 
+    ...contactHistory
+      .filter((entry) => entry.type === "status_change" || entry.note === "status_change" || !!entry.previousStatus)
+      .map((entry) => {
+        const timestamp = new Date(entry.timestamp);
+        const isValidDate = !Number.isNaN(timestamp.getTime());
+        return {
+          id: `status-${entry.id}`,
+          type: "status_change" as const,
+          date: isValidDate
+            ? timestamp.toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
+          time: isValidDate
+            ? format(timestamp, "HH:mm")
+            : undefined,
+          title: t("manage.client_history.status_changed"),
+          description: entry.previousStatus
+            ? t("manage.client_history.status_changed_desc", {
+                from: getStatusLabel(entry.previousStatus),
+                to: getStatusLabel(entry.status),
+              })
+            : t("manage.client_history.status_set_desc", {
+                status: getStatusLabel(entry.status),
+              }),
+          icon: <RefreshCw className="h-4 w-4" />,
+          status: entry.status,
+        };
+      }),
+
     ...(client
       ? [
           {
@@ -215,16 +253,12 @@ export function ClientHistoryTimeline({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            {t("manage.client_history.title")}
-          </CardTitle>
-          {headerAction}
-        </div>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
+        {headerAction && (
+          <div className="mb-4 flex justify-end">
+            {headerAction}
+          </div>
+        )}
         {children}
         {sortedEvents.length === 0 ? (
           <div className="text-center py-8">
@@ -251,6 +285,15 @@ export function ClientHistoryTimeline({
                     {event.eventType && (
                       <Badge variant="outline" className="text-xs">
                         {getEventTypeBadge(event.eventType)}
+                      </Badge>
+                    )}
+                    {event.type === "status_change" && event.status && (
+                      <Badge
+                        className={`text-xs ${
+                          clientStatuses.find((item) => item.value === event.status)?.color ?? ""
+                        }`}
+                      >
+                        {getStatusLabel(event.status)}
                       </Badge>
                     )}
                     {event.type === "event" && event.status && (

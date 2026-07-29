@@ -20,7 +20,6 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
 import ClientProfile from "@/pages/client-profile";
-import ClientDetailPage from "@/pages/client-detail";
 import RealistaPro from "@/pages/RealistaPro";
 import AgencyPlanRegister from "@/pages/agency-plan-register";
 import AgentPlanRegister from "@/pages/agent-plan-register";
@@ -50,7 +49,7 @@ function Router() {
       <Route path="/registro-cliente" component={ClientRegisterPage} />
       <Route path="/perfil-cliente/:clientUuid/:section" component={ClientProfile} />
       <Route path="/perfil-cliente" component={ClientProfile} />
-      <Route path="/gestionar/:agentUuid/clientes/:clientId" component={ClientDetailPage} />
+      <Route path="/gestionar/:agentUuid/clientes/:clientId" component={Manage} />
       <Route path="/buscar/comprar" component={Search} />
       <Route path="/buscar/alquilar" component={Search} />
       <Route path="/buscar/agencias" component={Search} />

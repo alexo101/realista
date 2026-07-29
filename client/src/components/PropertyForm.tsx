@@ -1275,40 +1275,6 @@ export function PropertyForm({
                 />
               </div>
 
-              {/* Estado de gestión */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 inline-flex items-center">
-                  {t("propertyForm.section.management_status")}
-                  <SavedIndicator visible={savedFields.has("managementStatus")} />
-                </h3>
-                <FormField
-                  control={form.control}
-                  name="managementStatus"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger data-testid="select-management-status">
-                            <SelectValue placeholder={t("propertyForm.placeholder.select_management_status")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {managementStatusOptions.map((option) => (
-                            <SelectItem key={option} value={option} data-testid={`option-management-status-${option.toLowerCase().replace(/\s+/g, '-')}`}>
-                              {t(`propertyForm.managementStatus.${option}`)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               {/* Cédula de habitabilidad */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 inline-flex items-center">

@@ -76,6 +76,7 @@ import {
   type InsertClientFavoriteProperty,
   type ClientPropertyStatusRecord,
   type ClientPropertyStatus,
+  type ContactHistoryEntry,
   type PropertyVisitRequest,
   type InsertPropertyVisitRequest,
   agentEvents,
@@ -2564,10 +2565,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateClient(id: number, client: InsertClient): Promise<Client> {
+    const existing = await this.getClient(id);
     const normalizedPassword =
       client.password && !isPasswordHashed(client.password)
         ? await hashPassword(client.password)
         : client.password;
+
+    const existingHistory: ContactHistoryEntry[] = Array.isArray(existing?.contactHistory)
+      ? (existing!.contactHistory as ContactHistoryEntry[])
+      : [];
+    const incomingHistory: ContactHistoryEntry[] = Array.isArray(client.contactHistory)
+      ? (client.contactHistory as ContactHistoryEntry[])
+      : [];
+
+    // Merge by id so client-sent notes are kept and server-side entries are not wiped.
+    const historyById = new Map<string, ContactHistoryEntry>();
+    for (const entry of existingHistory) {
+      if (entry?.id) historyById.set(entry.id, entry);
+    }
+    for (const entry of incomingHistory) {
+      if (entry?.id) historyById.set(entry.id, entry);
+    }
+    let contactHistory = Array.from(historyById.values());
+
+    if (existing && client.status && existing.status !== client.status) {
+      contactHistory = [
+        ...contactHistory,
+        {
+          id: crypto.randomUUID(),
+          type: "status_change",
+          status: client.status,
+          previousStatus: existing.status,
+          timestamp: new Date().toISOString(),
+          note: "status_change",
+        },
+      ];
+    }
 
     const [updatedClient] = await db
       .update(clients)
@@ -2575,17 +2608,26 @@ export class DatabaseStorage implements IStorage {
         ...client,
         password: normalizedPassword,
         propertyPreferences: client.propertyPreferences ?? null,
+        contactHistory,
       })
       .where(eq(clients.id, id))
       .returning();
 
     // Drizzle ORM silently omits client_type and tags from its generated SQL,
     // so patch them via pool.query which correctly serialises JS arrays to text[].
-    const patched = await pool.query(
-      'UPDATE clients SET client_type = $1, tags = $2, property_preferences = $3 WHERE id = $4 RETURNING *',
-      [client.clientType ?? null, client.tags ?? null, client.propertyPreferences ?? null, updatedClient.id]
+    // Also persist contact_history explicitly to avoid losing status-change logs.
+    await pool.query(
+      'UPDATE clients SET client_type = $1, tags = $2, property_preferences = $3, contact_history = $4::jsonb WHERE id = $5',
+      [
+        client.clientType ?? null,
+        client.tags ?? null,
+        client.propertyPreferences ?? null,
+        JSON.stringify(contactHistory),
+        updatedClient.id,
+      ]
     );
-    return (patched.rows[0] as Client) ?? updatedClient;
+    // Re-read via Drizzle so the API response stays camelCase (pool rows are snake_case).
+    return (await this.getClient(id)) ?? { ...updatedClient, contactHistory };
   }
 
   async updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined> {

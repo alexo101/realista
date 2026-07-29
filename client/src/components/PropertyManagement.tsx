@@ -248,8 +248,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   const qc = useQueryClient();
   const { user } = useUser();
 
-  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState(property.managementStatus);
   const [currentManagementStatus, setCurrentManagementStatus] = useState(property.managementStatus);
 
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
@@ -431,16 +429,27 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     mutationFn: async (status: string) => {
       return apiRequest("PATCH", `/api/properties/${property.uuid}/management-status`, { status });
     },
-    onSuccess: () => {
-      setCurrentManagementStatus(newStatus);
+    onMutate: async (status: string) => {
+      const previousStatus = currentManagementStatus;
+      setCurrentManagementStatus(status);
+      return { previousStatus };
+    },
+    onSuccess: (_data, status) => {
       qc.invalidateQueries({ predicate: (query) => {
         const key = query.queryKey[0];
         return typeof key === "string" && key.startsWith("/api/properties");
       }});
-      toast({ title: t("propertyManagement.toast.status_updated"), description: t("propertyManagement.toast.status_changed", { status: t(`propertyManagement.status.${newStatus}`) }) });
-      setStatusDialogOpen(false);
+      toast({
+        title: t("propertyManagement.toast.status_updated"),
+        description: t("propertyManagement.toast.status_changed", {
+          status: t(`propertyManagement.status.${status}`),
+        }),
+      });
     },
-    onError: () => {
+    onError: (_error, _status, context) => {
+      if (context?.previousStatus) {
+        setCurrentManagementStatus(context.previousStatus);
+      }
       toast({ title: t("common.error"), description: t("propertyManagement.toast.status_update_error"), variant: "destructive" });
     },
   });
@@ -783,30 +792,35 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
                 <span className="text-lg font-bold" data-testid="text-property-reference">
                   {property.reference || property.uuid.slice(0, 8).toUpperCase()}
                 </span>
-                <Badge className={`${getStatusBadgeClass(currentManagementStatus)} border-0`} data-testid="badge-management-status">
-                  {t(`propertyManagement.status.${currentManagementStatus}`)}
-                </Badge>
+                <Select
+                  value={currentManagementStatus}
+                  onValueChange={(status) => {
+                    if (status === currentManagementStatus) return;
+                    statusMutation.mutate(status);
+                  }}
+                  disabled={statusMutation.isPending}
+                >
+                  <SelectTrigger
+                    className={`h-8 w-auto min-w-[140px] border-0 ${getStatusBadgeClass(currentManagementStatus)}`}
+                    data-testid="select-management-status"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MANAGEMENT_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {t(`propertyManagement.status.${s}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-sm text-gray-500" data-testid="text-property-city">
-                {property.city || property.address}
-              </p>
             </div>
             <div className="text-right">
               <p className="text-2xl md:text-3xl font-bold mb-3 text-[#1c1917]" data-testid="text-property-price">
                 €{property.price?.toLocaleString()}
               </p>
               <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-change-status"
-                  onClick={() => {
-                    setNewStatus(currentManagementStatus);
-                    setStatusDialogOpen(true);
-                  }}
-                >
-                  {t("propertyManagement.action.change_status")}
-                </Button>
                 <Button
                   size="sm"
                   data-testid="button-edit-property"
@@ -821,45 +835,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </div>
         </CardContent>
       </Card>
-      {/* Status Change Dialog */}
-      <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("propertyManagement.dialog.status.title")}</DialogTitle>
-            <DialogDescription>{t("propertyManagement.dialog.status.description")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">{t("propertyManagement.label.current_status")}</p>
-              <Badge className={`${getStatusBadgeClass(currentManagementStatus)} border-0`}>
-                {t(`propertyManagement.status.${currentManagementStatus}`)}
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 mb-1">{t("propertyManagement.label.new_status")}</p>
-              <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger data-testid="select-new-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MANAGEMENT_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>{t(`propertyManagement.status.${s}`)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              data-testid="button-confirm-status"
-              onClick={() => statusMutation.mutate(newStatus)}
-              disabled={statusMutation.isPending}
-            >
-              {statusMutation.isPending ? t("common.saving") : t("propertyManagement.action.confirm_change")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       {/* Tabs */}
       <Tabs defaultValue="resumen" className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto" data-testid="tabs-property-management">
