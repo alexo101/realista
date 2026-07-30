@@ -1955,6 +1955,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/clients/:clientId/linked-properties/:propertyUuid", requireAuth, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId, 10);
+      const agentId = (req.user as any).id;
+      const client = (await storage.getClientsByAgent(agentId)).find((item) => item.id === clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+
+      const property = await storage.getPropertyByUuid(req.params.propertyUuid);
+      if (!property) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+
+      await storage.setClientPropertyLinkedForTransaction(clientId, req.params.propertyUuid, false);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error unlinking property from client:", error);
+      res.status(400).json({ message: "No se pudo desvincular la propiedad" });
+    }
+  });
+
   app.get("/api/properties/:propertyUuid/client-statuses", requireAuth, async (req, res) => {
     try {
       const propertyUuid = req.params.propertyUuid;

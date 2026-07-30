@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { FileText, MinusCircle, Plus, Search, ShieldAlert, Star, X, ChevronLeft } from "lucide-react";
+import { FileText, MinusCircle, Plus, Search, ShieldAlert, Star, X, ChevronLeft, Unlink } from "lucide-react";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import { AgentEventForm } from "@/components/AgentEventForm";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { CitySearchSelect } from "@/components/CitySearchSelect";
 import { LinkPropertyDialog } from "@/components/LinkPropertyDialog";
+import { PropertyDocumentsPanel } from "@/components/PropertyDocumentsPanel";
 import { PropertyPreviewCard } from "@/components/PropertyPreviewCard";
 import { SavedIndicator } from "@/components/SavedIndicator";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
@@ -246,6 +247,34 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
       toast({
         title: t("common.error"),
         description: t("manage.client_transactions.link_error"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unlinkPropertyMutation = useMutation({
+    mutationFn: async (property: Property) => {
+      await apiRequest("DELETE", `/api/clients/${clientId}/linked-properties/${property.uuid}`);
+      return property;
+    },
+    onSuccess: async (property) => {
+      const linkedKey = ["/api/clients", clientId, "linked-properties"] as const;
+      queryClient.setQueryData<Property[]>(linkedKey, (current = []) =>
+        current.filter((p) => p.uuid !== property.uuid),
+      );
+      setLinkedProperties((prev) => prev.filter((p) => p.uuid !== property.uuid));
+      await queryClient.invalidateQueries({
+        queryKey: linkedKey,
+      });
+      toast({
+        title: t("manage.client_transactions.unlink_success"),
+        description: t("manage.client_transactions.unlink_success_desc"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("common.error"),
+        description: t("manage.client_transactions.unlink_error"),
         variant: "destructive",
       });
     },
@@ -662,6 +691,7 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
                   </p>
                   <Button
                     type="button"
+                    variant="default"
                     onClick={() => setIsLinkPropertyOpen(true)}
                     data-testid="button-link-property"
                   >
@@ -685,20 +715,41 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
                       {t("manage.client_transactions.link_property")}
                     </Button>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-6">
                     {linkedProperties.map((property) => (
-                      <PropertyPreviewCard
-                        key={property.uuid}
-                        property={property}
-                        imageIndex={linkedImageIndexes[property.uuid] ?? property.mainImageIndex ?? 0}
-                        onImageIndexChange={(index) =>
-                          setLinkedImageIndexes((prev) => ({
-                            ...prev,
-                            [property.uuid]: index,
-                          }))
-                        }
-                        data-testid={`linked-property-${property.uuid}`}
-                      />
+                      <div key={property.uuid} className="space-y-3">
+                        <div className="flex items-start gap-2">
+                          <div className="min-w-0 flex-1">
+                            <PropertyPreviewCard
+                              property={property}
+                              imageIndex={linkedImageIndexes[property.uuid] ?? property.mainImageIndex ?? 0}
+                              onImageIndexChange={(index) =>
+                                setLinkedImageIndexes((prev) => ({
+                                  ...prev,
+                                  [property.uuid]: index,
+                                }))
+                              }
+                              data-testid={`linked-property-${property.uuid}`}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                            disabled={unlinkPropertyMutation.isPending}
+                            onClick={() => unlinkPropertyMutation.mutate(property)}
+                            data-testid={`button-unlink-property-${property.uuid}`}
+                          >
+                            <Unlink className="h-4 w-4 mr-1" />
+                            {unlinkPropertyMutation.isPending &&
+                            unlinkPropertyMutation.variables?.uuid === property.uuid
+                              ? t("manage.client_transactions.unlinking")
+                              : t("manage.client_transactions.unlink_property")}
+                          </Button>
+                        </div>
+                        <PropertyDocumentsPanel propertyUuid={property.uuid} />
+                      </div>
                     ))}
                   </div>
                 </CardContent>

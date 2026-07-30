@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, Fragment } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -9,12 +9,12 @@ import {
   type Client,
   type PropertyContract,
   type PropertyPayment,
-  type PropertyDocument,
   type PropertyIncident,
   type PropertyCommunication,
   type PropertyHistoryEntry,
   type IncidentUpdate,
 } from "@shared/schema";
+import { PropertyDocumentsPanel } from "@/components/PropertyDocumentsPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,12 +58,11 @@ import {
   Euro,
   Home,
   User,
-  Download,
   Trash2,
   Eye,
   ChevronDown,
-  Upload,
   Send,
+  Download,
 } from "lucide-react";
 
 interface PropertyManagementProps {
@@ -184,48 +183,6 @@ const PAYMENT_CONCEPTS = [
   "Costes de burofax o notificaciones formales",
 ];
 
-const DOCUMENT_TYPES = [
-  "Cédula de habitabilidad",
-  "Certificado energético",
-  "Contrato de arrendamiento",
-  "Documento identificación propietario",
-  "Escrituras",
-  "Licencia de primera ocupación",
-  "Nota simple",
-  "Certificado de estar al corriente con la comunidad",
-  "Último recibo de IBI",
-  "Referencia catastral / Certificado catastral descriptivo y gráfico",
-  "Recibos de suministros recientes",
-  "Certificado de deuda cero hipotecaria",
-  "Escritura de cancelación de hipoteca",
-  "Estatutos de la comunidad de propietarios",
-  "Actas recientes de la comunidad (últimos 1–2 años)",
-  "Informe ITE / IEE (según antigüedad del edificio)",
-  "Seguro del hogar (póliza)",
-  "Inventario firmado (en alquiler amueblado)",
-  "Acta de entrega de llaves",
-  "Acta de estado del inmueble (check-in / check-out)",
-  "Certificado de instalación eléctrica (boletín)",
-  "Certificado de instalación de gas",
-  "Licencia turística (si aplica)",
-  "Número de registro de alquiler turístico",
-  "Contrato de arras (en venta)",
-  "Contrato de reserva",
-  "Nota de encargo con la agencia",
-  "Poder notarial (si firma un representante)",
-  "Certificado de eficiencia energética registrado (no solo el informe)",
-  "Planos del inmueble",
-  "Memoria de calidades",
-  "Proyecto técnico y licencia de obras (si hubo reforma relevante)",
-  "Certificado final de obra",
-  "Seguro decenal (en obra nueva)",
-  "Libro del edificio (si aplica)",
-  "Certificado de no afección urbanística",
-  "Copia del DNI/NIE del inquilino",
-  "Aval bancario o póliza de seguro de impago",
-  "Justificante de depósito de fianza en organismo autonómico",
-];
-
 const COMMUNICATION_TYPES = [
   "Actualización renta",
   "Desalojo",
@@ -306,17 +263,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
   const [deletePaymentConfirmId, setDeletePaymentConfirmId] = useState<number | null>(null);
   const [deletePaymentConfirmConcept, setDeletePaymentConfirmConcept] = useState("");
 
-  const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
-  const [documentForm, setDocumentForm] = useState({
-    documentType: "",
-    fileName: "",
-    file: null as File | null,
-  });
-  const [documentUploading, setDocumentUploading] = useState(false);
-  const documentFileInputRef = useRef<HTMLInputElement>(null);
-  const [deleteDocConfirmId, setDeleteDocConfirmId] = useState<number | null>(null);
-  const [deleteDocConfirmName, setDeleteDocConfirmName] = useState("");
-
   const [incidentDialogOpen, setIncidentDialogOpen] = useState(false);
   const [expandedIncidentId, setExpandedIncidentId] = useState<number | null>(null);
   const [incidentForm, setIncidentForm] = useState({
@@ -374,17 +320,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     queryFn: async () => {
       try {
         const res = await fetch(`/api/properties/${property.uuid}/payments`, { credentials: "include" });
-        if (!res.ok) return [];
-        return await res.json();
-      } catch { return []; }
-    },
-  });
-
-  const { data: documents = [], isLoading: documentsLoading } = useQuery<PropertyDocument[]>({
-    queryKey: ["/api/properties", property.uuid, "documents"],
-    queryFn: async () => {
-      try {
-        const res = await fetch(`/api/properties/${property.uuid}/documents`, { credentials: "include" });
         if (!res.ok) return [];
         return await res.json();
       } catch { return []; }
@@ -540,55 +475,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     },
     onError: () => {
       toast({ title: t("common.error"), description: t("propertyManagement.toast.payment_delete_error"), variant: "destructive" });
-    },
-  });
-
-  const documentMutation = useMutation({
-    mutationFn: async (data: typeof documentForm) => {
-      if (!data.file) throw new Error("No file selected");
-
-      setDocumentUploading(true);
-      const formData = new FormData();
-      formData.append("document", data.file);
-
-      const uploadRes = await fetch("/api/property-documents/upload-direct", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const { fileUrl, fileSize } = await uploadRes.json();
-
-      return apiRequest("POST", `/api/properties/${property.uuid}/documents`, {
-        propertyUuid: property.uuid,
-        documentType: data.documentType,
-        fileName: data.fileName,
-        fileUrl,
-        fileSize: fileSize || "N/A",
-        uploadDate: new Date().toISOString().split("T")[0],
-      });
-    },
-    onSuccess: () => {
-      setDocumentUploading(false);
-      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "documents"] });
-      toast({ title: t("propertyManagement.toast.document_created"), description: t("propertyManagement.toast.document_uploaded") });
-      setDocumentDialogOpen(false);
-      setDocumentForm({ documentType: "", fileName: "", file: null });
-    },
-    onError: () => {
-      setDocumentUploading(false);
-      toast({ title: t("common.error"), description: t("propertyManagement.toast.document_upload_error"), variant: "destructive" });
-    },
-  });
-
-  const deleteDocumentMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/properties/${property.uuid}/documents/${id}`);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/properties", property.uuid, "documents"] });
-      toast({ title: t("propertyManagement.toast.document_deleted") });
     },
   });
 
@@ -749,13 +635,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
     }
     return next.toLocaleDateString("es-ES");
   }
-
-  const groupedDocuments = documents.reduce<Record<string, PropertyDocument[]>>((acc, doc) => {
-    const type = doc.documentType;
-    if (!acc[type]) acc[type] = [];
-    acc[type].push(doc);
-    return acc;
-  }, {});
 
   const filteredHistory = historyEntries.filter((entry) => {
     if (historyTypeFilter && entry.eventType !== historyTypeFilter) return false;
@@ -1069,92 +948,7 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
 
         {/* Tab 3: Documentación */}
         <TabsContent value="documentacion" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">{t("propertyManagement.documents.title")}</h3>
-            <Button
-              size="sm"
-              variant="outline"
-              className="bg-[#0284c5e6] text-[#f7fafd]"
-              data-testid="button-upload-document"
-              onClick={() => setDocumentDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              {t("propertyManagement.documents.upload")}
-            </Button>
-          </div>
-
-          {documentsLoading ? (
-            <p className="text-sm text-gray-500">{t("propertyManagement.loading.documents")}</p>
-          ) : documents.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-gray-300 mb-4" />
-                <p className="text-gray-500">{t("propertyManagement.empty.no_documents")}</p>
-              </CardContent>
-            </Card>
-          ) : (
-            Object.entries(groupedDocuments).map(([type, docs]) => (
-              <Card key={type} className="border" data-testid={`card-document-group-${type}`}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium">{type}</CardTitle>
-                    <Badge variant="secondary" className="text-xs">{docs.length}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {docs.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between py-2 border-b last:border-0" data-testid={`row-document-${doc.id}`}>
-                      <div
-                        className="flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity"
-                        onClick={() => {
-                          if (doc.fileUrl && doc.fileUrl !== "#") {
-                            window.open(doc.fileUrl, "_blank");
-                          }
-                        }}
-                        data-testid={`link-open-doc-${doc.id}`}
-                      >
-                        <FileText className="h-5 w-5 text-red-500" />
-                        <div>
-                          <p className="text-sm font-medium text-primary underline-offset-2 hover:underline">{doc.fileName}</p>
-                          <p className="text-xs text-gray-400">{doc.uploadDate} · {doc.fileSize}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          data-testid={`button-download-doc-${doc.id}`}
-                          onClick={() => {
-                            if (doc.fileUrl && doc.fileUrl !== "#") {
-                              const link = document.createElement("a");
-                              link.href = doc.fileUrl;
-                              link.download = doc.fileName;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            }
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          data-testid={`button-delete-doc-${doc.id}`}
-                          onClick={() => {
-                            setDeleteDocConfirmId(doc.id);
-                            setDeleteDocConfirmName(doc.fileName);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))
-          )}
+          <PropertyDocumentsPanel propertyUuid={property.uuid} />
         </TabsContent>
 
         {/* Tab 4: Incidencias */}
@@ -1733,89 +1527,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Document Upload Dialog */}
-      <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t("propertyManagement.dialog.document.title")}</DialogTitle>
-            <DialogDescription>{t("propertyManagement.dialog.document.description")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="text-sm font-medium">{t("propertyManagement.label.document_type")}</label>
-              <Select value={documentForm.documentType} onValueChange={(v) => setDocumentForm({ ...documentForm, documentType: v })}>
-                <SelectTrigger data-testid="select-document-type">
-                  <SelectValue placeholder={t("propertyManagement.placeholder.select_type")} />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {DOCUMENT_TYPES.map((d) => (
-                    <SelectItem key={d} value={d}>{d}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">{t("propertyManagement.label.file")}</label>
-              <input
-                ref={documentFileInputRef}
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                data-testid="input-document-file"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const maxSize = 5 * 1024 * 1024;
-                    const allowedTypes = ["application/pdf", "image/png", "image/jpeg"];
-                    const allowedExtensions = [".pdf", ".png", ".jpg", ".jpeg"];
-                    const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
-                    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-                      toast({ title: "Formato no permitido", description: "Solo se permiten archivos PDF, PNG y JPG.", variant: "destructive" });
-                      e.target.value = "";
-                      return;
-                    }
-                    if (file.size > maxSize) {
-                      toast({ title: "Archivo demasiado grande", description: "El tamaño máximo permitido es 5 MB.", variant: "destructive" });
-                      e.target.value = "";
-                      return;
-                    }
-                    setDocumentForm({ ...documentForm, fileName: file.name, file });
-                  }
-                }}
-              />
-              <div
-                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
-                data-testid="dropzone-document"
-                onClick={() => documentFileInputRef.current?.click()}
-              >
-                {documentForm.file ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-medium">{documentForm.fileName}</span>
-                    <span className="text-xs text-gray-400">({(documentForm.file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                  </div>
-                ) : (
-                  <div>
-                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">{t("propertyManagement.documents.dropzone.click")}</p>
-                    <p className="text-xs text-gray-400 mt-1">{t("propertyManagement.documents.dropzone.formats")}</p>
-                    <p className="text-xs text-gray-400">{t("propertyManagement.documents.dropzone.max_size")}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              data-testid="button-confirm-document"
-              onClick={() => documentMutation.mutate(documentForm)}
-              disabled={documentMutation.isPending || documentUploading || !documentForm.documentType || !documentForm.file}
-            >
-              {documentMutation.isPending || documentUploading ? t("common.uploading") : t("propertyManagement.documents.upload")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       {/* New Incident Dialog */}
       <Dialog open={incidentDialogOpen} onOpenChange={(open) => { setIncidentDialogOpen(open); }}>
         <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
@@ -2200,40 +1911,6 @@ export function PropertyManagement({ property, onBack, onEdit }: PropertyManagem
               }}
             >
               {deleteCommunicationMutation.isPending ? t("common.deleting") : t("common.delete")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* Delete Document Confirmation Dialog */}
-      <Dialog open={deleteDocConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteDocConfirmId(null); }}>
-        <DialogContent className="w-[95vw] max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{t("propertyManagement.dialog.delete_document.title")}</DialogTitle>
-            <DialogDescription>
-              {t("propertyManagement.dialog.delete_document.description", { name: deleteDocConfirmName })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button
-              variant="outline"
-              data-testid="button-cancel-delete-doc"
-              onClick={() => setDeleteDocConfirmId(null)}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant="destructive"
-              data-testid="button-confirm-delete-doc"
-              disabled={deleteDocumentMutation.isPending}
-              onClick={() => {
-                if (deleteDocConfirmId !== null) {
-                  deleteDocumentMutation.mutate(deleteDocConfirmId, {
-                    onSuccess: () => setDeleteDocConfirmId(null),
-                  });
-                }
-              }}
-            >
-              {deleteDocumentMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
