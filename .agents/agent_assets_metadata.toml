@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "IKRMtzVu1x9HtrUzrfGtm"
+uri = "file://exports/realista-papernest-strategy-deck.pptx"
+type = "slides"
+title = "Realista × Papernest Strategy Deck"

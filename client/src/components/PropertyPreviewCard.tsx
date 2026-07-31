@@ -9,6 +9,8 @@ type PropertyPreviewCardProps = {
   imageIndex?: number;
   onImageIndexChange?: (index: number) => void;
   leading?: ReactNode;
+  /** Shown on the right inside the card, only when the card is hovered/focused. */
+  trailing?: ReactNode;
   selected?: boolean;
   dimmed?: boolean;
   onClick?: () => void;
@@ -21,6 +23,7 @@ export function PropertyPreviewCard({
   imageIndex,
   onImageIndexChange,
   leading,
+  trailing,
   selected = false,
   dimmed = false,
   onClick,
@@ -54,7 +57,7 @@ export function PropertyPreviewCard({
           : undefined
       }
       className={cn(
-        "flex gap-3 p-3 border rounded-lg",
+        "group/card flex gap-3 p-3 border rounded-lg",
         dimmed && "opacity-60 bg-muted/30",
         selected && "ring-2 ring-primary bg-primary/5",
         onClick && "cursor-pointer",
@@ -145,6 +148,16 @@ export function PropertyPreviewCard({
           {property.price ? `€${property.price.toLocaleString()}` : "-"}
         </p>
       </div>
+
+      {trailing != null && (
+        <div
+          className="shrink-0 self-center opacity-0 pointer-events-none transition-opacity group-hover/card:opacity-100 group-hover/card:pointer-events-auto group-focus-within/card:opacity-100 group-focus-within/card:pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {trailing}
+        </div>
+      )}
     </div>
   );
 }

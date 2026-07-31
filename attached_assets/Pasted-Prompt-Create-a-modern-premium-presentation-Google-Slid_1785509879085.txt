@@ -1,0 +1,498 @@
+Prompt
+
+Create a modern, premium presentation (Google Slides / PowerPoint style) presenting Realista, a SaaS platform for real estate agencies.
+
+The audience is:
+
+Papernest CPO
+Papernest CBO
+
+The goal is not to sell Realista as another CRM.
+
+The goal is to demonstrate that Realista can become the operating system for real estate agencies, while showing how AppPro naturally becomes one module inside the platform.
+
+The presentation should feel like a Series A/B startup deck mixed with a product strategy presentation.
+
+Use a clean design inspired by Linear, Notion, Stripe and modern SaaS companies.
+
+Use large screenshots with very little text.
+
+Use white background, lots of whitespace, modern typography and blue accents.
+
+Slide 1
+Realista
+The Operating System for Real Estate Agencies
+
+Subtitle:
+
+From lead management to home services in one platform.
+
+Include a large hero screenshot of Realista.
+
+Slide 2
+The Problem
+
+Today's agencies work across multiple disconnected tools.
+
+Illustrate:
+
+CRM
+
+WhatsApp
+
+Excel
+
+Calendar
+
+Emails
+
+Property portals
+
+↓
+
+Lost productivity
+
+↓
+
+Poor collaboration
+
+↓
+
+Manual processes
+
+Then show
+
+↓
+
+Realista
+
+One platform.
+
+Slide 3
+What is Realista?
+
+One sentence:
+
+Realista centralizes the complete workflow of a real estate agency into one modern platform.
+
+Show the core pillars:
+
+• CRM
+
+• Property Management
+
+• Calendar
+
+• Messaging
+
+• Search Preferences
+
+• Intelligent Property Matching
+
+• Agency Administration
+
+Slide 4
+Product Overview
+
+Show the platform architecture.
+
+Clients
+
+↓
+
+Client Preferences
+
+↓
+
+Properties
+
+↓
+
+Property Recommendations
+
+↓
+
+Relationship Management
+
+↓
+
+Agency Operations
+
+Keep it visual.
+
+Slide 5
+CRM
+
+Show screenshots of:
+
+Clients
+
+Kanban
+
+Calendar
+
+Explain briefly:
+
+Manage every client from lead to closing.
+
+Slide 6
+Property Management
+
+Show screenshots of:
+
+Property list
+
+Property details
+
+Property management
+
+Explain:
+
+A complete property inventory integrated with client management.
+
+Slide 7
+Intelligent Matching
+
+Explain that Realista is not just a CRM.
+
+It actively connects clients with the best matching properties.
+
+Show screenshots of:
+
+Housing preferences
+
+Property recommendations
+
+Linked properties
+
+Client-property relationship workflow
+
+Slide 8
+One Platform
+
+Illustrate
+
+Client
+
+↓
+
+Property
+
+↓
+
+Recommendation
+
+↓
+
+Visit
+
+↓
+
+Closing
+
+Everything happens inside Realista.
+
+Slide 9
+Vision
+
+Title:
+
+From CRM to Agency Operating System
+
+Illustrate
+
+Lead
+
+↓
+
+Client
+
+↓
+
+Property
+
+↓
+
+Transaction
+
+↓
+
+Move
+
+↓
+
+Post-sale
+
+Do not over explain.
+
+Slide 10
+How AppPro Fits
+
+This is one of the most important slides.
+
+Explain that AppPro should not remain a separate product.
+
+Instead it becomes one capability inside Realista.
+
+Illustrate the Realista sidebar.
+
+CRM
+
+• Calendar
+
+• Clients
+
+• Messages
+
+• Properties
+
+Services ⭐
+
+• Home Services
+
+Agent
+
+Agency
+
+Account
+
+Highlight Services.
+
+Add the following explanation:
+
+Realista becomes the daily workspace for the agency.
+
+When a client reaches the moving stage, agents simply open the Home Services workspace powered by AppPro.
+
+There is no context switching.
+
+No duplicated client information.
+
+No duplicated property information.
+
+AppPro becomes the service engine inside Realista.
+
+Slide 11
+Future User Journey
+
+Illustrate
+
+Lead
+
+↓
+
+Client created
+
+↓
+
+Property recommendations
+
+↓
+
+Visits
+
+↓
+
+Offer accepted
+
+↓
+
+Move detected
+
+↓
+
+Home Services (AppPro)
+
+↓
+
+Electricity
+
+Gas
+
+Internet
+
+Insurance
+
+Water
+
+↓
+
+Customer moved
+
+Explain:
+
+Papernest no longer enters only during the moving process.
+
+Papernest becomes part of the complete customer journey.
+
+Slide 12
+Strategic Value for Papernest
+
+Use four cards.
+
+Earlier customer acquisition
+
+Instead of entering at move-in, Papernest is present from the first interaction with the agency.
+
+Agency daily engagement
+
+Agents spend their entire day inside Realista.
+
+Natural AppPro integration
+
+Home services become a native workflow.
+
+More customer context
+
+Budget
+
+Location
+
+Moving date
+
+Property
+
+Intent
+
+All available before contract activation.
+
+Slide 13
+Product Maturity
+
+Display a table.
+
+CRM
+
+✅ Ready
+
+Property Management
+
+✅ Ready
+
+Recommendations
+
+✅ Ready
+
+Messaging
+
+✅ Ready
+
+Calendar
+
+✅ Ready
+
+Agency Administration
+
+✅ Ready
+
+Client-Property Relationship
+
+✅ Ready
+
+Transaction Workspace
+
+Future
+
+AI Copilot
+
+Future
+
+Automation
+
+Future
+
+Slide 14
+Long-Term Platform Vision
+
+Show a modern diagram.
+
+            Realista
+
+CRM
+
+Properties
+
+Calendar
+
+Messaging
+
+AI
+
+↓
+
+Home Services (AppPro)
+
+↓
+
+Electricity
+
+Gas
+
+Internet
+
+Insurance
+
+Water
+
+↓
+
+Papernest ecosystem
+
+Large visual.
+
+Minimal text.
+
+Slide 15
+Closing
+
+Title
+
+The Future of Agency Software
+
+One sentence
+
+Realista provides the operating system for agencies.
+
+AppPro becomes the native Home Services workspace.
+
+Together they enable Papernest to own the customer journey from the first property search to post-move services.
+
+Use a full-width screenshot.
+
+General Design Guidelines
+
+Use modern cards.
+
+Rounded corners.
+
+Soft shadows.
+
+Lots of whitespace.
+
+Minimal text.
+
+Every slide should answer one question.
+
+Avoid walls of text.
+
+Use screenshots whenever possible.
+
+Maintain a premium enterprise SaaS aesthetic.
+
+Important Product Narrative
+
+Throughout the presentation emphasize:
+
+Realista is horizontal.
+
+It manages the complete agency workflow.
+
+AppPro is vertical.
+
+It specializes in home services.
+
+The vision is not to replace AppPro.
+
+The vision is to embed AppPro as the Home Services module inside Realista.
+
+This allows Papernest to move from owning only the moving moment to owning the complete real estate customer journey.

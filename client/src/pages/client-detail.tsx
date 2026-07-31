@@ -14,6 +14,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AgentEventForm } from "@/components/AgentEventForm";
 import { ClientHistoryTimeline } from "@/components/ClientHistoryTimeline";
 import { CitySearchSelect } from "@/components/CitySearchSelect";
@@ -100,6 +110,7 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
   const [isLinkPropertyOpen, setIsLinkPropertyOpen] = useState(false);
   const [linkedProperties, setLinkedProperties] = useState<Property[]>([]);
   const [linkedImageIndexes, setLinkedImageIndexes] = useState<Record<string, number>>({});
+  const [propertyToUnlink, setPropertyToUnlink] = useState<Property | null>(null);
   const initializedClientIdRef = useRef<number | null>(null);
 
   const createEventMutation = useMutation({
@@ -263,6 +274,7 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
         current.filter((p) => p.uuid !== property.uuid),
       );
       setLinkedProperties((prev) => prev.filter((p) => p.uuid !== property.uuid));
+      setPropertyToUnlink(null);
       await queryClient.invalidateQueries({
         queryKey: linkedKey,
       });
@@ -718,36 +730,30 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
                   <div className="space-y-6">
                     {linkedProperties.map((property) => (
                       <div key={property.uuid} className="space-y-3">
-                        <div className="flex items-start gap-2">
-                          <div className="min-w-0 flex-1">
-                            <PropertyPreviewCard
-                              property={property}
-                              imageIndex={linkedImageIndexes[property.uuid] ?? property.mainImageIndex ?? 0}
-                              onImageIndexChange={(index) =>
-                                setLinkedImageIndexes((prev) => ({
-                                  ...prev,
-                                  [property.uuid]: index,
-                                }))
-                              }
-                              data-testid={`linked-property-${property.uuid}`}
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            disabled={unlinkPropertyMutation.isPending}
-                            onClick={() => unlinkPropertyMutation.mutate(property)}
-                            data-testid={`button-unlink-property-${property.uuid}`}
-                          >
-                            <Unlink className="h-4 w-4 mr-1" />
-                            {unlinkPropertyMutation.isPending &&
-                            unlinkPropertyMutation.variables?.uuid === property.uuid
-                              ? t("manage.client_transactions.unlinking")
-                              : t("manage.client_transactions.unlink_property")}
-                          </Button>
-                        </div>
+                        <PropertyPreviewCard
+                          property={property}
+                          imageIndex={linkedImageIndexes[property.uuid] ?? property.mainImageIndex ?? 0}
+                          onImageIndexChange={(index) =>
+                            setLinkedImageIndexes((prev) => ({
+                              ...prev,
+                              [property.uuid]: index,
+                            }))
+                          }
+                          data-testid={`linked-property-${property.uuid}`}
+                          trailing={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={unlinkPropertyMutation.isPending}
+                              onClick={() => setPropertyToUnlink(property)}
+                              data-testid={`button-unlink-property-${property.uuid}`}
+                            >
+                              <Unlink className="h-4 w-4 mr-1" />
+                              {t("manage.client_transactions.unlink_property")}
+                            </Button>
+                          }
+                        />
                         <PropertyDocumentsPanel propertyUuid={property.uuid} />
                       </div>
                     ))}
@@ -765,6 +771,50 @@ export default function ClientDetailPage({ embedded = false }: { embedded?: bool
               onLink={(property) => linkPropertyMutation.mutate(property)}
               isLinking={linkPropertyMutation.isPending}
             />
+
+            <AlertDialog
+              open={propertyToUnlink != null}
+              onOpenChange={(open) => {
+                if (!open && !unlinkPropertyMutation.isPending) {
+                  setPropertyToUnlink(null);
+                }
+              }}
+            >
+              <AlertDialogContent data-testid="dialog-unlink-property-confirm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {t("manage.client_transactions.unlink_confirm_title")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("manage.client_transactions.unlink_confirm_desc", {
+                      title: propertyToUnlink?.title || propertyToUnlink?.address || "",
+                    })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    disabled={unlinkPropertyMutation.isPending}
+                    data-testid="button-cancel-unlink-property"
+                  >
+                    {t("common.cancel")}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={unlinkPropertyMutation.isPending || !propertyToUnlink}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (propertyToUnlink) {
+                        unlinkPropertyMutation.mutate(propertyToUnlink);
+                      }
+                    }}
+                    data-testid="button-confirm-unlink-property"
+                  >
+                    {unlinkPropertyMutation.isPending
+                      ? t("manage.client_transactions.unlinking")
+                      : t("manage.client_transactions.unlink_property")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </TabsContent>
 
           <TabsContent value="history" className="mt-0">
