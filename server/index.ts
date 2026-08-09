@@ -10,7 +10,6 @@ import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { ensureSuperAdminUser } from "./bootstrap/superAdmin";
 import { migrateLegacyPlaintextPasswords } from "./bootstrap/passwordMigration";
-import { getSeoHtml } from "./seoHtml";
 import { getRobotsTxt, getSitemapXml } from "./crawlability";
 import { isHotPathDebugEnabled } from "./debugLog";
 
@@ -253,33 +252,13 @@ app.use((req, res, next) => {
     });
 
     // These files must be served before the SPA fallback so crawlers receive
-    // valid directives/XML instead of the application's HTML shell.
+    // valid directives/XML instead of the application's HTML.
     app.get("/robots.txt", (req, res) => {
       res.type("text/plain").send(getRobotsTxt(req));
     });
     app.get("/sitemap.xml", (req, res) => {
       res.type("application/xml").send(getSitemapXml(req));
     });
-
-    // Keep acquisition and static legal pages crawlable for social and AI bots.
-    // Interactive listing/detail routes fall through to the SPA so listings,
-    // filters, and maps render for all visitors. Client SeoMetadata covers SEO there.
-    // React still mounts into #root for normal browser visitors.
-    app.get("/", (req, res) => {
-      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
-      res.type("html").send(getSeoHtml(req, "home"));
-    });
-    app.get("/realista-pro", (req, res) => {
-      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
-      res.type("html").send(getSeoHtml(req, "realistaPro"));
-    });
-    app.get(
-      /^\/(aviso-legal|politica-privacidad|politica-cookies|terminos-condiciones)(\/|$)/,
-      (req, res) => {
-        res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
-        res.type("html").send(getSeoHtml(req, "public"));
-      },
-    );
 
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route
