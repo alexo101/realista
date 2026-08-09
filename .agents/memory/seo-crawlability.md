@@ -7,4 +7,4 @@ Public SPA acquisition pages should return route-specific crawlable HTML from Ex
 
 **Why:** Search, social, and AI crawlers may not execute the SPA bundle, so a generic empty root hides the page’s primary content and metadata.
 
-**How to apply:** Extend the shared server-side shell for additional public marketing routes instead of migrating the whole authenticated application to a different framework.
+**How to apply:** Extend the shared server-side shell for additional public marketing routes instead of migrating the whole authenticated application to a different framework. Keep client metadata synchronized for SPA navigations and normalize legacy aliases to one canonical public URL.

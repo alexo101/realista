@@ -259,6 +259,13 @@ app.use((req, res, next) => {
       res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
       res.type("html").send(getSeoHtml(req, "realistaPro"));
     });
+    app.get(
+      /^\/(buscar|search|barrio|neighborhood|inmueble|property|agentes|agent|agent-profile|agencias|agency|agency-profile|aviso-legal|politica-privacidad|politica-cookies|terminos-condiciones)(\/|$)/,
+      (req, res) => {
+        res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
+        res.type("html").send(getSeoHtml(req, "public"));
+      },
+    );
 
     // importantly only setup vite in development and after
     // setting up all the other routes so the catch-all route

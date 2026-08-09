@@ -32,6 +32,7 @@ import AvisoLegal from "@/pages/aviso-legal";
 import PoliticaPrivacidad from "@/pages/politica-privacidad";
 import PoliticaCookies from "@/pages/politica-cookies";
 import TerminosCondiciones from "@/pages/terminos-condiciones";
+import { SeoMetadata } from "@/components/SeoMetadata";
 
 function Router() {
   return (
@@ -113,6 +114,7 @@ function App() {
       <LanguageProvider>
         <UserProvider>
           <RouteTransitionProvider>
+            <SeoMetadata />
             <Navbar />
             <Router />
             <CookieBanner />

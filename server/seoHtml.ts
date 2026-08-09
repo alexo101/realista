@@ -2,7 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import type { Request } from "express";
 
-type SeoPage = "home" | "realistaPro";
+type SeoPage = "home" | "realistaPro" | "public";
+
+type SeoContent = {
+  title: string;
+  description: string;
+  heading: string;
+  intro: string;
+};
 
 const HOME_CONTENT = {
   title: "Realista | Encuentra tu hogar ideal con toda la información",
@@ -68,6 +75,166 @@ const REALISTA_PRO_CONTENT = {
     },
   ],
 };
+
+function decodePathSegment(value: string | undefined): string {
+  if (!value) return "tu zona";
+  try {
+    return decodeURIComponent(value).replace(/\+/g, " ");
+  } catch {
+    return value;
+  }
+}
+
+function getPublicContent(pathname: string): SeoContent {
+  if (
+    pathname === "/aviso-legal" ||
+    pathname === "/politica-privacidad" ||
+    pathname === "/politica-cookies" ||
+    pathname === "/terminos-condiciones"
+  ) {
+    const labels: Record<string, string> = {
+      "/aviso-legal": "Aviso legal",
+      "/politica-privacidad": "Política de privacidad",
+      "/politica-cookies": "Política de cookies",
+      "/terminos-condiciones": "Términos y condiciones",
+    };
+    const label = labels[pathname];
+    return {
+      title: `${label} | Realista`,
+      description: `Consulta la ${label.toLowerCase()} de Realista y conoce las condiciones aplicables al uso de la plataforma inmobiliaria.`,
+      heading: label,
+      intro:
+        "Consulta la información legal aplicable al uso de Realista, la plataforma inmobiliaria para clientes y profesionales.",
+    };
+  }
+  if (pathname === "/buscar/comprar" || pathname.startsWith("/search/buy")) {
+    return {
+      title: "Pisos en venta | Realista",
+      description:
+        "Busca pisos y casas en venta por barrio, ciudad y precio. Compara propiedades y contacta directamente con profesionales inmobiliarios.",
+      heading: "Pisos y casas en venta",
+      intro:
+        "Encuentra propiedades en venta por zona, precio y características, con información completa para elegir mejor.",
+    };
+  }
+  if (pathname === "/buscar/alquilar" || pathname.startsWith("/search/rent")) {
+    return {
+      title: "Pisos en alquiler | Realista",
+      description:
+        "Encuentra pisos y casas en alquiler por barrio, ciudad y precio. Consulta información completa y contacta con agencias inmobiliarias.",
+      heading: "Pisos y casas en alquiler",
+      intro:
+        "Explora viviendas en alquiler y conecta directamente con agencias y agentes inmobiliarios de tu zona.",
+    };
+  }
+  if (
+    pathname === "/buscar/agencias" ||
+    pathname.startsWith("/search/agencies")
+  ) {
+    return {
+      title: "Agencias inmobiliarias | Realista",
+      description:
+        "Encuentra agencias inmobiliarias de confianza, conoce sus propiedades y contacta con profesionales de tu zona.",
+      heading: "Agencias inmobiliarias",
+      intro:
+        "Conoce agencias inmobiliarias profesionales y encuentra el equipo adecuado para ayudarte con tu próxima operación.",
+    };
+  }
+  if (
+    pathname === "/buscar/agentes" ||
+    pathname.startsWith("/search/agents")
+  ) {
+    return {
+      title: "Agentes inmobiliarios | Realista",
+      description:
+        "Encuentra agentes inmobiliarios profesionales por zona y conecta directamente con el experto adecuado para tu búsqueda.",
+      heading: "Agentes inmobiliarios",
+      intro:
+        "Encuentra profesionales inmobiliarios por zona, conoce su experiencia y contacta directamente con ellos.",
+    };
+  }
+  if (
+    pathname.startsWith("/barrio/") ||
+    pathname.startsWith("/neighborhood/")
+  ) {
+    const neighborhood = decodePathSegment(pathname.split("/")[2]);
+    return {
+      title: `${neighborhood} | Barrios y propiedades | Realista`,
+      description: `Descubre propiedades, agencias y agentes inmobiliarios en ${neighborhood}. Compara información del barrio y encuentra tu próximo hogar.`,
+      heading: `Propiedades y profesionales en ${neighborhood}`,
+      intro:
+        "Consulta información del barrio, propiedades disponibles y profesionales inmobiliarios que trabajan en la zona.",
+    };
+  }
+  if (
+    pathname.startsWith("/inmueble/") ||
+    pathname.startsWith("/property/")
+  ) {
+    return {
+      title: "Propiedad inmobiliaria | Realista",
+      description:
+        "Consulta los detalles de esta propiedad inmobiliaria, descubre su ubicación y contacta con el agente o agencia responsable.",
+      heading: "Propiedad inmobiliaria",
+      intro:
+        "Consulta los detalles de esta propiedad, su ubicación y las opciones para contactar con el profesional responsable.",
+    };
+  }
+  if (
+    pathname.startsWith("/agentes/") ||
+    pathname.startsWith("/agent/") ||
+    pathname.startsWith("/agent-profile/")
+  ) {
+    return {
+      title: "Agente inmobiliario | Realista",
+      description:
+        "Conoce a este agente inmobiliario, descubre sus propiedades y contacta directamente para recibir asesoramiento.",
+      heading: "Agente inmobiliario",
+      intro:
+        "Conoce al profesional, descubre sus propiedades y contacta directamente para recibir asesoramiento inmobiliario.",
+    };
+  }
+  if (
+    pathname.startsWith("/agencias/") ||
+    pathname.startsWith("/agency/") ||
+    pathname.startsWith("/agency-profile/")
+  ) {
+    return {
+      title: "Agencia inmobiliaria | Realista",
+      description:
+        "Conoce esta agencia inmobiliaria, consulta sus propiedades y contacta con su equipo profesional.",
+      heading: "Agencia inmobiliaria",
+      intro:
+        "Conoce el equipo profesional, consulta sus propiedades y contacta con la agencia inmobiliaria.",
+    };
+  }
+  return {
+    title: "Información inmobiliaria | Realista",
+    description:
+      "Encuentra propiedades, barrios, agencias y agentes inmobiliarios en España con Realista.",
+    heading: "Realista, tu plataforma inmobiliaria",
+    intro:
+      "Encuentra propiedades, descubre barrios y conecta con profesionales inmobiliarios en un solo lugar.",
+  };
+}
+
+function canonicalPath(pathname: string): string {
+  const aliases: Array<[RegExp, string]> = [
+    [/^\/search\/buy(?:\/|$)/, "/buscar/comprar"],
+    [/^\/search\/rent(?:\/|$)/, "/buscar/alquilar"],
+    [/^\/search\/agencies(?:\/|$)/, "/buscar/agencias"],
+    [/^\/search\/agents(?:\/|$)/, "/buscar/agentes"],
+    [/^\/neighborhood\//, "/barrio/"],
+    [/^\/property\//, "/inmueble/"],
+    [/^\/agent-profile\//, "/agentes/"],
+    [/^\/agent\//, "/agentes/"],
+    [/^\/agency-profile\//, "/agencias/"],
+    [/^\/agency\//, "/agencias/"],
+  ];
+  for (const [pattern, replacement] of aliases) {
+    if (pattern.test(pathname)) return pathname.replace(pattern, replacement);
+  }
+  return pathname;
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -201,6 +368,25 @@ function homeBody(): string {
   `;
 }
 
+function publicBody(content: SeoContent): string {
+  return `
+    <div class="seo-shell">
+      <header class="seo-nav">
+        <a class="seo-brand" href="/"><span class="seo-brand-mark">⌂</span>Realista</a>
+        <a class="seo-nav-link" href="/realista-pro">RealistaPro</a>
+      </header>
+      <main class="seo-pricing">
+        <div class="seo-pricing-heading">
+          <p class="seo-eyebrow">Realista</p>
+          <h1>${escapeHtml(content.heading)}</h1>
+          <p>${escapeHtml(content.intro)}</p>
+        </div>
+      </main>
+      <footer class="seo-footer"><a href="/">Volver a Realista</a> · <a href="/realista-pro">Soluciones para agencias inmobiliarias</a></footer>
+    </div>
+  `;
+}
+
 function realistaProBody(): string {
   const plans = REALISTA_PRO_CONTENT.plans
     .map(
@@ -238,9 +424,16 @@ function realistaProBody(): string {
 export function getSeoHtml(req: Request, page: SeoPage): string {
   const baseUrl = getBaseUrl(req);
   const clientAssetTags = getClientAssetTags();
+  const isHome = page === "home";
   const isRealistaPro = page === "realistaPro";
-  const content = isRealistaPro ? REALISTA_PRO_CONTENT : HOME_CONTENT;
-  const canonical = `${baseUrl}${isRealistaPro ? "/realista-pro" : "/"}`;
+  const content = isRealistaPro
+    ? REALISTA_PRO_CONTENT
+    : isHome
+      ? HOME_CONTENT
+      : getPublicContent(req.path);
+  const canonical = `${baseUrl}${canonicalPath(
+    isRealistaPro || isHome ? (isRealistaPro ? "/realista-pro" : "/") : req.path,
+  )}`;
   const schema = isRealistaPro
     ? {
         "@context": "https://schema.org",
@@ -258,7 +451,8 @@ export function getSeoHtml(req: Request, page: SeoPage): string {
           availability: "https://schema.org/InStock",
         })),
       }
-    : {
+    : isHome
+      ? {
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: "Realista",
@@ -269,7 +463,15 @@ export function getSeoHtml(req: Request, page: SeoPage): string {
           target: `${baseUrl}/buscar/comprar?q={search_term_string}`,
           "query-input": "required name=search_term_string",
         },
-      };
+        }
+      : {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: content.title,
+          description: content.description,
+          url: canonical,
+          isPartOf: { "@type": "WebSite", name: "Realista", url: baseUrl },
+        };
 
   return `<!doctype html>
 <html lang="es">
@@ -294,7 +496,7 @@ export function getSeoHtml(req: Request, page: SeoPage): string {
     <script type="application/ld+json">${escapeJsonForHtml(schema)}</script>
   </head>
   <body>
-    <div id="root">${isRealistaPro ? realistaProBody() : homeBody()}</div>
+    <div id="root">${isRealistaPro ? realistaProBody() : isHome ? homeBody() : publicBody(content)}</div>
     ${clientAssetTags}
   </body>
 </html>`;
