@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { debugLog } from "./debugLog";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { 
   insertPropertySchema,
@@ -317,11 +318,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         source: "self_registered"
       });
 
-      // Verificar si el email ya existe
-      const existingClient = await storage.getClients();
-      const emailExists = existingClient.some(client => client.email === validatedData.email);
+      // Verificar si el email ya existe (indexed lookup — avoid loading all clients)
+      const existingClient = await storage.getClientByEmail(validatedData.email);
 
-      if (emailExists) {
+      if (existingClient) {
         return res.status(400).json({ 
           message: "Ya existe una cuenta con este correo electrónico" 
         });
@@ -1598,7 +1598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const includeInactive = req.query.includeInactive === 'true';
       const operationType = req.query.operationType as string | undefined;
 
-      console.log(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}, agencyId=${agencyId}, includeInactive=${includeInactive}`);
+      debugLog(`GET /api/properties - Params: mostViewed=${mostViewed}, operationType=${operationType}, agentId=${agentId}, agencyId=${agencyId}, includeInactive=${includeInactive}`);
 
       let properties;
       if (mostViewed) {
@@ -1618,7 +1618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
         properties = await storage.getMostViewedProperties(limit, operationType);
-        console.log(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
+        debugLog(`Returning ${properties.length} most viewed properties with operationType=${operationType}`);
       } else if (agentId) {
         // Add pagination support for better performance
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
@@ -1643,14 +1643,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // If it's a city-wide search, remove neighborhood filter
           if (isCityWideSearch(neighborhood)) {
-            console.log('City-wide search for Barcelona - showing all properties');
+            debugLog('City-wide search for Barcelona - showing all properties');
             delete updatedQuery.neighborhoods; // Don't filter by specific neighborhoods
           } 
           // If it's a district or specific neighborhood, expand the search
           else {
             // Expand the neighborhood or district to a list of neighborhoods
             const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-            console.log(`Expanded search for ${neighborhood} includes: ${expandedNeighborhoods.join(', ')}`);
+            debugLog(`Expanded search for ${neighborhood} includes: ${expandedNeighborhoods.join(', ')}`);
 
             if (expandedNeighborhoods.length > 0) {
               // Replace the original filter with the expanded list
@@ -2765,7 +2765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const city = (req.query.city as string) || 'Barcelona';
       const district = req.query.district as string;
       
-      console.log(`Recibida solicitud para promedios de barrio: ${neighborhood}, ciudad: ${city}, distrito: ${district || 'N/A'}`);
+      debugLog(`Recibida solicitud para promedios de barrio: ${neighborhood}, ciudad: ${city}, distrito: ${district || 'N/A'}`);
 
       if (!neighborhood) {
         return res.status(400).json({ 
@@ -2779,9 +2779,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
 
-      console.log(`Obteniendo promedios para barrio: ${neighborhood} en ${city} a las ${new Date().toISOString()}`);
+      debugLog(`Obteniendo promedios para barrio: ${neighborhood} en ${city} a las ${new Date().toISOString()}`);
       const averages = await storage.getNeighborhoodRatingsAverage(neighborhood, city, district);
-      console.log(`Promedios para ${neighborhood} en ${city} obtenidos:`, averages);
+      debugLog(`Promedios para ${neighborhood} en ${city} obtenidos:`, averages);
 
       return res.json(averages);
     } catch (error) {
@@ -2894,7 +2894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Añadir rutas para búsqueda desde la página de búsqueda
   app.get("/api/search/agencies", async (req, res) => {
     try {
-      console.log('Search agencies params:', req.query);
+      debugLog('Search agencies params:', req.query);
 
       // Usamos las funciones de neighborhoods importadas al principio del archivo
 
@@ -2915,7 +2915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Extract city name from the search query (e.g., "Barcelona" or "Barcelona (Todos los barrios)")
           const cityMatch = neighborhood.match(/(Barcelona|Madrid)/i);
           const cityName = cityMatch ? cityMatch[1] : 'Barcelona';
-          console.log(`Búsqueda para toda ${cityName} - mostrando todas las agencias de ${cityName}`);
+          debugLog(`Búsqueda para toda ${cityName} - mostrando todas las agencias de ${cityName}`);
           updatedQuery.showAll = 'true';
           updatedQuery.city = cityName; // Add city filter
           delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
@@ -2924,7 +2924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-          console.log(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
+          debugLog(`Búsqueda expandida para ${neighborhood} incluye: ${expandedNeighborhoods.join(', ')}`);
 
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
@@ -2934,7 +2934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
       else if (!showAll && !hasSearchTerm) {
-        console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
+        debugLog('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
 
@@ -2946,19 +2946,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
-      console.log('Search agencies queryString:', queryString);
+      debugLog('Search agencies queryString:', queryString);
       
       // Check cache for agencies search
       const agenciesCacheKey = `agencies_search:${queryString}`;
       let agencies = cache.get(agenciesCacheKey);
       
       if (!agencies) {
-        console.log('Cache miss for agencies search, querying database');
+        debugLog('Cache miss for agencies search, querying database');
         agencies = await storage.searchAgencies(queryString);
         // Cache agencies for 10 minutes for faster tab switching
         cache.set(agenciesCacheKey, agencies, 600);
       } else {
-        console.log('Cache hit for agencies search');
+        debugLog('Cache hit for agencies search');
       }
 
       // Procesamos los resultados para asegurar que se usen las propiedades correctas
@@ -2972,17 +2972,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      // Add detailed logging to see what's coming from the database
-      console.log('Agency resultsbefore normalization:', JSON.stringify(processedResults, null, 2));
+      // Detailed payload logging is debug-only (JSON.stringify of full result sets is expensive)
+      debugLog('Agency results before normalization:', JSON.stringify(processedResults, null, 2));
 
       // Normalize field names to ensure consistent API responses
       const normalizedResults = processedResults.map(agency => {
-        console.log(`Processing agency ${agency.id} (${agency.agencyName}):`);
+        debugLog(`Processing agency ${agency.id} (${agency.agencyName}):`);
 
         // Get the agency neighborhoods from the standardized field
         const rawNeighborhoods = agency.agencyInfluenceNeighborhoods;
-        console.log('- Original neighborhoods:', rawNeighborhoods);
-        console.log('- Type of neighborhoods:', typeof rawNeighborhoods);
+        debugLog('- Original neighborhoods:', rawNeighborhoods);
+        debugLog('- Type of neighborhoods:', typeof rawNeighborhoods);
 
         // Initialize array to store neighborhood values
         let neighborhoodsArray = [];
@@ -3007,9 +3007,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               neighborhoodsArray = [cleaned.replace(/^"|"$/g, '').trim()].filter(Boolean);
             }
 
-            console.log('- Parsed neighborhoods into array:', neighborhoodsArray);
+            debugLog('- Parsed neighborhoods into array:', neighborhoodsArray);
           } catch (e) {
-            console.log('- Failed to parse neighborhoods:', e.message);
+            debugLog('- Failed to parse neighborhoods:', e.message);
             neighborhoodsArray = [];
           }
         } else if (Array.isArray(rawNeighborhoods)) {
@@ -3019,13 +3019,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Set field to standardized name
         agency.agencyInfluenceNeighborhoods = neighborhoodsArray;
 
-        console.log('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
+        debugLog('- Final neighborhoods array:', agency.agencyInfluenceNeighborhoods);
         return agency;
       });
 
-      console.log('Agency results after normalization:', JSON.stringify(normalizedResults, null, 2));
+      debugLog('Agency results after normalization:', JSON.stringify(normalizedResults, null, 2));
 
-      console.log('Search agencies results:', normalizedResults.length);
+      debugLog('Search agencies results:', normalizedResults.length);
       res.json(normalizedResults);
     } catch (error) {
       console.error('Error searching agencies:', error);
@@ -3035,7 +3035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/search/agents", async (req, res) => {
     try {
-      console.log('Search agents params:', req.query);
+      debugLog('Search agents params:', req.query);
 
       // Usamos las funciones de neighborhoods importadas al principio del archivo
 
@@ -3053,7 +3053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Si es búsqueda a nivel de ciudad, mostramos todos los agentes
         if (isCityWideSearch(neighborhood)) {
-          console.log('Búsqueda para toda Barcelona - mostrando todos los agentes');
+          debugLog('Búsqueda para toda Barcelona - mostrando todos los agentes');
           updatedQuery.showAll = 'true';
           delete updatedQuery.neighborhoods; // No filtrar por barrios específicos
         } 
@@ -3061,7 +3061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else {
           // Expandimos el barrio o distrito a una lista de barrios
           const expandedNeighborhoods = expandNeighborhoodSearch(neighborhood);
-          console.log(`Búsqueda expandida para "${neighborhood}" incluye ${expandedNeighborhoods.length} barrios:`, expandedNeighborhoods.join(', '));
+          debugLog(`Búsqueda expandida para "${neighborhood}" incluye ${expandedNeighborhoods.length} barrios:`, expandedNeighborhoods.join(', '));
 
           if (expandedNeighborhoods.length > 0) {
             // Reemplazamos el filtro original con la lista expandida
@@ -3071,7 +3071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Si showAll es falso y no hay términos de búsqueda, retornar array vacío
       else if (!showAll && !hasSearchTerm) {
-        console.log('showAll=false y no hay términos de búsqueda, retornando array vacío');
+        debugLog('showAll=false y no hay términos de búsqueda, retornando array vacío');
         return res.json([]);
       }
 
@@ -3083,22 +3083,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const queryString = new URLSearchParams(updatedQuery as Record<string, string>).toString();
-      console.log('Search agents queryString:', queryString);
+      debugLog('Search agents queryString:', queryString);
       
       // Check cache for agents search
       const agentsCacheKey = `agents_search:${queryString}`;
       let agents = cache.get(agentsCacheKey);
       
       if (!agents) {
-        console.log('Cache miss for agents search, querying database');
+        debugLog('Cache miss for agents search, querying database');
         agents = await storage.searchAgents(queryString);
         // Cache agents for 10 minutes for faster tab switching
         cache.set(agentsCacheKey, agents, 600);
       } else {
-        console.log('Cache hit for agents search');
+        debugLog('Cache hit for agents search');
       }
       
-      console.log('Search agents results:', agents.length);
+      debugLog('Search agents results:', agents.length);
       res.json(agents);
     } catch (error) {
       console.error('Error searching agents:', error);
@@ -3121,13 +3121,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
         const searchTerm = filters.neighborhoods;
-        console.log(`Processing hierarchical search for: ${searchTerm}`);
+        debugLog(`Processing hierarchical search for: ${searchTerm}`);
 
         // Parse the hierarchical format ("Neighborhood, District, City")
         const parsed = parseNeighborhoodDisplayName(searchTerm);
         
         if (parsed) {
-          console.log(`Parsed location: ${JSON.stringify(parsed)}`);
+          debugLog(`Parsed location: ${JSON.stringify(parsed)}`);
           
           // Add hierarchical filters
           filters.city = parsed.city;
@@ -3140,7 +3140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           delete filters.neighborhoods;
         } else {
           // Fallback: treat as a simple neighborhood name (for backward compatibility)
-          console.log(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
+          debugLog(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
           filters.neighborhood = searchTerm;
           filters.city = 'Barcelona'; // Default fallback
           delete filters.neighborhoods;
@@ -3180,13 +3180,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (hasNeighborhoods && typeof filters.neighborhoods === 'string') {
         const searchTerm = filters.neighborhoods;
-        console.log(`Processing hierarchical search for: ${searchTerm}`);
+        debugLog(`Processing hierarchical search for: ${searchTerm}`);
 
         // Parse the hierarchical format ("Neighborhood, District, City")
         const parsed = parseNeighborhoodDisplayName(searchTerm);
         
         if (parsed) {
-          console.log(`Parsed location: ${JSON.stringify(parsed)}`);
+          debugLog(`Parsed location: ${JSON.stringify(parsed)}`);
           
           // Add hierarchical filters
           filters.city = parsed.city;
@@ -3199,7 +3199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           delete filters.neighborhoods;
         } else {
           // Fallback: treat as a simple neighborhood name (for backward compatibility)
-          console.log(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
+          debugLog(`Could not parse hierarchical format, treating as simple neighborhood: ${searchTerm}`);
           filters.neighborhood = searchTerm;
           filters.city = 'Barcelona'; // Default fallback
           delete filters.neighborhoods;

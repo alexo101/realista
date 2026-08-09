@@ -1,19 +1,35 @@
-// Simple in-memory cache for performance optimization
+// Simple in-memory cache for performance optimization.
+// Process-local: for multi-instance deploys, replace the backend with Redis
+// while keeping this get/set/delete/clearByPrefix API stable.
 interface CacheItem<T> {
   data: T;
   timestamp: number;
   ttl: number;
 }
 
+const DEFAULT_MAX_ENTRIES = 500;
+
 class MemoryCache {
   private cache = new Map<string, CacheItem<any>>();
+  private readonly maxEntries: number;
+
+  constructor(maxEntries: number = DEFAULT_MAX_ENTRIES) {
+    this.maxEntries = Math.max(1, maxEntries);
+  }
 
   set<T>(key: string, data: T, ttlSeconds: number = 300): void {
+    // Refresh insertion order for LRU on overwrite
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
+
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl: ttlSeconds * 1000
+      ttl: ttlSeconds * 1000,
     });
+
+    this.evictIfNeeded();
   }
 
   get<T>(key: string): T | null {
@@ -25,6 +41,10 @@ class MemoryCache {
       this.cache.delete(key);
       return null;
     }
+
+    // Move to most-recently-used position (Map preserves insertion order)
+    this.cache.delete(key);
+    this.cache.set(key, item);
 
     return item.data;
   }
@@ -63,9 +83,21 @@ class MemoryCache {
       }
     }
   }
+
+  private evictIfNeeded(): void {
+    while (this.cache.size > this.maxEntries) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey === undefined) break;
+      this.cache.delete(oldestKey);
+    }
+  }
 }
 
-export const cache = new MemoryCache();
+export const cache = new MemoryCache(
+  Number(process.env.CACHE_MAX_ENTRIES) > 0
+    ? Number(process.env.CACHE_MAX_ENTRIES)
+    : DEFAULT_MAX_ENTRIES,
+);
 
 // Clean expired entries every 5 minutes
 setInterval(() => {

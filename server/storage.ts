@@ -1,5 +1,6 @@
 import { db, pool } from "./db";
 import { cache } from "./cache";
+import { debugLog } from "./debugLog";
 import {
   eq,
   sql,
@@ -192,7 +193,7 @@ export interface IStorage {
   incrementPropertyViewCount(uuid: string): Promise<void>;
 
   // Clients
-  getClients(): Promise<Client[]>;
+  getClients(options?: { limit?: number; offset?: number }): Promise<Client[]>;
   getClient(id: number): Promise<Client | undefined>;
   getClientByEmail(email: string): Promise<Client | undefined>;
   getClientsByAgent(agentId: number): Promise<Client[]>;
@@ -604,7 +605,7 @@ export class DatabaseStorage implements IStorage {
       const agentName = params.get("agentName");
       const neighborhoodsStr = params.get("neighborhoods");
 
-      console.log(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
+      debugLog(`Buscando agentes con params: showAll=${showAll}, agentName=${agentName}, neighborhoods=${neighborhoodsStr}`);
 
       // Collect all WHERE conditions first (like searchAgencies)
       const conditions: any[] = [];
@@ -621,7 +622,7 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-        console.log(`Filtrando agentes por barrios: ${neighborhoodsStr}`);
+        debugLog(`Filtrando agentes por barrios: ${neighborhoodsStr}`);
 
         // CRITICAL: Always exclude agents with NULL or empty influenceNeighborhoods when neighborhood filter is applied
         conditions.push(
@@ -641,7 +642,7 @@ export class DatabaseStorage implements IStorage {
         if (isPreExpanded) {
           // Already expanded by routes.ts - use directly
           expandedNeighborhoods = neighborhoodsStr.split(',').map(n => n.trim()).filter(Boolean);
-          console.log(`Using pre-expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+          debugLog(`Using pre-expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
         } else {
           // Not pre-expanded - perform expansion here
           const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
@@ -653,20 +654,20 @@ export class DatabaseStorage implements IStorage {
             // Handle district-level search: when neighborhood is empty, use district as the search term
             if (!neighborhood || neighborhood.trim() === "") {
               neighborhood = district;
-              console.log(`District-level search detected, using district: ${neighborhood}`);
+              debugLog(`District-level search detected, using district: ${neighborhood}`);
             }
             
-            console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
+            debugLog(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
             
             // Expand the search hierarchically
             expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
           } else {
             // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
-            console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
+            debugLog(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
             expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
           }
           
-          console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+          debugLog(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
         }
 
         if (expandedNeighborhoods.length > 0) {
@@ -680,7 +681,7 @@ export class DatabaseStorage implements IStorage {
           );
         } else {
           // Fail closed: if expansion returns empty, return no results
-          console.log(`WARNING: Neighborhood expansion returned empty array for: ${neighborhoodsStr}`);
+          debugLog(`WARNING: Neighborhood expansion returned empty array for: ${neighborhoodsStr}`);
           return [];
         }
       }
@@ -695,36 +696,49 @@ export class DatabaseStorage implements IStorage {
       // Limitamos los resultados para evitar sobrecargar la respuesta
       dbQuery = dbQuery.limit(10);
 
-      console.log(`Ejecutando búsqueda de agentes...`);
+      debugLog(`Ejecutando búsqueda de agentes...`);
       const agentResults = await dbQuery;
-      console.log(`Found ${agentResults.length} agents in the database`);
+      debugLog(`Found ${agentResults.length} agents in the database`);
 
-      // Now enhance each agent with review statistics
-      const enhancedAgents = await Promise.all(
-        agentResults.map(async (agent) => {
-          const reviewStats = await db
-            .select({
-              reviewCount: sql<number>`COUNT(*)`,
-              reviewAverage: sql<number>`ROUND(AVG(rating), 2)`,
-            })
-            .from(reviews)
-            .where(
-              and(
-                eq(reviews.targetId, agent.id),
-                eq(reviews.targetType, 'agent')
-              )
-            );
+      if (agentResults.length === 0) {
+        return [];
+      }
 
-          const stats = reviewStats[0];
-          return {
-            ...agent,
-            reviewCount: Number(stats?.reviewCount) || 0,
-            reviewAverage: Number(stats?.reviewAverage) || 0,
-          };
+      // Single aggregate query for all result agents (avoids N+1 review-stats queries)
+      const agentIds = agentResults.map((agent) => agent.id);
+      const reviewStatsRows = await db
+        .select({
+          targetId: reviews.targetId,
+          reviewCount: sql<number>`COUNT(*)`,
+          reviewAverage: sql<number>`ROUND(AVG(rating), 2)`,
         })
+        .from(reviews)
+        .where(
+          and(
+            inArray(reviews.targetId, agentIds),
+            eq(reviews.targetType, 'agent')
+          )
+        )
+        .groupBy(reviews.targetId);
+
+      const statsByAgentId = new Map(
+        reviewStatsRows.map((row) => [
+          row.targetId,
+          {
+            reviewCount: Number(row.reviewCount) || 0,
+            reviewAverage: Number(row.reviewAverage) || 0,
+          },
+        ])
       );
 
-      return enhancedAgents;
+      return agentResults.map((agent) => {
+        const stats = statsByAgentId.get(agent.id);
+        return {
+          ...agent,
+          reviewCount: stats?.reviewCount || 0,
+          reviewAverage: stats?.reviewAverage || 0,
+        };
+      });
     } catch (error) {
       console.error("Error en searchAgents:", error);
       throw error;
@@ -740,14 +754,14 @@ export class DatabaseStorage implements IStorage {
       const neighborhoodsStr = params.get("neighborhoods");
       const city = params.get("city");
 
-      console.log(`Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}, city=${city}`);
+      debugLog(`Buscando agencias con params: showAll=${showAll}, agencyName=${agencyName}, neighborhoods=${neighborhoodsStr}, city=${city}`);
 
       // Collect all WHERE conditions first
       const conditions: any[] = [];
 
       // Filter by city if provided
       if (city && city.trim() !== "") {
-        console.log(`Filtrando agencias por ciudad: ${city}`);
+        debugLog(`Filtrando agencias por ciudad: ${city}`);
         conditions.push(eq(agencies.city, city));
       }
 
@@ -760,7 +774,7 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por barrios si se proporcionan
       if (neighborhoodsStr && neighborhoodsStr.trim() !== "") {
-        console.log(`Filtrando agencias por barrios: ${neighborhoodsStr}`);
+        debugLog(`Filtrando agencias por barrios: ${neighborhoodsStr}`);
 
         // CRITICAL: Always exclude agencies with NULL or empty influenceNeighborhoods when neighborhood filter is applied
         conditions.push(
@@ -782,7 +796,7 @@ export class DatabaseStorage implements IStorage {
         if (isPreExpanded) {
           // Already expanded by routes.ts - use directly
           expandedNeighborhoods = neighborhoodsStr.split(',').map(n => n.trim()).filter(Boolean);
-          console.log(`Using pre-expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+          debugLog(`Using pre-expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
         } else {
           // Not pre-expanded - perform expansion here
           const { parseNeighborhoodDisplayName, expandNeighborhoodSearch } = await import('./utils/neighborhoods.js');
@@ -795,20 +809,20 @@ export class DatabaseStorage implements IStorage {
             // Format: ", Sant Andreu, Barcelona" means we're searching at district level
             if (!neighborhood || neighborhood.trim() === "") {
               neighborhood = district;
-              console.log(`District-level search detected, using district: ${neighborhood}`);
+              debugLog(`District-level search detected, using district: ${neighborhood}`);
             }
             
-            console.log(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
+            debugLog(`Parsed: neighborhood=${neighborhood}, district=${district}, city=${city}`);
             
             // Expand the search hierarchically
             expandedNeighborhoods = expandNeighborhoodSearch(neighborhood, city);
           } else {
             // Fallback: try expanding with the raw string (handles simple inputs like "Gràcia")
-            console.log(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
+            debugLog(`Could not parse neighborhood display name, trying raw expansion: ${neighborhoodsStr}`);
             expandedNeighborhoods = expandNeighborhoodSearch(neighborhoodsStr);
           }
           
-          console.log(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
+          debugLog(`Expanded neighborhoods (${expandedNeighborhoods.length}): ${expandedNeighborhoods.join(', ')}`);
         }
 
         if (expandedNeighborhoods.length > 0) {
@@ -822,7 +836,7 @@ export class DatabaseStorage implements IStorage {
           );
         } else {
           // Fail closed: if expansion returns empty, return no results
-          console.log(`WARNING: Neighborhood expansion returned empty array for: ${neighborhoodsStr}`);
+          debugLog(`WARNING: Neighborhood expansion returned empty array for: ${neighborhoodsStr}`);
           return [];
         }
       }
@@ -838,87 +852,125 @@ export class DatabaseStorage implements IStorage {
       dbQuery = dbQuery.limit(10);
 
       // Ejecutamos la consulta
-      console.log(`Ejecutando búsqueda de agencias...`);
+      debugLog(`Ejecutando búsqueda de agencias...`);
       const agencyResults = await dbQuery;
-      console.log(`Found ${agencyResults.length} agencies in the database`);
+      debugLog(`Found ${agencyResults.length} agencies in the database`);
 
-      // Enrich agencies with review statistics (matching agency profile calculation)
-      const enhancedAgencies = await Promise.all(
-        agencyResults.map(async (agency) => {
-          // Get direct agency reviews with last review date
-          // Only count reviews WITH a property for rating calculation
-          const agencyReviewStats = await db
-            .select({
-              reviewCount: sql<number>`count(*)::integer`,
-              reviewAverage: sql<number>`COALESCE(ROUND(AVG(${reviews.rating}), 2), 0)::float`,
-              lastReviewDate: sql<string>`MAX(${reviews.date})`,
-            })
-            .from(reviews)
-            .where(
-              and(
-                eq(reviews.targetId, agency.id),
-                eq(reviews.targetType, 'agency'),
-                eq(reviews.confirmed, true),
-                isNotNull(reviews.propertyUuid)
-              )
-            );
+      if (agencyResults.length === 0) {
+        return [];
+      }
 
-          const agencyStats = agencyReviewStats[0];
-          const agencyScore = Number(agencyStats?.reviewAverage) || 0;
-          const agencyReviewCount = Number(agencyStats?.reviewCount) || 0;
-          const agencyLastReviewDate = agencyStats?.lastReviewDate || null;
+      // Batch review enrichment for all result agencies (avoids 2N per-agency queries)
+      const agencyIds = agencyResults.map((agency) => agency.id);
 
-          // Get reviews from linked agents (matching agency profile logic) with last review date
-          const linkedAgentReviews = await db.execute(
-            sql`SELECT COUNT(r.*)::integer as agent_review_count, 
-                       COALESCE(ROUND(AVG(r.rating), 2), 0)::float as agent_review_average,
-                       MAX(r.date) as agent_last_review_date
-                FROM reviews r 
-                JOIN agency_agents aa ON r.target_id = aa.agent_id 
-                WHERE aa.agency_id = ${agency.id} 
-                  AND aa.left_at IS NULL 
-                  AND r.target_type = 'agent'`
-          );
+      const [agencyReviewStatsRows, linkedAgentReviewRows] = await Promise.all([
+        // Direct agency reviews (confirmed + with property), grouped by agency
+        db
+          .select({
+            targetId: reviews.targetId,
+            reviewCount: sql<number>`count(*)::integer`,
+            reviewAverage: sql<number>`COALESCE(ROUND(AVG(${reviews.rating}), 2), 0)::float`,
+            lastReviewDate: sql<string>`MAX(${reviews.date})`,
+          })
+          .from(reviews)
+          .where(
+            and(
+              inArray(reviews.targetId, agencyIds),
+              eq(reviews.targetType, 'agency'),
+              eq(reviews.confirmed, true),
+              isNotNull(reviews.propertyUuid)
+            )
+          )
+          .groupBy(reviews.targetId),
+        // Linked agent reviews for all result agencies, grouped by agency_id
+        db
+          .select({
+            agencyId: agencyAgents.agencyId,
+            agentReviewCount: sql<number>`COUNT(*)::integer`,
+            agentReviewAverage: sql<number>`COALESCE(ROUND(AVG(${reviews.rating}), 2), 0)::float`,
+            agentLastReviewDate: sql<string>`MAX(${reviews.date})`,
+          })
+          .from(reviews)
+          .innerJoin(
+            agencyAgents,
+            eq(reviews.targetId, agencyAgents.agentId)
+          )
+          .where(
+            and(
+              inArray(agencyAgents.agencyId, agencyIds),
+              isNull(agencyAgents.leftAt),
+              eq(reviews.targetType, 'agent')
+            )
+          )
+          .groupBy(agencyAgents.agencyId),
+      ]);
 
-          const agentReviewCount = linkedAgentReviews.rows[0]?.agent_review_count || 0;
-          const agentReviewAverage = linkedAgentReviews.rows[0]?.agent_review_average || 0;
-          const agentLastReviewDate = linkedAgentReviews.rows[0]?.agent_last_review_date || null;
-
-          // Calculate combined score (matching agency profile logic)
-          const totalReviews = agencyReviewCount + Number(agentReviewCount);
-          let finalScore = 0;
-          
-          if (totalReviews > 0) {
-            if (agencyScore > 0 && agentReviewAverage > 0) {
-              finalScore = (agencyScore + Number(agentReviewAverage)) / 2;
-            } else if (agencyScore > 0) {
-              finalScore = agencyScore;
-            } else {
-              finalScore = Number(agentReviewAverage);
-            }
-          }
-
-          // Determine the most recent review date (from agency or agent reviews)
-          let lastReviewDate: string | null = null;
-          if (agencyLastReviewDate && agentLastReviewDate) {
-            lastReviewDate = new Date(agencyLastReviewDate) > new Date(agentLastReviewDate) 
-              ? agencyLastReviewDate 
-              : agentLastReviewDate;
-          } else {
-            lastReviewDate = agencyLastReviewDate || agentLastReviewDate;
-          }
-
-          // Return the agency with review statistics
-          return {
-            ...agency,
-            reviewCount: totalReviews,
-            rating: finalScore,
-            lastReviewDate,
-          };
-        })
+      const agencyStatsById = new Map(
+        agencyReviewStatsRows.map((row) => [
+          row.targetId,
+          {
+            reviewCount: Number(row.reviewCount) || 0,
+            reviewAverage: Number(row.reviewAverage) || 0,
+            lastReviewDate: row.lastReviewDate || null,
+          },
+        ])
       );
 
-      return enhancedAgencies;
+      const linkedStatsByAgencyId = new Map(
+        linkedAgentReviewRows.map((row) => [
+          row.agencyId,
+          {
+            reviewCount: Number(row.agentReviewCount) || 0,
+            reviewAverage: Number(row.agentReviewAverage) || 0,
+            lastReviewDate: row.agentLastReviewDate || null,
+          },
+        ])
+      );
+
+      return agencyResults.map((agency) => {
+        const agencyStats = agencyStatsById.get(agency.id);
+        const linkedStats = linkedStatsByAgencyId.get(agency.id);
+
+        const agencyScore = agencyStats?.reviewAverage || 0;
+        const agencyReviewCount = agencyStats?.reviewCount || 0;
+        const agencyLastReviewDate = agencyStats?.lastReviewDate || null;
+
+        const agentReviewCount = linkedStats?.reviewCount || 0;
+        const agentReviewAverage = linkedStats?.reviewAverage || 0;
+        const agentLastReviewDate = linkedStats?.lastReviewDate || null;
+
+        // Calculate combined score (matching agency profile logic)
+        const totalReviews = agencyReviewCount + agentReviewCount;
+        let finalScore = 0;
+
+        if (totalReviews > 0) {
+          if (agencyScore > 0 && agentReviewAverage > 0) {
+            finalScore = (agencyScore + agentReviewAverage) / 2;
+          } else if (agencyScore > 0) {
+            finalScore = agencyScore;
+          } else {
+            finalScore = agentReviewAverage;
+          }
+        }
+
+        // Determine the most recent review date (from agency or agent reviews)
+        let lastReviewDate: string | null = null;
+        if (agencyLastReviewDate && agentLastReviewDate) {
+          lastReviewDate =
+            new Date(agencyLastReviewDate) > new Date(agentLastReviewDate)
+              ? agencyLastReviewDate
+              : agentLastReviewDate;
+        } else {
+          lastReviewDate = agencyLastReviewDate || agentLastReviewDate;
+        }
+
+        return {
+          ...agency,
+          reviewCount: totalReviews,
+          rating: finalScore,
+          lastReviewDate,
+        };
+      });
     } catch (error) {
       console.error("Error en searchAgencies:", error);
       throw error;
@@ -1769,27 +1821,46 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`Encontrados ${result.length} agentes vinculados a la agencia ${agencyId}`);
 
-      // Para cada agente, obtenemos su puntuación y número de reseñas
-      const agentsWithReviews = await Promise.all(
-        result.map(async (agent) => {
-          const reviews = await this.getAgentReviews(agent.id);
+      if (result.length === 0) {
+        return [];
+      }
 
-          // Calculamos el promedio de puntuación si hay reseñas
-          let reviewAverage = 0;
-          if (reviews.length > 0) {
-            const sum = reviews.reduce((acc, review) => acc + Number(review.rating), 0);
-            reviewAverage = sum / reviews.length;
-          }
-
-          return {
-            ...agent,
-            reviewCount: reviews.length,
-            reviewAverage: reviewAverage
-          };
+      // Single aggregate query for all agency agents (avoids N getAgentReviews round-trips)
+      const agentIds = result.map((agent) => agent.id);
+      const reviewStatsRows = await db
+        .select({
+          targetId: reviews.targetId,
+          reviewCount: sql<number>`COUNT(*)::integer`,
+          reviewAverage: sql<number>`COALESCE(AVG(${reviews.rating}), 0)::float`,
         })
+        .from(reviews)
+        .where(
+          and(
+            inArray(reviews.targetId, agentIds),
+            eq(reviews.targetType, 'agent'),
+            eq(reviews.confirmed, true)
+          )
+        )
+        .groupBy(reviews.targetId);
+
+      const statsByAgentId = new Map(
+        reviewStatsRows.map((row) => [
+          row.targetId,
+          {
+            reviewCount: Number(row.reviewCount) || 0,
+            reviewAverage: Number(row.reviewAverage) || 0,
+          },
+        ])
       );
 
-      return agentsWithReviews;
+      return result.map((agent) => {
+        const stats = statsByAgentId.get(agent.id);
+        return {
+          ...agent,
+          reviewCount: stats?.reviewCount || 0,
+          reviewAverage: stats?.reviewAverage || 0,
+        };
+      });
     } catch (error) {
       console.error(`Error al obtener agentes de la agencia ${agencyId}:`, error);
       return [];
@@ -1957,11 +2028,11 @@ export class DatabaseStorage implements IStorage {
       const cacheKey = `most_viewed_properties_${limit}_${operationType || 'all'}`;
       const cached = cache.get<Property[]>(cacheKey);
       if (cached) {
-        console.log(`Returning cached most viewed properties for ${operationType || 'all'}`);
+        debugLog(`Returning cached most viewed properties for ${operationType || 'all'}`);
         return cached;
       }
 
-      console.log(`Database query for most viewed properties: ${operationType || 'all'}`);
+      debugLog(`Database query for most viewed properties: ${operationType || 'all'}`);
       
       // Construir la consulta base con campos específicos para mejor rendimiento
       let query = db
@@ -1998,7 +2069,7 @@ export class DatabaseStorage implements IStorage {
 
       // Si se especifica un tipo de operación, añadir el filtro
       if (operationType) {
-        console.log(
+        debugLog(
           `Filtrando propiedades más vistas por tipo de operación: ${operationType}`,
         );
         query = query.where(
@@ -2205,11 +2276,11 @@ export class DatabaseStorage implements IStorage {
     const cacheKey = `search_properties_${JSON.stringify(filters)}`;
     const cached = cache.get<Property[]>(cacheKey);
     if (cached) {
-      console.log("Returning cached property search results for filters:", filters);
+      debugLog("Returning cached property search results for filters:", filters);
       return cached;
     }
 
-    console.log("Database query for property search filters:", filters);
+    debugLog("Database query for property search filters:", filters);
 
     // Collect all WHERE conditions
     const whereConditions = [];
@@ -2221,7 +2292,7 @@ export class DatabaseStorage implements IStorage {
     if (filters) {
       // Filtrar por tipo de operación (Venta o Alquiler)
       if (filters.operationType) {
-        console.log(
+        debugLog(
           `Filtrando por tipo de operación: ${filters.operationType}`,
         );
         whereConditions.push(eq(properties.operationType, filters.operationType));
@@ -2229,7 +2300,7 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por tipo de inmueble (Vivienda, Oficinas, etc.)
       if (filters.propertyType) {
-        console.log(
+        debugLog(
           `Filtrando por tipo de inmueble: ${filters.propertyType}`,
         );
         whereConditions.push(eq(properties.type, filters.propertyType));
@@ -2247,7 +2318,7 @@ export class DatabaseStorage implements IStorage {
           neighborhoods = [filters.neighborhoods];
         }
 
-        console.log(`Filtrando por barrios: ${neighborhoods.join(", ")}`);
+        debugLog(`Filtrando por barrios: ${neighborhoods.join(", ")}`);
 
         // Si hay múltiples barrios, usamos OR
         if (neighborhoods.length > 1) {
@@ -2262,25 +2333,25 @@ export class DatabaseStorage implements IStorage {
 
       // Filtrar por precio mínimo si está definido
       if (filters.priceMin !== undefined && filters.priceMin !== null) {
-        console.log(`Filtrando por precio mínimo: ${filters.priceMin}`);
+        debugLog(`Filtrando por precio mínimo: ${filters.priceMin}`);
         whereConditions.push(gte(properties.price, Number(filters.priceMin)));
       }
 
       // Filtrar por precio máximo si está definido
       if (filters.priceMax !== undefined && filters.priceMax !== null) {
-        console.log(`Filtrando por precio máximo: ${filters.priceMax}`);
+        debugLog(`Filtrando por precio máximo: ${filters.priceMax}`);
         whereConditions.push(lte(properties.price, Number(filters.priceMax)));
       }
 
       // Filtrar por número de habitaciones si está definido
       if (filters.bedrooms !== undefined && filters.bedrooms !== null) {
-        console.log(`Filtrando por habitaciones: ${filters.bedrooms}`);
+        debugLog(`Filtrando por habitaciones: ${filters.bedrooms}`);
         whereConditions.push(gte(properties.bedrooms, Number(filters.bedrooms)));
       }
 
       // Filtrar por número de baños si está definido
       if (filters.bathrooms !== undefined && filters.bathrooms !== null) {
-        console.log(`Filtrando por baños: ${filters.bathrooms}`);
+        debugLog(`Filtrando por baños: ${filters.bathrooms}`);
         whereConditions.push(gte(properties.bathrooms, Number(filters.bathrooms)));
       }
 
@@ -2291,7 +2362,7 @@ export class DatabaseStorage implements IStorage {
           : filters.features.split(",");
 
         if (features.length > 0) {
-          console.log(`Filtrando por características: ${features.join(", ")}`);
+          debugLog(`Filtrando por características: ${features.join(", ")}`);
           // Para cada característica, verificamos que esté en el array de la propiedad
           features.forEach((feature: string) => {
             whereConditions.push(
@@ -2368,7 +2439,7 @@ export class DatabaseStorage implements IStorage {
     let query = db.select(searchFields).from(properties);
     
     if (whereConditions.length > 0) {
-      console.log(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
+      debugLog(`Aplicando ${whereConditions.length} condiciones WHERE con AND`);
       query = query.where(and(...whereConditions));
     }
 
@@ -2379,9 +2450,9 @@ export class DatabaseStorage implements IStorage {
     const maxResults = 500;
     query = query.limit(maxResults);
 
-    console.log("Ejecutando consulta de propiedades con filtros");
+    debugLog("Ejecutando consulta de propiedades con filtros");
     const result = await query;
-    console.log(`Consulta completada. Encontradas ${result.length} propiedades que coinciden con los filtros.`);
+    debugLog(`Consulta completada. Encontradas ${result.length} propiedades que coinciden con los filtros.`);
     
     // Compatibility layer: ensure imageUrls is always an array
     const compatibleResult = result.map(property => ({
@@ -2506,8 +2577,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Clients
-  async getClients(): Promise<Client[]> {
-    return await db.select().from(clients);
+  async getClients(options?: { limit?: number; offset?: number }): Promise<Client[]> {
+    const limit = Math.max(1, Math.min(500, Number(options?.limit ?? 100)));
+    const offset = Math.max(0, Number(options?.offset ?? 0));
+    return await db.select().from(clients).limit(limit).offset(offset);
   }
 
   async getClient(id: number): Promise<Client | undefined> {
@@ -2785,11 +2858,11 @@ export class DatabaseStorage implements IStorage {
       const cacheKey = `neighborhood_ratings_${city}_${district || 'all'}_${neighborhood}`;
       const cached = cache.get<Record<string, number>>(cacheKey);
       if (cached) {
-        console.log(`Cache hit for neighborhood ratings: ${neighborhood}`);
+        debugLog(`Cache hit for neighborhood ratings: ${neighborhood}`);
         return cached;
       }
 
-      console.log(`Calculating averages for neighborhood: ${neighborhood}`);
+      debugLog(`Calculating averages for neighborhood: ${neighborhood}`);
 
       // Build conditions for hierarchical filtering
       const conditions = [
@@ -2808,14 +2881,14 @@ export class DatabaseStorage implements IStorage {
         .where(and(...conditions));
 
       if (!ratings || ratings.length === 0) {
-        console.log(`No ratings found for neighborhood: ${neighborhood}`);
+        debugLog(`No ratings found for neighborhood: ${neighborhood}`);
         const result = { count: 0 };
         // Cache for 5 minutes to reduce database load even for empty results
         cache.set(cacheKey, result, 300);
         return result;
       }
 
-      console.log(`Found ${ratings.length} ratings for ${neighborhood}`);
+      debugLog(`Found ${ratings.length} ratings for ${neighborhood}`);
 
       // Calculate averages
       const averages = {
@@ -2828,7 +2901,7 @@ export class DatabaseStorage implements IStorage {
         services: Number((ratings.reduce((sum, r) => sum + Number(r.services), 0) / ratings.length).toFixed(1)),
       };
 
-      console.log(`Calculated averages for ${neighborhood}:`, averages);
+      debugLog(`Calculated averages for ${neighborhood}:`, averages);
 
       // Cache for 10 minutes to eliminate repeated API calls
       cache.set(cacheKey, averages, 600);
@@ -4410,113 +4483,125 @@ export class DatabaseStorage implements IStorage {
   }> {
     const page = Math.max(1, Number(filters.page || 1));
     const pageSize = Math.max(1, Math.min(100, Number(filters.pageSize || 25)));
+    const offset = (page - 1) * pageSize;
     const normalizedQuery = (filters.query || "").trim().toLowerCase();
     const roleFilter = (filters.role || "").trim().toLowerCase();
     const statusFilter = (filters.status || "").trim().toLowerCase();
 
-    const activeAgencyRows = await db
-      .select({
-        agentId: agencyAgents.agentId,
-        agencyName: agencies.agencyName,
-        agencyRole: agencyAgents.role,
-      })
-      .from(agencyAgents)
-      .innerJoin(agencies, eq(agencyAgents.agencyId, agencies.id))
-      .where(and(isNull(agencyAgents.leftAt), isNull(agencies.deletedAt)));
+    // Push filter/sort/pagination into SQL instead of loading all users into memory
+    const result = await db.execute(sql`
+      WITH agent_agency AS (
+        SELECT DISTINCT ON (aa.agent_id)
+          aa.agent_id,
+          ag.agency_name,
+          aa.role AS agency_role
+        FROM agency_agents aa
+        INNER JOIN agencies ag ON aa.agency_id = ag.id
+        WHERE aa.left_at IS NULL
+          AND ag.deleted_at IS NULL
+        ORDER BY aa.agent_id, aa.id
+      ),
+      unified AS (
+        SELECT
+          a.id,
+          NULLIF(
+            TRIM(CONCAT(COALESCE(a.name, ''), ' ', COALESCE(a.surname, ''))),
+            ''
+          ) AS name,
+          a.email,
+          CASE
+            WHEN a.agent_type = 'super_admin' THEN 'super_admin'
+            WHEN a.agent_type = 'network_admin' THEN 'network_admin'
+            WHEN aa.agency_role = 'admin' THEN 'agency_admin'
+            ELSE 'agent'
+          END AS role,
+          aa.agency_name AS agency,
+          CASE WHEN a.is_active THEN 'active' ELSE 'inactive' END AS status,
+          a.last_login_at AS last_login_at,
+          'agent' AS kind
+        FROM agents a
+        LEFT JOIN agent_agency aa ON aa.agent_id = a.id
+        WHERE a.deleted_at IS NULL
 
-    const agencyByAgent = new Map<number, { name: string; role: string }>();
-    for (const row of activeAgencyRows) {
-      if (row.agentId) {
-        agencyByAgent.set(row.agentId, {
-          name: row.agencyName,
-          role: row.agencyRole,
-        });
-      }
-    }
+        UNION ALL
 
-    const rawAgents = await db
-      .select({
-        id: agents.id,
-        email: agents.email,
-        name: agents.name,
-        surname: agents.surname,
-        agentType: agents.agentType,
-        isActive: agents.isActive,
-        lastLoginAt: agents.lastLoginAt,
-      })
-      .from(agents)
-      .where(isNull(agents.deletedAt));
+        SELECT
+          c.id,
+          NULLIF(
+            TRIM(CONCAT(COALESCE(c.name, ''), ' ', COALESCE(c.surname, ''))),
+            ''
+          ) AS name,
+          c.email,
+          'client' AS role,
+          aa.agency_name AS agency,
+          CASE WHEN c.is_active THEN 'active' ELSE 'inactive' END AS status,
+          c.last_login_at AS last_login_at,
+          'client' AS kind
+        FROM clients c
+        LEFT JOIN agent_agency aa ON aa.agent_id = c.agent_id
+      ),
+      filtered AS (
+        SELECT *
+        FROM unified u
+        WHERE (
+          ${roleFilter ? sql`u.role = ${roleFilter}` : sql`TRUE`}
+        )
+          AND (
+            ${statusFilter ? sql`u.status = ${statusFilter}` : sql`TRUE`}
+          )
+          AND (
+            ${
+              normalizedQuery
+                ? sql`LOWER(
+                    CONCAT(
+                      COALESCE(u.name, ''),
+                      ' ',
+                      u.email,
+                      ' ',
+                      u.role,
+                      ' ',
+                      COALESCE(u.agency, '')
+                    )
+                  ) LIKE ${`%${normalizedQuery}%`}`
+                : sql`TRUE`
+            }
+          )
+      )
+      SELECT
+        f.*,
+        COUNT(*) OVER()::integer AS total
+      FROM filtered f
+      ORDER BY f.last_login_at DESC NULLS LAST, f.email ASC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `);
 
-    const rawClients = await db
-      .select({
-        id: clients.id,
-        email: clients.email,
-        name: clients.name,
-        surname: clients.surname,
-        agentId: clients.agentId,
-        isActive: clients.isActive,
-        lastLoginAt: clients.lastLoginAt,
-      })
-      .from(clients);
+    const rows = (result.rows || result) as Array<{
+      id: number;
+      name: string | null;
+      email: string;
+      role: string;
+      agency: string | null;
+      status: "active" | "inactive";
+      last_login_at: Date | string | null;
+      kind: "agent" | "client";
+      total: number;
+    }>;
 
-    const users = [
-      ...rawAgents.map((agent) => {
-        const agencyData = agencyByAgent.get(agent.id);
-        const role =
-          agent.agentType === "super_admin"
-            ? "super_admin"
-            : agent.agentType === "network_admin"
-              ? "network_admin"
-              : agencyData?.role === "admin"
-                ? "agency_admin"
-                : "agent";
-        return {
-          id: agent.id,
-          name: [agent.name, agent.surname].filter(Boolean).join(" ") || agent.name || null,
-          email: agent.email,
-          role,
-          agency: agencyData?.name || null,
-          status: (agent.isActive ? "active" : "inactive") as "active" | "inactive",
-          lastLoginAt: agent.lastLoginAt ?? null,
-          kind: "agent" as const,
-        };
-      }),
-      ...rawClients.map((client) => {
-        const agencyData = client.agentId ? agencyByAgent.get(client.agentId) : undefined;
-        return {
-          id: client.id,
-          name: [client.name, client.surname].filter(Boolean).join(" ") || client.name || null,
-          email: client.email,
-          role: "client",
-          agency: agencyData?.name || null,
-          status: (client.isActive ? "active" : "inactive") as "active" | "inactive",
-          lastLoginAt: client.lastLoginAt ?? null,
-          kind: "client" as const,
-        };
-      }),
-    ];
+    const total = rows.length > 0 ? Number(rows[0].total) : 0;
 
-    const filtered = users.filter((user) => {
-      if (roleFilter && user.role !== roleFilter) return false;
-      if (statusFilter && user.status !== statusFilter) return false;
-      if (normalizedQuery) {
-        const haystack = `${user.name || ""} ${user.email} ${user.role} ${user.agency || ""}`.toLowerCase();
-        if (!haystack.includes(normalizedQuery)) return false;
-      }
-      return true;
-    });
-
-    filtered.sort((a, b) => {
-      const aLogin = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0;
-      const bLogin = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0;
-      if (aLogin !== bLogin) return bLogin - aLogin;
-      return a.email.localeCompare(b.email);
-    });
-
-    const offset = (page - 1) * pageSize;
     return {
-      items: filtered.slice(offset, offset + pageSize),
-      total: filtered.length,
+      items: rows.map((row) => ({
+        id: Number(row.id),
+        name: row.name,
+        email: row.email,
+        role: row.role,
+        agency: row.agency,
+        status: row.status,
+        lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
+        kind: row.kind,
+      })),
+      total,
     };
   }
 
@@ -4687,44 +4772,79 @@ export class DatabaseStorage implements IStorage {
       db.select({ count: count() }).from(agencies).where(whereClause),
     ]);
 
-    const enriched = await Promise.all(
-      agencyRows.map(async (agency) => {
-        const [adminRow] = await db
-          .select({ email: agents.email })
-          .from(agencyAgents)
-          .innerJoin(agents, eq(agencyAgents.agentId, agents.id))
-          .where(
-            and(
-              eq(agencyAgents.agencyId, agency.id),
-              eq(agencyAgents.role, "admin"),
-              isNull(agencyAgents.leftAt),
-            ),
-          );
+    if (agencyRows.length === 0) {
+      return { items: [], total: Number(totalRow?.count || 0) };
+    }
 
-        const [agentCountRow] = await db
-          .select({ count: count() })
-          .from(agencyAgents)
-          .where(and(eq(agencyAgents.agencyId, agency.id), isNull(agencyAgents.leftAt)));
+    const agencyIds = agencyRows.map((agency) => agency.id);
 
-        const [propertyCountRow] = await db
-          .select({ count: count() })
-          .from(properties)
-          .where(
-            and(
-              eq(properties.agencyId, agency.id),
-              eq(properties.isDraft, false),
-              eq(properties.isActive, true),
-            ),
-          );
+    // Batch enrichment for the current page (avoids 3N per-agency queries)
+    const [adminRows, agentCountRows, propertyCountRows] = await Promise.all([
+      db
+        .select({
+          agencyId: agencyAgents.agencyId,
+          email: agents.email,
+        })
+        .from(agencyAgents)
+        .innerJoin(agents, eq(agencyAgents.agentId, agents.id))
+        .where(
+          and(
+            inArray(agencyAgents.agencyId, agencyIds),
+            eq(agencyAgents.role, "admin"),
+            isNull(agencyAgents.leftAt),
+          ),
+        ),
+      db
+        .select({
+          agencyId: agencyAgents.agencyId,
+          count: count(),
+        })
+        .from(agencyAgents)
+        .where(
+          and(
+            inArray(agencyAgents.agencyId, agencyIds),
+            isNull(agencyAgents.leftAt),
+          ),
+        )
+        .groupBy(agencyAgents.agencyId),
+      db
+        .select({
+          agencyId: properties.agencyId,
+          count: count(),
+        })
+        .from(properties)
+        .where(
+          and(
+            inArray(properties.agencyId, agencyIds),
+            eq(properties.isDraft, false),
+            eq(properties.isActive, true),
+          ),
+        )
+        .groupBy(properties.agencyId),
+    ]);
 
-        return {
-          ...agency,
-          adminEmail: adminRow?.email || null,
-          agentCount: Number(agentCountRow?.count || 0),
-          activeProperties: Number(propertyCountRow?.count || 0),
-        };
-      }),
+    const adminEmailByAgencyId = new Map<number, string>();
+    for (const row of adminRows) {
+      if (row.agencyId != null && !adminEmailByAgencyId.has(row.agencyId)) {
+        adminEmailByAgencyId.set(row.agencyId, row.email);
+      }
+    }
+
+    const agentCountByAgencyId = new Map(
+      agentCountRows.map((row) => [row.agencyId, Number(row.count || 0)]),
     );
+    const propertyCountByAgencyId = new Map(
+      propertyCountRows
+        .filter((row) => row.agencyId != null)
+        .map((row) => [row.agencyId as number, Number(row.count || 0)]),
+    );
+
+    const enriched = agencyRows.map((agency) => ({
+      ...agency,
+      adminEmail: adminEmailByAgencyId.get(agency.id) || null,
+      agentCount: agentCountByAgencyId.get(agency.id) || 0,
+      activeProperties: propertyCountByAgencyId.get(agency.id) || 0,
+    }));
 
     return {
       items: enriched,

@@ -12,6 +12,7 @@ import { ensureSuperAdminUser } from "./bootstrap/superAdmin";
 import { migrateLegacyPlaintextPasswords } from "./bootstrap/passwordMigration";
 import { getSeoHtml } from "./seoHtml";
 import { getRobotsTxt, getSitemapXml } from "./crawlability";
+import { isHotPathDebugEnabled } from "./debugLog";
 
 const app = express();
 
@@ -149,16 +150,20 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+  if (isHotPathDebugEnabled) {
+    const originalResJson = res.json;
+    res.json = function (bodyJson, ...args) {
+      capturedJsonResponse = bodyJson;
+      return originalResJson.apply(res, [bodyJson, ...args]);
+    };
+  }
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      // Only stringify response bodies when hot-path debug is enabled —
+      // JSON.stringify of large search payloads is expensive on every request.
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }

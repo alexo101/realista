@@ -108,6 +108,11 @@ export const agencies = pgTable("agencies", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   networkIdIdx: index("agencies_network_id_idx").on(table.networkId),
+  // GIN index for array-overlap (&&) neighborhood search
+  agencyInfluenceNeighborhoodsGinIdx: index("agencies_influence_neighborhoods_gin_idx").using(
+    "gin",
+    table.agencyInfluenceNeighborhoods,
+  ),
 }));
 
 // Agents table - supports independent agents, agency members, and network admins
@@ -155,6 +160,11 @@ export const agents = pgTable("agents", {
   networkIdIdx: index("agents_network_id_idx").on(table.networkId),
   isActiveIdx: index("agents_is_active_idx").on(table.isActive),
   lastLoginAtIdx: index("agents_last_login_at_idx").on(table.lastLoginAt),
+  // GIN index for array-overlap (&&) neighborhood search
+  influenceNeighborhoodsGinIdx: index("agents_influence_neighborhoods_gin_idx").using(
+    "gin",
+    table.influenceNeighborhoods,
+  ),
 }));
 
 export const properties = pgTable("properties", {
@@ -598,7 +608,15 @@ export const reviews = pgTable("reviews", {
   rating: decimal("rating", { precision: 2, scale: 1 }).notNull(),
   author: text("author"),
   date: timestamp("date").notNull().defaultNow(),
-});
+}, (table) => ({
+  // Hot-path review-stats queries filter on targetType + targetId
+  targetTypeTargetIdIdx: index("reviews_target_type_target_id_idx").on(
+    table.targetType,
+    table.targetId,
+  ),
+  // Property-scoped review lookups / IS NOT NULL filters
+  propertyUuidIdx: index("reviews_property_uuid_idx").on(table.propertyUuid),
+}));
 
 export const insertReviewSchema = createInsertSchema(reviews).omit({
   id: true,
