@@ -84,9 +84,11 @@ export function PropertyDocumentsPanel({ propertyUuid, className }: PropertyDocu
       const formData = new FormData();
       formData.append("document", data.file);
 
+      const csrfToken = localStorage.getItem("csrfToken");
       const uploadRes = await fetch("/api/property-documents/upload-direct", {
         method: "POST",
         credentials: "include",
+        headers: csrfToken ? { "X-CSRF-Token": csrfToken } : {},
         body: formData,
       });
 

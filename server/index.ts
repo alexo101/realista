@@ -148,12 +148,21 @@ app.use("/api", (_req, res, next) => {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let responseMeta: string | undefined;
 
   if (isHotPathDebugEnabled) {
     const originalResJson = res.json;
     res.json = function (bodyJson, ...args) {
-      capturedJsonResponse = bodyJson;
+      // Lightweight metadata only — never JSON.stringify full payloads
+      if (bodyJson == null) {
+        responseMeta = "empty";
+      } else if (Array.isArray(bodyJson)) {
+        responseMeta = `${bodyJson.length} items`;
+      } else if (typeof bodyJson === "object") {
+        responseMeta = `${Object.keys(bodyJson).length} keys`;
+      } else if (typeof bodyJson === "string") {
+        responseMeta = `${Buffer.byteLength(bodyJson)}b`;
+      }
       return originalResJson.apply(res, [bodyJson, ...args]);
     };
   }
@@ -162,10 +171,8 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      // Only stringify response bodies when hot-path debug is enabled —
-      // JSON.stringify of large search payloads is expensive on every request.
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      if (responseMeta) {
+        logLine += ` :: ${responseMeta}`;
       }
 
       if (logLine.length > 80) {

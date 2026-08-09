@@ -136,11 +136,13 @@ export function ImageUploader({
         
         const formData = new FormData();
         formData.append('image', compressedFile);
-        
+
+        const csrfToken = localStorage.getItem("csrfToken");
         const uploadResponse = await fetch("/api/property-images/upload-direct", {
           method: "POST",
           body: formData,
           credentials: "include",
+          headers: csrfToken ? { "X-CSRF-Token": csrfToken } : {},
         });
 
         if (!uploadResponse.ok) {

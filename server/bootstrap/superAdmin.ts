@@ -42,7 +42,7 @@ export async function ensureSuperAdminUser(): Promise<void> {
   }
 
   if (Object.keys(updates).length > 0) {
-    await storage.updateUser(existing.id, updates as any);
+    await storage.updateUser(existing.id, updates as any, { allowPrivileged: true });
     console.log("[super-admin] Existing account normalized.");
     return;
   }

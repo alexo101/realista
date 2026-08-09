@@ -137,7 +137,11 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertAgent): Promise<User>;
-  updateUser(id: number, userData: Partial<InsertAgent>): Promise<User>;
+  updateUser(
+    id: number,
+    userData: Partial<InsertAgent>,
+    options?: { allowPrivileged?: boolean },
+  ): Promise<User>;
 
   // Agents/Agencies Search & Profiles
   searchAgents(query: string): Promise<UserWithReviews[]>;
@@ -190,7 +194,9 @@ export interface IStorage {
   updatePropertyAddress(uuid: string, address: string, lat?: number, lng?: number): Promise<Property>;
   deleteProperty(uuid: string): Promise<void>;
   togglePropertyStatus(uuid: string, isActive: boolean): Promise<Property>;
-  incrementPropertyViewCount(uuid: string): Promise<void>;
+  incrementPropertyViewCount(uuid: string): Promise<number>;
+  touchAgentLastLogin(id: number): Promise<void>;
+  touchClientLastLogin(id: number): Promise<void>;
 
   // Clients
   getClients(options?: { limit?: number; offset?: number }): Promise<Client[]>;
@@ -528,55 +534,88 @@ export class DatabaseStorage implements IStorage {
       password: normalizedPassword,
       slug: user.name && user.surname ? generateAgentSlug(user.name, user.surname) : undefined
     };
-    
-    const [newUser] = await db.insert(agents).values(userWithSlug).returning();
-    
-    if (newUser.name && newUser.surname && !newUser.slug) {
-      const finalSlug = generateAgentSlug(newUser.name, newUser.surname, newUser.id);
-      const [updatedUser] = await db
-        .update(agents)
-        .set({ slug: finalSlug })
-        .where(eq(agents.id, newUser.id))
-        .returning();
-      return updatedUser;
-    }
-    
-    return newUser;
+
+    return await db.transaction(async (tx) => {
+      const [newUser] = await tx.insert(agents).values(userWithSlug).returning();
+
+      if (newUser.name && newUser.surname && !newUser.slug) {
+        const finalSlug = generateAgentSlug(newUser.name, newUser.surname, newUser.id);
+        const [updatedUser] = await tx
+          .update(agents)
+          .set({ slug: finalSlug })
+          .where(eq(agents.id, newUser.id))
+          .returning();
+        return updatedUser;
+      }
+
+      return newUser;
+    });
   }
 
-  async updateUser(id: number, userData: Partial<InsertAgent>): Promise<User> {
+  async updateUser(
+    id: number,
+    userData: Partial<InsertAgent>,
+    options?: { allowPrivileged?: boolean },
+  ): Promise<User> {
     try {
-      // Create a clean copy of userData without reserved SQL keywords
-      const cleanedUserData: Record<string, any> = {};
+      // Whitelist profile fields only — never accept privilege/billing columns from callers
+      const profileAllowlist = [
+        "name",
+        "surname",
+        "phone",
+        "description",
+        "avatar",
+        "city",
+        "influenceNeighborhoods",
+        "yearsOfExperience",
+        "languagesSpoken",
+        "socialMedia",
+        "password",
+        "lastLoginAt",
+      ] as const;
 
-      // Only copy over fields that are not SQL reserved words
-      for (const key in userData) {
-        if (
-          key !== "where" &&
-          key !== "from" &&
-          key !== "select" &&
-          key !== "order" &&
-          key !== "group" &&
-          key !== "having" &&
-          key !== "limit" &&
-          key !== "join"
-        ) {
+      const privilegedAllowlist = [
+        "agentType",
+        "isActive",
+        "networkId",
+        "subscriptionPlan",
+        "isYearlyBilling",
+        "pausedSubscriptionPlan",
+        "pausedIsYearlyBilling",
+        "pausedAt",
+        "stripeCustomerId",
+        "stripeSubscriptionId",
+        "subscriptionStartDate",
+        "invitationStatus",
+        "invitationToken",
+        "invitationExpiresAt",
+        "deletedAt",
+        "slug",
+      ] as const;
+
+      const allowedKeys = new Set<string>([
+        ...profileAllowlist,
+        ...(options?.allowPrivileged ? privilegedAllowlist : []),
+      ]);
+
+      const cleanedUserData: Record<string, any> = {};
+      for (const key of Object.keys(userData)) {
+        if (allowedKeys.has(key) && userData[key as keyof typeof userData] !== undefined) {
           cleanedUserData[key] = userData[key as keyof typeof userData];
         }
+      }
+
+      if (Object.keys(cleanedUserData).length === 0) {
+        const [existing] = await db.select().from(agents).where(eq(agents.id, id));
+        if (!existing) {
+          throw new Error(`User with ID ${id} not found`);
+        }
+        return existing;
       }
 
       if (cleanedUserData.password && !isPasswordHashed(cleanedUserData.password)) {
         cleanedUserData.password = await hashPassword(cleanedUserData.password);
       }
-
-      console.log(
-        "Updating user with cleaned data:",
-        Object.keys(cleanedUserData),
-      );
-      console.log(
-        "Full cleaned user data:",
-        JSON.stringify(cleanedUserData, null, 2),
-      );
 
       const [updatedUser] = await db
         .update(agents)
@@ -584,10 +623,9 @@ export class DatabaseStorage implements IStorage {
         .where(eq(agents.id, id))
         .returning();
 
-      console.log(
-        "User after update:",
-        JSON.stringify(updatedUser, null, 2),
-      );
+      if (!updatedUser) {
+        throw new Error(`User with ID ${id} not found`);
+      }
 
       return updatedUser;
     } catch (error) {
@@ -1580,12 +1618,9 @@ export class DatabaseStorage implements IStorage {
       if (agencyData.agencySupportedLanguages !== undefined) updates.agencySupportedLanguages = agencyData.agencySupportedLanguages;
       if (agencyData.agencyInfluenceNeighborhoods !== undefined) updates.agencyInfluenceNeighborhoods = agencyData.agencyInfluenceNeighborhoods;
       if (agencyData.agencyActiveSince !== undefined) updates.agencyActiveSince = agencyData.agencyActiveSince;
-      
-      // Subscription fields
-      if (agencyData.subscriptionPlan !== undefined) updates.subscriptionPlan = agencyData.subscriptionPlan;
-      if (agencyData.seatsLimit !== undefined) updates.seatsLimit = agencyData.seatsLimit;
-      if (agencyData.activePropertiesLimit !== undefined) updates.activePropertiesLimit = agencyData.activePropertiesLimit;
-      if (agencyData.isYearlyBilling !== undefined) updates.isYearlyBilling = agencyData.isYearlyBilling;
+
+      // Subscription / billing fields are intentionally NOT accepted here.
+      // Use updateAgencyPlan (or Stripe webhooks) for plan changes.
 
       console.log('Final update object:', updates);
 
@@ -2100,11 +2135,27 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async incrementPropertyViewCount(uuid: string): Promise<void> {
-    await db
+  async incrementPropertyViewCount(uuid: string): Promise<number> {
+    const [updated] = await db
       .update(properties)
       .set({ viewCount: sql`${properties.viewCount} + 1` })
-      .where(eq(properties.uuid, uuid));
+      .where(eq(properties.uuid, uuid))
+      .returning({ viewCount: properties.viewCount });
+    return Number(updated?.viewCount ?? 0);
+  }
+
+  async touchAgentLastLogin(id: number): Promise<void> {
+    await db
+      .update(agents)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(agents.id, id));
+  }
+
+  async touchClientLastLogin(id: number): Promise<void> {
+    await db
+      .update(clients)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(clients.id, id));
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {
@@ -2625,22 +2676,33 @@ export class DatabaseStorage implements IStorage {
         ? await hashPassword(client.password)
         : client.password;
 
-    const [newClient] = await db
-      .insert(clients)
-      .values({
-        ...client,
-        password: normalizedPassword,
-        propertyPreferences: client.propertyPreferences ?? null,
-      })
-      .returning();
+    return await db.transaction(async (tx) => {
+      const [newClient] = await tx
+        .insert(clients)
+        .values({
+          ...client,
+          password: normalizedPassword,
+          propertyPreferences: client.propertyPreferences ?? null,
+        })
+        .returning();
 
-    // Drizzle ORM silently omits client_type and tags from its generated SQL,
-    // so patch them via pool.query which correctly serialises JS arrays to text[].
-    const patched = await pool.query(
-      'UPDATE clients SET client_type = $1, tags = $2, property_preferences = $3 WHERE id = $4 RETURNING *',
-      [client.clientType ?? null, client.tags ?? null, client.propertyPreferences ?? null, newClient.id]
-    );
-    return (patched.rows[0] as Client) ?? newClient;
+      // Drizzle ORM silently omits client_type and tags from its generated SQL,
+      // so patch them in the same transaction via execute.
+      await tx.execute(sql`
+        UPDATE clients
+        SET
+          client_type = ${client.clientType ?? null},
+          tags = ${client.tags ?? null},
+          property_preferences = ${client.propertyPreferences ?? null}
+        WHERE id = ${newClient.id}
+      `);
+
+      const [patched] = await tx
+        .select()
+        .from(clients)
+        .where(eq(clients.id, newClient.id));
+      return patched ?? newClient;
+    });
   }
 
   async updateClient(id: number, client: InsertClient): Promise<Client> {
@@ -2681,32 +2743,36 @@ export class DatabaseStorage implements IStorage {
       ];
     }
 
-    const [updatedClient] = await db
-      .update(clients)
-      .set({
-        ...client,
-        password: normalizedPassword,
-        propertyPreferences: client.propertyPreferences ?? null,
-        contactHistory,
-      })
-      .where(eq(clients.id, id))
-      .returning();
+    return await db.transaction(async (tx) => {
+      const [updatedClient] = await tx
+        .update(clients)
+        .set({
+          ...client,
+          password: normalizedPassword,
+          propertyPreferences: client.propertyPreferences ?? null,
+          contactHistory,
+        })
+        .where(eq(clients.id, id))
+        .returning();
 
-    // Drizzle ORM silently omits client_type and tags from its generated SQL,
-    // so patch them via pool.query which correctly serialises JS arrays to text[].
-    // Also persist contact_history explicitly to avoid losing status-change logs.
-    await pool.query(
-      'UPDATE clients SET client_type = $1, tags = $2, property_preferences = $3, contact_history = $4::jsonb WHERE id = $5',
-      [
-        client.clientType ?? null,
-        client.tags ?? null,
-        client.propertyPreferences ?? null,
-        JSON.stringify(contactHistory),
-        updatedClient.id,
-      ]
-    );
-    // Re-read via Drizzle so the API response stays camelCase (pool rows are snake_case).
-    return (await this.getClient(id)) ?? { ...updatedClient, contactHistory };
+      // Drizzle ORM silently omits client_type and tags from its generated SQL,
+      // so patch them in the same transaction via execute.
+      await tx.execute(sql`
+        UPDATE clients
+        SET
+          client_type = ${client.clientType ?? null},
+          tags = ${client.tags ?? null},
+          property_preferences = ${client.propertyPreferences ?? null},
+          contact_history = ${JSON.stringify(contactHistory)}::jsonb
+        WHERE id = ${updatedClient.id}
+      `);
+
+      const [patched] = await tx
+        .select()
+        .from(clients)
+        .where(eq(clients.id, id));
+      return patched ?? { ...updatedClient, contactHistory };
+    });
   }
 
   async updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined> {

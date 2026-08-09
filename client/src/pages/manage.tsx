@@ -1389,9 +1389,12 @@ export default function ManagePage() {
                         const formData = new FormData();
                         formData.append('image', file);
 
+                        const csrfToken = localStorage.getItem("csrfToken");
                         const response = await fetch('/api/property-images/upload-direct', {
                           method: 'POST',
                           body: formData,
+                          credentials: 'include',
+                          headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
                         });
 
                         if (!response.ok) {
@@ -1681,9 +1684,12 @@ export default function ManagePage() {
                         const formData = new FormData();
                         formData.append('image', file);
 
+                        const csrfToken = localStorage.getItem("csrfToken");
                         const response = await fetch('/api/property-images/upload-direct', {
                           method: 'POST',
                           body: formData,
+                          credentials: 'include',
+                          headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
                         });
 
                         if (!response.ok) {

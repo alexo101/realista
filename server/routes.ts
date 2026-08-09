@@ -10,6 +10,7 @@ import {
   insertAgencyAgentSchema,
   insertAppointmentSchema,
   insertAgencySchema,
+  insertAgentSchema,
   insertPropertyVisitRequestSchema
 } from "@shared/schema";
 import { z } from "zod";
@@ -59,6 +60,38 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInTiming: true,
   moveInDate: true,
 }).partial();
+
+// Agent self-profile update — privilege/billing fields intentionally excluded
+const updateAgentProfileSchema = insertAgentSchema.pick({
+  name: true,
+  surname: true,
+  phone: true,
+  description: true,
+  avatar: true,
+  city: true,
+  influenceNeighborhoods: true,
+  yearsOfExperience: true,
+  languagesSpoken: true,
+  socialMedia: true,
+  password: true,
+}).partial();
+
+// Agency profile update — subscription/plan fields intentionally excluded
+const updateAgencyProfileSchema = insertAgencySchema.pick({
+  agencyName: true,
+  agencyAddress: true,
+  latitude: true,
+  longitude: true,
+  agencyDescription: true,
+  agencyLogo: true,
+  agencyPhone: true,
+  city: true,
+  agencyWebsite: true,
+  agencySocialMedia: true,
+  agencySupportedLanguages: true,
+  agencyInfluenceNeighborhoods: true,
+  agencyActiveSince: true,
+}).partial();
 import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail } from "./emailService";
 import { randomUUID } from 'crypto';
 import { comparePassword, hashPassword } from "./security/password";
@@ -68,18 +101,50 @@ import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 import multer from 'multer';
 import sharp from 'sharp';
 
-// Configure multer for file uploads
+const ALLOWED_IMAGE_MIMES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+]);
+
+function detectImageMime(buffer: Buffer): string | null {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    return "image/png";
+  }
+  if (buffer.length >= 6 && buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+    return "image/gif";
+  }
+  if (
+    buffer.length >= 12 &&
+    buffer.toString("ascii", 0, 4) === "RIFF" &&
+    buffer.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    return "image/webp";
+  }
+  return null;
+}
+
+// Configure multer for file uploads (authenticated routes only)
 const upload = multer({
-  storage: multer.memoryStorage(), // Store files in memory as Buffer
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit (we'll compress after)
+    fileSize: 10 * 1024 * 1024, // 10MB pre-compression cap
   },
   fileFilter: (req, file, cb) => {
-    // Check if the uploaded file is an image
-    if (file.mimetype.startsWith('image/')) {
+    if (ALLOWED_IMAGE_MIMES.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      cb(new Error("Only JPEG, PNG, GIF, and WebP images are allowed"));
     }
   },
 });
@@ -87,7 +152,7 @@ const upload = multer({
 const documentUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024,
+    fileSize: 20 * 1024 * 1024, // 20MB for documents
   },
 });
 
@@ -100,7 +165,31 @@ type LoginAttemptState = {
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_BLOCK_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 8;
+const LOGIN_ATTEMPT_TTL_MS = Math.max(LOGIN_WINDOW_MS, LOGIN_BLOCK_MS);
 const loginAttempts = new Map<string, LoginAttemptState>();
+
+function isLoginAttemptExpired(state: LoginAttemptState, now: number = Date.now()): boolean {
+  if (state.blockedUntil && state.blockedUntil > now) {
+    return false;
+  }
+  if (state.blockedUntil && state.blockedUntil <= now) {
+    return true;
+  }
+  return now - state.firstAttemptAt > LOGIN_ATTEMPT_TTL_MS;
+}
+
+function evictExpiredLoginAttempts(now: number = Date.now()): void {
+  for (const [key, state] of Array.from(loginAttempts.entries())) {
+    if (isLoginAttemptExpired(state, now)) {
+      loginAttempts.delete(key);
+    }
+  }
+}
+
+// Periodic eviction so failed-login keys cannot grow unbounded
+setInterval(() => {
+  evictExpiredLoginAttempts();
+}, 5 * 60 * 1000).unref?.();
 
 function getLoginAttemptKey(email: string, req: Request): string {
   const rawIp =
@@ -115,14 +204,27 @@ function getLoginBlockTimeRemainingMs(key: string): number {
   if (!state?.blockedUntil) {
     return 0;
   }
-  return Math.max(0, state.blockedUntil - Date.now());
+  const remaining = Math.max(0, state.blockedUntil - Date.now());
+  if (remaining === 0 && isLoginAttemptExpired(state)) {
+    loginAttempts.delete(key);
+  }
+  return remaining;
 }
 
 function recordLoginFailure(key: string): void {
   const now = Date.now();
-  const previous = loginAttempts.get(key);
+  // Opportunistic eviction on write path (keeps Map bounded without waiting for interval)
+  if (loginAttempts.size > 1000) {
+    evictExpiredLoginAttempts(now);
+  }
 
-  if (!previous || now - previous.firstAttemptAt > LOGIN_WINDOW_MS) {
+  const previous = loginAttempts.get(key);
+  if (previous && isLoginAttemptExpired(previous, now)) {
+    loginAttempts.delete(key);
+  }
+
+  const current = loginAttempts.get(key);
+  if (!current || now - current.firstAttemptAt > LOGIN_WINDOW_MS) {
     loginAttempts.set(key, {
       attempts: 1,
       firstAttemptAt: now,
@@ -130,9 +232,9 @@ function recordLoginFailure(key: string): void {
     return;
   }
 
-  const nextAttempts = previous.attempts + 1;
+  const nextAttempts = current.attempts + 1;
   const nextState: LoginAttemptState = {
-    ...previous,
+    ...current,
     attempts: nextAttempts,
   };
   if (nextAttempts >= LOGIN_MAX_ATTEMPTS) {
@@ -166,6 +268,71 @@ function requireCsrfForStateChange(req: Request, res: Response, next: NextFuncti
     return;
   }
   next();
+}
+
+function requireAgentUser(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user || req.user.isClient) {
+    res.status(403).json({ message: "Acceso restringido a agentes" });
+    return;
+  }
+  next();
+}
+
+async function userCanManageProperty(
+  user: Express.Request["user"],
+  propertyUuid: string,
+): Promise<{ allowed: boolean; property?: Awaited<ReturnType<typeof storage.getPropertyByUuid>> }> {
+  if (!user || user.isClient) {
+    return { allowed: false };
+  }
+
+  const property = await storage.getPropertyByUuid(propertyUuid);
+  if (!property) {
+    return { allowed: false };
+  }
+
+  if (user.agentType === "super_admin") {
+    return { allowed: true, property };
+  }
+  if (property.agentId === user.id) {
+    return { allowed: true, property };
+  }
+  if (user.agencyId && property.agencyId === user.agencyId) {
+    return { allowed: true, property };
+  }
+
+  return { allowed: false, property };
+}
+
+async function userCanManageClient(
+  user: Express.Request["user"],
+  clientId: number,
+): Promise<{ allowed: boolean; client?: Awaited<ReturnType<typeof storage.getClient>> }> {
+  if (!user || user.isClient) {
+    return { allowed: false };
+  }
+
+  const client = await storage.getClient(clientId);
+  if (!client) {
+    return { allowed: false };
+  }
+
+  if (user.agentType === "super_admin") {
+    return { allowed: true, client };
+  }
+  if (client.agentId === user.id) {
+    return { allowed: true, client };
+  }
+
+  // Agency admins can manage clients owned by agents in their agency
+  if (user.isAdmin && user.agencyId && client.agentId) {
+    const ownerRole = await storage.getAgentRole(client.agentId);
+    if (ownerRole.agencyId === user.agencyId) {
+      return { allowed: true, client };
+    }
+  }
+
+  return { allowed: false, client };
 }
 
 // Server-side image compression utility
@@ -1297,13 +1464,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           subscriptionPlan = authenticatedUser.subscriptionPlan || null;
         }
 
-        await storage.updateUser(authenticatedUser.id, {
-          lastLoginAt: new Date(),
-        });
+        await storage.touchAgentLastLogin(authenticatedUser.id);
       } else {
-        await storage.updateClientProfile(authenticatedUser.id, {
-          lastLoginAt: new Date(),
-        });
+        await storage.touchClientLastLogin(authenticatedUser.id);
       }
 
       clearLoginFailures(loginKey);
@@ -1463,9 +1626,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Properties
-  app.delete("/api/properties/:id", async (req, res) => {
+  app.delete(
+    "/api/properties/:id",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       const { id } = req.params;
+      const access = await userCanManageProperty(req.user, id);
+      if (!access.property) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+      if (!access.allowed) {
+        return res.status(403).json({ message: "No tienes permisos para eliminar esta propiedad" });
+      }
+
       await storage.deleteProperty(id);
       res.status(200).json({ message: "Propiedad eliminada exitosamente" });
     } catch (error) {
@@ -1474,10 +1650,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/properties/:id/toggle-status", async (req, res) => {
+  app.patch(
+    "/api/properties/:id/toggle-status",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       const { id } = req.params;
       const { isActive } = req.body;
+
+      const access = await userCanManageProperty(req.user, id);
+      if (!access.property) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+      if (!access.allowed) {
+        return res.status(403).json({ message: "No tienes permisos para modificar esta propiedad" });
+      }
 
       const updatedProperty = await storage.togglePropertyStatus(id, isActive);
       res.status(200).json(updatedProperty);
@@ -1487,10 +1676,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/properties", async (req, res) => {
+  app.post(
+    "/api/properties",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       console.log('Attempting to create property with data:', req.body);
       const property = insertPropertySchema.parse(req.body);
+
+      // Never trust client-supplied ownership — bind to the authenticated agent
+      property.agentId = req.user!.id;
+      property.agencyId = req.user!.agencyId ?? null;
 
       // Derive catalog city/district from neighborhood so client matching stays consistent.
       // Google locality is address-only and must not drive matching.
@@ -1537,10 +1735,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/properties/:id", async (req, res) => {
+  app.patch(
+    "/api/properties/:id",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       console.log('Attempting to update property:', req.params.id, req.body);
+
+      const access = await userCanManageProperty(req.user, req.params.id);
+      if (!access.property) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+      if (!access.allowed) {
+        return res.status(403).json({ message: "No tienes permisos para modificar esta propiedad" });
+      }
+
       const property = insertPropertySchema.parse(req.body);
+
+      // Prevent reassignment of ownership via PATCH body
+      property.agentId = access.property.agentId;
+      property.agencyId = access.property.agencyId;
 
       if (property.neighborhood) {
         const resolved = resolvePropertyLocation({
@@ -1687,25 +1903,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
-      // Incrementar el contador de vistas
-      await storage.incrementPropertyViewCount(property.uuid);
-
-      // Retornar la propiedad con la vista ya incrementada
-      const updatedProperty = await storage.getProperty(property.uuid);
-      res.json(updatedProperty);
+      // Increment view count and return the already-loaded property with the new count
+      // (avoids a second full-row SELECT on this hot path)
+      const viewCount = await storage.incrementPropertyViewCount(property.uuid);
+      res.json({ ...property, viewCount });
     } catch (error) {
       console.error('Error fetching property:', error);
       res.status(500).json({ message: "Failed to fetch property" });
     }
   });
 
-  // Clients
-  app.post("/api/clients", async (req, res) => {
+  // Clients (CRM — public self-registration remains at POST /api/clients/register)
+  app.post(
+    "/api/clients",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       console.log('Attempting to create client with data:', req.body);
       const parsedClient = insertClientSchema.parse({
         ...req.body,
-        source: req.body.source || 'manual'
+        source: req.body.source || 'manual',
+        agentId: req.user!.id, // Bind to authenticated agent
       });
       const client = {
         ...parsedClient,
@@ -1722,17 +1942,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/clients/:id", async (req, res) => {
+  app.patch(
+    "/api/clients/:id",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
-      console.log('Attempting to update client:', req.params.id, req.body);
+      const clientId = parseInt(req.params.id);
+      console.log('Attempting to update client:', clientId, req.body);
+
+      const access = await userCanManageClient(req.user, clientId);
+      if (!access.client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      if (!access.allowed) {
+        return res.status(403).json({ message: "No tienes permisos para modificar este cliente" });
+      }
+
       const parsedClient = insertClientSchema.parse(req.body);
       const client = {
         ...parsedClient,
+        // Keep original ownership unless super_admin reassigns explicitly later
+        agentId: access.client.agentId,
         clientType: req.body.clientType ?? null,
         tags: req.body.tags ?? null,
         propertyPreferences: req.body.propertyPreferences ?? null,
       };
-      const result = await storage.updateClient(parseInt(req.params.id), client);
+      const result = await storage.updateClient(clientId, client);
       console.log('Client updated successfully:', result);
       res.json(result);
     } catch (error) {
@@ -1741,10 +1978,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/clients/:id", requireAuth, async (req, res) => {
+  app.delete(
+    "/api/clients/:id",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       const clientId = parseInt(req.params.id);
       console.log('Attempting to delete client:', clientId);
+
+      const access = await userCanManageClient(req.user, clientId);
+      if (!access.client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      if (!access.allowed) {
+        return res.status(403).json({ message: "No tienes permisos para eliminar este cliente" });
+      }
+
       await storage.deleteClient(clientId);
       console.log('Client deleted successfully:', clientId);
       res.json({ message: "Cliente eliminado correctamente" });
@@ -3330,11 +3581,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User profile update
-  app.patch("/api/users/:id", async (req, res) => {
+  app.patch(
+    "/api/users/:id",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const userData = req.body;
-      const updatedUser = await storage.updateUser(id, userData);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      // Only self (or super_admin) may update an agent profile
+      if (req.user!.id !== id && req.user!.agentType !== "super_admin") {
+        return res.status(403).json({ message: "No tienes permisos para modificar este usuario" });
+      }
+
+      const parsed = updateAgentProfileSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Datos inválidos",
+          errors: parsed.error.flatten().fieldErrors,
+        });
+      }
+
+      const updatedUser = await storage.updateUser(id, parsed.data);
       
       // Determine user role and admin status (consistent with login/register endpoints)
       const isClient = false; // Users in agents table are not clients
@@ -4300,11 +4572,23 @@ Gracias!
     }
   });
 
-  app.patch("/api/admin/agencies/:id", async (req, res) => {
+  app.patch(
+    "/api/admin/agencies/:id",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Updating agency ${id} with data:`, req.body);
-      const result = await storage.updateAgency(id, req.body);
+      const parsed = updateAgencyProfileSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Datos inválidos",
+          errors: parsed.error.flatten().fieldErrors,
+        });
+      }
+      console.log(`Updating agency ${id} with data:`, parsed.data);
+      const result = await storage.updateAgency(id, parsed.data);
       console.log('Agency updated successfully:', result);
       res.json(result);
     } catch (error) {
@@ -4367,6 +4651,7 @@ Gracias!
 
   app.patch("/api/agencies/:id", 
     requireAuth,
+    requireCsrfForStateChange,
     authorize({
       custom: async (user, req) => {
         const agencyId = parseInt(req.params.id);
@@ -4377,8 +4662,15 @@ Gracias!
     async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log(`Updating agency ${id} with data:`, req.body);
-      const result = await storage.updateAgency(id, req.body);
+      const parsed = updateAgencyProfileSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Datos inválidos",
+          errors: parsed.error.flatten().fieldErrors,
+        });
+      }
+      console.log(`Updating agency ${id} with data:`, parsed.data);
+      const result = await storage.updateAgency(id, parsed.data);
       console.log('Agency updated successfully:', result);
       res.json(result);
     } catch (error) {
@@ -5167,7 +5459,12 @@ Gracias!
   });
 
   // Get upload URL for property images
-  app.post("/api/property-images/upload", async (req, res) => {
+  app.post(
+    "/api/property-images/upload",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getPropertyImageUploadURL();
@@ -5179,7 +5476,13 @@ Gracias!
   });
 
   // Direct upload for property images (avoids CORS issues) - Using multer
-  app.post("/api/property-images/upload-direct", upload.single('image'), async (req, res) => {
+  app.post(
+    "/api/property-images/upload-direct",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    upload.single('image'),
+    async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No image file provided" });
@@ -5190,7 +5493,11 @@ Gracias!
       // Use multer parsed file data
       let fileBuffer = req.file.buffer;
       const originalFileName = req.file.originalname || `image_${Date.now()}.jpg`;
-      let mimeType = req.file.mimetype;
+      const detectedMime = detectImageMime(fileBuffer);
+      if (!detectedMime || !ALLOWED_IMAGE_MIMES.has(detectedMime)) {
+        return res.status(400).json({ error: "Invalid or unsupported image file" });
+      }
+      let mimeType = detectedMime;
 
       console.log(`Received image: ${originalFileName}, type: ${mimeType}, size: ${fileBuffer.length} bytes`);
 
@@ -5279,7 +5586,13 @@ Gracias!
   });
 
   // Direct upload for property documents
-  app.post("/api/property-documents/upload-direct", requireAuth, documentUpload.single('document'), async (req, res) => {
+  app.post(
+    "/api/property-documents/upload-direct",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    documentUpload.single('document'),
+    async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file provided" });
