@@ -10,6 +10,7 @@ import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 import { ensureSuperAdminUser } from "./bootstrap/superAdmin";
 import { migrateLegacyPlaintextPasswords } from "./bootstrap/passwordMigration";
+import { getSeoHtml } from "./seoHtml";
 
 const app = express();
 
@@ -236,6 +237,17 @@ app.use((req, res, next) => {
 
       console.error('Server error:', err);
       res.status(status).json({ message });
+    });
+
+    // Keep the two public acquisition pages crawlable for social and AI bots.
+    // React still mounts into #root for normal browser visitors.
+    app.get("/", (req, res) => {
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
+      res.type("html").send(getSeoHtml(req, "home"));
+    });
+    app.get("/realista-pro", (req, res) => {
+      res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
+      res.type("html").send(getSeoHtml(req, "realistaPro"));
     });
 
     // importantly only setup vite in development and after
