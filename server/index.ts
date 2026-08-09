@@ -261,7 +261,9 @@ app.use((req, res, next) => {
       res.type("application/xml").send(getSitemapXml(req));
     });
 
-    // Keep the two public acquisition pages crawlable for social and AI bots.
+    // Keep acquisition and static legal pages crawlable for social and AI bots.
+    // Interactive listing/detail routes fall through to the SPA so listings,
+    // filters, and maps render for all visitors. Client SeoMetadata covers SEO there.
     // React still mounts into #root for normal browser visitors.
     app.get("/", (req, res) => {
       res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
@@ -272,7 +274,7 @@ app.use((req, res, next) => {
       res.type("html").send(getSeoHtml(req, "realistaPro"));
     });
     app.get(
-      /^\/(buscar|search|barrio|neighborhood|inmueble|property|agentes|agent|agent-profile|agencias|agency|agency-profile|aviso-legal|politica-privacidad|politica-cookies|terminos-condiciones)(\/|$)/,
+      /^\/(aviso-legal|politica-privacidad|politica-cookies|terminos-condiciones)(\/|$)/,
       (req, res) => {
         res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
         res.type("html").send(getSeoHtml(req, "public"));
