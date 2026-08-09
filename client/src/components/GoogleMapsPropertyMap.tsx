@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "wouter";
 import { type Property } from "@shared/schema";
 import { geocodeAddresses, GeocodingResult, getFallbackCoordinates } from '../utils/geocoding';
 import { loadGoogleMaps } from '../utils/googleMaps';
 import { MapDrawingControls } from './MapDrawingControls';
 import { type AreaShape, pointInShape } from '../utils/mapShape';
+
+declare global {
+  interface Window {
+    __navigateToProperty?: (propertyUuid: string) => void;
+  }
+}
 
 interface GoogleMapsPropertyMapProps {
   properties: Property[];
@@ -28,6 +35,16 @@ export function GoogleMapsPropertyMap({
 }: GoogleMapsPropertyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    window.__navigateToProperty = (propertyUuid: string) => {
+      navigate(`/inmueble/${propertyUuid}`);
+    };
+    return () => {
+      delete window.__navigateToProperty;
+    };
+  }, [navigate]);
   const markersRef = useRef<any[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -336,7 +353,7 @@ export function GoogleMapsPropertyMap({
             
             <!-- View Details Button -->
             <button 
-              onclick="window.location.href='/inmueble/${property.uuid}'" 
+              onclick="window.__navigateToProperty && window.__navigateToProperty('${property.uuid}')" 
               style="width: 100%; background: ${markerColor}; color: white; border: none; border-radius: 8px; padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: all 0.2s;"
               onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)'"
               onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
@@ -451,7 +468,7 @@ export function GoogleMapsPropertyMap({
             </button>
           </div>
           <button 
-            onClick={() => window.location.href = `/inmueble/${selectedProperty.uuid}`}
+            onClick={() => navigate(`/inmueble/${selectedProperty.uuid}`)}
             className="w-full bg-primary text-white py-2 rounded hover:bg-primary/90 transition-colors mt-3"
             data-testid="view-property-details"
           >

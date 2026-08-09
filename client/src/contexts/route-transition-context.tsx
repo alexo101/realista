@@ -10,30 +10,40 @@ const RouteTransitionContext = createContext<RouteTransitionContextType | null>(
 
 export function RouteTransitionProvider({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const [trackedLocation, setTrackedLocation] = useState(location);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const previousLocation = useRef(location);
-  const transitionTimer = useRef<NodeJS.Timeout>();
+  const transitionTimer = useRef<ReturnType<typeof setTimeout>>();
   const transitionStartAt = useRef<number | null>(null);
-  const minDisplayTime = 150; // Minimum 150ms to prevent flash
+  // Keep long enough that back-navigation with cached list data is still visible
+  const minDisplayTime = 450;
 
-  // Use layout effect to detect route changes BEFORE paint for instant coverage
+  // Detect route changes during render so the overlay is present on the first paint,
+  // including browser back. React will restart this render with the updated state.
+  if (location !== trackedLocation) {
+    setTrackedLocation(location);
+    setIsTransitioning(true);
+    transitionStartAt.current = Date.now();
+  }
+
+  // Safety auto-hide if a page never calls endTransition
   useLayoutEffect(() => {
-    if (location !== previousLocation.current) {
-      setIsTransitioning(true);
-      transitionStartAt.current = Date.now();
-      previousLocation.current = location;
+    if (!isTransitioning) return;
 
-      // Auto-hide after max 2 seconds if not manually cleared
+    if (transitionTimer.current) {
+      clearTimeout(transitionTimer.current);
+    }
+
+    transitionTimer.current = setTimeout(() => {
+      setIsTransitioning(false);
+      transitionStartAt.current = null;
+    }, 2000);
+
+    return () => {
       if (transitionTimer.current) {
         clearTimeout(transitionTimer.current);
       }
-
-      transitionTimer.current = setTimeout(() => {
-        setIsTransitioning(false);
-        transitionStartAt.current = null;
-      }, 2000);
-    }
-  }, [location]);
+    };
+  }, [isTransitioning, trackedLocation]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -45,13 +55,12 @@ export function RouteTransitionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const endTransition = useCallback(() => {
-    // Clear any existing timer
     if (transitionTimer.current) {
       clearTimeout(transitionTimer.current);
       transitionTimer.current = undefined;
     }
 
-    // Ensure minimum display time before hiding
+    // Ensure minimum display time before hiding so back navigation isn't a blank flash
     if (transitionStartAt.current !== null) {
       const elapsed = Date.now() - transitionStartAt.current;
       const remainingTime = Math.max(0, minDisplayTime - elapsed);
@@ -61,7 +70,6 @@ export function RouteTransitionProvider({ children }: { children: ReactNode }) {
         transitionStartAt.current = null;
       }, remainingTime);
     } else {
-      // No start time recorded, hide immediately
       setIsTransitioning(false);
     }
   }, [minDisplayTime]);

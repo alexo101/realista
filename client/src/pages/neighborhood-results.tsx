@@ -234,7 +234,8 @@ export default function NeighborhoodResultsPage() {
     sortBy: "newest",
   });
 
-  // Persist exclusion filters to URL whenever they change
+  // Persist operation type and exclusion filters to URL whenever they change,
+  // so browser back from a property detail restores Comprar/Alquilar correctly.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const setOrDelete = (key: string, value: boolean | undefined) => {
@@ -244,6 +245,7 @@ export default function NeighborhoodResultsPage() {
         params.delete(key);
       }
     };
+    params.set('operationType', propertyFilters.operationType);
     setOrDelete('excludeSinglePhoto', propertyFilters.excludeSinglePhoto);
     setOrDelete('requireExactAddress', propertyFilters.requireExactAddress);
     setOrDelete('requireCedulaHabitabilidad', propertyFilters.requireCedulaHabitabilidad);
@@ -255,6 +257,7 @@ export default function NeighborhoodResultsPage() {
       window.history.replaceState(null, '', newUrl);
     }
   }, [
+    propertyFilters.operationType,
     propertyFilters.excludeSinglePhoto,
     propertyFilters.requireExactAddress,
     propertyFilters.requireCedulaHabitabilidad,
@@ -762,7 +765,7 @@ export default function NeighborhoodResultsPage() {
 
   // Combine isFetching states with route transition for skeleton visibility
   const showPropertiesSkeleton = useSkeletonVisibility({ 
-    isFetching: propertiesFetching, 
+    isFetching: propertiesFetching || (!properties && !propertiesError), 
     isTransitioning 
   });
   const showAgenciesSkeleton = useSkeletonVisibility({ 
@@ -778,14 +781,22 @@ export default function NeighborhoodResultsPage() {
   useEffect(() => {
     const anyFetching = propertiesFetching || agenciesFetching || agentsFetching || ratingsFetching;
     const anyError = propertiesError || agenciesError || agentsError;
+    const propertiesReady = properties !== undefined || !!propertiesError;
+    const agenciesReady = agencies !== undefined || !!agenciesError;
+    const agentsReady = agents !== undefined || !!agentsError;
+    const activeReady =
+      activeTab === 'agencies' ? agenciesReady
+      : activeTab === 'agents' ? agentsReady
+      : activeTab === 'properties' ? propertiesReady
+      : true;
     
-    if (isTransitioning && !anyFetching) {
+    if (isTransitioning && !anyFetching && activeReady) {
       endTransition();
     } else if (anyError && isTransitioning) {
       endTransition();
     }
   }, [isTransitioning, propertiesFetching, agenciesFetching, agentsFetching, ratingsFetching, 
-      propertiesError, agenciesError, agentsError, endTransition]);
+      propertiesError, agenciesError, agentsError, properties, agencies, agents, activeTab, endTransition]);
 
   return (
     <div className="min-h-screen flex flex-col pt-16 pb-16 md:pb-0">

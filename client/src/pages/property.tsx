@@ -81,7 +81,7 @@ export default function PropertyPage() {
   const queryClient = useQueryClient();
   const { isTransitioning, endTransition } = useRouteTransition();
 
-  const { data: property, isFetching: propertyFetching, isError: propertyError } = useQuery<ExtendedProperty>({
+  const { data: property, isFetching: propertyFetching, isPending: propertyPending, isError: propertyError } = useQuery<ExtendedProperty>({
     queryKey: [`/api/properties/${identifier}`],
     enabled: !!identifier,
   });
@@ -116,18 +116,21 @@ export default function PropertyPage() {
 
   // Combine critical isFetching states with route transition for skeleton visibility
   const showSkeleton = useSkeletonVisibility({ 
-    isFetching: propertyFetching || agentFetching, 
+    isFetching: propertyPending || propertyFetching || agentFetching, 
     isTransitioning 
   });
 
-  // End transition when critical data is ready
+  // End transition only once property data is ready (or failed), so users never see a blank page
   useEffect(() => {
-    if (isTransitioning && !propertyFetching && !agentFetching) {
+    if (!isTransitioning) return;
+    if (propertyError) {
       endTransition();
-    } else if (propertyError && isTransitioning) {
+      return;
+    }
+    if (property && !propertyFetching && !agentFetching) {
       endTransition();
     }
-  }, [isTransitioning, propertyFetching, agentFetching, propertyError, endTransition]);
+  }, [isTransitioning, property, propertyFetching, agentFetching, propertyError, endTransition]);
 
   useEffect(() => {
     if (favoriteStatus?.isFavorite !== undefined) {

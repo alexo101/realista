@@ -11,36 +11,34 @@ export function useSkeletonVisibility({
   isTransitioning = false,
   minDisplayTime = 150
 }: UseSkeletonVisibilityOptions) {
-  const [showSkeleton, setShowSkeleton] = useState(isFetching || isTransitioning);
-  const displayStartTime = useRef<number | null>(null);
-  const hideTimer = useRef<NodeJS.Timeout>();
+  const shouldShow = isFetching || isTransitioning;
+  const [keepVisible, setKeepVisible] = useState(shouldShow);
+  const displayStartTime = useRef<number | null>(shouldShow ? Date.now() : null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    const shouldShow = isFetching || isTransitioning;
-
     if (shouldShow) {
-      // Immediately show skeleton
-      setShowSkeleton(true);
+      setKeepVisible(true);
       if (displayStartTime.current === null) {
         displayStartTime.current = Date.now();
       }
-    } else {
-      // Hide with minimum display time
-      if (displayStartTime.current !== null) {
-        const elapsed = Date.now() - displayStartTime.current;
-        const remainingTime = Math.max(0, minDisplayTime - elapsed);
+      return;
+    }
 
-        if (hideTimer.current) {
-          clearTimeout(hideTimer.current);
-        }
+    if (displayStartTime.current !== null) {
+      const elapsed = Date.now() - displayStartTime.current;
+      const remainingTime = Math.max(0, minDisplayTime - elapsed);
 
-        hideTimer.current = setTimeout(() => {
-          setShowSkeleton(false);
-          displayStartTime.current = null;
-        }, remainingTime);
-      } else {
-        setShowSkeleton(false);
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
       }
+
+      hideTimer.current = setTimeout(() => {
+        setKeepVisible(false);
+        displayStartTime.current = null;
+      }, remainingTime);
+    } else {
+      setKeepVisible(false);
     }
 
     return () => {
@@ -48,7 +46,8 @@ export function useSkeletonVisibility({
         clearTimeout(hideTimer.current);
       }
     };
-  }, [isFetching, isTransitioning, minDisplayTime]);
+  }, [shouldShow, minDisplayTime]);
 
-  return showSkeleton;
+  // shouldShow covers the current render; keepVisible holds through the min display window
+  return shouldShow || keepVisible;
 }

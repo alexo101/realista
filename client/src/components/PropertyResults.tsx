@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Building2, ChevronLeft, ChevronRight, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +40,11 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
   const { user } = useUser();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
+
+  const openProperty = (property: PropertyResult) => {
+    navigate(property.slug ? `/inmueble/${property.slug}` : `/inmueble/${property.uuid}`);
+  };
 
   // Fetch favorite status for all properties when user is logged in
   const { data: favoriteStatuses = {} } = useQuery({
@@ -135,7 +141,7 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
       });
       // Redirect to login after showing toast (Spanish route)
       setTimeout(() => {
-        window.location.href = "/iniciar-sesion";
+        navigate("/iniciar-sesion");
       }, 1000);
       return;
     }
@@ -208,7 +214,7 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
           <div 
             key={property.uuid} 
             className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
-            onClick={() => window.location.href = property.slug ? `/inmueble/${property.slug}` : `/inmueble/${property.uuid}`}
+            onClick={() => openProperty(property)}
           >
             <div className="aspect-video bg-gray-200 relative overflow-hidden">
               {images.length > 0 ? (

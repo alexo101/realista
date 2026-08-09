@@ -15,6 +15,8 @@ export function Navbar() {
   const [manageSidebarOpen, setManageSidebarOpen] = useState(false);
 
   const isManagePage = location.startsWith("/gestionar/");
+  const isNeighborhoodResultsPage =
+    location.startsWith("/barrio/") || location.startsWith("/neighborhood/");
   const currentSection = location.split("/")[3] || "calendario";
 
   const handleManageNavigate = (section: string) => {
@@ -33,7 +35,9 @@ export function Navbar() {
           className={
             isManagePage
               ? "w-full px-2 md:pl-2 md:pr-6"
-              : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+              : isNeighborhoodResultsPage
+                ? "w-full px-4 sm:px-6 lg:px-8"
+                : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
           }
         >
           <div className="flex justify-between h-16 items-center">

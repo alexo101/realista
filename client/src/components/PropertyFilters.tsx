@@ -6,7 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -679,25 +678,25 @@ export function PropertyFilters({
                 <SelectValue placeholder="Ninguno" />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[260px]">
-                <div className="space-y-1 px-1 py-2">
+                <div className="space-y-2 px-1 py-2">
                   {EXCLUSION_TOGGLES.map((toggle) => (
                     <label
                       key={toggle.key}
-                      className="flex items-center gap-3 px-2 py-2 hover:bg-primary/10 rounded cursor-pointer"
+                      className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
                       data-testid={`row-exclusion-${toggle.key}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setExclusionFlags(prev => ({ ...prev, [toggle.key]: !prev[toggle.key] }));
                       }}
                     >
-                      <Checkbox
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300"
                         checked={exclusionFlags[toggle.key]}
-                        onCheckedChange={(checked) =>
-                          setExclusionFlags(prev => ({ ...prev, [toggle.key]: checked === true }))
-                        }
+                        onChange={() => {}}
                         data-testid={`checkbox-exclusion-${toggle.key}`}
                       />
-                      <span className="text-sm text-gray-700">{toggle.label}</span>
+                      <span>{toggle.label}</span>
                     </label>
                   ))}
                 </div>

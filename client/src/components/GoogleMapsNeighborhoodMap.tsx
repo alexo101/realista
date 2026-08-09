@@ -11,6 +11,7 @@ import { type AreaShape, pointInShape } from '../utils/mapShape';
 declare global {
   interface Window {
     __handlePropertyFavorite?: (propertyUuid: string, buttonId: string) => void;
+    __navigateToProperty?: (propertyUuid: string) => void;
   }
 }
 
@@ -156,6 +157,16 @@ export default function GoogleMapsNeighborhoodMap({
       delete window.__handlePropertyFavorite;
     };
   }, [handleFavoriteToggle]);
+
+  // SPA navigation from InfoWindow HTML so route-transition skeletons can show
+  useEffect(() => {
+    window.__navigateToProperty = (propertyUuid: string) => {
+      navigate(`/inmueble/${propertyUuid}`);
+    };
+    return () => {
+      delete window.__navigateToProperty;
+    };
+  }, [navigate]);
 
   // Get coordinates for the neighborhood
   const getNeighborhoodCenter = (): [number, number] => {
@@ -500,7 +511,7 @@ export default function GoogleMapsNeighborhoodMap({
             
             <!-- View Details Button -->
             <button 
-              onclick="window.location.href='/inmueble/${property.uuid}'" 
+              onclick="window.__navigateToProperty && window.__navigateToProperty('${property.uuid}')" 
               style="width: 100%; background: ${markerColor}; color: white; border: none; border-radius: 8px; padding: 12px 16px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: all 0.2s;"
               onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)'"
               onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
