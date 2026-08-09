@@ -11,6 +11,7 @@ import { WebhookHandlers } from "./webhookHandlers";
 import { ensureSuperAdminUser } from "./bootstrap/superAdmin";
 import { migrateLegacyPlaintextPasswords } from "./bootstrap/passwordMigration";
 import { getSeoHtml } from "./seoHtml";
+import { getRobotsTxt, getSitemapXml } from "./crawlability";
 
 const app = express();
 
@@ -237,6 +238,15 @@ app.use((req, res, next) => {
 
       console.error('Server error:', err);
       res.status(status).json({ message });
+    });
+
+    // These files must be served before the SPA fallback so crawlers receive
+    // valid directives/XML instead of the application's HTML shell.
+    app.get("/robots.txt", (req, res) => {
+      res.type("text/plain").send(getRobotsTxt(req));
+    });
+    app.get("/sitemap.xml", (req, res) => {
+      res.type("application/xml").send(getSitemapXml(req));
     });
 
     // Keep the two public acquisition pages crawlable for social and AI bots.
