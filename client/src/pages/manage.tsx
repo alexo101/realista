@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound, CalendarDays, Briefcase } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound, CalendarDays, Briefcase, Rocket, Sparkles, Zap, Flame, Wifi, Shield } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAutosave } from "@/hooks/use-autosave";
@@ -80,7 +80,8 @@ const VALID_SECTIONS = [
   'calendario', 
   'perfil-agente', 
   'perfil-agencia', 
-  'propiedades', 
+  'propiedades',
+  'servicios',
   'clientes', 
   'mensajes', 
   'resenas', 
@@ -1102,11 +1103,12 @@ export default function ManagePage() {
               </SidebarMenuItem>
 
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
-                <div
-                  className="relative group flex w-full items-center gap-2 overflow-hidden rounded-md p-2 h-8 text-sm text-left select-none cursor-default"
+                <SidebarMenuButton
+                  isActive={currentSection === "servicios"}
+                  onClick={() => navigate(`/gestionar/${user?.agentUuid}/servicios`)}
+                  className="relative group"
                   title={sidebarCollapsed ? t("nav.services") : ""}
                   data-testid="sidebar-services"
-                  aria-disabled="true"
                 >
                   <Briefcase className="h-4 w-4 flex-shrink-0" />
                   {!sidebarCollapsed && <span>{t("nav.services")}</span>}
@@ -1115,7 +1117,7 @@ export default function ManagePage() {
                       {t("nav.services")}
                     </div>
                   )}
-                </div>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* Mi perfil de agente Section */}
@@ -1368,7 +1370,11 @@ export default function ManagePage() {
           </Button>
         </div>
 
-        <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
+        <main className={`absolute inset-0 pt-20 md:pt-24 transition-all duration-300 ${
+          currentSection === "mensajes"
+            ? `p-2 md:p-3 ${sidebarCollapsed ? "md:left-16 md:pl-2" : "md:left-64"}`
+            : `p-4 md:p-6 md:right-40 ${sidebarCollapsed ? "md:left-16" : "md:left-64"}`
+        }`}>
           {currentSection === "calendario" && user?.id && (
             <div className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />
@@ -3664,6 +3670,87 @@ export default function ManagePage() {
             </div>
           )}
 
+          {currentSection === "servicios" && (
+            <div className="max-w-6xl mx-auto w-full pb-16">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-transparent border border-primary/10 p-8 md:p-12">
+                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                  <Rocket className="w-64 h-64 text-primary" />
+                </div>
+                
+                <div className="relative z-10 max-w-3xl">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Badge variant="default" className="bg-primary text-white px-3 py-1 text-sm font-semibold">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {t("manage.services.coming_soon")}
+                    </Badge>
+                    <span className="text-sm font-medium text-gray-500 tracking-wide">
+                      {t("manage.services.powered_by")}
+                    </span>
+                  </div>
+                  
+                  <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
+                    {t("manage.services.title")}
+                  </h1>
+                  
+                  <p className="text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
+                    {t("manage.services.description")}
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    {/* Feature 1 - Electricity */}
+                    <Card className="bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-md transition-all">
+                      <CardContent className="p-6">
+                        <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4 text-amber-600">
+                          <Zap className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t("manage.services.feat1_title")}</h3>
+                        <p className="text-sm text-gray-600">{t("manage.services.feat1_desc")}</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Feature 2 - Gas */}
+                    <Card className="bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-md transition-all">
+                      <CardContent className="p-6">
+                        <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center mb-4 text-orange-600">
+                          <Flame className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t("manage.services.feat2_title")}</h3>
+                        <p className="text-sm text-gray-600">{t("manage.services.feat2_desc")}</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Feature 3 - Internet */}
+                    <Card className="bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-md transition-all">
+                      <CardContent className="p-6">
+                        <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 text-blue-600">
+                          <Wifi className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t("manage.services.feat3_title")}</h3>
+                        <p className="text-sm text-gray-600">{t("manage.services.feat3_desc")}</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Feature 4 - Insurance */}
+                    <Card className="bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-md transition-all">
+                      <CardContent className="p-6">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mb-4 text-emerald-600">
+                          <Shield className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t("manage.services.feat4_title")}</h3>
+                        <p className="text-sm text-gray-600">{t("manage.services.feat4_desc")}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <Button size="lg" className="rounded-full px-8 shadow-lg transition-all opacity-80" disabled>
+                    <Clock className="w-4 h-4 mr-2" />
+                    {t("manage.services.notify_me")}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentSection === "resenas" && (
             <div className="max-w-6xl mx-auto w-full">
               {user ? (
@@ -3681,7 +3768,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "mensajes" && (
-            <div className="max-w-6xl mx-auto">
+            <div className="w-full h-full">
               <ConversationalMessages />
             </div>
           )}

@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, MessageCircle, Home, Pin, User, Check, CheckCheck, ArrowLeft } from "lucide-react";
+import { Search, Send, Home, Pin, Check, CheckCheck, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/language-context";
 
 interface Message {
   id: number;
@@ -60,6 +61,7 @@ export function ConversationalMessages() {
   const { user } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,7 +103,7 @@ export function ConversationalMessages() {
       const response = await fetch(`/api/conversations/agent/${user!.id}`);
       
       if (!response.ok) {
-        throw new Error("Error al cargar conversaciones");
+        throw new Error(t("messages.load_error"));
       }
       
       const data = await response.json();
@@ -109,8 +111,8 @@ export function ConversationalMessages() {
     } catch (error) {
       console.error("Error al cargar conversaciones:", error);
       toast({
-        title: "Error",
-        description: "No se pudieron cargar las conversaciones",
+        title: t("common.error"),
+        description: t("messages.load_error"),
         variant: "destructive",
       });
     } finally {
@@ -170,21 +172,21 @@ export function ConversationalMessages() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al fijar conversación');
+        throw new Error(errorData.error || t("messages.pin_error"));
       }
 
       // Update local state
       setPinnedConversations(prev => [...prev, inquiryId]);
       
       toast({
-        title: "Éxito",
-        description: "Conversación fijada correctamente",
+        title: t("common.success"),
+        description: t("messages.pin_success"),
       });
     } catch (error) {
       console.error("Error pinning conversation:", error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "No se pudo fijar la conversación",
+        title: t("common.error"),
+        description: error instanceof Error ? error.message : t("messages.pin_error"),
         variant: "destructive",
       });
     } finally {
@@ -209,21 +211,21 @@ export function ConversationalMessages() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al desfijar conversación');
+        throw new Error(t("messages.unpin_error"));
       }
 
       // Update local state
       setPinnedConversations(prev => prev.filter(id => id !== inquiryId));
       
       toast({
-        title: "Éxito",
-        description: "Conversación desfijada correctamente",
+        title: t("common.success"),
+        description: t("messages.unpin_success"),
       });
     } catch (error) {
       console.error("Error unpinning conversation:", error);
       toast({
-        title: "Error",
-        description: "No se pudo desfijar la conversación",
+        title: t("common.error"),
+        description: t("messages.unpin_error"),
         variant: "destructive",
       });
     } finally {
@@ -290,7 +292,7 @@ export function ConversationalMessages() {
       });
 
       if (!response.ok) {
-        throw new Error("Error al enviar mensaje");
+        throw new Error(t("messages.send_error"));
       }
 
       const newMsg = await response.json();
@@ -319,8 +321,8 @@ export function ConversationalMessages() {
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
       toast({
-        title: "Error",
-        description: "No se pudo enviar el mensaje",
+        title: t("common.error"),
+        description: t("messages.send_error"),
         variant: "destructive",
       });
     } finally {
@@ -405,12 +407,11 @@ export function ConversationalMessages() {
 
   if (loading) {
     return (
-      <Card className="h-[calc(100vh-200px)] md:h-[600px]">
-        <CardContent className="p-4 md:p-6">
+      <Card className="h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
+        <CardContent className="p-4 md:p-6 flex-1">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <MessageCircle className="h-10 w-10 md:h-12 md:w-12 text-gray-300 mx-auto mb-3 md:mb-4" />
-              <p className="text-gray-500 text-sm md:text-base">Cargando conversaciones...</p>
+              <p className="text-gray-500 text-sm md:text-base">{t("messages.loading")}</p>
             </div>
           </div>
         </CardContent>
@@ -419,22 +420,21 @@ export function ConversationalMessages() {
   }
 
   return (
-    <Card className="h-[calc(100vh-200px)] md:h-[600px]">
-      <CardHeader className="px-3 py-3 md:px-6 md:py-4">
+    <Card className="h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
+      <CardHeader className="px-3 py-3 md:px-6 md:py-4 shrink-0">
         <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-          <MessageCircle className="h-5 w-5 text-blue-500" />
-          Mensajes
+          {t("messages.title")}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="flex flex-col md:flex-row h-[calc(100vh-280px)] md:h-[520px]">
+      <CardContent className="p-0 flex-1 min-h-0">
+        <div className="flex flex-col md:flex-row h-full">
           {/* Conversations List - hidden on mobile when viewing chat */}
-          <div className={`w-full md:w-80 border-r bg-gray-50 ${mobileShowChat ? 'hidden md:block' : 'block'}`}>
+          <div className={`w-full md:w-80 lg:w-96 border-r bg-gray-50 flex flex-col h-full ${mobileShowChat ? 'hidden md:flex' : 'flex'}`}>
             <div className="p-3 md:p-4 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por cliente o propiedad..."
+                  placeholder={t("messages.search_placeholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 text-sm md:text-base"
@@ -443,10 +443,10 @@ export function ConversationalMessages() {
               </div>
             </div>
             
-            <div className="overflow-y-auto h-[calc(100%-60px)] md:h-full">
+            <div className="overflow-y-auto flex-1 min-h-0">
               {filteredConversations.length === 0 ? (
                 <div className="p-4 text-center text-gray-500 text-sm md:text-base">
-                  {searchTerm ? "No se encontraron conversaciones" : "No hay conversaciones"}
+                  {searchTerm ? t("messages.no_results") : t("messages.empty")}
                 </div>
               ) : (
                 filteredConversations.map((conversation) => (
@@ -470,9 +470,8 @@ export function ConversationalMessages() {
                             className="font-medium text-sm truncate text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
                             onClick={(e) => handleClientNameClick(conversation.clientId, e)}
                             data-testid={`link-client-name-${conversation.clientId}`}
-                            title="Ver información del cliente"
+                            title={t("messages.view_client")}
                           >
-                            <User className="h-3 w-3 flex-shrink-0" />
                             <span className="truncate text-[#0284c5]">{conversation.clientName}</span>
                           </h3>
                           <span className="text-xs text-gray-500 flex-shrink-0">
@@ -502,7 +501,7 @@ export function ConversationalMessages() {
           </div>
 
           {/* Chat Area - hidden on mobile when not viewing chat, full width on mobile */}
-          <div className={`flex-1 flex flex-col w-full ${mobileShowChat ? 'block' : 'hidden md:block'}`}>
+          <div className={`flex-1 flex flex-col w-full min-h-0 ${mobileShowChat ? 'flex' : 'hidden md:flex'}`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
@@ -529,9 +528,8 @@ export function ConversationalMessages() {
                           className="font-medium text-sm md:text-base text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1"
                           onClick={(e) => handleClientNameClick(selectedConversation.clientId, e)}
                           data-testid={`link-client-header-${selectedConversation.clientId}`}
-                          title="Ver información del cliente"
+                          title={t("messages.view_client")}
                         >
-                          <User className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate text-[#0284c5]">{selectedConversation.clientName}</span>
                         </h3>
                         <div className="flex items-center gap-1 text-xs md:text-sm text-gray-600">
@@ -575,13 +573,11 @@ export function ConversationalMessages() {
                       className={`flex ${message.senderType === 'agent' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className="max-w-[85%] sm:max-w-[75%] md:max-w-xs lg:max-w-md px-3 md:px-4 py-2 rounded-lg break-words text-white bg-[#0284c5]"
+                        className="max-w-[85%] sm:max-w-[80%] md:max-w-md lg:max-w-lg xl:max-w-xl px-3 md:px-4 py-2 rounded-lg break-words text-white bg-[#0284c5]"
                       >
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                        <div className={`flex items-center justify-end gap-1 mt-1 ${
-                          message.senderType === 'agent' ? 'text-blue-100' : 'text-gray-500'
-                        }`}>
-                          <span className="text-xs">{formatTime(message.timestamp)}</span>
+                        <div className="flex items-center justify-end gap-1 mt-1 text-white">
+                          <span className="text-xs font-medium">{formatTime(message.timestamp)}</span>
                           <MessageStatusIndicator 
                             status={message.status || 'sent'} 
                             isAgentMessage={message.senderType === 'agent'} 
@@ -600,7 +596,7 @@ export function ConversationalMessages() {
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Escribe un mensaje..."
+                      placeholder={t("messages.write_placeholder")}
                       className="flex-1 text-base md:text-sm min-h-[44px] md:min-h-0"
                       disabled={sendingMessage}
                       data-testid="input-new-message"
@@ -620,8 +616,7 @@ export function ConversationalMessages() {
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500 p-4">
                 <div className="text-center">
-                  <MessageCircle className="h-10 w-10 md:h-12 md:w-12 text-gray-300 mx-auto mb-3 md:mb-4" />
-                  <p className="text-sm md:text-base">Selecciona una conversación para empezar</p>
+                  <p className="text-sm md:text-base">{t("messages.select_conversation")}</p>
                 </div>
               </div>
             )}

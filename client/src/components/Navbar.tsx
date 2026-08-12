@@ -15,6 +15,8 @@ export function Navbar() {
   const [manageSidebarOpen, setManageSidebarOpen] = useState(false);
 
   const isManagePage = location.startsWith("/gestionar/");
+  const isClientProfilePage = location.startsWith("/perfil-cliente");
+  const isDashboardPage = isManagePage || isClientProfilePage;
   const isNeighborhoodResultsPage =
     location.startsWith("/barrio/") || location.startsWith("/neighborhood/");
   const currentSection = location.split("/")[3] || "calendario";
@@ -28,21 +30,62 @@ export function Navbar() {
 
   const isAgent = user && !user.isClient && user.agentUuid && user.agentType !== "super_admin";
 
+  const logoLink = (
+    <Link href="/" className="flex items-center space-x-2">
+      <img src="/logo.png" alt="Realista Logo" className="h-6 w-6 object-contain" />
+      <span className="text-xl font-bold text-primary">Realista</span>
+    </Link>
+  );
+
+  const accountActions = (
+    <>
+      <LanguageSelector />
+      {!user && (
+        <Link href="/realista-pro">
+          <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {t('nav.realista_pro')}
+          </Button>
+        </Link>
+      )}
+      {user ? (
+        <>
+          {user.agentType === "super_admin" ? (
+            <Link href="/super-admin">
+              <Button variant="outline">
+                SuperAdmin
+              </Button>
+            </Link>
+          ) : user.isClient && user.clientUuid ? (
+            <Link href={`/perfil-cliente/${user.clientUuid}/perfil`}>
+              <Button variant="outline">
+                {t('nav.profile')}
+              </Button>
+            </Link>
+          ) : user.agentUuid ? (
+            <Link href={`/gestionar/${user.agentUuid}/calendario`}>
+              <Button variant="outline">
+                {t('nav.manage')}
+              </Button>
+            </Link>
+          ) : null}
+        </>
+      ) : (
+        <Link href="/iniciar-sesion">
+          <Button variant="outline">
+            {t('nav.login')}
+          </Button>
+        </Link>
+      )}
+    </>
+  );
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
-        <div
-          className={
-            isManagePage
-              ? "w-full px-2 md:pl-2 md:pr-6"
-              : isNeighborhoodResultsPage
-                ? "w-full px-4 sm:px-6 lg:px-8"
-                : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
-          }
-        >
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center">
-              {/* Hamburger menu for agents on mobile - shows on manage pages OR when agent is logged in */}
+        {isDashboardPage ? (
+          <div className="flex h-16 w-full items-center">
+            <div className="flex h-16 w-auto shrink-0 items-center pl-2 md:w-64">
               {isAgent && (
                 <Button
                   variant="ghost"
@@ -54,67 +97,26 @@ export function Navbar() {
                   <Menu className="h-5 w-5" />
                 </Button>
               )}
-              <Link href="/" className="flex items-center space-x-2">
-                <img src="/logo.png" alt="Realista Logo" className="h-6 w-6 object-contain" />
-                <span className="text-xl font-bold text-primary">Realista</span>
-              </Link>
+              {logoLink}
             </div>
 
-            {/* Desktop navigation */}
-            <div className="hidden md:flex items-center space-x-4">
-              <LanguageSelector />
-              {!user && (
-                <Link href="/realista-pro">
-                  <Button className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-4 py-2 shadow-lg">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    {t('nav.realista_pro')}
-                  </Button>
-                </Link>
-              )}
-              
-              {user ? (
-                <>
-                  {user.agentType === "super_admin" ? (
-                    <Link href="/super-admin">
-                      <Button variant="outline">
-                        SuperAdmin
-                      </Button>
-                    </Link>
-                  ) : user.isClient && user.clientUuid ? (
-                    <Link href={`/perfil-cliente/${user.clientUuid}/perfil`}>
-                      <Button variant="outline">
-                        {t('nav.profile')}
-                      </Button>
-                    </Link>
-                  ) : user.agentUuid ? (
-                    <Link href={`/gestionar/${user.agentUuid}/calendario`}>
-                      <Button variant="outline">
-                        {t('nav.manage')}
-                      </Button>
-                    </Link>
-                  ) : null}
-                  <UserMenu />
-                </>
-              ) : (
-                <>
-                  <Link href="/iniciar-sesion">
-                    <Button variant="outline">
-                      {t('nav.login')}
-                    </Button>
-                  </Link>
-                </>
-              )}
+            <div className="hidden h-16 min-w-0 flex-1 items-center px-4 md:flex md:px-6">
+              <div className="mx-auto flex w-full max-w-6xl items-center justify-end gap-4">
+                {accountActions}
+              </div>
             </div>
 
-            {/* Mobile menu button (right side) */}
-            <div className="md:hidden flex items-center space-x-2">
-              <LanguageSelector />
+            <div className="ml-auto flex h-16 shrink-0 items-center pr-4 md:ml-0 md:w-40 md:justify-end md:pr-6">
+              <div className="md:hidden">
+                <LanguageSelector />
+              </div>
               {user ? (
                 <UserMenu />
               ) : (
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="md:hidden"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
                   {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -122,7 +124,52 @@ export function Navbar() {
               )}
             </div>
           </div>
-        </div>
+        ) : (
+          <div
+            className={
+              isNeighborhoodResultsPage
+                ? "w-full px-4 sm:px-6 lg:px-8"
+                : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+            }
+          >
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex items-center">
+                {isAgent && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mr-2 md:hidden"
+                    onClick={() => setManageSidebarOpen(!manageSidebarOpen)}
+                    data-testid="button-manage-menu"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                )}
+                {logoLink}
+              </div>
+
+              <div className="hidden items-center space-x-4 md:flex">
+                {accountActions}
+                {user && <UserMenu />}
+              </div>
+
+              <div className="flex items-center space-x-2 md:hidden">
+                <LanguageSelector />
+                {user ? (
+                  <UserMenu />
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  >
+                    {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Mobile menu for non-logged in users */}
         {mobileMenuOpen && !user && (

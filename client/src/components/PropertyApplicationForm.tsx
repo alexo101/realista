@@ -225,16 +225,15 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
       }
 
       // Update client profile with any new information if logged in
-      if (user && user.isClient && user.id && clientData) {
+      if (user && user.isClient && user.id) {
         const updateData: Record<string, any> = {};
         
-        // Check if phone was empty or placeholder and now has a real value
-        if ((!clientData.phone || clientData.phone === "000000000" || clientData.phone === "") && data.phone) {
+        if (data.phone && /^[6-9]\d{8}$/.test(data.phone)) {
           updateData.phone = data.phone;
         }
         
         // Check if name has changed (split into name/surname if space exists)
-        const currentFullName = [clientData.name, clientData.surname].filter(Boolean).join(' ').trim();
+        const currentFullName = [clientData?.name, clientData?.surname].filter(Boolean).join(' ').trim();
         if (data.name && data.name !== currentFullName) {
           const nameParts = data.name.trim().split(' ');
           if (nameParts.length > 1) {
@@ -248,12 +247,13 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
         // Only send update if there are changes
         if (Object.keys(updateData).length > 0) {
           try {
-            await fetch(`/api/clients/${user.id}`, {
-              method: "PATCH",
+            await fetch(`/api/clients/${user.id}/profile`, {
+              method: "PUT",
+              credentials: "include",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(updateData),
             });
-            queryClient.invalidateQueries({ queryKey: ['/api/clients', user.id] });
+            queryClient.invalidateQueries({ queryKey: [`/api/clients/${user.id}`] });
           } catch (error) {
             console.warn("Could not update client profile:", error);
           }

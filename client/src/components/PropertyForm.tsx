@@ -54,7 +54,7 @@ import { ALL_CITIES } from "@/utils/neighborhoods";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es, fr, it } from "date-fns/locale";
 
 const propertyTypes = [
   "Vivienda",
@@ -232,7 +232,8 @@ export function PropertyForm({
   isEditing = false,
 }: PropertyFormProps) {
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const dateLocale = { es, en: enUS, fr, it }[language];
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
@@ -1146,7 +1147,7 @@ export function PropertyForm({
                                   }`}
                                   data-testid="button-availability-date"
                                 >
-                                  {field.value ? format(field.value, "PPP", { locale: es }) : t("propertyForm.placeholder.select_date")}
+                                  {field.value ? format(field.value, "PPP", { locale: dateLocale }) : t("propertyForm.placeholder.select_date")}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
@@ -1158,7 +1159,7 @@ export function PropertyForm({
                                 onSelect={field.onChange}
                                 disabled={(date) => date < new Date()}
                                 initialFocus
-                                locale={es}
+                                locale={dateLocale}
                               />
                             </PopoverContent>
                           </Popover>

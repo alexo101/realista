@@ -2,6 +2,7 @@ import { Home, MessageCircle, Heart, Search, User } from "lucide-react";
 import { useLocation } from "wouter";
 import { useUser } from "@/contexts/user-context";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 interface MobileClientNavProps {
   currentSection?: string;
@@ -10,39 +11,40 @@ interface MobileClientNavProps {
 export function MobileClientNav({ currentSection }: MobileClientNavProps) {
   const [, navigate] = useLocation();
   const { user } = useUser();
+  const { t } = useLanguage();
 
   const navItems = [
     {
       id: "inicio",
-      label: "Inicio",
+      label: t("nav.home"),
       icon: Home,
       path: "/",
       requiresAuth: false,
     },
     {
       id: "chats",
-      label: "Chats",
+      label: t("clientProfile.nav.messages"),
       icon: MessageCircle,
       path: user?.clientUuid ? `/perfil-cliente/${user.clientUuid}/mensajes` : "/iniciar-sesion",
       requiresAuth: true,
     },
     {
       id: "favoritos",
-      label: "Favoritos",
+      label: t("clientProfile.nav.favorites"),
       icon: Heart,
       path: user?.clientUuid ? `/perfil-cliente/${user.clientUuid}/favoritos` : "/iniciar-sesion",
       requiresAuth: true,
     },
     {
       id: "busquedas",
-      label: "Búsquedas",
+      label: t("clientProfile.nav.searches"),
       icon: Search,
       path: user?.clientUuid ? `/perfil-cliente/${user.clientUuid}/busquedas` : "/iniciar-sesion",
       requiresAuth: true,
     },
     {
       id: "perfil",
-      label: "Perfil",
+      label: t("clientProfile.nav.profile"),
       icon: User,
       path: user?.clientUuid ? `/perfil-cliente/${user.clientUuid}/perfil` : "/iniciar-sesion",
       requiresAuth: true,

@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface Step {
   id: number;
@@ -17,13 +18,15 @@ export function PropertyFormStepper({
   steps,
   completionPercentage,
 }: PropertyFormStepperProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="w-full mb-8">
       {/* Progress bar header */}
       <div className="flex justify-between items-center mb-4">
-        <span className="text-sm font-medium text-gray-700">Progreso total</span>
+        <span className="text-sm font-medium text-gray-700">{t("propertyForm.progress.total")}</span>
         <span className="text-sm font-medium text-gray-700">
-          {completionPercentage}% completado
+          {t("propertyForm.progress.completed", { percentage: completionPercentage })}
         </span>
       </div>
 

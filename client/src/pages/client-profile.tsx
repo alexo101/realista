@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -59,10 +59,14 @@ import {
 import { useUser } from "@/contexts/user-context";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/language-context";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SavedIndicator } from "@/components/SavedIndicator";
 import { ClientConversationalMessages } from "@/components/ClientConversationalMessages";
 import { MobileClientNav } from "@/components/MobileClientNav";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { enUS, es, fr, it } from "date-fns/locale";
 
 interface FavoriteAgent {
   id: number;
@@ -113,37 +117,47 @@ const VALID_SECTIONS = [
 
 type DashboardSection = typeof VALID_SECTIONS[number];
 
-// Client profile form schema
-const clientProfileSchema = z.object({
-  name: z.string().min(1, "Nombre es obligatorio"),
-  surname: z.string().min(1, "Apellidos es obligatorio"),
-  phone: z.string()
-    .min(9, "El teléfono debe tener exactamente 9 dígitos")
-    .max(9, "El teléfono debe tener exactamente 9 dígitos")
-    .regex(/^[6-9]\d{8}$/, "Ingresa un número de teléfono español válido (9 dígitos, comenzando con 6, 7, 8 o 9)"),
-  avatar: z.string().optional(),
-  employmentStatus: z.string().optional(),
-  position: z.string().optional(),
-  yearsAtPosition: z.number().optional(),
-  monthlyIncome: z.number().optional(),
-  numberOfPeople: z.number().optional(),
-  relationship: z.string().optional(),
-  hasMinors: z.boolean().default(false),
-  hasAdolescents: z.boolean().default(false),
-  petsStatus: z.string().optional(),
-  petsDescription: z.string().optional(),
-  moveInTiming: z.string().optional(),
-  moveInDate: z.date().optional(),
-});
+function createClientProfileSchema(t: (key: string) => string) {
+  const isUsablePhone = (value: string) => /^[6-9]\d{8}$/.test(value);
 
-type ClientProfileFormData = z.infer<typeof clientProfileSchema>;
+  return z.object({
+    name: z.string().min(1, t("clientProfile.validation.name_required")),
+    surname: z.string().optional(),
+    phone: z.string().refine(
+      (value) => {
+        const digits = (value || "").replace(/\D/g, "");
+        if (!digits || digits === "000000000") return true;
+        return isUsablePhone(digits);
+      },
+      { message: t("clientProfile.validation.phone_invalid") },
+    ),
+    avatar: z.string().optional(),
+    employmentStatus: z.string().optional(),
+    position: z.string().optional(),
+    yearsAtPosition: z.number().optional(),
+    monthlyIncome: z.number().optional(),
+    numberOfPeople: z.number().optional(),
+    relationship: z.string().optional(),
+    hasMinors: z.boolean().default(false),
+    hasAdolescents: z.boolean().default(false),
+    petsStatus: z.string().optional(),
+    petsDescription: z.string().optional(),
+    moveInTiming: z.string().optional(),
+    moveInDate: z.date().optional(),
+  });
+}
+
+type ClientProfileFormData = z.infer<ReturnType<typeof createClientProfileSchema>>;
 
 
 export default function ClientProfile() {
   const { user, isLoading } = useUser();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
+  const clientProfileSchema = createClientProfileSchema(t);
+  const dateLocale = { es, en: enUS, fr, it }[language];
 
   // Extract route parameters
   const [match, params] = useRoute("/perfil-cliente/:clientUuid/:section");
@@ -153,6 +167,8 @@ export default function ClientProfile() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [formReady, setFormReady] = useState(false);
+  const profileInitializedRef = useRef(false);
 
   // Route guards
   useEffect(() => {
@@ -180,8 +196,8 @@ export default function ClientProfile() {
     if (!user.clientUuid) {
       // Client without UUID - something is wrong
       toast({
-        title: "Error",
-        description: "Tu perfil no tiene un identificador válido. Contacta soporte.",
+        title: t("common.error"),
+        description: t("clientProfile.toast.invalid_profile"),
         variant: "destructive"
       });
       return;
@@ -198,8 +214,8 @@ export default function ClientProfile() {
     if (urlClientUuid !== user.clientUuid) {
       // Attempting to access another client's dashboard
       toast({
-        title: "Acceso denegado",
-        description: "No puedes acceder al perfil de otro cliente.",
+        title: t("common.access_denied"),
+        description: t("clientProfile.toast.other_profile_denied"),
         variant: "destructive"
       });
       navigate(`/perfil-cliente/${user.clientUuid}/perfil`);
@@ -237,7 +253,7 @@ export default function ClientProfile() {
     defaultValues: {
       name: user?.name || "",
       surname: user?.surname || "",
-      phone: user?.phone || "",
+      phone: user?.phone && user.phone !== "000000000" ? user.phone : "",
       avatar: user?.avatar || "",
       employmentStatus: "",
       position: "",
@@ -261,15 +277,20 @@ export default function ClientProfile() {
     }
   }, [user, navigate]);
 
-  // Update form with loaded profile data
+  // Load profile data once so later autosaves do not overwrite in-progress edits
   useEffect(() => {
+    if (profileInitializedRef.current) return;
+    if (isLoadingProfile || !user?.id) return;
+
     if (clientProfileData) {
-      
-      // Reset form with existing data
       form.reset({
         name: clientProfileData.name || user?.name || "",
         surname: clientProfileData.surname || user?.surname || "",
-        phone: clientProfileData.phone || user?.phone || "",
+        phone: clientProfileData.phone && clientProfileData.phone !== "000000000"
+          ? clientProfileData.phone
+          : user?.phone && user.phone !== "000000000"
+            ? user.phone
+            : "",
         avatar: clientProfileData.avatar || user?.avatar || "",
         employmentStatus: clientProfileData.employmentStatus || "",
         position: clientProfileData.position || "",
@@ -285,44 +306,67 @@ export default function ClientProfile() {
         moveInDate: clientProfileData.moveInDate ? new Date(clientProfileData.moveInDate) : undefined,
       });
 
-      // Update state variables
       setNumberOfPeople(clientProfileData.numberOfPeople || 1);
       setProfilePicture(clientProfileData.avatar || null);
     }
-  }, [clientProfileData, user, form]);
 
-  // Handle form submission
-  const onSubmit = async (data: ClientProfileFormData) => {
+    profileInitializedRef.current = true;
+    setFormReady(true);
+  }, [clientProfileData, isLoadingProfile, user, form]);
+
+  const saveProfile = useCallback(async (data: ClientProfileFormData) => {
+    if (!user?.id) {
+      throw new Error("NO_USER");
+    }
+
     try {
-      const response = await fetch(`/api/clients/${user?.id}/profile`, {
+      const response = await fetch(`/api/clients/${user.id}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          phone: data.phone && data.phone !== "000000000" ? data.phone : "",
+          yearsAtPosition: Number.isFinite(data.yearsAtPosition) ? data.yearsAtPosition : undefined,
+          monthlyIncome: Number.isFinite(data.monthlyIncome) ? data.monthlyIncome : undefined,
+          moveInDate: data.moveInDate ? data.moveInDate.toISOString() : undefined,
+        }),
       });
 
       if (!response.ok) {
         throw new Error("Error al actualizar el perfil");
       }
 
-      toast({
-        title: "Éxito",
-        description: "Tu perfil ha sido actualizado correctamente",
-      });
-
-      // Invalidate queries to refresh user data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${user?.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${user.id}`] });
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el perfil",
+        title: t("common.error"),
+        description: t("clientProfile.toast.profile_update_error"),
         variant: "destructive",
       });
+      throw error;
     }
-  };
+  }, [user?.id, queryClient, toast, t]);
+
+  const watchedValues = form.watch();
+
+  const autosaveFn = useCallback(
+    async (data: ClientProfileFormData) => {
+      const valid = await form.trigger();
+      if (!valid) {
+        throw new Error("VALIDATION");
+      }
+      await saveProfile(data);
+    },
+    [form, saveProfile],
+  );
+
+  const { savedFields } = useAutosave(watchedValues, autosaveFn, {
+    enabled: formReady && currentSection === "perfil",
+  });
 
   // Handle photo upload
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -332,7 +376,7 @@ export default function ClientProfile() {
       reader.onload = (e) => {
         const base64String = e.target?.result as string;
         setProfilePicture(base64String);
-        form.setValue("avatar", base64String);
+        form.setValue("avatar", base64String, { shouldDirty: true, shouldTouch: true });
       };
       reader.readAsDataURL(file);
     }
@@ -414,14 +458,14 @@ export default function ClientProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/saved-searches"] });
       toast({
-        title: "Búsqueda eliminada",
-        description: "La búsqueda ha sido eliminada exitosamente",
+        title: t("clientProfile.toast.search_deleted"),
+        description: t("clientProfile.toast.search_deleted_desc"),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar la búsqueda",
+        title: t("common.error"),
+        description: t("clientProfile.toast.search_delete_error"),
         variant: "destructive",
       });
     },
@@ -436,14 +480,14 @@ export default function ClientProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/saved-searches"] });
       toast({
-        title: "Búsqueda actualizada",
-        description: "El nombre de la búsqueda ha sido actualizado",
+        title: t("clientProfile.toast.search_updated"),
+        description: t("clientProfile.toast.search_updated_desc"),
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "No se pudo actualizar el nombre de la búsqueda",
+        title: t("common.error"),
+        description: t("clientProfile.toast.search_update_error"),
         variant: "destructive",
       });
     },
@@ -460,16 +504,16 @@ export default function ClientProfile() {
       // Invalidate favorite properties query to refetch
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${user?.id}/favorites/properties`] });
       toast({
-        title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
+        title: data.isFavorite ? t("clientProfile.toast.favorite_added_title") : t("clientProfile.toast.favorite_removed_title"),
         description: data.isFavorite 
-          ? "La propiedad se ha agregado a tus favoritos."
-          : "La propiedad se ha eliminado de tus favoritos."
+          ? t("clientProfile.toast.favorite_added_property")
+          : t("clientProfile.toast.favorite_removed_property")
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: (error as Error).message || "No se pudo actualizar favoritos",
+        title: t("common.error"),
+        description: (error as Error).message || t("clientProfile.toast.favorite_update_error"),
         variant: "destructive",
       });
     },
@@ -485,16 +529,16 @@ export default function ClientProfile() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${user?.id}/favorites/agencies`] });
       toast({
-        title: data.isFavorite ? "Agregado a favoritos" : "Eliminado de favoritos",
+        title: data.isFavorite ? t("clientProfile.toast.favorite_added_title") : t("clientProfile.toast.favorite_removed_title"),
         description: data.isFavorite 
-          ? "La agencia se ha agregado a tus favoritos."
-          : "La agencia se ha eliminado de tus favoritos."
+          ? t("clientProfile.toast.favorite_added_agency")
+          : t("clientProfile.toast.favorite_removed_agency")
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: (error as Error).message || "No se pudo actualizar favoritos",
+        title: t("common.error"),
+        description: (error as Error).message || t("clientProfile.toast.favorite_update_error"),
         variant: "destructive",
       });
     },
@@ -506,7 +550,7 @@ export default function ClientProfile() {
     e.stopPropagation();
     
     const url = `${window.location.origin}/agencias/${agency.slug || agency.id}`;
-    const text = `Conoce ${agency.agencyName} en Realista`;
+    const text = t("clientProfile.favorites.agency_share_text", { name: agency.agencyName });
     
     switch (platform) {
       case 'whatsapp':
@@ -515,8 +559,8 @@ export default function ClientProfile() {
       case 'copy':
         navigator.clipboard.writeText(url);
         toast({
-          title: "Enlace copiado",
-          description: "El enlace de la agencia ha sido copiado al portapapeles",
+          title: t("clientProfile.toast.link_copied"),
+          description: t("clientProfile.toast.agency_link_copied"),
         });
         break;
       case 'email':
@@ -546,17 +590,24 @@ export default function ClientProfile() {
     return null;
   }
 
+  const labelWithSaved = (field: string, text: React.ReactNode, className = "text-sm font-medium text-gray-700") => (
+    <FormLabel className={cn("inline-flex items-center", className)}>
+      {text}
+      <SavedIndicator visible={savedFields.has(field)} />
+    </FormLabel>
+  );
+
   const renderMainContent = () => {
     switch (currentSection) {
       case "perfil":
         return (
           <div className="space-y-6">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Perfil</h1>
-              <p className="text-gray-600">Gestiona tu información personal y preferencias</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("clientProfile.title")}</h1>
+              <p className="text-gray-600">{t("clientProfile.subtitle")}</p>
             </div>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-32">
+              <form onSubmit={(event) => event.preventDefault()} className="space-y-8 pb-8">
                 {/* Photo Upload Section */}
                 <Card>
                   <CardContent className="pt-6">
@@ -579,8 +630,9 @@ export default function ClientProfile() {
                           />
                         </label>
                       </div>
-                      <p className="text-sm text-gray-600 text-center max-w-xs">
-                        Candidatos con fotos transmiten más confianza
+                      <p className="text-sm text-gray-600 text-center max-w-xs inline-flex items-center justify-center">
+                        {t("clientProfile.photo_hint")}
+                        <SavedIndicator visible={savedFields.has("avatar")} />
                       </p>
                     </div>
                   </CardContent>
@@ -589,19 +641,22 @@ export default function ClientProfile() {
                 {/* Datos Personales Section */}
                 <Card>
                   <CardContent className="pt-6">
-                    <h2 className="text-xl font-semibold mb-6 text-gray-900">Datos personales</h2>
+                    <h2 className="text-xl font-semibold mb-6 text-gray-900">{t("clientProfile.personal_info")}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium text-gray-700">
-                              Nombre <span className="text-red-500">*</span>
-                            </FormLabel>
+                            {labelWithSaved(
+                              "name",
+                              <>
+                                {t("clientProfile.name")} <span className="text-red-500">*</span>
+                              </>,
+                            )}
                             <FormControl>
                               <Input 
-                                placeholder="Tu nombre" 
+                                placeholder={t("clientProfile.name_placeholder")}
                                 {...field}
                                 data-testid="input-name"
                               />
@@ -616,12 +671,15 @@ export default function ClientProfile() {
                         name="surname"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium text-gray-700">
-                              Apellidos <span className="text-red-500">*</span>
-                            </FormLabel>
+                            {labelWithSaved(
+                              "surname",
+                              <>
+                                {t("clientProfile.surname")} <span className="text-red-500">*</span>
+                              </>,
+                            )}
                             <FormControl>
                               <Input 
-                                placeholder="Tus apellidos" 
+                                placeholder={t("clientProfile.surname_placeholder")}
                                 {...field}
                                 data-testid="input-surname"
                               />
@@ -640,16 +698,17 @@ export default function ClientProfile() {
                           
                           return (
                             <FormItem>
-                              <FormLabel className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                Teléfono <span className="text-red-500">*</span>
+                              <FormLabel className="text-sm font-medium text-gray-700 inline-flex items-center gap-2">
+                                {t("clientProfile.phone")} <span className="text-red-500">*</span>
                                 {isPhoneValid && (
                                   <CheckCircle className="h-4 w-4 text-green-600" />
                                 )}
+                                <SavedIndicator visible={savedFields.has("phone")} />
                               </FormLabel>
                               <FormControl>
                                 <Input 
                                   type="tel"
-                                  placeholder="Ej: 612345678"
+                                  placeholder={t("clientProfile.phone_placeholder")}
                                   maxLength={9}
                                   {...field}
                                   className={cn(
@@ -667,12 +726,12 @@ export default function ClientProfile() {
                               {isPhoneValid && (
                                 <div className="text-sm text-green-600 flex items-center gap-1">
                                   <CheckCircle className="h-3 w-3" />
-                                  Número de teléfono válido
+                                  {t("clientProfile.phone_valid")}
                                 </div>
                               )}
                               {field.value && field.value.length > 0 && !isPhoneValid && (
                                 <div className="text-sm text-muted-foreground">
-                                  Formato: 9 dígitos comenzando con 6, 7, 8 o 9
+                                  {t("clientProfile.phone_format")}
                                 </div>
                               )}
                               <FormMessage />
@@ -687,27 +746,27 @@ export default function ClientProfile() {
                 {/* Employment Information Section */}
                 <Card>
                   <CardContent className="pt-6">
-                    <h2 className="text-xl font-semibold mb-6 text-gray-900">Información laboral</h2>
+                    <h2 className="text-xl font-semibold mb-6 text-gray-900">{t("clientProfile.employment")}</h2>
                     <div className="space-y-6">
                       <FormField
                         control={form.control}
                         name="employmentStatus"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium text-gray-700">Situación actual</FormLabel>
+                            {labelWithSaved("employmentStatus", t("clientProfile.employment_status"))}
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="select-employment-status">
-                                  <SelectValue placeholder="Selecciona tu situación laboral" />
+                                  <SelectValue placeholder={t("clientProfile.employment_placeholder")} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="jornada-completa">Jornada completa</SelectItem>
-                                <SelectItem value="jornada-parcial">Jornada parcial</SelectItem>
-                                <SelectItem value="autonomo">Autónomo</SelectItem>
-                                <SelectItem value="desempleado">Desempleado</SelectItem>
-                                <SelectItem value="estudiante">Estudiante</SelectItem>
-                                <SelectItem value="pensionista">Pensionista</SelectItem>
+                                <SelectItem value="jornada-completa">{t("clientProfile.employment.full_time")}</SelectItem>
+                                <SelectItem value="jornada-parcial">{t("clientProfile.employment.part_time")}</SelectItem>
+                                <SelectItem value="autonomo">{t("clientProfile.employment.self_employed")}</SelectItem>
+                                <SelectItem value="desempleado">{t("clientProfile.employment.unemployed")}</SelectItem>
+                                <SelectItem value="estudiante">{t("clientProfile.employment.student")}</SelectItem>
+                                <SelectItem value="pensionista">{t("clientProfile.employment.retired")}</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -721,10 +780,10 @@ export default function ClientProfile() {
                           name="position"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-sm font-medium text-gray-700">Posición</FormLabel>
+                              {labelWithSaved("position", t("clientProfile.position"))}
                               <FormControl>
                                 <Input 
-                                  placeholder="Tu puesto de trabajo" 
+                                  placeholder={t("clientProfile.position_placeholder")}
                                   {...field}
                                   data-testid="input-position"
                                 />
@@ -739,11 +798,11 @@ export default function ClientProfile() {
                           name="yearsAtPosition"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-sm font-medium text-gray-700">Permanencia en años</FormLabel>
+                              {labelWithSaved("yearsAtPosition", t("clientProfile.years_at_position"))}
                               <FormControl>
                                 <Input 
                                   type="number" 
-                                  placeholder="Años en tu puesto actual"
+                                  placeholder={t("clientProfile.years_at_position_placeholder")}
                                   {...field}
                                   onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                                   data-testid="input-years-position"
@@ -760,13 +819,11 @@ export default function ClientProfile() {
                         name="monthlyIncome"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium text-gray-700">
-                              Ingresos mensuales de todos los aplicantes en €
-                            </FormLabel>
+                            {labelWithSaved("monthlyIncome", t("clientProfile.monthly_income"))}
                             <FormControl>
                               <Input 
                                 type="number" 
-                                placeholder="Ingresos totales mensuales"
+                                placeholder={t("clientProfile.monthly_income_placeholder")}
                                 {...field}
                                 onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                                 data-testid="input-monthly-income"
@@ -783,13 +840,11 @@ export default function ClientProfile() {
                 {/* Housing Questions Section */}
                 <Card>
                   <CardContent className="pt-6">
-                    <h2 className="text-xl font-semibold mb-6 text-gray-900">Preferencias de vivienda</h2>
+                    <h2 className="text-xl font-semibold mb-6 text-gray-900">{t("clientProfile.housing_preferences")}</h2>
                     <div className="space-y-8">
                       {/* Number of People */}
                       <div className="space-y-3">
-                        <FormLabel className="text-sm font-medium text-gray-700">
-                          ¿Personas que van a vivir en el inmueble?
-                        </FormLabel>
+                        {labelWithSaved("numberOfPeople", t("clientProfile.people_question"))}
                         <div className="flex items-center space-x-4">
                           <Button
                             type="button"
@@ -798,13 +853,13 @@ export default function ClientProfile() {
                             onClick={() => {
                               const newValue = Math.max(1, numberOfPeople - 1);
                               setNumberOfPeople(newValue);
-                              form.setValue("numberOfPeople", newValue);
+                              form.setValue("numberOfPeople", newValue, { shouldDirty: true, shouldTouch: true });
                             }}
                             data-testid="button-decrease-people"
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
-                          <span className="w-20 text-center font-medium">{numberOfPeople} personas</span>
+                          <span className="w-20 text-center font-medium">{t("clientProfile.people_count", { count: numberOfPeople })}</span>
                           <Button
                             type="button"
                             variant="outline"
@@ -812,7 +867,7 @@ export default function ClientProfile() {
                             onClick={() => {
                               const newValue = numberOfPeople + 1;
                               setNumberOfPeople(newValue);
-                              form.setValue("numberOfPeople", newValue);
+                              form.setValue("numberOfPeople", newValue, { shouldDirty: true, shouldTouch: true });
                             }}
                             data-testid="button-increase-people"
                           >
@@ -827,9 +882,7 @@ export default function ClientProfile() {
                         name="relationship"
                         render={({ field }) => (
                           <FormItem className="space-y-3">
-                            <FormLabel className="text-sm font-medium text-gray-700">
-                              ¿Relación entre vosotros?
-                            </FormLabel>
+                            {labelWithSaved("relationship", t("clientProfile.relationship_question"))}
                             <FormControl>
                               <RadioGroup
                                 onValueChange={field.onChange}
@@ -839,15 +892,15 @@ export default function ClientProfile() {
                               >
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="amigos" id="amigos" />
-                                  <label htmlFor="amigos" className="text-sm">Amigos</label>
+                                  <label htmlFor="amigos" className="text-sm">{t("clientProfile.relationship.friends")}</label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="familia" id="familia" />
-                                  <label htmlFor="familia" className="text-sm">Familia</label>
+                                  <label htmlFor="familia" className="text-sm">{t("clientProfile.relationship.family")}</label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="otra" id="otra" />
-                                  <label htmlFor="otra" className="text-sm">Otra</label>
+                                  <label htmlFor="otra" className="text-sm">{t("clientProfile.relationship.other")}</label>
                                 </div>
                               </RadioGroup>
                             </FormControl>
@@ -858,7 +911,7 @@ export default function ClientProfile() {
 
                       {/* Minors */}
                       <div className="space-y-3">
-                        <FormLabel className="text-sm font-medium text-gray-700">¿Hay menores?</FormLabel>
+                        {labelWithSaved("hasMinors", t("clientProfile.minors_question"))}
                         <div className="space-y-2">
                           <FormField
                             control={form.control}
@@ -872,7 +925,7 @@ export default function ClientProfile() {
                                     data-testid="checkbox-minors"
                                   />
                                 </FormControl>
-                                <FormLabel className="text-sm">Niños (0 - 12 años)</FormLabel>
+                                {labelWithSaved("hasMinors", t("clientProfile.children"), "text-sm")}
                               </FormItem>
                             )}
                           />
@@ -889,7 +942,7 @@ export default function ClientProfile() {
                                     data-testid="checkbox-adolescents"
                                   />
                                 </FormControl>
-                                <FormLabel className="text-sm">Adolescentes (13 - 17 años)</FormLabel>
+                                {labelWithSaved("hasAdolescents", t("clientProfile.adolescents"), "text-sm")}
                               </FormItem>
                             )}
                           />
@@ -902,7 +955,7 @@ export default function ClientProfile() {
                         name="petsStatus"
                         render={({ field }) => (
                           <FormItem className="space-y-3">
-                            <FormLabel className="text-sm font-medium text-gray-700">¿Tenéis mascotas?</FormLabel>
+                            {labelWithSaved("petsStatus", t("clientProfile.pets_question"))}
                             <FormControl>
                               <RadioGroup
                                 onValueChange={field.onChange}
@@ -912,11 +965,11 @@ export default function ClientProfile() {
                               >
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="no-tengo-mascota" id="no-pets" />
-                                  <label htmlFor="no-pets" className="text-sm">No tengo mascota</label>
+                                  <label htmlFor="no-pets" className="text-sm">{t("clientProfile.pets.none")}</label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="tengo-mascota" id="has-pets" />
-                                  <label htmlFor="has-pets" className="text-sm">Tengo mascota</label>
+                                  <label htmlFor="has-pets" className="text-sm">{t("clientProfile.pets.has")}</label>
                                 </div>
                               </RadioGroup>
                             </FormControl>
@@ -932,18 +985,16 @@ export default function ClientProfile() {
                           name="petsDescription"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-sm font-medium text-gray-700">
-                                Ej. Un perro pequeño
-                              </FormLabel>
+                              {labelWithSaved("petsDescription", t("clientProfile.pet_example"))}
                               <FormControl>
                                 <Input 
-                                  placeholder="Describe tu mascota"
+                                  placeholder={t("clientProfile.pet_description_placeholder")}
                                   maxLength={50}
                                   {...field}
                                   data-testid="input-pets-description"
                                 />
                               </FormControl>
-                              <p className="text-xs text-gray-500">{(field.value || "").length}/50 caracteres</p>
+                              <p className="text-xs text-gray-500">{t("clientProfile.characters", { count: (field.value || "").length })}</p>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -956,9 +1007,7 @@ export default function ClientProfile() {
                         name="moveInTiming"
                         render={({ field }) => (
                           <FormItem className="space-y-3">
-                            <FormLabel className="text-sm font-medium text-gray-700">
-                              ¿Cuándo tenéis pensado mudaros?
-                            </FormLabel>
+                            {labelWithSaved("moveInTiming", t("clientProfile.move_in_question"))}
                             <FormControl>
                               <RadioGroup
                                 onValueChange={field.onChange}
@@ -968,15 +1017,15 @@ export default function ClientProfile() {
                               >
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="lo-antes-posible" id="asap" />
-                                  <label htmlFor="asap" className="text-sm">Lo antes posible</label>
+                                  <label htmlFor="asap" className="text-sm">{t("clientProfile.move_in.asap")}</label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="tengo-flexibilidad" id="flexible" />
-                                  <label htmlFor="flexible" className="text-sm">Tengo flexibilidad</label>
+                                  <label htmlFor="flexible" className="text-sm">{t("clientProfile.move_in.flexible")}</label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <RadioGroupItem value="fecha-exacta" id="exact-date" />
-                                  <label htmlFor="exact-date" className="text-sm">En una fecha exacta</label>
+                                  <label htmlFor="exact-date" className="text-sm">{t("clientProfile.move_in.exact")}</label>
                                 </div>
                               </RadioGroup>
                             </FormControl>
@@ -992,9 +1041,7 @@ export default function ClientProfile() {
                           name="moveInDate"
                           render={({ field }) => (
                             <FormItem className="flex flex-col">
-                              <FormLabel className="text-sm font-medium text-gray-700">
-                                Fecha de mudanza
-                              </FormLabel>
+                              {labelWithSaved("moveInDate", t("clientProfile.move_in_date"))}
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <FormControl>
@@ -1009,7 +1056,7 @@ export default function ClientProfile() {
                                       {field.value ? (
                                         format(field.value, "dd/MM/yyyy")
                                       ) : (
-                                        <span>Selecciona una fecha</span>
+                                        <span>{t("clientProfile.select_date")}</span>
                                       )}
                                       <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
                                     </Button>
@@ -1024,6 +1071,7 @@ export default function ClientProfile() {
                                       date < new Date() || date < new Date("1900-01-01")
                                     }
                                     initialFocus
+                                    locale={dateLocale}
                                   />
                                 </PopoverContent>
                               </Popover>
@@ -1036,16 +1084,6 @@ export default function ClientProfile() {
                   </CardContent>
                 </Card>
 
-                {/* Submit Button */}
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    size="lg"
-                    data-testid="button-save-profile"
-                  >
-                    Guardar perfil
-                  </Button>
-                </div>
               </form>
             </Form>
           </div>
@@ -1055,24 +1093,24 @@ export default function ClientProfile() {
         return (
           <div className="space-y-6">
             <div className="mb-6 md:mb-8">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Favoritos</h1>
-              <p className="text-gray-600 text-sm md:text-base">Propiedades, agentes y agencias que has guardado</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{t("clientProfile.favorites.title")}</h1>
+              <p className="text-gray-600 text-sm md:text-base">{t("clientProfile.favorites.subtitle")}</p>
             </div>
 
             <Tabs defaultValue="propiedades" className="w-full">
               <TabsList className="w-full grid grid-cols-3 mb-4">
                 <TabsTrigger value="propiedades" data-testid="tab-propiedades">
                   <Home className="h-4 w-4 mr-1 md:mr-2" />
-                  <span className="hidden sm:inline">Propiedades</span>
-                  <span className="sm:hidden">Prop.</span>
+                  <span className="hidden sm:inline">{t("clientProfile.favorites.properties")}</span>
+                  <span className="sm:hidden">{t("clientProfile.favorites.properties_short")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="agentes" data-testid="tab-agentes">
                   <Star className="h-4 w-4 mr-1 md:mr-2" />
-                  <span>Agentes</span>
+                  <span>{t("clientProfile.favorites.agents")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="agencias" data-testid="tab-agencias">
                   <Building2 className="h-4 w-4 mr-1 md:mr-2" />
-                  <span>Agencias</span>
+                  <span>{t("clientProfile.favorites.agencies")}</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -1082,10 +1120,10 @@ export default function ClientProfile() {
                     <CardContent className="py-12 text-center">
                       <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No tienes propiedades favoritas
+                        {t("clientProfile.favorites.no_properties")}
                       </h3>
                       <p className="text-gray-500">
-                        Busca propiedades y guarda las que más te interesen
+                        {t("clientProfile.favorites.no_properties_desc")}
                       </p>
                     </CardContent>
                   </Card>
@@ -1134,14 +1172,14 @@ export default function ClientProfile() {
                                       if (navigator.share) {
                                         navigator.share({
                                           title: property.title,
-                                          text: `Mira esta propiedad: ${property.title}`,
+                                          text: t("clientProfile.favorites.share_property_text", { title: property.title }),
                                           url: propertyUrl,
                                         });
                                       } else {
                                         navigator.clipboard.writeText(propertyUrl);
                                         toast({
-                                          title: "Enlace copiado",
-                                          description: "El enlace de la propiedad se ha copiado al portapapeles",
+                                          title: t("clientProfile.toast.link_copied"),
+                                          description: t("clientProfile.toast.property_link_copied"),
                                         });
                                       }
                                     }}
@@ -1152,7 +1190,7 @@ export default function ClientProfile() {
                                 </div>
                               </div>
                               <Badge variant={property.operationType === "Venta" ? "default" : "secondary"} className="w-fit mb-2">
-                                {property.operationType}
+                                {property.operationType === "Venta" ? t("home.tab_sale") : t("home.tab_rent")}
                               </Badge>
                               <p className="text-2xl font-bold text-primary mb-2">
                                 €{property.price.toLocaleString()}
@@ -1162,9 +1200,9 @@ export default function ClientProfile() {
                                 {property.neighborhood}
                               </p>
                               <div className="flex gap-4 text-sm text-gray-500 mb-3">
-                                {property.bedrooms && <span>{property.bedrooms} hab.</span>}
-                                {property.bathrooms && <span>{property.bathrooms} baños</span>}
-                                {property.superficie && <span>{property.superficie} m²</span>}
+                                {property.bedrooms && <span>{t("clientProfile.favorites.bedrooms", { count: property.bedrooms })}</span>}
+                                {property.bathrooms && <span>{t("clientProfile.favorites.bathrooms", { count: property.bathrooms })}</span>}
+                                {property.superficie && <span>{t("clientProfile.favorites.area", { area: property.superficie })}</span>}
                               </div>
                               <div className="flex-1" />
                               <Button 
@@ -1172,7 +1210,7 @@ export default function ClientProfile() {
                                 className="w-full mt-auto"
                                 onClick={() => navigate(`/property/${property.uuid}`)}
                               >
-                                Ver detalles
+                                {t("clientProfile.favorites.details")}
                               </Button>
                             </div>
                           </CardContent>
@@ -1189,10 +1227,10 @@ export default function ClientProfile() {
                     <CardContent className="py-12 text-center">
                       <Star className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No tienes agentes favoritos
+                        {t("clientProfile.favorites.no_agents")}
                       </h3>
                       <p className="text-gray-500">
-                        Guarda agentes que te interesen para contactarlos después
+                        {t("clientProfile.favorites.no_agents_desc")}
                       </p>
                     </CardContent>
                   </Card>
@@ -1224,7 +1262,7 @@ export default function ClientProfile() {
                           <div className="flex items-center justify-between mb-2">
                             {agent.yearsOfExperience && (
                               <span className="text-sm text-gray-600">
-                                {agent.yearsOfExperience} años exp.
+                                {t("clientProfile.favorites.years_experience", { count: agent.yearsOfExperience })}
                               </span>
                             )}
                             {agent.rating && (
@@ -1261,10 +1299,10 @@ export default function ClientProfile() {
                     <CardContent className="py-12 text-center">
                       <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No tienes agencias favoritas
+                        {t("clientProfile.favorites.no_agencies")}
                       </h3>
                       <p className="text-gray-500">
-                        Guarda agencias que te interesen para acceder a ellas
+                        {t("clientProfile.favorites.no_agencies_desc")}
                       </p>
                     </CardContent>
                   </Card>
@@ -1287,7 +1325,7 @@ export default function ClientProfile() {
                               }}
                               className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
                               data-testid={`button-remove-agency-${agency.id}`}
-                              aria-label="Eliminar de favoritos"
+                              aria-label={t("clientProfile.favorites.remove")}
                             >
                               <Heart className="w-4 h-4 fill-red-500 text-red-500" />
                             </button>
@@ -1298,7 +1336,7 @@ export default function ClientProfile() {
                                   onClick={(e) => e.stopPropagation()}
                                   className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
                                   data-testid={`button-share-agency-${agency.id}`}
-                                  aria-label="Compartir agencia"
+                                  aria-label={t("clientProfile.favorites.share_agency")}
                                 >
                                   <Share2 className="w-4 h-4 text-gray-400 hover:text-primary" />
                                 </button>
@@ -1314,7 +1352,7 @@ export default function ClientProfile() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={(e) => handleShareAgency(agency, 'copy', e)} data-testid="share-copy">
                                   <Copy className="w-4 h-4 mr-2" />
-                                  Copiar enlace
+                                  {t("clientProfile.favorites.copy_link")}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -1341,12 +1379,12 @@ export default function ClientProfile() {
                             <div className="flex items-center gap-1">
                               <Star className="w-4 h-4 text-yellow-400 fill-current" />
                               <span className="text-sm font-medium">
-                                {agency.reviewAverage && agency.reviewAverage > 0 ? agency.reviewAverage.toFixed(1) : "Sin valoración"}
+                                {agency.reviewAverage && agency.reviewAverage > 0 ? agency.reviewAverage.toFixed(1) : t("clientProfile.favorites.no_rating")}
                               </span>
                             </div>
                             {agency.reviewCount !== undefined && agency.reviewCount > 0 && (
                               <span className="text-sm text-gray-500">
-                                ({agency.reviewCount} {agency.reviewCount === 1 ? "reseña" : "reseñas"})
+                                ({agency.reviewCount} {agency.reviewCount === 1 ? t("clientProfile.favorites.review") : t("clientProfile.favorites.reviews")})
                               </span>
                             )}
                           </div>
@@ -1383,13 +1421,15 @@ export default function ClientProfile() {
 
       case "mensajes":
         return (
-          <div className="space-y-6">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mensajes</h1>
-              <p className="text-gray-600">Conversaciones con agentes inmobiliarios</p>
+          <div className="h-full flex flex-col">
+            <div className="mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("messages.title")}</h1>
+              <p className="text-gray-600">{t("messages.conversations_with_agents")}</p>
             </div>
 
-            <ClientConversationalMessages />
+            <div className="flex-1 min-h-0">
+              <ClientConversationalMessages />
+            </div>
           </div>
         );
 
@@ -1397,15 +1437,15 @@ export default function ClientProfile() {
         return (
           <div className="space-y-6">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis búsquedas</h1>
-              <p className="text-gray-600">Búsquedas que has guardado para acceder rápidamente</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("clientProfile.searches.title")}</h1>
+              <p className="text-gray-600">{t("clientProfile.searches.subtitle")}</p>
             </div>
 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bookmark className="h-5 w-5 text-blue-500" />
-                  Búsquedas guardadas ({savedSearches.length})
+                  {t("clientProfile.searches.saved", { count: savedSearches.length })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1413,10 +1453,10 @@ export default function ClientProfile() {
                   <div className="text-center py-12">
                     <Bookmark className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No tienes búsquedas guardadas
+                      {t("clientProfile.searches.empty")}
                     </h3>
                     <p className="text-gray-500">
-                      Cuando encuentres una búsqueda que te interese, guárdala para acceder a ella rápidamente
+                      {t("clientProfile.searches.empty_desc")}
                     </p>
                   </div>
                 ) : (
@@ -1446,7 +1486,7 @@ export default function ClientProfile() {
                                   }}
                                   data-testid={`button-save-edit-${search.id}`}
                                 >
-                                  Guardar
+                                  {t("clientProfile.searches.save")}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1457,7 +1497,7 @@ export default function ClientProfile() {
                                   }}
                                   data-testid={`button-cancel-edit-${search.id}`}
                                 >
-                                  Cancelar
+                                  {t("clientProfile.searches.cancel")}
                                 </Button>
                               </div>
                             ) : (
@@ -1477,7 +1517,9 @@ export default function ClientProfile() {
                                     <Badge variant="secondary">{search.city}</Badge>
                                   ) : null}
                                   {search.operationType && (
-                                    <Badge variant="outline">{search.operationType}</Badge>
+                                    <Badge variant="outline">
+                                      {search.operationType === "Venta" ? t("home.tab_sale") : t("home.tab_rent")}
+                                    </Badge>
                                   )}
                                   {search.priceMin && search.priceMax && (
                                     <Badge variant="outline">
@@ -1485,10 +1527,10 @@ export default function ClientProfile() {
                                     </Badge>
                                   )}
                                   {search.bedrooms && (
-                                    <Badge variant="outline">{search.bedrooms} hab.</Badge>
+                                    <Badge variant="outline">{t("clientProfile.searches.bedrooms", { count: search.bedrooms })}</Badge>
                                   )}
                                   {search.bathrooms && (
-                                    <Badge variant="outline">{search.bathrooms} baños</Badge>
+                                    <Badge variant="outline">{t("clientProfile.searches.bathrooms", { count: search.bathrooms })}</Badge>
                                   )}
                                 </div>
 
@@ -1521,7 +1563,7 @@ export default function ClientProfile() {
                                       navigate(url);
                                     }}
                                     data-testid={`button-apply-search-${search.id}`}
-                                    title="Ver resultados"
+                                    title={t("clientProfile.searches.view_results")}
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>
@@ -1537,7 +1579,7 @@ export default function ClientProfile() {
                                         className="text-xs px-2"
                                         data-testid={`button-confirm-delete-${search.id}`}
                                       >
-                                        Sí
+                                        {t("clientProfile.searches.confirm")}
                                       </Button>
                                       <Button
                                         size="sm"
@@ -1546,7 +1588,7 @@ export default function ClientProfile() {
                                         className="text-xs px-2"
                                         data-testid={`button-cancel-delete-${search.id}`}
                                       >
-                                        No
+                                        {t("clientProfile.searches.no")}
                                       </Button>
                                     </div>
                                   ) : (
@@ -1559,7 +1601,7 @@ export default function ClientProfile() {
                                           setEditingSearchName(search.name);
                                         }}
                                         data-testid={`button-edit-search-${search.id}`}
-                                        title="Editar nombre"
+                                        title={t("clientProfile.searches.edit_name")}
                                       >
                                         <Edit2 className="h-4 w-4" />
                                       </Button>
@@ -1568,7 +1610,7 @@ export default function ClientProfile() {
                                         variant="ghost"
                                         onClick={() => setDeletingSearchId(search.id)}
                                         data-testid={`button-delete-search-${search.id}`}
-                                        title="Eliminar"
+                                        title={t("clientProfile.searches.delete")}
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
@@ -1608,7 +1650,7 @@ export default function ClientProfile() {
                   data-testid="sidebar-perfil"
                 >
                   <User className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Mi Perfil</span>}
+                  {!sidebarCollapsed && <span>{t("clientProfile.nav.profile")}</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -1621,7 +1663,7 @@ export default function ClientProfile() {
                   data-testid="sidebar-busquedas"
                 >
                   <Bookmark className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Mis búsquedas</span>}
+                  {!sidebarCollapsed && <span>{t("clientProfile.nav.searches")}</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -1634,7 +1676,7 @@ export default function ClientProfile() {
                   data-testid="sidebar-favoritos"
                 >
                   <Heart className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Favoritos</span>}
+                  {!sidebarCollapsed && <span>{t("clientProfile.nav.favorites")}</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
@@ -1647,7 +1689,7 @@ export default function ClientProfile() {
                   data-testid="sidebar-mensajes"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  {!sidebarCollapsed && <span>Mensajes</span>}
+                  {!sidebarCollapsed && <span>{t("clientProfile.nav.messages")}</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -1668,8 +1710,12 @@ export default function ClientProfile() {
         </div>
 
         {/* Main content area */}
-        <main className={`absolute inset-0 p-4 md:p-6 pt-20 md:pt-24 pb-20 md:pb-6 transition-all duration-300 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'}`}>
-          <div className="max-w-6xl mx-auto">
+        <main className={`absolute inset-0 pt-20 md:pt-24 pb-20 md:pb-6 transition-all duration-300 ${
+          currentSection === "mensajes"
+            ? `p-2 md:p-3 ${sidebarCollapsed ? "md:left-16 md:pl-2" : "md:left-64"}`
+            : `p-4 md:p-6 md:right-40 ${sidebarCollapsed ? "md:left-16" : "md:left-64"}`
+        }`}>
+          <div className={currentSection === "mensajes" ? "w-full h-full" : "max-w-6xl mx-auto"}>
             {renderMainContent()}
           </div>
         </main>
@@ -1682,13 +1728,13 @@ export default function ClientProfile() {
       <AlertDialog open={!!removingFavoriteProperty} onOpenChange={(open) => !open && setRemovingFavoriteProperty(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar de favoritos</AlertDialogTitle>
+            <AlertDialogTitle>{t("clientProfile.dialog.remove_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Estás seguro de que quieres eliminar "{removingFavoriteProperty?.title}" de tus favoritos?
+              {t("clientProfile.dialog.remove_property", { title: removingFavoriteProperty?.title || "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-remove-favorite">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-remove-favorite">{t("clientProfile.searches.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (removingFavoriteProperty) {
@@ -1698,7 +1744,7 @@ export default function ClientProfile() {
               }}
               data-testid="button-confirm-remove-favorite"
             >
-              Eliminar
+              {t("clientProfile.searches.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1708,13 +1754,13 @@ export default function ClientProfile() {
       <AlertDialog open={!!removingFavoriteAgency} onOpenChange={(open) => !open && setRemovingFavoriteAgency(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar de favoritos</AlertDialogTitle>
+            <AlertDialogTitle>{t("clientProfile.dialog.remove_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Estás seguro de que quieres eliminar "{removingFavoriteAgency?.agencyName}" de tus agencias favoritas?
+              {t("clientProfile.dialog.remove_agency", { name: removingFavoriteAgency?.agencyName || "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-remove-agency-favorite">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-remove-agency-favorite">{t("clientProfile.searches.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (removingFavoriteAgency) {
@@ -1724,7 +1770,7 @@ export default function ClientProfile() {
               }}
               data-testid="button-confirm-remove-agency-favorite"
             >
-              Eliminar
+              {t("clientProfile.searches.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

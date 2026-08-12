@@ -26,6 +26,10 @@ const formSchema = z.object({
       /^[a-zA-Z0-9._%+-ñÑáéíóúÁÉÍÓÚüÜ]+@[a-zA-Z0-9.-ñÑáéíóúÁÉÍÓÚüÜ]+\.[a-zA-Z]{2,}$/,
       "Por favor introduce un correo electrónico válido"
     ),
+  phone: z.string()
+    .min(9, "El teléfono debe tener 9 dígitos")
+    .max(9, "El teléfono debe tener 9 dígitos")
+    .regex(/^[6-9]\d{8}$/, "Introduce un teléfono español válido (9 dígitos, empezando por 6, 7, 8 o 9)"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
 });
 
@@ -42,6 +46,7 @@ export default function ClientRegisterPage() {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
       password: "",
     },
   });
@@ -54,7 +59,7 @@ export default function ClientRegisterPage() {
         name: data.name,
         surname: "", // Campo simplificado
         email: data.email,
-        phone: "000000000", // Campo requerido con valor por defecto
+        phone: data.phone,
         password: data.password,
         // Datos adicionales para el registro de cliente
         propertyInterest: "", // Se puede completar más tarde
@@ -152,6 +157,31 @@ export default function ClientRegisterPage() {
                                 type="email"
                                 className="pl-10"
                                 {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Teléfono</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                placeholder="612345678"
+                                type="tel"
+                                inputMode="numeric"
+                                maxLength={9}
+                                className="pl-10"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value.replace(/\D/g, "").slice(0, 9))}
                               />
                             </div>
                           </FormControl>

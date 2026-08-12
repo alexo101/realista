@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MapPin, Check, AlertCircle, Loader2 } from "lucide-react";
 import { loadGoogleMaps } from "@/utils/googleMaps";
+import { useLanguage } from "@/contexts/language-context";
 
 interface AddressValidatorProps {
   onAddressValidated: (data: {
@@ -41,6 +42,7 @@ export function AddressValidator({
   initialLatitude = null,
   initialLongitude = null,
 }: AddressValidatorProps) {
+  const { t } = useLanguage();
   const [locality, setLocality] = useState(initialLocality);
   const [streetName, setStreetName] = useState(initialStreetName);
   const [streetNumber, setStreetNumber] = useState(initialStreetNumber);
@@ -64,7 +66,7 @@ export function AddressValidator({
 
     // Basic validation
     if (!locality.trim() || !streetName.trim()) {
-      setError("Por favor, introduce al menos la localidad y el nombre de la calle.");
+      setError(t("propertyForm.address.error.required_fields"));
       return;
     }
 
@@ -118,16 +120,16 @@ export function AddressValidator({
               setShowCandidates(true);
             }
           } else if (status === window.google.maps.GeocoderStatus.ZERO_RESULTS) {
-            setError("No se encontró la dirección. Verifica la ortografía o intenta con información más específica.");
+            setError(t("propertyForm.address.error.not_found"));
           } else {
-            setError("Error al validar la dirección. Por favor, inténtalo de nuevo.");
+            setError(t("propertyForm.address.error.validation"));
             console.error("Geocoding error:", status);
           }
         }
       );
     } catch (error) {
       console.error("Error during geocoding:", error);
-      setError("Error al conectar con el servicio de mapas. Por favor, inténtalo de nuevo.");
+      setError(t("propertyForm.address.error.connection"));
       setIsValidating(false);
     }
   };
@@ -171,10 +173,10 @@ export function AddressValidator({
       {/* Input Fields */}
       <div className="space-y-3">
         <div>
-          <Label htmlFor="locality">Localidad</Label>
+          <Label htmlFor="locality">{t("propertyForm.address.locality")}</Label>
           <Input
             id="locality"
-            placeholder="Ej: Madrid, Barcelona, Valencia"
+            placeholder={t("propertyForm.address.locality_placeholder")}
             value={locality}
             onChange={(e) => setLocality(e.target.value)}
             disabled={isValidated}
@@ -183,10 +185,10 @@ export function AddressValidator({
         </div>
 
         <div>
-          <Label htmlFor="streetName">Nombre de la calle</Label>
+          <Label htmlFor="streetName">{t("propertyForm.address.street_name")}</Label>
           <Input
             id="streetName"
-            placeholder="Ej: Calle Gran Vía"
+            placeholder={t("propertyForm.address.street_name_placeholder")}
             value={streetName}
             onChange={(e) => setStreetName(e.target.value)}
             disabled={isValidated}
@@ -195,10 +197,10 @@ export function AddressValidator({
         </div>
 
         <div>
-          <Label htmlFor="streetNumber">Número</Label>
+          <Label htmlFor="streetNumber">{t("propertyForm.address.number")}</Label>
           <Input
             id="streetNumber"
-            placeholder="Ej: 123"
+            placeholder={t("propertyForm.address.number_placeholder")}
             value={streetNumber}
             onChange={(e) => setStreetNumber(e.target.value)}
             disabled={isValidated}
@@ -218,12 +220,12 @@ export function AddressValidator({
           {isValidating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Validando...
+              {t("propertyForm.address.validating")}
             </>
           ) : (
             <>
               <MapPin className="mr-2 h-4 w-4" />
-              Validar dirección
+              {t("propertyForm.address.validate")}
             </>
           )}
         </Button>
@@ -240,7 +242,7 @@ export function AddressValidator({
       {/* Multiple Candidates Selection */}
       {showCandidates && candidates.length > 0 && (
         <div className="border rounded-lg p-4 space-y-2">
-          <p className="font-medium text-sm">Se encontraron varias direcciones. Selecciona la correcta:</p>
+          <p className="font-medium text-sm">{t("propertyForm.address.multiple_results")}</p>
           <div className="space-y-2">
             {candidates.map((candidate, index) => (
               <button
@@ -265,7 +267,7 @@ export function AddressValidator({
           <div className="flex items-start gap-2">
             <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium text-green-900 text-sm">Dirección encontrada:</p>
+              <p className="font-medium text-green-900 text-sm">{t("propertyForm.address.found")}</p>
               <p className="text-sm text-green-800 mt-1">{validatedAddress}</p>
             </div>
           </div>
@@ -290,7 +292,7 @@ export function AddressValidator({
             className="w-full"
             data-testid="button-relocalize"
           >
-            Cambiar dirección
+            {t("propertyForm.address.change")}
           </Button>
         </div>
       )}
@@ -301,10 +303,10 @@ export function AddressValidator({
           <div className="flex items-start gap-2">
             <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-medium text-yellow-900 text-sm">Dirección guardada (sin coordenadas):</p>
+              <p className="font-medium text-yellow-900 text-sm">{t("propertyForm.address.saved_without_coordinates")}</p>
               <p className="text-sm text-yellow-800 mt-1">{validatedAddress}</p>
               <p className="text-xs text-yellow-700 mt-2">
-                Esta dirección necesita ser revalidada para obtener coordenadas precisas del mapa.
+                {t("propertyForm.address.revalidate_help")}
               </p>
             </div>
           </div>
@@ -317,7 +319,7 @@ export function AddressValidator({
             className="w-full border-yellow-600 text-yellow-900 hover:bg-yellow-100"
             data-testid="button-revalidate"
           >
-            Revalidar dirección
+            {t("propertyForm.address.revalidate")}
           </Button>
         </div>
       )}

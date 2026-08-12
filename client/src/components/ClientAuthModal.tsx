@@ -31,7 +31,8 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
   const [email, setEmail] = useState("");
   const [emailConfirm, setEmailConfirm] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ email?: string; emailConfirm?: string; password?: string }>({});
+  const [phone, setPhone] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; emailConfirm?: string; password?: string; phone?: string }>({});
 
   const validateLogin = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -51,7 +52,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
   };
 
   const validateRegister = () => {
-    const newErrors: { email?: string; emailConfirm?: string; password?: string } = {};
+    const newErrors: { email?: string; emailConfirm?: string; password?: string; phone?: string } = {};
     
     if (!email) {
       newErrors.email = "El correo electrónico es requerido";
@@ -63,6 +64,12 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
       newErrors.emailConfirm = "Confirma tu correo electrónico";
     } else if (email !== emailConfirm) {
       newErrors.emailConfirm = "Los correos electrónicos no coinciden";
+    }
+    
+    if (!phone) {
+      newErrors.phone = "El teléfono es obligatorio";
+    } else if (!/^[6-9]\d{8}$/.test(phone.replace(/\s/g, ""))) {
+      newErrors.phone = "Introduce un teléfono español válido (9 dígitos, empezando por 6, 7, 8 o 9)";
     }
     
     if (!password) {
@@ -94,7 +101,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
         name: email.split('@')[0],
         surname: "",
         email: email,
-        phone: "",
+        phone: phone.replace(/\s/g, ""),
         password: password,
         propertyInterest: "",
         budget: null,
@@ -166,6 +173,7 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
     setEmail("");
     setEmailConfirm("");
     setPassword("");
+    setPhone("");
     setErrors({});
   };
 
@@ -279,6 +287,24 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
               />
               {errors.emailConfirm && (
                 <p className="text-sm text-red-500">{errors.emailConfirm}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="register-phone">Teléfono</Label>
+              <Input
+                id="register-phone"
+                placeholder="612345678"
+                type="tel"
+                inputMode="numeric"
+                maxLength={9}
+                autoComplete="tel"
+                data-testid="input-register-phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 9))}
+              />
+              {errors.phone && (
+                <p className="text-sm text-red-500">{errors.phone}</p>
               )}
             </div>
 

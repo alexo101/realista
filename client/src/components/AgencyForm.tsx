@@ -12,6 +12,7 @@ import { AddressAutocomplete } from "./AddressAutocomplete";
 import { CitySearchSelect } from "./CitySearchSelect";
 import { useAutosave } from "@/hooks/use-autosave";
 import { SavedIndicator } from "@/components/SavedIndicator";
+import { useLanguage } from "@/contexts/language-context";
 
 export interface Agency {
   id: number;
@@ -40,6 +41,7 @@ interface AgencyFormProps {
 
 export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyFormProps) {
   const isEditMode = !!agency;
+  const { t } = useLanguage();
 
   // Estados para los campos del formulario
   const [agencyName, setAgencyName] = useState("");
@@ -246,7 +248,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               {logoPreview ? (
                 <img
                   src={logoPreview}
-                  alt="Logo de la agencia"
+                  alt={t("agencyForm.logo_alt")}
                   className="w-full h-full object-contain"
                 />
               ) : (
@@ -254,7 +256,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               )}
             </div>
             <Label htmlFor="agency-logo-upload" className="cursor-pointer text-sm text-primary py-2 px-4 min-h-[44px] flex items-center">
-              {logoPreview ? "Cambiar logo" : "Subir logo"}
+              {logoPreview ? t("agencyForm.change_logo") : t("agencyForm.upload_logo")}
               <SavedIndicator visible={savedFields.has("agencyLogo")} />
             </Label>
             <Input
@@ -268,7 +270,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
 
           <div className="space-y-4">
             <div>
-              {labelWithSaved("agencyName", "Nombre de la agencia", "required")}
+              {labelWithSaved("agencyName", t("manage.agency.name"), "required")}
               <Input
                 id="agencyName"
                 value={agencyName}
@@ -276,14 +278,14 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   markChanged("agencyName");
                   setAgencyName(e.target.value);
                 }}
-                placeholder="Introduce el nombre de la agencia"
+                placeholder={t("agencyForm.name_placeholder")}
                 required
                 className="min-h-[44px] w-full"
               />
             </div>
 
             <div>
-              {labelWithSaved("agencyAddress", "Dirección de la agencia")}
+              {labelWithSaved("agencyAddress", t("manage.agency.address"))}
               <AddressAutocomplete
                 value={agencyAddress}
                 onChange={(val) => {
@@ -305,12 +307,12 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   setLatitude(lat);
                   setLongitude(lng);
                 }}
-                placeholder="Busca la dirección física de la agencia"
+                placeholder={t("agencyForm.address_placeholder")}
               />
             </div>
 
             <div>
-              {labelWithSaved("agencyDescription", "Descripción pública")}
+              {labelWithSaved("agencyDescription", t("manage.agency.description"))}
               <Textarea
                 id="agencyDescription"
                 value={agencyDescription}
@@ -318,14 +320,14 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   markChanged("agencyDescription");
                   setAgencyDescription(e.target.value);
                 }}
-                placeholder="Describe tu agencia inmobiliaria a clientes potenciales"
+                placeholder={t("manage.agency.description_placeholder")}
                 className="min-h-[120px] w-full"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                {labelWithSaved("agencyPhone", "Número de teléfono")}
+                {labelWithSaved("agencyPhone", t("manage.agency.phone"))}
                 <Input
                   id="agencyPhone"
                   value={agencyPhone}
@@ -334,18 +336,18 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     markChanged("agencyPhone");
                     setAgencyPhone(value);
                     if (value && !validateSpanishPhone(value)) {
-                      setPhoneError("Formato inválido. Ejemplos: +34 600 123 456 o 600123456");
+                      setPhoneError(t("agencyForm.invalid_phone"));
                     } else {
                       setPhoneError("");
                     }
                   }}
-                  placeholder="Teléfono (ej: +34 600 123 456)"
+                  placeholder={t("agencyForm.phone_placeholder")}
                   className={`min-h-[44px] w-full ${phoneError ? "border-red-500" : ""}`}
                 />
                 {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
               </div>
               <div>
-                {labelWithSaved("yearEstablished", "Año de fundación")}
+                {labelWithSaved("yearEstablished", t("manage.agency.year_established"))}
                 <Select
                   value={yearEstablished ? yearEstablished.toString() : 'none'}
                   onValueChange={(value) => {
@@ -358,10 +360,10 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   }}
                 >
                   <SelectTrigger className="min-h-[44px] w-full">
-                    <SelectValue placeholder="Selecciona el año" />
+                    <SelectValue placeholder={t("agencyForm.select_year")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">-- Seleccionar año --</SelectItem>
+                    <SelectItem value="none">{t("agencyForm.select_year_option")}</SelectItem>
                     {(() => {
                       const currentYear = new Date().getFullYear();
                       const years = [];
@@ -380,7 +382,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              {labelWithSaved("agencySupportedLanguages", "Idiomas que se hablan en la agencia")}
+              {labelWithSaved("agencySupportedLanguages", t("manage.agency.languages"))}
               <div className="mt-2 flex flex-wrap gap-2">
                 {['español', 'català', 'english', 'français', 'deutsch', 'italiano', 'português', 'русский', '中文', '日本語', 'العربية'].map((lang) => (
                   <Button
@@ -405,7 +407,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
             </div>
 
             <div>
-              {labelWithSaved("city", "Ciudad donde opera la agencia")}
+              {labelWithSaved("city", t("agencyForm.operating_city"))}
               <CitySearchSelect
                 value={city || null}
                 onChange={(nextCity) => {
@@ -414,12 +416,14 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   setCity(nextCity || "");
                   setInfluenceNeighborhoods([]);
                 }}
+                placeholder={t("agencyForm.operating_city_placeholder")}
+                emptyLabel={t("agencyForm.no_cities")}
                 testId="input-agency-city-search"
               />
             </div>
 
             <div>
-              {labelWithSaved("influenceNeighborhoods", "Barrios de influencia (el perfil de tu agencia aparecerá en estos barrios)")}
+              {labelWithSaved("influenceNeighborhoods", t("manage.agency.influence_neighborhoods"))}
               <NeighborhoodSelector
                 selectedNeighborhoods={influenceNeighborhoods}
                 city={city}
@@ -427,17 +431,17 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   markChanged("influenceNeighborhoods");
                   setInfluenceNeighborhoods(neighborhoods);
                 }}
-                buttonText="Selecciona los barrios donde opera la agencia"
-                title="ZONAS DE OPERACIÓN DE LA AGENCIA"
+                buttonText={t("manage.agency.neighborhoods_button")}
+                title={t("agencyForm.operating_zones_title")}
               />
               <p className="text-sm text-gray-500 mt-1">
-                Estos barrios se utilizarán para relacionar esta agencia con las búsquedas de los clientes.
+                {t("agencyForm.neighborhoods_help")}
               </p>
             </div>
 
             <div>
               <Label className="inline-flex items-center">
-                Enlaces a página web y redes sociales
+                {t("manage.agency.social_links")}
                 <SavedIndicator
                   visible={
                     savedFields.has("agencyWebsite") ||
@@ -466,12 +470,12 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                         markChanged("agencyWebsite");
                         setAgencyWebsite(value);
                         if (value && !validateWebsite(value)) {
-                          setWebsiteError("URL inválida. Debe incluir http:// o https://");
+                          setWebsiteError(t("agencyForm.invalid_website"));
                         } else {
                           setWebsiteError("");
                         }
                       }}
-                      placeholder="URL de tu sitio web (con https://)"
+                      placeholder={t("manage.agency.website_placeholder")}
                       className={`min-h-[44px] flex-1 ${websiteError ? "border-red-500" : ""}`}
                     />
                   </div>
@@ -485,7 +489,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     </svg>
                   </div>
                   <Input
-                    placeholder="URL de Facebook"
+                    placeholder={t("agencyForm.facebook_placeholder")}
                     value={facebookUrl}
                     onChange={(e) => {
                       markChanged("facebookUrl");
@@ -504,7 +508,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     </svg>
                   </div>
                   <Input
-                    placeholder="URL de Instagram"
+                    placeholder={t("agencyForm.instagram_placeholder")}
                     value={instagramUrl}
                     onChange={(e) => {
                       markChanged("instagramUrl");
@@ -519,7 +523,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     <SiGooglemaps className="w-5 h-5 text-primary" />
                   </div>
                   <Input
-                    placeholder="URL de Google Maps"
+                    placeholder={t("agencyForm.google_maps_placeholder")}
                     value={googleMapsUrl}
                     onChange={(e) => {
                       markChanged("googleMapsUrl");
@@ -538,7 +542,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                     </svg>
                   </div>
                   <Input
-                    placeholder="URL de LinkedIn"
+                    placeholder={t("agencyForm.linkedin_placeholder")}
                     value={linkedinUrl}
                     onChange={(e) => {
                       markChanged("linkedinUrl");
@@ -558,7 +562,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                   onClick={onCancel}
                   className="w-full sm:w-auto min-h-[44px]"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -571,12 +575,12 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Guardando...
+                      {t("common.saving")}
                     </span>
                   ) : (
                     <span className="flex items-center justify-center">
                       <Check className="mr-2 h-4 w-4" />
-                      Crear agencia
+                      {t("agencyForm.create")}
                     </span>
                   )}
                 </Button>

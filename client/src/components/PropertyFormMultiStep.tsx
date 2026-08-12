@@ -31,6 +31,7 @@ import { DraggableImageGallery } from "./DraggableImageGallery";
 import { AddressValidator } from "./AddressValidator";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { ALL_CITIES } from "@/utils/neighborhoods";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -39,7 +40,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Check, ChevronsUpDown, Sparkles, X } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es, fr, it } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 
 const propertyTypes = [
@@ -68,68 +69,110 @@ const availabilityOptions = ["Inmediatamente", "A partir de"] as const;
 const propertyConditionOptions = ["Obra nueva", "Buen estado", "A reformar", "Reformado"] as const;
 const housingStatusOptions = ["Disponible sin limitación", "Sin cédula de habitabilidad", "Nuda propiedad", "Alquilada con inquilinos", "Ocupada ilegalmente", "De banco"] as const;
 
-// Step 1 schema: Basic Information
-const step1Schema = z.object({
-  reference: z.string().optional(),
-  type: z.enum(propertyTypes, { required_error: "Campo requerido" }),
-  housingType: z.enum(housingTypes).optional().nullable(),
-  operationType: z.enum(["Venta", "Alquiler"], { required_error: "Campo requerido" }),
-  price: z.coerce.number({ required_error: "Campo requerido", invalid_type_error: "Campo requerido" }).min(1, "El precio es obligatorio"),
-  bedrooms: z.coerce.number().int("Debe ser un número entero").min(1, "Al menos 1").optional().nullable(),
-  bathrooms: z.coerce.number().int("Debe ser un número entero").min(1, "Al menos 1").optional().nullable(),
-  superficie: z.coerce.number().min(1, "Debe ser mayor que 0").optional().nullable(),
-});
+const PROPERTY_OPTION_KEYS: Record<string, string> = {
+  Venta: "manage.client_pref_option.operation.venta",
+  Alquiler: "manage.client_pref_option.operation.alquiler",
+  Vivienda: "manage.client_pref_option.property_type.vivienda",
+  Oficinas: "manage.client_pref_option.property_type.oficinas",
+  Locales: "manage.client_pref_option.property_type.locales",
+  Parking: "manage.client_pref_option.property_type.parking",
+  Terrenos: "manage.client_pref_option.property_type.terrenos",
+  Trasteros: "manage.client_pref_option.property_type.trasteros",
+  Edificios: "manage.client_pref_option.property_type.edificios",
+  Pisos: "manage.client_pref_option.housing_type.pisos",
+  Áticos: "manage.client_pref_option.housing_type.aticos",
+  Dúplex: "manage.client_pref_option.housing_type.duplex",
+  "Casa o chalet independiente": "manage.client_pref_option.housing_type.casa_independiente",
+  "Casa o chalet adosado": "manage.client_pref_option.housing_type.casa_adosada",
+  "Casa o chalet pareado": "manage.client_pref_option.housing_type.casa_pareada",
+  "Obra nueva": "manage.client_pref_option.condition.obra_nueva",
+  "Buen estado": "manage.client_pref_option.condition.buen_estado",
+  "A reformar": "manage.client_pref_option.condition.a_reformar",
+  Reformado: "manage.client_pref_option.condition.reformado",
+  Inmediatamente: "manage.client_pref_option.availability.inmediatamente",
+  "A partir de": "manage.client_pref_option.availability.a_partir_de",
+};
 
-// Step 2 schema: Location
-const step2Schema = step1Schema.extend({
-  locality: z.string().optional(),
-  streetName: z.string().optional(),
-  streetNumber: z.string().optional(),
-  address: z.string({ required_error: "Campo requerido" }).min(1, "La dirección es obligatoria"),
-  latitude: z.number().optional().nullable(),
-  longitude: z.number().optional().nullable(),
-  hideAddress: z.boolean().default(true),
-  escalera: z.enum(escaleraOptions).nullable().optional(),
-  planta: z.enum(plantaOptions).nullable().optional(),
-  puerta: z.enum(puertaOptions).nullable().optional(),
-  neighborhood: z.string({ required_error: "Campo requerido" }).min(1, "Selecciona un barrio"),
-  // Catalog city/district used for client↔property matching (not Google locality)
-  city: z.string().optional().nullable(),
-  district: z.string().optional().nullable(),
-});
+function getPropertyOptionLabel(value: string, t: (key: string) => string): string {
+  return PROPERTY_OPTION_KEYS[value] ? t(PROPERTY_OPTION_KEYS[value]) : value;
+}
 
-// Step 3 schema: Features
-const step3Schema = step2Schema.extend({
-  features: z.array(z.string()).default([]),
-  availability: z.enum(availabilityOptions).default("Inmediatamente"),
-  availabilityDate: z.union([
-    z.date(),
-    z.string().transform((val) => new Date(val)),
-  ]).optional().nullable(),
-  propertyCondition: z.enum(propertyConditionOptions).optional(),
-  housingStatus: z.enum(housingStatusOptions).optional(),
-  isActive: z.boolean().default(true),
-});
+function createStepSchemas(t: (key: string) => string) {
+  const step1Schema = z.object({
+    reference: z.string().optional(),
+    type: z.enum(propertyTypes, { required_error: t("propertyForm.validation.required") }),
+    housingType: z.enum(housingTypes).optional().nullable(),
+    operationType: z.enum(["Venta", "Alquiler"], { required_error: t("propertyForm.validation.required") }),
+    price: z.coerce.number({
+      required_error: t("propertyForm.validation.required"),
+      invalid_type_error: t("propertyForm.validation.required"),
+    }).min(1, t("propertyForm.validation.price_required")),
+    bedrooms: z.coerce.number()
+      .int(t("propertyForm.validation.integer"))
+      .min(1, t("propertyForm.validation.minimum_one"))
+      .optional()
+      .nullable(),
+    bathrooms: z.coerce.number()
+      .int(t("propertyForm.validation.integer"))
+      .min(1, t("propertyForm.validation.minimum_one"))
+      .optional()
+      .nullable(),
+    superficie: z.coerce.number()
+      .min(1, t("propertyForm.validation.greater_than_zero"))
+      .optional()
+      .nullable(),
+  });
 
-// Step 4 schema: Images
-const step4Schema = step3Schema.extend({
-  imageUrls: z.array(z.string()).default([]),
-  mainImageIndex: z.number().default(-1),
-});
+  const step2Schema = step1Schema.extend({
+    locality: z.string().optional(),
+    streetName: z.string().optional(),
+    streetNumber: z.string().optional(),
+    address: z.string({ required_error: t("propertyForm.validation.required") })
+      .min(1, t("propertyForm.validation.address_required")),
+    latitude: z.number().optional().nullable(),
+    longitude: z.number().optional().nullable(),
+    hideAddress: z.boolean().default(true),
+    escalera: z.enum(escaleraOptions).nullable().optional(),
+    planta: z.enum(plantaOptions).nullable().optional(),
+    puerta: z.enum(puertaOptions).nullable().optional(),
+    neighborhood: z.string({ required_error: t("propertyForm.validation.required") })
+      .min(1, t("propertyForm.validation.neighborhood_required")),
+    city: z.string().optional().nullable(),
+    district: z.string().optional().nullable(),
+  });
 
-// Step 5 schema: Description (final)
-const step5Schema = step4Schema.extend({
-  title: z.string({ required_error: "Campo requerido" })
-    .min(1, "El título es obligatorio")
-    .refine(val => !val.includes("Borrador - Título pendiente"), {
-      message: "Por favor, escribe un título personalizado para tu propiedad"
-    }),
-  description: z.string({ required_error: "Campo requerido" })
-    .min(1, "La descripción es obligatoria")
-    .refine(val => !val.includes("Borrador - Información pendiente"), {
-      message: "Por favor, escribe una descripción personalizada para tu propiedad"
-    }),
-});
+  const step3Schema = step2Schema.extend({
+    features: z.array(z.string()).default([]),
+    availability: z.enum(availabilityOptions).default("Inmediatamente"),
+    availabilityDate: z.union([
+      z.date(),
+      z.string().transform((val) => new Date(val)),
+    ]).optional().nullable(),
+    propertyCondition: z.enum(propertyConditionOptions).optional(),
+    housingStatus: z.enum(housingStatusOptions).optional(),
+    isActive: z.boolean().default(true),
+  });
+
+  const step4Schema = step3Schema.extend({
+    imageUrls: z.array(z.string()).default([]),
+    mainImageIndex: z.number().default(-1),
+  });
+
+  const step5Schema = step4Schema.extend({
+    title: z.string({ required_error: t("propertyForm.validation.required") })
+      .min(1, t("propertyForm.validation.title_required"))
+      .refine(val => !val.includes("Borrador - Título pendiente"), {
+        message: t("propertyForm.validation.title_custom"),
+      }),
+    description: z.string({ required_error: t("propertyForm.validation.required") })
+      .min(1, t("propertyForm.validation.description_required"))
+      .refine(val => !val.includes("Borrador - Información pendiente"), {
+        message: t("propertyForm.validation.description_custom"),
+      }),
+  });
+
+  return { step1Schema, step2Schema, step3Schema, step4Schema, step5Schema };
+}
 
 interface PropertyFormMultiStepProps {
   onClose: () => void;
@@ -141,6 +184,9 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user} = useUser();
+  const { t, language } = useLanguage();
+  const dateLocale = { es, en: enUS, fr, it }[language];
+  const schemas = createStepSchemas(t);
   const [currentStep, setCurrentStep] = useState(1);
   const [propertyId, setPropertyId] = useState<string | null>(initialData?.uuid || null);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
@@ -158,26 +204,26 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
   } : null;
 
   const steps = [
-    { id: 1, name: "Información básica", completed: currentStep > 1 },
-    { id: 2, name: "Ubicación", completed: currentStep > 2 },
-    { id: 3, name: "Características", completed: currentStep > 3 },
-    { id: 4, name: "Imágenes", completed: currentStep > 4 },
-    { id: 5, name: "Descripción", completed: currentStep > 5 },
+    { id: 1, name: t("propertyForm.section.basic_info"), completed: currentStep > 1 },
+    { id: 2, name: t("propertyForm.section.location"), completed: currentStep > 2 },
+    { id: 3, name: t("propertyForm.section.features"), completed: currentStep > 3 },
+    { id: 4, name: t("propertyForm.section.images"), completed: currentStep > 4 },
+    { id: 5, name: t("propertyForm.section.description"), completed: currentStep > 5 },
   ];
 
   const completionPercentage = ((currentStep - 1) / 5) * 100;
 
-  const form = useForm<z.infer<typeof step5Schema>>({
+  const form = useForm<any>({
     resolver: zodResolver(
       currentStep === 1
-        ? step1Schema
+        ? schemas.step1Schema
         : currentStep === 2
-        ? step2Schema
+        ? schemas.step2Schema
         : currentStep === 3
-        ? step3Schema
+        ? schemas.step3Schema
         : currentStep === 4
-        ? step4Schema
-        : step5Schema
+        ? schemas.step4Schema
+        : schemas.step5Schema
     ),
     defaultValues: processedInitialData || {
       reference: "",
@@ -278,14 +324,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       });
 
       toast({
-        title: "Descripción generada",
-        description: "La descripción ha sido generada con éxito.",
+        title: t("propertyForm.toast.description_generated"),
+        description: t("propertyForm.toast.description_generated_desc"),
       });
     } catch (error) {
       console.error("Error generating description:", error);
       toast({
-        title: "Error",
-        description: "No se pudo generar la descripción. Inténtalo de nuevo.",
+        title: t("common.error"),
+        description: t("propertyForm.toast.description_error"),
         variant: "destructive",
       });
     } finally {
@@ -340,8 +386,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     // On Step 2, validate that a valid address was selected from suggestions
     if (currentStep === 2 && !isAddressValid) {
       toast({
-        title: "Dirección requerida",
-        description: "Por favor, selecciona una dirección de las sugerencias de Google Maps.",
+        title: t("propertyForm.toast.address_required"),
+        description: t("propertyForm.toast.address_required_desc"),
         variant: "destructive",
       });
       return;
@@ -371,16 +417,16 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         // Only show toast when creating for the first time
         if (isFirstTimeCreating) {
           toast({
-            title: "Propiedad creada",
-            description: "La propiedad ya está creada. Continúa llenando el resto de la información y el anuncio",
+            title: t("propertyForm.toast.created"),
+            description: t("propertyForm.toast.created_desc"),
           });
         }
         
         setCurrentStep(currentStep + 1);
       } catch (error) {
         toast({
-          title: "Error",
-          description: "No se pudo crear la propiedad. Inténtalo de nuevo.",
+          title: t("common.error"),
+          description: t("propertyForm.toast.create_error"),
           variant: "destructive",
         });
       }
@@ -407,8 +453,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     const currentImages = form.getValues("imageUrls") || [];
     if (currentImages.length === 0) {
       toast({
-        title: "Imagen requerida",
-        description: "No es posible publicar la propiedad sin al menos una foto. Por favor, añade al menos una imagen.",
+        title: t("propertyForm.toast.image_required"),
+        description: t("propertyForm.toast.image_required_desc"),
         variant: "destructive",
       });
       return;
@@ -425,8 +471,8 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     const housingType = form.getValues("housingType");
     if (propertyType === "Vivienda" && !housingType) {
       toast({
-        title: "Campos incompletos",
-        description: "Por favor, selecciona el tipo de vivienda en la sección de información básica.",
+        title: t("propertyForm.toast.incomplete_fields"),
+        description: t("propertyForm.toast.housing_type_required"),
         variant: "destructive",
       });
       return;
@@ -442,19 +488,19 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       
       // Build a list of missing required fields
       const missingFields: string[] = [];
-      if (errors.price) missingFields.push("precio");
-      if (errors.address) missingFields.push("dirección");
-      if (errors.neighborhood) missingFields.push("barrio");
-      if (errors.title) missingFields.push("título");
-      if (errors.description) missingFields.push("descripción");
+      if (errors.price) missingFields.push(t("propertyForm.label.price_eur"));
+      if (errors.address) missingFields.push(t("common.address"));
+      if (errors.neighborhood) missingFields.push(t("propertyForm.label.neighborhood"));
+      if (errors.title) missingFields.push(t("propertyForm.label.title"));
+      if (errors.description) missingFields.push(t("propertyForm.label.description"));
       
       // Show toast with specific missing fields or generic message
       const description = missingFields.length > 0
-        ? `Por favor, completa los siguientes campos: ${missingFields.join(", ")}.`
-        : "Por favor, completa todos los campos obligatorios antes de publicar.";
+        ? t("propertyForm.toast.missing_fields", { fields: missingFields.join(", ") })
+        : t("propertyForm.toast.required_fields");
       
       toast({
-        title: "Campos incompletos",
+        title: t("propertyForm.toast.incomplete_fields"),
         description,
         variant: "destructive",
       });
@@ -471,15 +517,15 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
     try {
       await savePropertyMutation.mutateAsync(finalData);
       toast({
-        title: "Propiedad publicada",
-        description: "La propiedad ha sido publicada con éxito.",
+        title: t("propertyForm.toast.published"),
+        description: t("propertyForm.toast.published_desc"),
       });
       onClose();
     } catch (error) {
       console.error("Error publishing property:", error);
       toast({
-        title: "Error",
-        description: "No se pudo publicar la propiedad. Inténtalo de nuevo.",
+        title: t("common.error"),
+        description: t("propertyForm.toast.publish_error"),
         variant: "destructive",
       });
     }
@@ -500,10 +546,10 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       />
       <Form {...form}>
         <form className="space-y-6">
-          {/* Step 1: Información básica */}
+          {/* Step 1: Basic information */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Información básica</h2>
+              <h2 className="text-2xl font-bold">{t("propertyForm.section.basic_info")}</h2>
 
               {/* Row 1: Referencia, Tipo de operación, Precio */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -512,11 +558,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="reference"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Referencia</FormLabel>
+                      <FormLabel>{t("common.reference")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="Ej: REF-001"
+                          placeholder={t("propertyForm.placeholder.reference")}
                           data-testid="input-reference"
                         />
                       </FormControl>
@@ -530,16 +576,16 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="operationType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo de operación</FormLabel>
+                      <FormLabel>{t("common.operation_type")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-operation-type">
-                            <SelectValue placeholder="Selecciona" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Venta">Venta</SelectItem>
-                          <SelectItem value="Alquiler">Alquiler</SelectItem>
+                          <SelectItem value="Venta">{getPropertyOptionLabel("Venta", t)}</SelectItem>
+                          <SelectItem value="Alquiler">{getPropertyOptionLabel("Alquiler", t)}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -552,12 +598,12 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Precio (€)</FormLabel>
+                      <FormLabel>{t("propertyForm.label.price_eur")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type="number"
-                          placeholder="Precio"
+                          placeholder={t("propertyForm.placeholder.price")}
                           data-testid="input-price"
                         />
                       </FormControl>
@@ -574,7 +620,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo de inmueble</FormLabel>
+                      <FormLabel>{t("propertyForm.label.property_type")}</FormLabel>
                       <Select onValueChange={(value) => {
                         field.onChange(value);
                         if (value !== "Vivienda") {
@@ -583,13 +629,13 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                       }} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-type">
-                            <SelectValue placeholder="Selecciona el tipo" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_type")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {propertyTypes.map((type) => (
                             <SelectItem key={type} value={type}>
-                              {type}
+                              {getPropertyOptionLabel(type, t)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -605,17 +651,17 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     name="housingType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tipo de vivienda</FormLabel>
+                        <FormLabel>{t("propertyForm.label.housing_type")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                           <FormControl>
                             <SelectTrigger data-testid="select-housing-type">
-                              <SelectValue placeholder="Selecciona el tipo de vivienda" />
+                              <SelectValue placeholder={t("propertyForm.placeholder.select_housing_type")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {housingTypes.map((type) => (
                               <SelectItem key={type} value={type}>
-                                {type}
+                                {getPropertyOptionLabel(type, t)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -631,11 +677,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="planta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Planta</FormLabel>
+                      <FormLabel>{t("propertyForm.label.floor")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-planta">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.choose")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -659,14 +705,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="superficie"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Superficie (m²)</FormLabel>
+                      <FormLabel>{t("propertyForm.label.surface")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           value={field.value ?? ""}
                           onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
                           type="number"
-                          placeholder="m²"
+                          placeholder={t("propertyForm.placeholder.surface")}
                           data-testid="input-superficie"
                         />
                       </FormControl>
@@ -680,14 +726,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="bedrooms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Habitaciones</FormLabel>
+                      <FormLabel>{t("propertyForm.label.bedrooms")}</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(value === "" ? undefined : Number(value))}
                         value={field.value?.toString() || ""}
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-bedrooms">
-                            <SelectValue placeholder="Selecciona" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -708,14 +754,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="bathrooms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Baños</FormLabel>
+                      <FormLabel>{t("propertyForm.label.bathrooms")}</FormLabel>
                       <Select
                         onValueChange={(value) => field.onChange(value === "" ? undefined : Number(value))}
                         value={field.value?.toString() || ""}
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-bathrooms">
-                            <SelectValue placeholder="Selecciona" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -734,10 +780,10 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
             </div>
           )}
 
-          {/* Step 2: Ubicación */}
+          {/* Step 2: Location */}
           {currentStep === 2 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Ubicación</h2>
+              <h2 className="text-2xl font-bold">{t("propertyForm.section.location")}</h2>
 
               <AddressValidator
                 onAddressValidated={(data) => {
@@ -777,11 +823,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     </FormControl>
                     <div className="flex items-center gap-2">
                       <FormLabel className="font-medium cursor-pointer">
-                        No mostrar la dirección
+                        {t("propertyForm.label.hide_address")}
                       </FormLabel>
                       <div className="flex items-center gap-1 bg-gradient-to-r from-amber-400 to-yellow-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                         <Sparkles className="h-3 w-3" />
-                        <span>gratis</span>
+                        <span>{t("propertyForm.badge.free")}</span>
                       </div>
                     </div>
                   </FormItem>
@@ -794,11 +840,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="escalera"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Escalera</FormLabel>
+                      <FormLabel>{t("propertyForm.label.staircase")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-escalera">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.choose")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -819,11 +865,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                   name="puerta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Puerta</FormLabel>
+                      <FormLabel>{t("propertyForm.label.door")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-puerta">
-                            <SelectValue placeholder="Seleccionar" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.choose")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -841,7 +887,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
               </div>
 
               <p className="text-sm text-muted-foreground">
-                * Los campos Escalera, Planta y Puerta son opcionales y no se mostrarán públicamente
+                {t("propertyForm.help.private_address_fields")}
               </p>
 
               <FormField
@@ -849,7 +895,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 name="neighborhood"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Barrio</FormLabel>
+                    <FormLabel>{t("propertyForm.label.neighborhood")}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -859,16 +905,16 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                             className="w-full justify-between"
                             data-testid="button-neighborhood"
                           >
-                            {field.value || "Buscar barrio..."}
+                            {field.value || t("propertyForm.placeholder.search_neighborhood")}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
                         <Command>
-                          <CommandInput placeholder="Buscar barrio..." />
+                          <CommandInput placeholder={t("propertyForm.placeholder.search_neighborhood")} />
                           <CommandList>
-                            <CommandEmpty>No se encontró el barrio.</CommandEmpty>
+                            <CommandEmpty>{t("propertyForm.empty.no_neighborhoods")}</CommandEmpty>
                             {ALL_CITIES.map((cityData) => (
                               cityData.districts.map((district) => (
                                 <CommandGroup key={`${cityData.city}-${district.district}`} heading={`${district.district} (${cityData.city})`}>
@@ -906,14 +952,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
             </div>
           )}
 
-          {/* Step 3: Características */}
+          {/* Step 3: Features */}
           {currentStep === 3 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Características</h2>
+              <h2 className="text-2xl font-bold">{t("propertyForm.section.features")}</h2>
 
               {/* Comodidades */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Comodidades</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.amenities")}</h3>
                 <FormField
                   control={form.control}
                   name="features"
@@ -921,34 +967,34 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     <FormItem>
                       <div className="grid grid-cols-3 gap-4">
                         {[
-                          { id: "aire-acondicionado", label: "Aire acondicionado" },
-                          { id: "calefaccion", label: "Calefacción" },
-                          { id: "ascensor", label: "Ascensor" },
-                          { id: "terraza", label: "Terraza" },
-                          { id: "balcon", label: "Balcón" },
-                          { id: "jardin", label: "Jardín" },
-                          { id: "piscina", label: "Piscina" },
-                          { id: "armarios-empotrados", label: "Armarios empotrados" },
+                          "aire-acondicionado",
+                          "calefaccion",
+                          "ascensor",
+                          "terraza",
+                          "balcon",
+                          "jardin",
+                          "piscina",
+                          "armarios-empotrados",
                         ].map((feature) => (
                           <FormField
-                            key={feature.id}
+                            key={feature}
                             control={form.control}
                             name="features"
                             render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                 <FormControl>
                                   <Checkbox
-                                    checked={field.value?.includes(feature.id)}
+                                    checked={field.value?.includes(feature)}
                                     onCheckedChange={(checked) => {
                                       const updatedFeatures = checked
-                                        ? [...(field.value || []), feature.id]
-                                        : (field.value || []).filter((val) => val !== feature.id);
+                                        ? [...(field.value || []), feature]
+                                        : (field.value || []).filter((val: string) => val !== feature);
                                       field.onChange(updatedFeatures);
                                     }}
-                                    data-testid={`checkbox-${feature.id}`}
+                                    data-testid={`checkbox-${feature}`}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">{feature.label}</FormLabel>
+                              <FormLabel className="font-normal">{t(`manage.property_feature.${feature}`)}</FormLabel>
                               </FormItem>
                             )}
                           />
@@ -961,7 +1007,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
               {/* Adicionales */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Adicionales</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.extras")}</h3>
                 <FormField
                   control={form.control}
                   name="features"
@@ -969,34 +1015,34 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     <FormItem>
                       <div className="grid grid-cols-3 gap-4">
                         {[
-                          { id: "trastero", label: "Trastero" },
-                          { id: "garaje", label: "Garaje" },
-                          { id: "parking", label: "Parking" },
-                          { id: "bien-conectado", label: "Bien conectado" },
-                          { id: "exterior", label: "Exterior" },
-                          { id: "amueblado", label: "Amueblado" },
-                          { id: "electrodomesticos", label: "Electrodomésticos" },
-                          { id: "bano-suite", label: "Baño en-suite" },
+                          "trastero",
+                          "garaje",
+                          "parking",
+                          "bien-conectado",
+                          "exterior",
+                          "amueblado",
+                          "electrodomesticos",
+                          "bano-suite",
                         ].map((feature) => (
                           <FormField
-                            key={feature.id}
+                            key={feature}
                             control={form.control}
                             name="features"
                             render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                 <FormControl>
                                   <Checkbox
-                                    checked={field.value?.includes(feature.id)}
+                                    checked={field.value?.includes(feature)}
                                     onCheckedChange={(checked) => {
                                       const updatedFeatures = checked
-                                        ? [...(field.value || []), feature.id]
-                                        : (field.value || []).filter((val) => val !== feature.id);
+                                        ? [...(field.value || []), feature]
+                                        : (field.value || []).filter((val: string) => val !== feature);
                                       field.onChange(updatedFeatures);
                                     }}
-                                    data-testid={`checkbox-${feature.id}`}
+                                    data-testid={`checkbox-${feature}`}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">{feature.label}</FormLabel>
+                              <FormLabel className="font-normal">{t(`manage.property_feature.${feature}`)}</FormLabel>
                               </FormItem>
                             )}
                           />
@@ -1009,7 +1055,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
               {/* Características especiales */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Características especiales</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.special_features")}</h3>
                 <FormField
                   control={form.control}
                   name="features"
@@ -1017,32 +1063,32 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                     <FormItem>
                       <div className="grid grid-cols-3 gap-4">
                         {[
-                          { id: "accesible", label: "Accesible" },
-                          { id: "permite-mascota", label: "Permite mascota" },
-                          { id: "vistas-mar", label: "Vistas al mar" },
-                          { id: "security", label: "Seguridad 24h" },
-                          { id: "gym", label: "Gimnasio" },
-                          { id: "fireplace", label: "Chimenea" },
+                          "accesible",
+                          "permite-mascota",
+                          "vistas-mar",
+                          "security",
+                          "gym",
+                          "fireplace",
                         ].map((feature) => (
                           <FormField
-                            key={feature.id}
+                            key={feature}
                             control={form.control}
                             name="features"
                             render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                 <FormControl>
                                   <Checkbox
-                                    checked={field.value?.includes(feature.id)}
+                                    checked={field.value?.includes(feature)}
                                     onCheckedChange={(checked) => {
                                       const updatedFeatures = checked
-                                        ? [...(field.value || []), feature.id]
-                                        : (field.value || []).filter((val) => val !== feature.id);
+                                        ? [...(field.value || []), feature]
+                                        : (field.value || []).filter((val: string) => val !== feature);
                                       field.onChange(updatedFeatures);
                                     }}
-                                    data-testid={`checkbox-${feature.id}`}
+                                    data-testid={`checkbox-${feature}`}
                                   />
                                 </FormControl>
-                                <FormLabel className="font-normal">{feature.label}</FormLabel>
+                              <FormLabel className="font-normal">{t(`manage.property_feature.${feature}`)}</FormLabel>
                               </FormItem>
                             )}
                           />
@@ -1057,7 +1103,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Disponibilidad */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Disponibilidad</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.availability")}</h3>
                   <FormField
                     control={form.control}
                     name="availability"
@@ -1073,13 +1119,13 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                               <FormControl>
                                 <RadioGroupItem value="Inmediatamente" data-testid="radio-inmediatamente" />
                               </FormControl>
-                              <FormLabel className="font-normal">Inmediatamente</FormLabel>
+                              <FormLabel className="font-normal">{getPropertyOptionLabel("Inmediatamente", t)}</FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl>
                                 <RadioGroupItem value="A partir de" data-testid="radio-a-partir-de" />
                               </FormControl>
-                              <FormLabel className="font-normal">A partir de</FormLabel>
+                              <FormLabel className="font-normal">{getPropertyOptionLabel("A partir de", t)}</FormLabel>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
@@ -1094,7 +1140,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                       name="availabilityDate"
                       render={({ field }) => (
                         <FormItem className="flex flex-col mt-4">
-                          <FormLabel>Fecha de disponibilidad</FormLabel>
+                          <FormLabel>{t("propertyForm.label.availability_date")}</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -1105,7 +1151,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                                   }`}
                                   data-testid="button-availability-date"
                                 >
-                                  {field.value ? format(field.value, "PPP", { locale: es }) : "Selecciona una fecha"}
+                                  {field.value ? format(field.value, "PPP", { locale: dateLocale }) : t("propertyForm.placeholder.select_date")}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
@@ -1117,7 +1163,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                                 onSelect={field.onChange}
                                 disabled={(date) => date < new Date()}
                                 initialFocus
-                                locale={es}
+                                locale={dateLocale}
                               />
                             </PopoverContent>
                           </Popover>
@@ -1130,7 +1176,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
                 {/* Visibilidad */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Visibilidad</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.visibility")}</h3>
                   <FormField
                     control={form.control}
                     name="isActive"
@@ -1146,13 +1192,13 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                               <FormControl>
                                 <RadioGroupItem value="visible" data-testid="radio-visible" />
                               </FormControl>
-                              <FormLabel className="font-normal">Visible para clientes</FormLabel>
+                              <FormLabel className="font-normal">{t("propertyForm.visibility.visible")}</FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-3 space-y-0">
                               <FormControl>
                                 <RadioGroupItem value="hidden" data-testid="radio-hidden" />
                               </FormControl>
-                              <FormLabel className="font-normal">No visible para clientes</FormLabel>
+                              <FormLabel className="font-normal">{t("propertyForm.visibility.hidden")}</FormLabel>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
@@ -1165,7 +1211,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
               {/* Estado de conservación */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Estado de conservación</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.condition")}</h3>
                 <FormField
                   control={form.control}
                   name="propertyCondition"
@@ -1177,13 +1223,13 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-property-condition">
-                            <SelectValue placeholder="Selecciona el estado" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_condition")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {propertyConditionOptions.map((option) => (
                             <SelectItem key={option} value={option}>
-                              {option}
+                              {getPropertyOptionLabel(option, t)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1196,7 +1242,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
               {/* Situación de la vivienda */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Situación de la vivienda</h3>
+                <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.housing_situation")}</h3>
                 <FormField
                   control={form.control}
                   name="housingStatus"
@@ -1208,13 +1254,13 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                       >
                         <FormControl>
                           <SelectTrigger data-testid="select-housing-status">
-                            <SelectValue placeholder="Selecciona la situación" />
+                            <SelectValue placeholder={t("propertyForm.placeholder.select_housing_situation")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {housingStatusOptions.map((option) => (
                             <SelectItem key={option} value={option}>
-                              {option}
+                              {t(`propertyForm.housingStatus.${option}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1227,12 +1273,12 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
             </div>
           )}
 
-          {/* Step 4: Imágenes */}
+          {/* Step 4: Images */}
           {currentStep === 4 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Imágenes</h2>
+              <h2 className="text-2xl font-bold">{t("propertyForm.section.images")}</h2>
               <p className="text-sm text-muted-foreground">
-                Añade imágenes de alta calidad de tu propiedad. Puedes reorganizarlas arrastrándolas y seleccionar la imagen principal.
+                {t("propertyForm.help.images_intro")}
               </p>
 
               <ImageUploader
@@ -1253,9 +1299,9 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
 
               {form.watch("imageUrls") && form.watch("imageUrls").length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Organizar imágenes</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("propertyForm.section.organize_images")}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Arrastra las imágenes para reorganizarlas. Haz clic en el icono de check para establecer la imagen principal.
+                    {t("propertyForm.help.organize_images")}
                   </p>
                   <DraggableImageGallery
                     images={form.watch("imageUrls")}
@@ -1267,21 +1313,21 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
             </div>
           )}
 
-          {/* Step 5: Descripción */}
+          {/* Step 5: Description */}
           {currentStep === 5 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Descripción</h2>
+              <h2 className="text-2xl font-bold">{t("propertyForm.section.description")}</h2>
 
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título del anuncio *</FormLabel>
+                    <FormLabel>{t("propertyForm.label.title")} *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Ej: Piso luminoso en el corazón de Barcelona"
+                        placeholder={t("propertyForm.placeholder.title")}
                         data-testid="input-title"
                       />
                     </FormControl>
@@ -1296,7 +1342,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between mb-2">
-                      <FormLabel>Descripción *</FormLabel>
+                      <FormLabel>{t("propertyForm.label.description")} *</FormLabel>
                       {user?.subscriptionPlan === "basica" ? (
                         <TooltipProvider>
                           <Tooltip>
@@ -1309,11 +1355,11 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                                 data-testid="button-generate-disabled"
                               >
                                 <Sparkles className="mr-2 h-4 w-4" />
-                                Generar
+                                {t("propertyForm.button.generate")}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>La generación con IA está disponible en los planes Premium y Pro</p>
+                              <p>{t("propertyForm.tooltip.ai_premium_only")}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -1327,14 +1373,14 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                           data-testid="button-generate-description"
                         >
                           <Sparkles className="mr-2 h-4 w-4" />
-                          {isGeneratingDescription ? "Generando..." : "Generar"}
+                          {isGeneratingDescription ? t("propertyForm.button.generating") : t("propertyForm.button.generate")}
                         </Button>
                       )}
                     </div>
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder="Describe la propiedad de manera atractiva..."
+                        placeholder={t("propertyForm.placeholder.description")}
                         rows={8}
                         data-testid="textarea-description"
                       />
@@ -1349,7 +1395,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
           {/* Navigation buttons */}
           <div className="flex justify-between items-center pt-10 pb-10 border-t" style={{ borderTopColor: "#0284c5e6" }}>
             <div className="flex gap-3">
-              {/* Salir button - always visible */}
+              {/* Exit button - always visible */}
               <Button
                 type="button"
                 variant="outline"
@@ -1358,10 +1404,10 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 data-testid="button-exit"
               >
                 <X className="mr-2 h-4 w-4" />
-                Salir
+                {t("common.cancel")}
               </Button>
 
-              {/* Anterior button - always visible but disabled on step 1 */}
+              {/* Previous button - always visible but disabled on step 1 */}
               <Button
                 type="button"
                 variant="outline"
@@ -1371,7 +1417,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 className="hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="button-previous"
               >
-                Anterior
+                {t("common.previous")}
               </Button>
             </div>
 
@@ -1382,7 +1428,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 disabled={savePropertyMutation.isPending}
                 data-testid="button-next"
               >
-                {savePropertyMutation.isPending ? "Guardando..." : "Siguiente"}
+                {savePropertyMutation.isPending ? t("propertyForm.button.saving") : t("common.next")}
               </Button>
             ) : (
               <Button
@@ -1391,7 +1437,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
                 disabled={savePropertyMutation.isPending}
                 data-testid="button-publish"
               >
-                {savePropertyMutation.isPending ? "Publicando..." : "Publicar Propiedad"}
+                {savePropertyMutation.isPending ? t("propertyForm.button.publishing") : t("propertyForm.button.publish")}
               </Button>
             )}
           </div>

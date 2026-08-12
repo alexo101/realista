@@ -61,6 +61,11 @@ const updateClientProfileSchema = insertClientSchema.pick({
   moveInDate: true,
 }).partial();
 
+function isMissingClientPhone(phone?: string | null): boolean {
+  const normalized = String(phone || "").replace(/\s/g, "");
+  return !normalized || normalized === "000000000";
+}
+
 // Agent self-profile update — privilege/billing fields intentionally excluded
 const updateAgentProfileSchema = insertAgentSchema.pick({
   name: true,
@@ -489,8 +494,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingClient = await storage.getClientByEmail(validatedData.email);
 
       if (existingClient) {
-        return res.status(400).json({ 
-          message: "Ya existe una cuenta con este correo electrónico" 
+        const hasUsablePhone = !isMissingClientPhone(validatedData.phone);
+        const existingHasPassword = Boolean(existingClient.password);
+
+        if (existingHasPassword) {
+          return res.status(400).json({
+            message: "Ya existe una cuenta con este correo electrónico"
+          });
+        }
+
+        // Inquiry/contact leads are created without a password. Claiming that
+        // record keeps the phone (and other lead data) when the client registers.
+        const claimedClient = await storage.updateClientProfile(existingClient.id, {
+          name: validatedData.name || existingClient.name,
+          surname: validatedData.surname || existingClient.surname,
+          phone: hasUsablePhone ? validatedData.phone : existingClient.phone,
+          password: validatedData.password,
+        });
+
+        if (!claimedClient) {
+          return res.status(500).json({ message: "No se pudo completar el registro" });
+        }
+
+        (req as any).session.user = {
+          id: claimedClient.id,
+          email: claimedClient.email,
+          name: claimedClient.name,
+          surname: claimedClient.surname,
+          isAdmin: false,
+          isClient: true,
+          phone: claimedClient.phone,
+          agencyId: null,
+          agencyName: null,
+          subscriptionPlan: null,
+          clientUuid: claimedClient.uuid
+        };
+
+        await new Promise((resolve, reject) => {
+          (req as any).session.save((err: any) => {
+            if (err) {
+              console.error('Error saving session:', err);
+              reject(err);
+            } else {
+              resolve(true);
+            }
+          });
+        });
+
+        const { password: _claimedPassword, ...claimedResponse } = claimedClient;
+        return res.status(201).json({
+          ...claimedResponse,
+          isClient: true,
+          isAdmin: false,
+          clientUuid: claimedClient.uuid,
+          message: "Cuenta creada exitosamente"
         });
       }
 
@@ -2864,6 +2921,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedClient) {
         return res.status(404).json({ message: "Failed to update client profile" });
       }
+
+      const sessionUser = (req as any).session?.user;
+      if (sessionUser?.isClient && sessionUser.id === clientId) {
+        sessionUser.phone = updatedClient.phone;
+        sessionUser.name = updatedClient.name;
+        sessionUser.surname = updatedClient.surname;
+        await new Promise((resolve, reject) => {
+          (req as any).session.save((err: any) => {
+            if (err) reject(err);
+            else resolve(true);
+          });
+        });
+      }
       
       res.status(200).json(updatedClient);
     } catch (error) {
@@ -3949,15 +4019,18 @@ Gracias!
             };
             const newClient = await storage.createClient(clientData);
             console.log('Auto-created client from inquiry:', newClient.id, newClient.email);
-          } else if (!existingClient.agentId) {
-            // Client exists but not assigned to an agent - assign to this agent
-            await storage.updateClient(existingClient.id, {
-              ...existingClient,
-              agentId: agentId,
-            });
-            console.log('Linked existing client to agent:', existingClient.id, agentId);
+          } else {
+            const leadUpdates: { agentId?: number; phone?: string } = {};
+            if (!existingClient.agentId) {
+              leadUpdates.agentId = agentId;
+            }
+            if (isMissingClientPhone(existingClient.phone) && !isMissingClientPhone(phone)) {
+              leadUpdates.phone = phone;
+            }
+            if (Object.keys(leadUpdates).length > 0) {
+              await storage.updateClientProfile(existingClient.id, leadUpdates);
+            }
           }
-          // If client exists and already has an agent, we don't change their assignment
         } catch (clientError) {
           // Log but don't fail the inquiry creation
           console.error('Error auto-creating client:', clientError);
@@ -4083,12 +4156,17 @@ Gracias!
           };
           const newClient = await storage.createClient(clientData);
           console.log('Auto-created client from agent contact:', newClient.id, newClient.email);
-        } else if (!existingClient.agentId) {
-          await storage.updateClient(existingClient.id, {
-            ...existingClient,
-            agentId: agent.id,
-          });
-          console.log('Linked existing client to agent:', existingClient.id, agent.id);
+        } else {
+          const leadUpdates: { agentId?: number; phone?: string } = {};
+          if (!existingClient.agentId) {
+            leadUpdates.agentId = agent.id;
+          }
+          if (isMissingClientPhone(existingClient.phone) && !isMissingClientPhone(phone)) {
+            leadUpdates.phone = phone;
+          }
+          if (Object.keys(leadUpdates).length > 0) {
+            await storage.updateClientProfile(existingClient.id, leadUpdates);
+          }
         }
       } catch (clientError) {
         console.error('Error auto-creating client from agent contact:', clientError);
@@ -4173,12 +4251,17 @@ Gracias!
           };
           const newClient = await storage.createClient(clientData);
           console.log('Auto-created client from agency contact:', newClient.id, newClient.email, 'assigned to admin:', owner.id);
-        } else if (!existingClient.agentId) {
-          await storage.updateClient(existingClient.id, {
-            ...existingClient,
-            agentId: owner.id,
-          });
-          console.log('Linked existing client to agency admin:', existingClient.id, owner.id);
+        } else {
+          const leadUpdates: { agentId?: number; phone?: string } = {};
+          if (!existingClient.agentId) {
+            leadUpdates.agentId = owner.id;
+          }
+          if (isMissingClientPhone(existingClient.phone) && !isMissingClientPhone(phone)) {
+            leadUpdates.phone = phone;
+          }
+          if (Object.keys(leadUpdates).length > 0) {
+            await storage.updateClientProfile(existingClient.id, leadUpdates);
+          }
         }
       } catch (clientError) {
         console.error('Error auto-creating client from agency contact:', clientError);

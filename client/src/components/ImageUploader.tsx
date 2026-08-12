@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Upload, X, Image, FileImage, AlertCircle, Sparkles } from "lucide-react";
 import imageCompression from "browser-image-compression";
+import { useLanguage } from "@/contexts/language-context";
 
 interface ImageUploaderProps {
   onImageUploaded: (imageUrl: string) => void;
@@ -24,6 +25,7 @@ export function ImageUploader({
   currentImageCount = 0,
   totalLimit = 100
 }: ImageUploaderProps) {
+  const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const { toast } = useToast();
@@ -74,8 +76,8 @@ export function ImageUploader({
     
     if (isAtLimit) {
       toast({
-        title: "Límite alcanzado",
-        description: `Has alcanzado el límite máximo de ${totalLimit} imágenes para esta propiedad. Elimina algunas imágenes existentes para poder subir nuevas.`,
+        title: t("propertyForm.upload.limit_reached"),
+        description: t("propertyForm.upload.limit_reached_desc", { total: totalLimit }),
         variant: "destructive",
       });
       event.target.value = '';
@@ -84,10 +86,10 @@ export function ImageUploader({
 
     if (fileArray.length > effectiveMaxFiles) {
       toast({
-        title: "Demasiados archivos",
+        title: t("propertyForm.upload.too_many_files"),
         description: remainingSlots < maxFiles 
-          ? `Solo puedes subir ${remainingSlots} imagen(es) más. Has seleccionado ${fileArray.length}.`
-          : `Puedes subir un máximo de ${maxFiles} imágenes a la vez. Has seleccionado ${fileArray.length}.`,
+          ? t("propertyForm.upload.remaining_files", { remaining: remainingSlots, selected: fileArray.length })
+          : t("propertyForm.upload.batch_limit", { max: maxFiles, selected: fileArray.length }),
         variant: "destructive",
       });
       event.target.value = '';
@@ -97,8 +99,8 @@ export function ImageUploader({
     for (const file of fileArray) {
       if (!file.type.startsWith('image/')) {
         toast({
-          title: "Archivo inválido",
-          description: `${file.name} no es una imagen válida. Solo se permiten archivos PNG, JPG, GIF y WebP.`,
+          title: t("propertyForm.upload.invalid_file"),
+          description: t("propertyForm.upload.invalid_file_desc", { name: file.name }),
           variant: "destructive",
         });
         return;
@@ -106,8 +108,8 @@ export function ImageUploader({
 
       if (file.size > 50 * 1024 * 1024) {
         toast({
-          title: "Archivo muy grande",
-          description: `${file.name} supera el límite de 50MB. Por favor, usa una imagen más pequeña.`,
+          title: t("propertyForm.upload.file_too_large"),
+          description: t("propertyForm.upload.file_too_large_desc", { name: file.name }),
           variant: "destructive",
         });
         return;
@@ -124,7 +126,7 @@ export function ImageUploader({
       for (let i = 0; i < fileArray.length; i++) {
         const file = fileArray[i];
         
-        setCompressionStatus(`Optimizando imagen ${i + 1} de ${fileArray.length}...`);
+        setCompressionStatus(t("propertyForm.upload.optimizing", { current: i + 1, total: fileArray.length }));
         const { compressedFile, wasCompressed, savings } = await compressImage(file);
         
         if (wasCompressed) {
@@ -132,7 +134,7 @@ export function ImageUploader({
           totalSavings += savings;
         }
 
-        setCompressionStatus(`Subiendo imagen ${i + 1} de ${fileArray.length}...`);
+        setCompressionStatus(t("propertyForm.upload.uploading", { current: i + 1, total: fileArray.length }));
         
         const formData = new FormData();
         formData.append('image', compressedFile);
@@ -164,16 +166,16 @@ export function ImageUploader({
       const avgSavings = compressedCount > 0 ? Math.round(totalSavings / compressedCount) : 0;
       
       toast({
-        title: `Se han subido ${uploadedUrls.length} imagen(es)`,
-        description: "Las imágenes están listas para usar.",
+        title: t("propertyForm.upload.uploaded", { count: uploadedUrls.length }),
+        description: t("propertyForm.upload.uploaded_desc"),
       });
 
       event.target.value = '';
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
-        title: "Error",
-        description: "No se pudo subir la(s) imagen(es). Inténtalo de nuevo.",
+        title: t("common.error"),
+        description: t("propertyForm.upload.error"),
         variant: "destructive",
       });
     } finally {
@@ -208,8 +210,8 @@ export function ImageUploader({
 
     if (isAtLimit) {
       toast({
-        title: "Límite alcanzado",
-        description: `Has alcanzado el límite máximo de ${totalLimit} imágenes para esta propiedad.`,
+        title: t("propertyForm.upload.limit_reached"),
+        description: t("propertyForm.upload.limit_reached_desc", { total: totalLimit }),
         variant: "destructive",
       });
       return;
@@ -265,13 +267,13 @@ export function ImageUploader({
             <AlertCircle className="h-12 w-12 text-red-400" />
             <div className="space-y-2">
               <h3 className="text-lg font-medium text-red-600">
-                Límite de imágenes alcanzado
+                {t("propertyForm.upload.limit_reached_heading")}
               </h3>
               <p className="text-sm text-red-500">
-                Has llegado al máximo de {totalLimit} imágenes permitidas.
+                {t("propertyForm.upload.limit_reached_max", { total: totalLimit })}
               </p>
               <p className="text-xs text-gray-500">
-                Elimina algunas imágenes existentes para poder subir nuevas.
+                {t("propertyForm.upload.remove_existing")}
               </p>
             </div>
           </div>
@@ -279,12 +281,12 @@ export function ImageUploader({
           <div className="flex flex-col items-center space-y-3">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             <p className="text-sm text-gray-600">
-              {compressionStatus || "Subiendo imágenes..."}
+              {compressionStatus || t("propertyForm.upload.uploading_images")}
             </p>
-            {compressionStatus?.includes("Optimizando") && (
+            {compressionStatus?.startsWith(t("propertyForm.upload.optimizing_prefix")) && (
               <p className="text-xs text-blue-600 flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
-                Comprimiendo para mejor rendimiento
+                {t("propertyForm.upload.compressing")}
               </p>
             )}
           </div>
@@ -304,22 +306,22 @@ export function ImageUploader({
             <div className="space-y-2">
               <h3 className={`text-lg font-medium ${isDragActive ? 'text-primary' : 'text-gray-900'}`}>
                 {isDragActive 
-                  ? (multiple ? 'Suelta las imágenes aquí' : 'Suelta la imagen aquí')
-                  : (multiple ? 'Arrastra y suelta imágenes' : 'Arrastra y suelta una imagen')
+                  ? (multiple ? t("propertyForm.upload.drop_images") : t("propertyForm.upload.drop_image"))
+                  : (multiple ? t("propertyForm.upload.drag_images") : t("propertyForm.upload.drag_image"))
                 }
               </h3>
               <p className="text-sm text-gray-500">
-                o haz clic para seleccionar {multiple ? 'archivos' : 'un archivo'}
+                {t("propertyForm.upload.click_to_select")} {multiple ? t("propertyForm.upload.files") : t("propertyForm.upload.file")}
               </p>
               <p className="text-xs text-gray-400">
                 {multiple 
-                  ? `Máximo ${effectiveMaxFiles} archivos por lote • Formatos PNG, JPG, WebP` 
-                  : 'Máximo 1 archivo • Formatos PNG, JPG, WebP'
+                  ? t("propertyForm.upload.max_batch", { max: effectiveMaxFiles })
+                  : t("propertyForm.upload.max_single")
                 }
               </p>
               {multiple && currentImageCount > 0 && (
                 <p className="text-xs text-blue-600 font-medium">
-                  {currentImageCount} de {totalLimit} imágenes usadas ({remainingSlots} disponibles)
+                  {t("propertyForm.upload.usage", { current: currentImageCount, total: totalLimit, remaining: remainingSlots })}
                 </p>
               )}
             </div>
@@ -332,7 +334,7 @@ export function ImageUploader({
                 data-testid={multiple ? "button-upload-images" : "button-upload-image"}
               >
                 <Upload className="h-4 w-4 mr-2" />
-                {multiple ? "Seleccionar imágenes" : "Seleccionar imagen"}
+                {multiple ? t("propertyForm.upload.select_images") : t("propertyForm.upload.select_image")}
               </Button>
             </div>
           </>

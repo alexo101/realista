@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { getAllNeighborhoodsByCity, findDistrictByNeighborhood } from "@/utils/neighborhoods";
 import { ALL_ZONES } from "@shared/schema";
+import { useLanguage } from "@/contexts/language-context";
 
 interface NeighborhoodSelectorProps {
   selectedNeighborhoods: string[];
@@ -22,6 +23,7 @@ export function NeighborhoodSelector({
   buttonText = "Buscar barrios...",
   singleSelection = false
 }: NeighborhoodSelectorProps) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -31,12 +33,14 @@ export function NeighborhoodSelector({
   // Get neighborhoods for the selected city
   const cityNeighborhoods = getAllNeighborhoodsByCity(city);
   const dynamicTitle = title || `BARRIOS DE ${city.toUpperCase()}`;
+  const allNeighborhoodsLabel = t("agencyForm.all_neighborhoods");
+  const allNeighborhoodsOption = `${city} (${allNeighborhoodsLabel})`;
   
   // Show all neighborhoods when focused, then filter by neighborhood or district
   // as the user types.
   const searchTerm = search.trim().toLowerCase();
   const filteredResults = [
-    ...(`${city} (Todos los barrios)`.toLowerCase().includes(searchTerm) ? [`${city} (Todos los barrios)`] : []),
+    ...(allNeighborhoodsOption.toLowerCase().includes(searchTerm) ? [allNeighborhoodsOption] : []),
     ...cityNeighborhoods.filter((n: string) => {
       if (!searchTerm) return true;
 
@@ -56,7 +60,7 @@ export function NeighborhoodSelector({
 
   const toggleNeighborhood = (neighborhood: string) => {
     // Special handling for "Todos los barrios" option
-    if (neighborhood.includes('(Todos los barrios)')) {
+    if (neighborhood === allNeighborhoodsOption) {
       selectAll();
       setSearch("");
       setShowResults(false);
@@ -212,7 +216,7 @@ export function NeighborhoodSelector({
             type="button"
             className="min-h-[40px]"
           >
-            Limpiar
+            {t("agencyForm.clear")}
           </Button>
           <Button
             variant="outline"
@@ -220,7 +224,7 @@ export function NeighborhoodSelector({
             size="sm"
             type="button"
             className="min-h-[40px]"
-          >Todas las zonas</Button>
+          >{t("agencyForm.all_zones")}</Button>
         </div>
       )}
     </div>

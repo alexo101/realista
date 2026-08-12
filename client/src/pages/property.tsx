@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
 import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag, ChevronDown } from "lucide-react";
 
@@ -76,6 +77,14 @@ export default function PropertyPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const { user } = useUser();
+  const { t } = useLanguage();
+  const featureLabels: Record<string, string> = {
+    "aire-acondicionado": t("property.feature_air_conditioning"),
+    terraza: t("property.feature_terrace"),
+    balcon: t("property.feature_balcony"),
+    amueblado: t("property.feature_furnished"),
+    accesible: t("property.feature_accessible"),
+  };
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -316,7 +325,7 @@ export default function PropertyPage() {
   if (!property) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <h1 className="text-2xl font-bold text-gray-900">Propiedad no encontrada</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("property.not_found")}</h1>
       </div>
     );
   }
@@ -368,7 +377,7 @@ export default function PropertyPage() {
                   </div>
                   {property.viewCount !== undefined && property.viewCount > 0 && (
                     <div className="mt-2 text-sm text-gray-500">
-                      <span>Vistas: {property.viewCount}</span>
+                      <span>{t("property.views")}: {property.viewCount}</span>
                     </div>
                   )}
                 </div>
@@ -394,7 +403,7 @@ export default function PropertyPage() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
+                        {isFavorite ? t("property.remove_favorite") : t("property.add_favorite")}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -402,7 +411,7 @@ export default function PropertyPage() {
                   {/* Share button */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" title={t("property.share")} aria-label={t("property.share")}>
                         <Share2 className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -417,7 +426,7 @@ export default function PropertyPage() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleShare('copy')}>
                         <Copy className="mr-2 h-4 w-4" />
-                        Copiar enlace
+                        {t("property.copy_link")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -454,13 +463,13 @@ export default function PropertyPage() {
               {property.bedrooms && (
                 <div className="flex items-center gap-2">
                   <Bed className="h-5 w-5 text-gray-600" />
-                  <span>{property.bedrooms} {property.bedrooms === 1 ? 'Habitación' : 'Habitaciones'}</span>
+                  <span>{property.bedrooms} {property.bedrooms === 1 ? t("property.bedroom") : t("property.bedrooms")}</span>
                 </div>
               )}
               {property.bathrooms && (
                 <div className="flex items-center gap-2">
                   <Bath className="h-5 w-5 text-gray-600" />
-                  <span>{property.bathrooms} {property.bathrooms === 1 ? 'Baño' : 'Baños'}</span>
+                  <span>{property.bathrooms} {property.bathrooms === 1 ? t("property.bathroom") : t("property.bathrooms")}</span>
                 </div>
               )}
               {property.superficie && (
@@ -474,16 +483,16 @@ export default function PropertyPage() {
             <Separator />
 
             <div>
-              <h2 className="text-xl font-semibold mb-4">Descripción</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("property.description")}</h2>
               <p className="text-gray-600 whitespace-pre-line">{property.description}</p>
             </div>
 
             {property.features && property.features.length > 0 && (
               <div>
-                <h2 className="text-xl font-semibold mb-4">Características</h2>
+                <h2 className="text-xl font-semibold mb-4">{t("property.features")}</h2>
                 <div className="flex flex-wrap gap-2">
                   {property.features.map((feature, index) => (
-                    <Badge key={index} variant="secondary">{feature}</Badge>
+                    <Badge key={index} variant="secondary">{featureLabels[feature] || feature}</Badge>
                   ))}
                 </div>
               </div>
@@ -500,8 +509,8 @@ export default function PropertyPage() {
                 <CardContent className="pt-4">
                   <Tabs value={contactTab} onValueChange={(v) => setContactTab(v as 'agent' | 'agency')}>
                     <TabsList className="grid w-full grid-cols-2 mb-4">
-                      <TabsTrigger value="agent" disabled={!agent}>Agente</TabsTrigger>
-                      <TabsTrigger value="agency" disabled={!agency}>Agencia</TabsTrigger>
+                      <TabsTrigger value="agent" disabled={!agent}>{t("property.agent")}</TabsTrigger>
+                      <TabsTrigger value="agency" disabled={!agency}>{t("property.agency")}</TabsTrigger>
                     </TabsList>
                     
                     {/* Agent Tab */}
@@ -545,7 +554,7 @@ export default function PropertyPage() {
                             size="sm"
                             onClick={() => navigate(`/agentes/${agent.slug || agent.id}`)}
                           >
-                            Ver perfil
+                            {t("property.view_profile")}
                           </Button>
                         </div>
                       )}
@@ -592,7 +601,7 @@ export default function PropertyPage() {
                             size="sm"
                             onClick={() => navigate(`/agencias/${agency.slug || agency.id}`)}
                           >
-                            Ver perfil
+                            {t("property.view_profile")}
                           </Button>
                         </div>
                       )}
@@ -616,7 +625,7 @@ export default function PropertyPage() {
                     }}
                     data-testid="button-apply-property"
                   >
-                    Aplicar por esta propiedad
+                    {t("property.apply")}
                   </Button>
                 </div>
               </CardContent>
@@ -667,7 +676,7 @@ export default function PropertyPage() {
       <Dialog open={applicationModalOpen} onOpenChange={setApplicationModalOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Aplicar por esta propiedad</DialogTitle>
+            <DialogTitle>{t("property.apply")}</DialogTitle>
             <DialogDescription>
               Completa el formulario para solicitar información o una visita.
             </DialogDescription>

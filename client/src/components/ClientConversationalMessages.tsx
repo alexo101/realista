@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Send, MessageCircle, Home, Pin, ArrowLeft, Check, CheckCheck, Building2 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es, fr, it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/language-context";
 
 interface Message {
   id: number;
@@ -53,6 +54,8 @@ interface ClientConversation {
 export function ClientConversationalMessages() {
   const { user } = useUser();
   const { toast } = useToast();
+  const { t, language } = useLanguage();
+  const dateLocale = { es, en: enUS, fr, it }[language] ?? es;
   const [conversations, setConversations] = useState<ClientConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ClientConversation | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -90,7 +93,7 @@ export function ClientConversationalMessages() {
       const response = await fetch(`/api/conversations/client/${encodeURIComponent(user!.email)}`);
       
       if (!response.ok) {
-        throw new Error("Error al cargar conversaciones");
+        throw new Error(t("messages.load_error"));
       }
       
       const data = await response.json();
@@ -98,8 +101,8 @@ export function ClientConversationalMessages() {
     } catch (error) {
       console.error("Error al cargar conversaciones:", error);
       toast({
-        title: "Error",
-        description: "No se pudieron cargar las conversaciones",
+        title: t("common.error"),
+        description: t("messages.load_error"),
         variant: "destructive",
       });
     } finally {
@@ -155,20 +158,20 @@ export function ClientConversationalMessages() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al fijar conversación');
+        throw new Error(errorData.error || t("messages.pin_error"));
       }
 
       setPinnedConversations(prev => [...prev, inquiryId]);
       
       toast({
-        title: "Conversación fijada",
-        description: "La conversación aparecerá primero en la lista",
+        title: t("messages.pin_success_title"),
+        description: t("messages.pin_success_desc"),
       });
     } catch (error) {
       console.error("Error pinning conversation:", error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "No se pudo fijar la conversación",
+        title: t("common.error"),
+        description: error instanceof Error ? error.message : t("messages.pin_error"),
         variant: "destructive",
       });
     } finally {
@@ -192,19 +195,19 @@ export function ClientConversationalMessages() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al desfijar conversación');
+        throw new Error(t("messages.unpin_error"));
       }
 
       setPinnedConversations(prev => prev.filter(id => id !== inquiryId));
       
       toast({
-        title: "Conversación desfijada",
+        title: t("messages.unpin_success_title"),
       });
     } catch (error) {
       console.error("Error unpinning conversation:", error);
       toast({
-        title: "Error",
-        description: "No se pudo desfijar la conversación",
+        title: t("common.error"),
+        description: t("messages.unpin_error"),
         variant: "destructive",
       });
     } finally {
@@ -266,7 +269,7 @@ export function ClientConversationalMessages() {
       });
 
       if (!response.ok) {
-        throw new Error("Error al enviar mensaje");
+        throw new Error(t("messages.send_error"));
       }
 
       const newMsg = await response.json();
@@ -294,8 +297,8 @@ export function ClientConversationalMessages() {
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
       toast({
-        title: "Error",
-        description: "No se pudo enviar el mensaje",
+        title: t("common.error"),
+        description: t("messages.send_error"),
         variant: "destructive",
       });
     } finally {
@@ -335,9 +338,9 @@ export function ClientConversationalMessages() {
       if (isToday(date)) {
         return format(date, "HH:mm");
       } else if (isYesterday(date)) {
-        return "Ayer";
+        return t("messages.yesterday");
       } else {
-        const dayName = format(date, "EEE", { locale: es });
+        const dayName = format(date, "EEE", { locale: dateLocale });
         return dayName.charAt(0).toUpperCase() + dayName.slice(1);
       }
     } catch (e) {
@@ -372,7 +375,7 @@ export function ClientConversationalMessages() {
       <div className="flex items-center justify-center h-64 md:h-[500px]">
         <div className="text-center">
           <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-500">Cargando conversaciones...</p>
+          <p className="text-gray-500">{t("messages.loading")}</p>
         </div>
       </div>
     );
@@ -384,7 +387,7 @@ export function ClientConversationalMessages() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Buscar conversaciones..."
+            placeholder={t("messages.search_conversations")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 rounded-full bg-gray-100 border-0"
@@ -398,7 +401,7 @@ export function ClientConversationalMessages() {
           <div className="p-8 text-center">
             <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">
-              {searchTerm ? "No se encontraron conversaciones" : "No hay conversaciones"}
+              {searchTerm ? t("messages.no_results") : t("messages.empty")}
             </p>
           </div>
         ) : (
@@ -437,7 +440,7 @@ export function ClientConversationalMessages() {
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="font-semibold text-gray-900 truncate text-sm">
                       {conversation.agencyName || conversation.agentName}
-                      {!conversation.agencyName && " - Agente"}
+                      {!conversation.agencyName && ` - ${t("messages.agent_suffix")}`}
                     </h3>
                     <span className="text-xs text-gray-500 flex-shrink-0">
                       {formatTimeShort(conversation.lastMessageTime)}
@@ -467,8 +470,8 @@ export function ClientConversationalMessages() {
         <div className="hidden md:flex items-center justify-center h-full bg-gray-50 text-gray-500">
           <div className="text-center">
             <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-lg">Selecciona una conversación</p>
-            <p className="text-sm text-gray-400 mt-1">para ver los mensajes</p>
+            <p className="text-lg">{t("messages.select_conversation_short")}</p>
+            <p className="text-sm text-gray-400 mt-1">{t("messages.select_to_view")}</p>
           </div>
         </div>
       );
@@ -502,7 +505,7 @@ export function ClientConversationalMessages() {
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900 truncate text-sm md:text-base">
               {selectedConversation.agencyName || selectedConversation.agentName}
-              {!selectedConversation.agencyName && " - Agente"}
+              {!selectedConversation.agencyName && ` - ${t("messages.agent_suffix")}`}
             </h3>
             <p className="text-xs text-gray-500 truncate flex items-center gap-1">
               <Home className="h-3 w-3 flex-shrink-0" />
@@ -537,9 +540,9 @@ export function ClientConversationalMessages() {
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 <div className={`flex items-center justify-end gap-1 mt-1 ${
-                  message.senderType === 'client' ? 'text-primary-foreground/70' : 'text-gray-400'
+                  message.senderType === 'client' ? 'text-white' : 'text-gray-500'
                 }`}>
-                  <span className="text-[10px]">{formatMessageTime(message.timestamp)}</span>
+                  <span className="text-[10px] font-medium">{formatMessageTime(message.timestamp)}</span>
                   <MessageStatusIndicator 
                     status={message.status || 'sent'} 
                     isClientMessage={message.senderType === 'client'} 
@@ -557,7 +560,7 @@ export function ClientConversationalMessages() {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Escribe un mensaje..."
+              placeholder={t("messages.write_placeholder")}
               className="flex-1 rounded-full"
               disabled={sendingMessage}
               data-testid="input-message"
@@ -578,7 +581,7 @@ export function ClientConversationalMessages() {
   };
 
   return (
-    <div className="bg-white rounded-lg border h-[calc(100vh-280px)] md:h-[600px] overflow-hidden">
+    <div className="bg-white rounded-lg border h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] overflow-hidden">
       <div className="md:hidden h-full">
         {selectedConversation ? (
           <ChatView />

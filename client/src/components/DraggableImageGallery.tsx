@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 type ImageItemProps = {
   url: string;
@@ -15,6 +16,7 @@ type ImageItemProps = {
 const ItemType = "IMAGE";
 
 const DraggableImage = ({ url, index, isMain, moveImage, onDelete, onSetMain }: ImageItemProps) => {
+  const { t } = useLanguage();
   const ref = useRef<HTMLDivElement>(null);
 
   const [{ isDragging }, drag] = useDrag({
@@ -58,7 +60,7 @@ const DraggableImage = ({ url, index, isMain, moveImage, onDelete, onSetMain }: 
       )}>
         <img 
           src={url} 
-          alt={`Property ${index}`} 
+          alt={t("propertyForm.gallery.image_alt", { index: index + 1 })}
           className="object-cover w-full h-full" 
           onError={(e) => {
             e.currentTarget.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150" fill="none"%3E%3Crect width="150" height="150" fill="%23EEEEEE"/%3E%3Cpath d="M75 90L60 70L45 90" stroke="%23CCCCCC" stroke-width="2"/%3E%3Ccircle cx="85" cy="60" r="5" stroke="%23CCCCCC" stroke-width="2"/%3E%3C/svg%3E';
@@ -67,7 +69,7 @@ const DraggableImage = ({ url, index, isMain, moveImage, onDelete, onSetMain }: 
 
         {isMain && (
           <div className="absolute top-0 left-0 bg-primary text-white py-1 px-2 text-xs font-medium rounded-br-md">
-            Imagen principal
+            {t("propertyForm.gallery.main_image")}
           </div>
         )}
       </div>
@@ -77,7 +79,7 @@ const DraggableImage = ({ url, index, isMain, moveImage, onDelete, onSetMain }: 
           type="button"
           className="bg-primary text-white rounded-md p-1.5 shadow-md hover:bg-primary/90"
           onClick={() => onSetMain(index)}
-          title={isMain ? "Imagen principal" : "Establecer como imagen principal"}
+          title={isMain ? t("propertyForm.gallery.main_image") : t("propertyForm.gallery.set_main")}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -89,7 +91,7 @@ const DraggableImage = ({ url, index, isMain, moveImage, onDelete, onSetMain }: 
         type="button"
         className="absolute bottom-2 right-2 bg-red-500 text-white rounded-md p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
         onClick={() => onDelete(index)}
-        title="Eliminar imagen"
+        title={t("propertyForm.gallery.delete")}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -106,6 +108,7 @@ type DraggableImageGalleryProps = {
 };
 
 export function DraggableImageGallery({ images, mainImageIndex: propMainImageIndex, onChange }: DraggableImageGalleryProps) {
+  const { t } = useLanguage();
   const [imageList, setImageList] = useState<string[]>(images || []);
   const [mainImageIndex, setMainImageIndex] = useState<number>(propMainImageIndex ?? -1);
 
@@ -179,7 +182,7 @@ export function DraggableImageGallery({ images, mainImageIndex: propMainImageInd
     <DndProvider backend={HTML5Backend}>
       {!imageList || imageList.length === 0 ? (
         <div className="bg-gray-50 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center">
-          <p className="text-gray-500">No hay imágenes para mostrar. Por favor, añade imágenes usando el campo arriba.</p>
+          <p className="text-gray-500">{t("propertyForm.gallery.empty")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -187,7 +190,7 @@ export function DraggableImageGallery({ images, mainImageIndex: propMainImageInd
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
             </svg>
-            <span>Arrastra para reordenar las imágenes</span>
+            <span>{t("propertyForm.gallery.drag_to_reorder")}</span>
           </div>
           {mainImageIndex === -1 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
@@ -195,7 +198,7 @@ export function DraggableImageGallery({ images, mainImageIndex: propMainImageInd
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L5.732 19.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                <span className="text-sm font-medium">Selecciona una imagen principal haciendo clic en el botón ✓</span>
+                <span className="text-sm font-medium">{t("propertyForm.gallery.select_main_help")}</span>
               </div>
             </div>
           )}
