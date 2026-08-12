@@ -117,6 +117,16 @@ const VALID_SECTIONS = [
 
 type DashboardSection = typeof VALID_SECTIONS[number];
 
+function optionalNumber() {
+  return z.preprocess((value) => {
+    if (value === null || value === undefined || value === "" || Number.isNaN(value)) {
+      return undefined;
+    }
+    const parsed = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }, z.number().optional());
+}
+
 function createClientProfileSchema(t: (key: string) => string) {
   const isUsablePhone = (value: string) => /^[6-9]\d{8}$/.test(value);
 
@@ -134,8 +144,8 @@ function createClientProfileSchema(t: (key: string) => string) {
     avatar: z.string().optional(),
     employmentStatus: z.string().optional(),
     position: z.string().optional(),
-    yearsAtPosition: z.number().optional(),
-    monthlyIncome: z.number().optional(),
+    yearsAtPosition: optionalNumber(),
+    monthlyIncome: optionalNumber(),
     numberOfPeople: z.number().optional(),
     relationship: z.string().optional(),
     hasMinors: z.boolean().default(false),
@@ -168,6 +178,7 @@ export default function ClientProfile() {
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [formReady, setFormReady] = useState(false);
+  const [phoneFieldFocused, setPhoneFieldFocused] = useState(false);
   const profileInitializedRef = useRef(false);
 
   // Route guards
@@ -294,8 +305,8 @@ export default function ClientProfile() {
         avatar: clientProfileData.avatar || user?.avatar || "",
         employmentStatus: clientProfileData.employmentStatus || "",
         position: clientProfileData.position || "",
-        yearsAtPosition: clientProfileData.yearsAtPosition,
-        monthlyIncome: clientProfileData.monthlyIncome,
+        yearsAtPosition: clientProfileData.yearsAtPosition ?? undefined,
+        monthlyIncome: clientProfileData.monthlyIncome ?? undefined,
         numberOfPeople: clientProfileData.numberOfPeople || 1,
         relationship: clientProfileData.relationship || "",
         hasMinors: clientProfileData.hasMinors || false,
@@ -319,24 +330,49 @@ export default function ClientProfile() {
       throw new Error("NO_USER");
     }
 
-    try {
-      const response = await fetch(`/api/clients/${user.id}/profile`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          phone: data.phone && data.phone !== "000000000" ? data.phone : "",
-          yearsAtPosition: Number.isFinite(data.yearsAtPosition) ? data.yearsAtPosition : undefined,
-          monthlyIncome: Number.isFinite(data.monthlyIncome) ? data.monthlyIncome : undefined,
-          moveInDate: data.moveInDate ? data.moveInDate.toISOString() : undefined,
-        }),
-      });
+    const name = (data.name || "").trim();
+    if (!name) {
+      throw new Error("VALIDATION");
+    }
 
-      if (!response.ok) {
-        throw new Error("Error al actualizar el perfil");
-      }
+    const phoneDigits = (data.phone || "").replace(/\D/g, "");
+    const payload: Record<string, unknown> = {
+      name,
+      surname: (data.surname || "").trim(),
+      employmentStatus: data.employmentStatus || null,
+      position: data.position || null,
+      numberOfPeople: Number.isFinite(data.numberOfPeople) ? data.numberOfPeople : 1,
+      relationship: data.relationship || null,
+      hasMinors: Boolean(data.hasMinors),
+      hasAdolescents: Boolean(data.hasAdolescents),
+      petsStatus: data.petsStatus || null,
+      petsDescription: data.petsDescription || null,
+      moveInTiming: data.moveInTiming || null,
+    };
+
+    if (/^[6-9]\d{8}$/.test(phoneDigits)) {
+      payload.phone = phoneDigits;
+    } else if (!phoneDigits || phoneDigits === "000000000") {
+      payload.phone = "";
+    }
+
+    if (data.avatar) {
+      payload.avatar = data.avatar;
+    }
+    if (Number.isFinite(data.yearsAtPosition)) {
+      payload.yearsAtPosition = data.yearsAtPosition;
+    }
+    if (Number.isFinite(data.monthlyIncome)) {
+      payload.monthlyIncome = data.monthlyIncome;
+    }
+    if (data.moveInDate) {
+      payload.moveInDate = data.moveInDate instanceof Date
+        ? data.moveInDate.toISOString()
+        : data.moveInDate;
+    }
+
+    try {
+      await apiRequest("PUT", `/api/clients/${user.id}/profile`, payload);
 
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       queryClient.invalidateQueries({ queryKey: [`/api/clients/${user.id}`] });
@@ -355,13 +391,9 @@ export default function ClientProfile() {
 
   const autosaveFn = useCallback(
     async (data: ClientProfileFormData) => {
-      const valid = await form.trigger();
-      if (!valid) {
-        throw new Error("VALIDATION");
-      }
       await saveProfile(data);
     },
-    [form, saveProfile],
+    [saveProfile],
   );
 
   const { savedFields } = useAutosave(watchedValues, autosaveFn, {
@@ -693,14 +725,14 @@ export default function ClientProfile() {
                         control={form.control}
                         name="phone"
                         render={({ field }) => {
-                          // Real-time validation check
-                          const isPhoneValid = field.value && /^[6-9]\d{8}$/.test(field.value);
+                          const isPhoneValid = Boolean(field.value && /^[6-9]\d{8}$/.test(field.value));
+                          const showPhoneFeedback = phoneFieldFocused && Boolean(field.value);
                           
                           return (
                             <FormItem>
                               <FormLabel className="text-sm font-medium text-gray-700 inline-flex items-center gap-2">
                                 {t("clientProfile.phone")} <span className="text-red-500">*</span>
-                                {isPhoneValid && (
+                                {showPhoneFeedback && isPhoneValid && (
                                   <CheckCircle className="h-4 w-4 text-green-600" />
                                 )}
                                 <SavedIndicator visible={savedFields.has("phone")} />
@@ -712,24 +744,28 @@ export default function ClientProfile() {
                                   maxLength={9}
                                   {...field}
                                   className={cn(
-                                    isPhoneValid && "border-green-500 focus:border-green-600",
-                                    field.value && !isPhoneValid && "border-red-500 focus:border-red-600"
+                                    showPhoneFeedback && isPhoneValid && "border-green-500 focus:border-green-600",
+                                    showPhoneFeedback && !isPhoneValid && "border-red-500 focus:border-red-600"
                                   )}
+                                  onFocus={() => setPhoneFieldFocused(true)}
+                                  onBlur={() => {
+                                    field.onBlur();
+                                    setPhoneFieldFocused(false);
+                                  }}
                                   onChange={(e) => {
-                                    // Only allow digits
                                     const value = e.target.value.replace(/\D/g, '');
                                     field.onChange(value);
                                   }}
                                   data-testid="input-phone"
                                 />
                               </FormControl>
-                              {isPhoneValid && (
+                              {showPhoneFeedback && isPhoneValid && (
                                 <div className="text-sm text-green-600 flex items-center gap-1">
                                   <CheckCircle className="h-3 w-3" />
                                   {t("clientProfile.phone_valid")}
                                 </div>
                               )}
-                              {field.value && field.value.length > 0 && !isPhoneValid && (
+                              {showPhoneFeedback && !isPhoneValid && (
                                 <div className="text-sm text-muted-foreground">
                                   {t("clientProfile.phone_format")}
                                 </div>
@@ -803,8 +839,8 @@ export default function ClientProfile() {
                                 <Input 
                                   type="number" 
                                   placeholder={t("clientProfile.years_at_position_placeholder")}
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))}
                                   data-testid="input-years-position"
                                 />
                               </FormControl>
@@ -824,8 +860,8 @@ export default function ClientProfile() {
                               <Input 
                                 type="number" 
                                 placeholder={t("clientProfile.monthly_income_placeholder")}
-                                {...field}
-                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                value={field.value ?? ""}
+                                onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))}
                                 data-testid="input-monthly-income"
                               />
                             </FormControl>

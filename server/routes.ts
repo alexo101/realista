@@ -42,24 +42,24 @@ function getPublicBaseUrl(req?: Request): string {
 }
 
 // Client profile update schema - only allow specific fields
-const updateClientProfileSchema = insertClientSchema.pick({
-  name: true,
-  surname: true,
-  phone: true,
-  avatar: true,
-  employmentStatus: true,
-  position: true,
-  yearsAtPosition: true,
-  monthlyIncome: true,
-  numberOfPeople: true,
-  relationship: true,
-  hasMinors: true,
-  hasAdolescents: true,
-  petsStatus: true,
-  petsDescription: true,
-  moveInTiming: true,
-  moveInDate: true,
-}).partial();
+const updateClientProfileSchema = z.object({
+  name: z.string().min(1).optional(),
+  surname: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  avatar: z.string().optional().nullable(),
+  employmentStatus: z.string().optional().nullable(),
+  position: z.string().optional().nullable(),
+  yearsAtPosition: z.number().int().optional().nullable(),
+  monthlyIncome: z.number().int().optional().nullable(),
+  numberOfPeople: z.number().int().optional().nullable(),
+  relationship: z.string().optional().nullable(),
+  hasMinors: z.boolean().optional(),
+  hasAdolescents: z.boolean().optional(),
+  petsStatus: z.string().optional().nullable(),
+  petsDescription: z.string().optional().nullable(),
+  moveInTiming: z.string().optional().nullable(),
+  moveInDate: z.union([z.date(), z.string()]).optional().nullable(),
+});
 
 function isMissingClientPhone(phone?: string | null): boolean {
   const normalized = String(phone || "").replace(/\s/g, "");
@@ -2008,6 +2008,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clientId = parseInt(req.params.id);
       console.log('Attempting to update client:', clientId, req.body);
+      // #region agent log
+      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'D',location:'server/routes.ts:PATCH /api/clients/:id',message:'route reached before schema parse',data:{clientId,requestTagType:typeof req.body?.tags,requestTagsIsArray:Array.isArray(req.body?.tags),requestTagsLength:Array.isArray(req.body?.tags)?req.body.tags.length:null},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
 
       const access = await userCanManageClient(req.user, clientId);
       if (!access.client) {

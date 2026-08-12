@@ -2744,28 +2744,55 @@ export class DatabaseStorage implements IStorage {
     }
 
     return await db.transaction(async (tx) => {
-      const [updatedClient] = await tx
-        .update(clients)
-        .set({
-          ...client,
-          password: normalizedPassword,
-          propertyPreferences: client.propertyPreferences ?? null,
-          contactHistory,
-        })
-        .where(eq(clients.id, id))
-        .returning();
+      // #region agent log
+      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'C',location:'server/storage.ts:updateClient',message:'tags value before drizzle update',data:{clientId:id,tags:client.tags,tagsIsArray:Array.isArray(client.tags),tagsType:typeof client.tags,tagsCtor:client.tags==null?null:(client.tags as any)?.constructor?.name,hasId:(client as any).id,hasAgentId:(client as any).agentId,clientKeys:Object.keys(client)},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      let updatedClient;
+      try {
+        [updatedClient] = await tx
+          .update(clients)
+          .set({
+            ...client,
+            password: normalizedPassword,
+            propertyPreferences: client.propertyPreferences ?? null,
+            contactHistory,
+          })
+          .where(eq(clients.id, id))
+          .returning();
+        // #region agent log
+        fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'B',location:'server/storage.ts:updateClient',message:'drizzle update.set succeeded',data:{clientId:id,updatedId:updatedClient?.id,returnedTags:updatedClient?.tags},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+      } catch (drizzleErr: any) {
+        // #region agent log
+        fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'B',location:'server/storage.ts:updateClient',message:'drizzle update.set FAILED',data:{clientId:id,code:drizzleErr?.code,errMessage:String(drizzleErr?.message||drizzleErr)},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        throw drizzleErr;
+      }
 
       // Drizzle ORM silently omits client_type and tags from its generated SQL,
       // so patch them in the same transaction via execute.
-      await tx.execute(sql`
-        UPDATE clients
-        SET
-          client_type = ${client.clientType ?? null},
-          tags = ${client.tags ?? null},
-          property_preferences = ${client.propertyPreferences ?? null},
-          contact_history = ${JSON.stringify(contactHistory)}::jsonb
-        WHERE id = ${updatedClient.id}
-      `);
+      try {
+        // #region agent log
+        fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'A',location:'server/storage.ts:updateClient',message:'about to raw-sql patch tags',data:{clientId:id,tags:client.tags,tagsIsArray:Array.isArray(client.tags),clientType:client.clientType,prefsType:typeof client.propertyPreferences},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        await tx.execute(sql`
+          UPDATE clients
+          SET
+            client_type = ${client.clientType ?? null},
+            tags = ${client.tags ?? null},
+            property_preferences = ${client.propertyPreferences ?? null},
+            contact_history = ${JSON.stringify(contactHistory)}::jsonb
+          WHERE id = ${updatedClient.id}
+        `);
+        // #region agent log
+        fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'A',location:'server/storage.ts:updateClient',message:'raw-sql patch tags succeeded',data:{clientId:id},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+      } catch (sqlErr: any) {
+        // #region agent log
+        fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'A',location:'server/storage.ts:updateClient',message:'raw-sql patch tags FAILED',data:{clientId:id,code:sqlErr?.code,errMessage:String(sqlErr?.message||sqlErr),hint:sqlErr?.hint},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        throw sqlErr;
+      }
 
       const [patched] = await tx
         .select()
