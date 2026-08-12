@@ -2008,9 +2008,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clientId = parseInt(req.params.id);
       console.log('Attempting to update client:', clientId, req.body);
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/c0bb968d-e33c-45cf-bfb3-30a16a123bdf',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3c4882'},body:JSON.stringify({sessionId:'3c4882',runId:'pre-fix',hypothesisId:'D',location:'server/routes.ts:PATCH /api/clients/:id',message:'route reached before schema parse',data:{clientId,requestTagType:typeof req.body?.tags,requestTagsIsArray:Array.isArray(req.body?.tags),requestTagsLength:Array.isArray(req.body?.tags)?req.body.tags.length:null},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
 
       const access = await userCanManageClient(req.user, clientId);
       if (!access.client) {
