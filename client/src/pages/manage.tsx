@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Star, UserCircle, Building, MessageSquare, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound, CalendarDays } from "lucide-react";
+import { Building2, Users, Star, UserCircle, Building, MessageSquare, Plus, Calendar, ChevronLeft, ChevronRight, Mail, Phone, Pencil, Trash2, List, LayoutGrid, Eye, Send, Network, CreditCard, LogIn, Search, X, Clock, KeyRound, CalendarDays, Briefcase } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAutosave } from "@/hooks/use-autosave";
@@ -1099,6 +1099,23 @@ export default function ManagePage() {
                     </div>
                   )}
                 </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
+                <div
+                  className="relative group flex w-full items-center gap-2 overflow-hidden rounded-md p-2 h-8 text-sm text-left select-none cursor-default"
+                  title={sidebarCollapsed ? t("nav.services") : ""}
+                  data-testid="sidebar-services"
+                  aria-disabled="true"
+                >
+                  <Briefcase className="h-4 w-4 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>{t("nav.services")}</span>}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap">
+                      {t("nav.services")}
+                    </div>
+                  )}
+                </div>
               </SidebarMenuItem>
 
               {/* Mi perfil de agente Section */}
@@ -3648,7 +3665,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "resenas" && (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto w-full">
               {user ? (
                 <ReviewManagement userId={user.id} userType={user.isAdmin ? "admin" : "agent"} />
               ) : (

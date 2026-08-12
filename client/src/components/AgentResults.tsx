@@ -2,6 +2,7 @@ import { UserCircle, MapPin, ExternalLink, Users, Star, Heart } from "lucide-rea
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,7 @@ interface AgentResultsProps {
 
 export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
   const { user } = useUser();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -181,7 +183,7 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {isFavorite ? "Eliminar de favoritos" : "Agregar a favoritos"}
+                      {isFavorite ? t("results.remove_favorite") : t("results.save_favorite")}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -213,12 +215,12 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
                     <span className="text-xs text-gray-500">({agent.reviewCount})</span>
                   </div>
                 ) : (
-                  <p className="text-gray-600 text-sm mt-1">Sin reseñas</p>
+                  <p className="text-gray-600 text-sm mt-1">{t("reviews.no_reviews")}</p>
                 )}
                 
                 {agent.influenceNeighborhoods && agent.influenceNeighborhoods.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-xs text-gray-500">Barrios de influencia:</p>
+                    <p className="text-xs text-gray-500">{t("results.influence_neighborhoods")}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {agent.influenceNeighborhoods.slice(0, 2).map((neighborhood) => (
                         <span key={neighborhood} className="bg-primary/10 text-primary text-xs rounded-full px-2 py-0.5 flex items-center">
@@ -240,7 +242,7 @@ export function AgentResults({ results, showSkeleton }: AgentResultsProps) {
             <div className="mt-auto pt-4">
               <Button variant="outline" className="w-full" asChild>
                 <Link href={`/agentes/${agent.slug || agent.id}`}>
-                  Ver perfil <ExternalLink className="w-4 h-4 ml-2" />
+                  {t("results.view_agent")} <ExternalLink className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
             </div>

@@ -171,7 +171,17 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'yearly' | null>(null);
 
   const plans = entityType === 'agency' ? AGENCY_PLANS : AGENT_PLANS;
-  const planLabels = entityType === 'agency' ? AGENCY_PLAN_LABELS : AGENT_PLAN_LABELS;
+  const planLabels = entityType === 'agency'
+    ? {
+        basica: t("manage.billing.agency_basic"),
+        pequeña: t("manage.billing.agency_small"),
+        mediana: t("manage.billing.agency_medium"),
+        lider: t("manage.billing.agency_leader"),
+      }
+    : {
+        basico: t("manage.billing.agent_basic"),
+        lider: t("manage.billing.agent_leader"),
+      };
 
   const { data: billingInfo, isLoading } = useQuery<BillingInfo>({
     queryKey: ['/api/stripe/billing', entityType, entityId],
@@ -336,13 +346,13 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Badge className={currentPlan.badgeColor} data-testid="badge-current-plan">
-                    {currentPlan.name}
+                    {planLabels[currentPlan.id as keyof typeof planLabels] || currentPlan.name}
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  {billingInfo?.isYearlyBilling ? 'Facturación anual' : 'Facturación mensual'}
+                  {billingInfo?.isYearlyBilling ? t("manage.billing.annual") : t("manage.billing.monthly")}
                   {billingInfo?.subscription?.cancel_at_period_end && (
-                    <span className="text-orange-600 ml-2">(Cancela al finalizar el período)</span>
+                    <span className="text-orange-600 ml-2">{t("manage.billing.cancel_at_period_end")}</span>
                   )}
                 </CardDescription>
               </div>
@@ -355,26 +365,26 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Users className="h-4 w-4" />
-                  <span className="text-sm">Límite de agentes</span>
+                  <span className="text-sm">{t("manage.billing.agent_limit")}</span>
                 </div>
                 <p className="text-2xl font-bold" data-testid="text-agents-limit">
-                  {billingInfo?.seatsLimit === null || billingInfo?.seatsLimit === 999999 ? 'Sin límite' : billingInfo?.seatsLimit || 1}
+                  {billingInfo?.seatsLimit === null || billingInfo?.seatsLimit === 999999 ? t("manage.billing.unlimited") : billingInfo?.seatsLimit || 1}
                 </p>
               </div>
             )}
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Home className="h-4 w-4" />
-                <span className="text-sm">Límite de propiedades</span>
+                <span className="text-sm">{t("manage.billing.property_limit")}</span>
               </div>
               <p className="text-2xl font-bold" data-testid="text-properties-limit">
-                {billingInfo?.activePropertiesLimit === null || billingInfo?.activePropertiesLimit === 999999 ? 'Sin límite' : billingInfo?.activePropertiesLimit || 2}
+                {billingInfo?.activePropertiesLimit === null || billingInfo?.activePropertiesLimit === 999999 ? t("manage.billing.unlimited") : billingInfo?.activePropertiesLimit || 2}
               </p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Calendar className="h-4 w-4" />
-                <span className="text-sm">Precio actual</span>
+                <span className="text-sm">{t("manage.billing.current_price")}</span>
               </div>
               <p className="text-2xl font-bold" data-testid="text-current-price">
                 {billingInfo?.isYearlyBilling 
@@ -389,7 +399,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Plan Selector */}
               <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Plan</Label>
+                <Label className="text-sm text-muted-foreground mb-2 block">{t("manage.billing.plan")}</Label>
                 <Select
                   value={effectiveSelectedPlan}
                   onValueChange={handlePlanSelect}
@@ -410,7 +420,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
 
               {/* Billing Period Selector */}
               <div>
-                <Label className="text-sm text-muted-foreground mb-2 block">Período de facturación</Label>
+                <Label className="text-sm text-muted-foreground mb-2 block">{t("manage.billing.billing_period")}</Label>
                 <Select
                   value={effectiveSelectedPeriod}
                   onValueChange={handleBillingPeriodSelect}
@@ -421,7 +431,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                     data-testid="select-billing-period"
                   >
                     <span className="text-left flex-1">
-                      {effectiveSelectedPeriod === 'yearly' ? 'Anual' : 'Mensual'}
+                      {effectiveSelectedPeriod === 'yearly' ? t("manage.billing.annual_short") : t("manage.billing.monthly_short")}
                     </span>
                   </SelectTrigger>
                   <SelectContent>
@@ -429,21 +439,21 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                       value="monthly" 
                       disabled={currentBillingPeriod === 'yearly'}
                       data-testid="select-billing-period-monthly"
-                      title={currentBillingPeriod === 'yearly' ? 'Actualmente tienes un plan anual activo. Consulta la sección "Fecha de renovación"' : undefined}
+                      title={currentBillingPeriod === 'yearly' ? t("manage.billing.annual_active_title") : undefined}
                     >
-                      Mensual
+                      {t("manage.billing.monthly_short")}
                       {currentBillingPeriod === 'yearly' && (
-                        <span className="text-xs text-muted-foreground ml-2">(No disponible)</span>
+                        <span className="text-xs text-muted-foreground ml-2">({t("common.not_available")})</span>
                       )}
                     </SelectItem>
                     <SelectItem value="yearly" data-testid="select-billing-period-yearly">
-                      Anual (ahorra 2 meses)
+                      {t("manage.billing.annual_short")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 {currentBillingPeriod === 'yearly' && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Actualmente tienes un plan anual activo. Consulta la sección "Fecha de renovación"
+                    {t("manage.billing.annual_active_title")}
                   </p>
                 )}
               </div>
@@ -461,10 +471,10 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                   {changePlanMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Procesando...
+                      {t("manage.billing.processing")}
                     </>
                   ) : (
-                    'Confirmar cambios'
+                    t("manage.billing.confirm_changes")
                   )}
                 </Button>
               </div>
@@ -473,7 +483,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
             {changePlanMutation.isPending && (
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Procesando cambio de suscripción...
+                {t("manage.billing.processing_change")}
               </p>
             )}
           </div>
@@ -486,10 +496,10 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Beneficios de planes superiores
+              {t("manage.billing.higher_benefits")}
             </CardTitle>
             <CardDescription>
-              Compara lo que obtendrías con un plan superior
+              {t("manage.billing.higher_benefits_desc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-2 sm:px-6">
@@ -497,14 +507,14 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               <Table className="min-w-[500px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Característica</TableHead>
+                    <TableHead className="whitespace-nowrap">{t("manage.billing.feature")}</TableHead>
                     <TableHead className="text-center whitespace-nowrap">
-                      <Badge className={currentPlan.badgeColor}>{currentPlan.name}</Badge>
-                      <span className="block text-xs text-muted-foreground mt-1">(Actual)</span>
+                      <Badge className={currentPlan.badgeColor}>{planLabels[currentPlan.id as keyof typeof planLabels] || currentPlan.name}</Badge>
+                      <span className="block text-xs text-muted-foreground mt-1">({t("manage.billing.current")})</span>
                     </TableHead>
                     {superiorPlans.map((plan) => (
                       <TableHead key={plan.id} className="text-center whitespace-nowrap">
-                        <Badge className={plan.badgeColor}>{plan.name}</Badge>
+                        <Badge className={plan.badgeColor}>{planLabels[plan.id as keyof typeof planLabels] || plan.name}</Badge>
                       </TableHead>
                     ))}
                   </TableRow>
@@ -512,43 +522,43 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 <TableBody>
                   {entityType === 'agency' && (
                     <TableRow>
-                      <TableCell className="font-medium whitespace-nowrap">Límite de agentes</TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">{t("manage.billing.agent_limit")}</TableCell>
                       <TableCell className="text-center">
                         {(() => {
                           const limit = (currentPlan as any).agentsLimit;
-                          return limit === null ? 'Sin límite' : (limit || 'N/A');
+                          return limit === null ? t("manage.billing.unlimited") : (limit || 'N/A');
                         })()}
                       </TableCell>
                       {superiorPlans.map((plan) => (
                         <TableCell key={plan.id} className="text-center font-semibold text-primary">
                           {(() => {
                             const limit = (plan as any).agentsLimit;
-                            return limit === null ? 'Sin límite' : (limit || 'N/A');
+                            return limit === null ? t("manage.billing.unlimited") : (limit || 'N/A');
                           })()}
                         </TableCell>
                       ))}
                     </TableRow>
                   )}
                   <TableRow>
-                    <TableCell className="font-medium whitespace-nowrap">Límite de propiedades</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{t("manage.billing.property_limit")}</TableCell>
                     <TableCell className="text-center">
-                      {currentPlan.propertiesLimit === null ? 'Sin límite' : currentPlan.propertiesLimit}
+                        {currentPlan.propertiesLimit === null ? t("manage.billing.unlimited") : currentPlan.propertiesLimit}
                     </TableCell>
                     {superiorPlans.map((plan) => (
                       <TableCell key={plan.id} className="text-center font-semibold text-primary">
-                        {plan.propertiesLimit === null ? 'Sin límite' : plan.propertiesLimit}
+                        {plan.propertiesLimit === null ? t("manage.billing.unlimited") : plan.propertiesLimit}
                       </TableCell>
                     ))}
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium whitespace-nowrap">Precio mensual</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{t("manage.billing.monthly_price")}</TableCell>
                     <TableCell className="text-center">{currentPlan.monthlyPrice}€</TableCell>
                     {superiorPlans.map((plan) => (
                       <TableCell key={plan.id} className="text-center">{plan.monthlyPrice}€</TableCell>
                     ))}
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium whitespace-nowrap">Precio anual</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{t("manage.billing.annual_price")}</TableCell>
                     <TableCell className="text-center">{currentPlan.yearlyPrice}€</TableCell>
                     {superiorPlans.map((plan) => (
                       <TableCell key={plan.id} className="text-center">{plan.yearlyPrice}€</TableCell>
@@ -566,7 +576,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            Fecha de renovación
+            {t("manage.billing.renewal_date")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -584,8 +594,8 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {billingInfo.subscription.cancel_at_period_end 
-                        ? 'Tu suscripción finalizará en esta fecha'
-                        : 'Tu suscripción se renovará automáticamente'
+                        ? t("manage.billing.subscription_ends")
+                        : t("manage.billing.subscription_renews")
                       }
                     </p>
                   </div>
@@ -629,7 +639,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                       })}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Tu suscripción se renovará automáticamente
+                      {t("manage.billing.subscription_renews")}
                     </p>
                   </div>
                 </div>
@@ -640,8 +650,8 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
             return (
               <p className="text-muted-foreground" data-testid="text-no-renewal">
                 {currentPlan.monthlyPrice === 0 
-                  ? 'Estás en el plan gratuito - sin fecha de renovación'
-                  : 'No hay fecha de renovación disponible'
+                  ? t("manage.billing.free_no_renewal")
+                  : t("manage.billing.no_renewal")
                 }
               </p>
             );
@@ -654,10 +664,10 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Historial de facturas
+            {t("manage.billing.invoice_history")}
           </CardTitle>
           <CardDescription>
-            Tus facturas y pagos anteriores
+            {t("manage.billing.invoice_subtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -674,10 +684,10 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Importe</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
+                      <TableHead>{t("manage.billing.invoice_date")}</TableHead>
+                      <TableHead>{t("manage.billing.invoice_status")}</TableHead>
+                      <TableHead className="text-right">{t("manage.billing.amount")}</TableHead>
+                      <TableHead className="text-right">{t("manage.billing.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -689,7 +699,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                             variant={invoice.status === 'paid' ? 'default' : 'secondary'}
                             className={invoice.status === 'paid' ? 'bg-green-100 text-green-700' : ''}
                           >
-                            {invoice.status === 'paid' ? 'Pagada' : invoice.status}
+                            {invoice.status === 'paid' ? t("manage.billing.paid") : invoice.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
@@ -704,7 +714,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                               data-testid={`button-view-invoice-${invoice.id}`}
                             >
                               <ExternalLink className="h-4 w-4 mr-1" />
-                              Ver
+                              {t("manage.billing.view")}
                             </Button>
                           )}
                         </TableCell>
@@ -727,7 +737,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                         variant={invoice.status === 'paid' ? 'default' : 'secondary'}
                         className={invoice.status === 'paid' ? 'bg-green-100 text-green-700' : ''}
                       >
-                        {invoice.status === 'paid' ? 'Pagada' : invoice.status}
+                        {invoice.status === 'paid' ? t("manage.billing.paid") : invoice.status}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
@@ -743,7 +753,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                           data-testid={`button-view-invoice-mobile-${invoice.id}`}
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
-                          Ver factura
+                          {t("manage.billing.view_invoice")}
                         </Button>
                       )}
                     </div>
@@ -755,11 +765,11 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground" data-testid="text-no-invoices">
-                No hay facturas disponibles todavía
+                {t("manage.billing.no_invoices")}
               </p>
               {currentPlan.monthlyPrice === 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  Las facturas aparecerán cuando mejores a un plan de pago
+                  {t("manage.billing.invoices_after_upgrade")}
                 </p>
               )}
             </div>
@@ -772,10 +782,10 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building className="h-5 w-5 text-primary" />
-            Información fiscal
+            {t("manage.billing.tax_info")}
           </CardTitle>
           <CardDescription>
-            Datos para tus facturas (opcional)
+            {t("manage.billing.tax_subtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -785,17 +795,17 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 <Label htmlFor="taxId">NIF/CIF</Label>
                 <Input
                   id="taxId"
-                  placeholder="Ej: B12345678"
+                  placeholder={t("manage.billing.tax_id_placeholder")}
                   value={taxInfo.taxId}
                   onChange={(e) => setTaxInfo({ ...taxInfo, taxId: e.target.value })}
                   data-testid="input-tax-id"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="businessName">Nombre o razón social</Label>
+                <Label htmlFor="businessName">{t("manage.billing.business_name")}</Label>
                 <Input
                   id="businessName"
-                  placeholder="Nombre de la empresa"
+                  placeholder={t("manage.billing.business_name")}
                   value={taxInfo.businessName}
                   onChange={(e) => setTaxInfo({ ...taxInfo, businessName: e.target.value })}
                   data-testid="input-business-name"
@@ -803,17 +813,17 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address">Dirección fiscal</Label>
+              <Label htmlFor="address">{t("manage.billing.tax_address")}</Label>
               <Input
                 id="address"
-                placeholder="Calle, número, código postal, ciudad"
+                placeholder={t("manage.billing.tax_address_placeholder")}
                 value={taxInfo.address}
                 onChange={(e) => setTaxInfo({ ...taxInfo, address: e.target.value })}
                 data-testid="input-tax-address"
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Esta información se utilizará para generar tus facturas. Puedes actualizarla en cualquier momento.
+              {t("manage.billing.tax_info_description")}
             </p>
             <Button
               variant="outline"
@@ -822,10 +832,10 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
               data-testid="button-save-tax-info"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Guardar información fiscal
+              {t("manage.billing.save_tax_info")}
             </Button>
             <p className="text-xs text-muted-foreground italic">
-              (Funcionalidad próximamente disponible)
+              {t("manage.billing.coming_soon")}
             </p>
           </div>
         </CardContent>
@@ -837,23 +847,23 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar cambio de suscripción</AlertDialogTitle>
+          <AlertDialogTitle>{t("manage.billing.confirm_subscription")}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
-                <p>Estás a punto de modificar tu suscripción:</p>
+                <p>{t("manage.billing.about_to_change")}</p>
                 
                 {/* Plan Change */}
                 {hasPlanChange && getPendingPlanDetails() && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Cambio de plan:</p>
+                    <p className="text-sm font-medium">{t("manage.billing.plan_change")}</p>
                     <div className="flex items-center justify-center gap-4 py-2">
                       <div className="text-center">
-                        <Badge className={currentPlan.badgeColor}>{currentPlan.name}</Badge>
+                        <Badge className={currentPlan.badgeColor}>{planLabels[currentPlan.id as keyof typeof planLabels] || currentPlan.name}</Badge>
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground" />
                       <div className="text-center">
                         <Badge className={getPendingPlanDetails()!.badgeColor}>
-                          {getPendingPlanDetails()!.name}
+                          {planLabels[getPendingPlanDetails()!.id as keyof typeof planLabels] || getPendingPlanDetails()!.name}
                         </Badge>
                       </div>
                     </div>
@@ -863,17 +873,17 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 {/* Period Change */}
                 {hasPeriodChange && (
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Cambio de período:</p>
+                    <p className="text-sm font-medium">{t("manage.billing.period_change")}</p>
                     <div className="flex items-center justify-center gap-4 py-2">
                       <div className="text-center">
                         <Badge variant="outline">
-                          {currentBillingPeriod === 'yearly' ? 'Anual' : 'Mensual'}
+                          {currentBillingPeriod === 'yearly' ? t("manage.billing.annual_short") : t("manage.billing.monthly_short")}
                         </Badge>
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground" />
                       <div className="text-center">
                         <Badge variant="outline">
-                          {effectiveSelectedPeriod === 'yearly' ? 'Anual' : 'Mensual'}
+                          {effectiveSelectedPeriod === 'yearly' ? t("manage.billing.annual_short") : t("manage.billing.monthly_short")}
                         </Badge>
                       </div>
                     </div>
@@ -882,7 +892,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
 
                 {/* Price Summary */}
                 <div className="bg-muted p-3 rounded-lg text-center">
-                  <p className="text-sm text-muted-foreground">Nuevo precio:</p>
+                  <p className="text-sm text-muted-foreground">{t("manage.billing.new_price")}</p>
                   <p className="text-lg font-bold">
                     {(() => {
                       const plan = getPendingPlanDetails() || currentPlan;
@@ -897,7 +907,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
                 {/* Redirect message */}
                 {(getPendingPlanDetails()?.monthlyPrice || 0) > 0 && (
                   <p className="text-sm text-center text-muted-foreground">
-                    Serás redirigido a Stripe para completar el proceso de pago.
+                    {t("manage.billing.stripe_redirect")}
                   </p>
                 )}
               </div>
@@ -905,10 +915,10 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleCancelPlanChange} data-testid="button-cancel-plan-change">
-              Cancelar
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmPlanChange} data-testid="button-confirm-plan-change">
-              Confirmar cambio
+              {t("manage.billing.confirm_change")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

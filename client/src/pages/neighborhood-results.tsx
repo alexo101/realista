@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { findDistrictByNeighborhood, isDistrict, parseNeighborhoodDisplayName, getNeighborhoodDisplayName, getDistrictsByCity, getNeighborhoodsByDistrict, getCities, expandNeighborhoodSearch, isProvince, getProvinceByCity, getCitiesByProvince, getProvinces, isDistrictTerminal, isCityTerminal } from "@/utils/neighborhoods";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -52,6 +53,7 @@ export default function NeighborhoodResultsPage() {
   const decodedNeighborhood = neighborhood ? decodeURIComponent(neighborhood) : '';
   const queryClient = useQueryClient();
   const { user } = useUser();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { isTransitioning, endTransition } = useRouteTransition();
   
@@ -875,7 +877,7 @@ export default function NeighborhoodResultsPage() {
               onClick={() => setLocation('/')}
               data-testid="breadcrumb-inicio"
             >
-              Inicio
+              {t("nav.home")}
             </span>
             
             {/* Province Level with cities dropdown */}
@@ -904,7 +906,7 @@ export default function NeighborhoodResultsPage() {
                       className="cursor-pointer border-t mt-1 pt-2 font-medium"
                       data-testid="breadcrumb-province-all"
                     >
-                      Ver toda la provincia
+                      {t("results.view_all")} {currentProvince}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -944,7 +946,7 @@ export default function NeighborhoodResultsPage() {
                         className="cursor-pointer border-t mt-1 pt-2 font-medium"
                         data-testid="breadcrumb-city-all"
                       >
-                        Ver todo {currentCity}
+                        {t("results.view_all")} {currentCity}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -985,7 +987,7 @@ export default function NeighborhoodResultsPage() {
                         className="cursor-pointer border-t mt-1 pt-2 font-medium"
                         data-testid="breadcrumb-district-all"
                       >
-                        Ver todo {currentDistrict}
+                        {t("results.view_all")} {currentDistrict}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -1014,19 +1016,19 @@ export default function NeighborhoodResultsPage() {
             <TabsList className="hidden md:grid grid-cols-4 mb-8">
               <TabsTrigger value="properties" className="flex items-center gap-1">
                 <HomeIcon className="h-4 w-4" />
-                Propiedades
+                {t("results.properties")}
               </TabsTrigger>
               <TabsTrigger value="agencies" className="flex items-center gap-1">
                 <Building2 className="h-4 w-4" />
-                Agencias
+                {t("results.agencies")}
               </TabsTrigger>
               <TabsTrigger value="agents" className="flex items-center gap-1">
                 <UserCircle className="h-4 w-4" />
-                Agentes
+                {t("results.agents")}
               </TabsTrigger>
               <TabsTrigger value="overview" className="flex items-center gap-1">
                 <Info className="h-4 w-4" />
-                Descripción
+                {t("results.description")}
               </TabsTrigger>
             </TabsList>
 
@@ -1061,17 +1063,17 @@ export default function NeighborhoodResultsPage() {
                       {isSaved ? (
                         <>
                           <Check className="h-4 w-4" />
-                          Guardada
+                          {t("results.saved")}
                         </>
                       ) : isSaveConfirming ? (
                         <>
                           <Check className="h-4 w-4" />
-                          Confirmar guardar
+                          {t("results.confirm_save")}
                         </>
                       ) : (
                         <>
                           <Bookmark className="h-4 w-4" />
-                          Guardar búsqueda
+                          {t("results.save_search")}
                         </>
                       )}
                     </Button>
@@ -1092,7 +1094,7 @@ export default function NeighborhoodResultsPage() {
                       {propertyAreaShape && (
                         <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
                           <span className="text-gray-800" data-testid="text-area-filter-active">
-                            Filtrando por zona dibujada · {areaFilteredForList.length} {areaFilteredForList.length === 1 ? 'inmueble' : 'inmuebles'}
+                            {t("results.filtering_area")} · {areaFilteredForList.length} {areaFilteredForList.length === 1 ? t("results.property_singular") : t("results.property_plural")}
                           </span>
                           <button
                             type="button"
@@ -1100,7 +1102,7 @@ export default function NeighborhoodResultsPage() {
                             className="text-primary font-medium hover:underline"
                             data-testid="button-clear-area-list"
                           >
-                            Borrar zona
+                            {t("results.clear_area")}
                           </button>
                         </div>
                       )}
@@ -1140,7 +1142,7 @@ export default function NeighborhoodResultsPage() {
                     }`}
                     data-testid="button-agencies-view-list"
                   >
-                    <List className="h-4 w-4" /> Lista
+                    <List className="h-4 w-4" /> {t("results.list")}
                   </button>
                   <button
                     type="button"
@@ -1150,7 +1152,7 @@ export default function NeighborhoodResultsPage() {
                     }`}
                     data-testid="button-agencies-view-map"
                   >
-                    <Map className="h-4 w-4" /> Mapa
+                    <Map className="h-4 w-4" /> {t("results.map")}
                   </button>
                 </div>
                 {agenciesViewMode === 'list' && (
@@ -1159,13 +1161,13 @@ export default function NeighborhoodResultsPage() {
                     onValueChange={setAgenciesFilter}
                   >
                     <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Ordenar por" />
+                      <SelectValue placeholder={t("results.sort_by")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="best_rating">Mejor puntuación</SelectItem>
-                      <SelectItem value="newest_reviews">Más recientes</SelectItem>
-                      <SelectItem value="most_reviews">Más reseñas</SelectItem>
-                      <SelectItem value="most_properties">Más propiedades</SelectItem>
+                      <SelectItem value="best_rating">{t("results.best_rating")}</SelectItem>
+                      <SelectItem value="newest_reviews">{t("results.newest_reviews")}</SelectItem>
+                      <SelectItem value="most_reviews">{t("results.most_reviews")}</SelectItem>
+                      <SelectItem value="most_properties">{t("results.most_properties")}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -1192,7 +1194,7 @@ export default function NeighborhoodResultsPage() {
                     {agencyAreaShape && (
                       <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-teal-700/30 bg-teal-700/5 px-3 py-2 text-sm">
                         <span className="text-gray-800" data-testid="text-area-filter-active-agencies">
-                          Filtrando por zona dibujada · {areaFilteredAgencies.length} {areaFilteredAgencies.length === 1 ? 'agencia' : 'agencias'}
+                          {t("results.filtering_area")} · {areaFilteredAgencies.length} {areaFilteredAgencies.length === 1 ? t("results.agency_singular") : t("results.agency_plural")}
                         </span>
                         <button
                           type="button"
@@ -1200,7 +1202,7 @@ export default function NeighborhoodResultsPage() {
                           className="text-teal-700 font-medium hover:underline"
                           data-testid="button-clear-area-list-agencies"
                         >
-                          Borrar zona
+                          {t("results.clear_area")}
                         </button>
                       </div>
                     )}
@@ -1219,13 +1221,13 @@ export default function NeighborhoodResultsPage() {
                   onValueChange={setAgentsFilter}
                 >
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Ordenar por" />
+                    <SelectValue placeholder={t("results.sort_by")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="best_rating">Mejor puntuación</SelectItem>
-                    <SelectItem value="newest_reviews">Más recientes</SelectItem>
-                    <SelectItem value="most_reviews">Más reseñas</SelectItem>
-                    <SelectItem value="most_properties">Más propiedades</SelectItem>
+                    <SelectItem value="best_rating">{t("results.best_rating")}</SelectItem>
+                    <SelectItem value="newest_reviews">{t("results.newest_reviews")}</SelectItem>
+                    <SelectItem value="most_reviews">{t("results.most_reviews")}</SelectItem>
+                    <SelectItem value="most_properties">{t("results.most_properties")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1259,23 +1261,23 @@ export default function NeighborhoodResultsPage() {
             <TabsContent value="overview" className="mt-0">
               {/* Dynamic title based on hierarchical structure */}
               {isProvincePage && currentProvince && (
-                <h2 className="text-2xl font-bold mb-4">Provincia de {currentProvince}</h2>
+                <h2 className="text-2xl font-bold mb-4">{t("results.province_of")} {currentProvince}</h2>
               )}
               {isCityPage && (
                 <h2 className="text-2xl font-bold mb-4">{currentCity}</h2>
               )}
               {isDistrictPage && (
-                <h2 className="text-2xl font-bold mb-4">Distrito de {currentDistrict}</h2>
+                <h2 className="text-2xl font-bold mb-4">{t("results.district_of")} {currentDistrict}</h2>
               )}
               {isNeighborhoodPage && (
-                <h2 className="text-2xl font-bold mb-4">Barrio de {currentNeighborhood}</h2>
+                <h2 className="text-2xl font-bold mb-4">{t("results.neighborhood_of")} {currentNeighborhood}</h2>
               )}
               
                 {/* Province information when viewing a province */}
                 {isProvincePage && currentProvince && (
                   <div className="mb-6">
                     <p className="text-gray-600 mb-4">
-                      La provincia de {currentProvince} incluye las siguientes ciudades:
+                      {t("results.province_of")} {currentProvince} {t("results.province_cities")}
                     </p>
                     <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
                       {getCitiesByProvince(currentProvince).map(cityOption => (
@@ -1298,13 +1300,13 @@ export default function NeighborhoodResultsPage() {
                     {isDistrictTerminal(currentDistrict, currentCity) ? (
                       /* Terminal district - no neighborhoods subdivision */
                       <p className="text-gray-600">
-                        El distrito de {currentDistrict} es una zona sin subdivisiones de barrios.
+                        {t("results.district_of")} {currentDistrict} {t("results.district_terminal")}
                       </p>
                     ) : (
                       /* Regular district with neighborhoods */
                       <>
                         <p className="text-gray-600">
-                          El distrito de {currentDistrict} incluye los siguientes barrios:
+                          {t("results.district_of")} {currentDistrict} {t("results.district_neighborhoods")}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {getNeighborhoodsByDistrict(currentDistrict, currentCity).map(neighborhood => (
@@ -1331,15 +1333,13 @@ export default function NeighborhoodResultsPage() {
                     {isCityTerminal(currentCity) ? (
                       /* Terminal city - no districts subdivision */
                       <p className="text-gray-600">
-                        {currentCity} es una localidad sin subdivisiones de distritos.
+                        {currentCity} {t("results.city_terminal")}
                       </p>
                     ) : (
                       /* Regular city with districts */
                       <>
                         <p className="text-gray-600 mb-4">
-                          {currentCity === 'Barcelona' ? 'Barcelona está dividida en los siguientes distritos:' : 
-                           currentCity === 'Madrid' ? 'Madrid cuenta con los siguientes distritos:' :
-                           `${currentCity} está dividida en los siguientes distritos:`}
+                          {currentCity} {t("results.city_districts")}
                         </p>
                         <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
                           {getDistrictsByCity(currentCity).map(districtOption => (
@@ -1366,10 +1366,10 @@ export default function NeighborhoodResultsPage() {
                       <div className="mb-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
                         <h3 className="text-lg font-semibold mb-2 flex items-center">
                           <Star className="h-5 w-5 mr-2 text-yellow-500" />
-                          Valoraciones del barrio
+                          {t("results.neighborhood_ratings")}
                           {ratings.count > 0 && (
                             <span className="text-sm font-normal text-gray-500 ml-2">
-                              ({ratings.count} {ratings.count === 1 ? 'valoración' : 'valoraciones'})
+                              ({ratings.count} {ratings.count === 1 ? t("results.rating_singular") : t("results.rating_plural")})
                             </span>
                           )}
                         </h3>
@@ -1377,27 +1377,27 @@ export default function NeighborhoodResultsPage() {
                         {ratings.count > 0 && (
                           <div className="flex flex-wrap gap-2 mb-4">
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
-                              <span className="text-xs font-medium mr-1">Seguridad:</span>
+                              <span className="text-xs font-medium mr-1">{t("neighborhood_rating.category_security")}:</span>
                               <span className="text-xs font-bold">{ratings.security}/10</span>
                             </div>
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
-                              <span className="text-xs font-medium mr-1">Aparcamiento:</span>
+                              <span className="text-xs font-medium mr-1">{t("neighborhood_rating.category_parking")}:</span>
                               <span className="text-xs font-bold">{ratings.parking}/10</span>
                             </div>
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
-                              <span className="text-xs font-medium mr-1">Familias:</span>
+                              <span className="text-xs font-medium mr-1">{t("neighborhood_rating.category_family")}:</span>
                               <span className="text-xs font-bold">{ratings.familyFriendly}/10</span>
                             </div>
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
-                              <span className="text-xs font-medium mr-1">Transporte:</span>
+                              <span className="text-xs font-medium mr-1">{t("neighborhood_rating.category_transport")}:</span>
                               <span className="text-xs font-bold">{ratings.publicTransport}/10</span>
                             </div>
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
-                              <span className="text-xs font-medium mr-1">Espacios verdes:</span>
+                              <span className="text-xs font-medium mr-1">{t("neighborhood_rating.category_green")}:</span>
                               <span className="text-xs font-bold">{ratings.greenSpaces}/10</span>
                             </div>
                             <div className="inline-flex items-center bg-white rounded-full px-3 py-1 shadow-sm">
-                              <span className="text-xs font-medium mr-1">Servicios:</span>
+                              <span className="text-xs font-medium mr-1">{t("neighborhood_rating.category_services")}:</span>
                               <span className="text-xs font-bold">{ratings.services}/10</span>
                             </div>
                           </div>
@@ -1409,7 +1409,7 @@ export default function NeighborhoodResultsPage() {
                               <div className="space-y-3">
                                 <div>
                                   <div className="flex justify-between mb-1">
-                                    <span className="text-sm font-medium">Sensación de seguridad</span>
+                                    <span className="text-sm font-medium">{t("results.security_feeling")}</span>
                                     <span className="text-sm font-semibold">{ratings.security}/10</span>
                                   </div>
                                   <Progress value={ratings.security * 10} className="h-2" />
@@ -1417,7 +1417,7 @@ export default function NeighborhoodResultsPage() {
                                 
                                 <div>
                                   <div className="flex justify-between mb-1">
-                                    <span className="text-sm font-medium">Facilidad de aparcar</span>
+                                    <span className="text-sm font-medium">{t("results.parking_ease")}</span>
                                     <span className="text-sm font-semibold">{ratings.parking}/10</span>
                                   </div>
                                   <Progress value={ratings.parking * 10} className="h-2" />
@@ -1425,7 +1425,7 @@ export default function NeighborhoodResultsPage() {
                                 
                                 <div>
                                   <div className="flex justify-between mb-1">
-                                    <span className="text-sm font-medium">Amigable para peques</span>
+                                    <span className="text-sm font-medium">{t("results.family_friendly")}</span>
                                     <span className="text-sm font-semibold">{ratings.familyFriendly}/10</span>
                                   </div>
                                   <Progress value={ratings.familyFriendly * 10} className="h-2" />
@@ -1435,7 +1435,7 @@ export default function NeighborhoodResultsPage() {
                               <div className="space-y-3">
                                 <div>
                                   <div className="flex justify-between mb-1">
-                                    <span className="text-sm font-medium">Conexión con transporte público</span>
+                                    <span className="text-sm font-medium">{t("results.public_transport")}</span>
                                     <span className="text-sm font-semibold">{ratings.publicTransport}/10</span>
                                   </div>
                                   <Progress value={ratings.publicTransport * 10} className="h-2" />
@@ -1443,7 +1443,7 @@ export default function NeighborhoodResultsPage() {
                                 
                                 <div>
                                   <div className="flex justify-between mb-1">
-                                    <span className="text-sm font-medium">Parques y espacios verdes</span>
+                                    <span className="text-sm font-medium">{t("results.parks_green_spaces")}</span>
                                     <span className="text-sm font-semibold">{ratings.greenSpaces}/10</span>
                                   </div>
                                   <Progress value={ratings.greenSpaces * 10} className="h-2" />
@@ -1451,7 +1451,7 @@ export default function NeighborhoodResultsPage() {
                                 
                                 <div>
                                   <div className="flex justify-between mb-1">
-                                    <span className="text-sm font-medium">Disponibilidad de servicios</span>
+                                    <span className="text-sm font-medium">{t("results.service_availability")}</span>
                                     <span className="text-sm font-semibold">{ratings.services}/10</span>
                                   </div>
                                   <Progress value={ratings.services * 10} className="h-2" />
@@ -1477,7 +1477,7 @@ export default function NeighborhoodResultsPage() {
                                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                                   <div className="flex justify-between items-center mb-4">
                                     <h4 className="text-lg font-semibold">
-                                      Califica: {decodedNeighborhood}
+                                      {t("neighborhood_rating.rate_title", { location: decodedNeighborhood })}
                                     </h4>
                                     <Button 
                                       variant="ghost" 
@@ -1491,12 +1491,12 @@ export default function NeighborhoodResultsPage() {
                                   
                                   <div className="space-y-5">
                                     {[
-                                      { key: 'security', label: 'Seguridad', icon: '🔒' },
-                                      { key: 'parking', label: 'Aparcamiento', icon: '🚗' },
-                                      { key: 'familyFriendly', label: 'Ambiente familiar', icon: '👨‍👩‍👧‍👦' },
-                                      { key: 'publicTransport', label: 'Conectividad', icon: '🚌' },
-                                      { key: 'greenSpaces', label: 'Zonas verdes', icon: '🌳' },
-                                      { key: 'services', label: 'Servicios', icon: '🛍️' },
+                                      { key: 'security', label: t("neighborhood_rating.category_security"), icon: '🔒' },
+                                      { key: 'parking', label: t("neighborhood_rating.category_parking"), icon: '🚗' },
+                                      { key: 'familyFriendly', label: t("neighborhood_rating.category_family"), icon: '👨‍👩‍👧‍👦' },
+                                      { key: 'publicTransport', label: t("neighborhood_rating.category_transport"), icon: '🚌' },
+                                      { key: 'greenSpaces', label: t("neighborhood_rating.category_green"), icon: '🌳' },
+                                      { key: 'services', label: t("neighborhood_rating.category_services"), icon: '🛍️' },
                                     ].map(({ key, label, icon }) => (
                                       <div key={key} className="space-y-2">
                                         <div className="flex items-center gap-2">
@@ -1525,7 +1525,7 @@ export default function NeighborhoodResultsPage() {
                                             </button>
                                           ))}
                                           <span className="ml-2 text-sm text-gray-600 font-medium">
-                                            {inlineUserRatings[key] > 0 ? `${inlineUserRatings[key]}/10` : 'Sin calificar'}
+                                            {inlineUserRatings[key] > 0 ? `${inlineUserRatings[key]}/10` : t("neighborhood_rating.not_rated")}
                                           </span>
                                         </div>
                                       </div>
@@ -1538,7 +1538,7 @@ export default function NeighborhoodResultsPage() {
                                         className="bg-[#0284c5e6] text-white px-6 py-2"
                                         data-testid="btn-submit-inline-rating-existing"
                                       >
-                                        {inlineRatingMutation.isPending ? "Enviando..." : "Enviar valoración"}
+                                        {inlineRatingMutation.isPending ? t("neighborhood_rating.submitting") : t("neighborhood_rating.submit")}
                                       </Button>
                                       <Button
                                         variant="outline"
@@ -1546,7 +1546,7 @@ export default function NeighborhoodResultsPage() {
                                         disabled={inlineRatingMutation.isPending}
                                         data-testid="btn-cancel-inline-rating-existing"
                                       >
-                                        Cancelar
+                                        {t("common.cancel")}
                                       </Button>
                                     </div>
                                   </div>
@@ -1586,12 +1586,12 @@ export default function NeighborhoodResultsPage() {
                                 
                                 <div className="space-y-5">
                                   {[
-                                    { key: 'security', label: 'Seguridad', icon: '🔒' },
-                                    { key: 'parking', label: 'Aparcamiento', icon: '🚗' },
-                                    { key: 'familyFriendly', label: 'Ambiente familiar', icon: '👨‍👩‍👧‍👦' },
-                                    { key: 'publicTransport', label: 'Conectividad', icon: '🚌' },
-                                    { key: 'greenSpaces', label: 'Zonas verdes', icon: '🌳' },
-                                    { key: 'services', label: 'Servicios', icon: '🛍️' },
+                                    { key: 'security', label: t("neighborhood_rating.category_security"), icon: '🔒' },
+                                    { key: 'parking', label: t("neighborhood_rating.category_parking"), icon: '🚗' },
+                                    { key: 'familyFriendly', label: t("neighborhood_rating.category_family"), icon: '👨‍👩‍👧‍👦' },
+                                    { key: 'publicTransport', label: t("neighborhood_rating.category_transport"), icon: '🚌' },
+                                    { key: 'greenSpaces', label: t("neighborhood_rating.category_green"), icon: '🌳' },
+                                    { key: 'services', label: t("neighborhood_rating.category_services"), icon: '🛍️' },
                                   ].map(({ key, label, icon }) => (
                                     <div key={key} className="space-y-2">
                                       <div className="flex items-center gap-2">
@@ -1620,7 +1620,7 @@ export default function NeighborhoodResultsPage() {
                                           </button>
                                         ))}
                                         <span className="ml-2 text-sm text-gray-600 font-medium">
-                                          {inlineUserRatings[key] > 0 ? `${inlineUserRatings[key]}/10` : 'Sin calificar'}
+                                          {inlineUserRatings[key] > 0 ? `${inlineUserRatings[key]}/10` : t("neighborhood_rating.not_rated")}
                                         </span>
                                       </div>
                                     </div>
@@ -1633,7 +1633,7 @@ export default function NeighborhoodResultsPage() {
                                       className="bg-[#0284c5e6] text-white px-6 py-2"
                                       data-testid="btn-submit-inline-rating"
                                     >
-                                      {inlineRatingMutation.isPending ? "Enviando..." : "Enviar valoración"}
+                                      {inlineRatingMutation.isPending ? t("neighborhood_rating.submitting") : t("neighborhood_rating.submit")}
                                     </Button>
                                     <Button
                                       variant="outline"
@@ -1641,7 +1641,7 @@ export default function NeighborhoodResultsPage() {
                                       disabled={inlineRatingMutation.isPending}
                                       data-testid="btn-cancel-inline-rating"
                                     >
-                                      Cancelar
+                                      {t("common.cancel")}
                                     </Button>
                                   </div>
                                 </div>
@@ -1657,19 +1657,19 @@ export default function NeighborhoodResultsPage() {
                 {/* Estadísticas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2">Propiedades</h3>
+                    <h3 className="font-semibold mb-2">{t("results.properties")}</h3>
                     <p className="text-sm text-gray-600">
                       {properties?.length || 0} propiedades disponibles
                     </p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2">Agencias</h3>
+                    <h3 className="font-semibold mb-2">{t("results.agencies")}</h3>
                     <p className="text-sm text-gray-600">
                       {agencies?.length || 0} agencias inmobiliarias
                     </p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2">Agentes</h3>
+                    <h3 className="font-semibold mb-2">{t("results.agents")}</h3>
                     <p className="text-sm text-gray-600">
                       {agents?.length || 0} agentes especializados
                     </p>

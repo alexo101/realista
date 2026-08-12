@@ -46,6 +46,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { useLanguage } from "@/contexts/language-context";
 import {
   Table,
   TableBody,
@@ -102,12 +103,13 @@ interface EligibleClient {
 }
 
 const ReviewStatusBadge = ({ status }: { status?: 'enviada' | 'realizada' | 'abandonada' | null }) => {
+  const { t } = useLanguage();
   if (!status) return <span className="text-xs text-gray-400">--</span>;
   
   const config = {
-    enviada: { label: 'Enviada', className: 'bg-orange-100 text-orange-700 border-orange-200' },
-    realizada: { label: 'Realizada', className: 'bg-green-100 text-green-700 border-green-200' },
-    abandonada: { label: 'Abandonada', className: 'bg-red-100 text-red-700 border-red-200' },
+    enviada: { label: t("reviews.sent"), className: 'bg-orange-100 text-orange-700 border-orange-200' },
+    realizada: { label: t("reviews.completed"), className: 'bg-green-100 text-green-700 border-green-200' },
+    abandonada: { label: t("reviews.abandoned"), className: 'bg-red-100 text-red-700 border-red-200' },
   };
   
   const { label, className } = config[status];
@@ -156,6 +158,7 @@ const ReviewResponseDialog = ({
   onClose: () => void;
   onSubmit: (id: number, response: string) => void;
 }) => {
+  const { t } = useLanguage();
   const [response, setResponse] = useState(review.agentResponse || "");
 
   const handleSubmit = () => {
@@ -167,9 +170,9 @@ const ReviewResponseDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-[625px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg md:text-xl">Responder a la reseña</DialogTitle>
+          <DialogTitle className="text-lg md:text-xl">{t("reviews.reply_title")}</DialogTitle>
           <DialogDescription className="text-sm">
-            Tu respuesta será visible públicamente en el perfil.
+            {t("reviews.reply_description")}
           </DialogDescription>
         </DialogHeader>
         
@@ -178,7 +181,7 @@ const ReviewResponseDialog = ({
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center mb-2">
               <StarRating rating={review.rating} />
               <span className="text-xs sm:text-sm text-gray-500 sm:ml-2">
-                por {review.author || "Cliente anónimo"} • {new Date(review.date).toLocaleDateString('es-ES')}
+                {review.author || t("reviews.anonymous_client")} • {new Date(review.date).toLocaleDateString()}
               </span>
             </div>
             <p className="text-gray-700 text-sm md:text-base">{review.comment}</p>
@@ -187,15 +190,15 @@ const ReviewResponseDialog = ({
           <Textarea
             value={response}
             onChange={(e) => setResponse(e.target.value)}
-            placeholder="Escribe tu respuesta a esta reseña..."
+            placeholder={t("reviews.reply_placeholder")}
             className="min-h-[100px] text-sm md:text-base"
           />
         </div>
         
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
-          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">{t("reviews.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={!response.trim()} className="w-full sm:w-auto">
-            {review.agentResponse ? "Actualizar respuesta" : "Publicar respuesta"}
+            {review.agentResponse ? t("reviews.update_response") : t("reviews.publish_response")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -213,6 +216,7 @@ const ReviewDetails = ({
   onRespond: (review: Review) => void;
   onPin: (review: Review) => void;
 }) => {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   
   return (
@@ -229,10 +233,10 @@ const ReviewDetails = ({
             </div>
             <div className="min-w-0">
               <CardTitle className="text-base md:text-lg break-words">
-                Reseña para {review.targetName || `${review.targetType === 'agent' ? 'Agente' : 'Agencia'} #${review.targetId}`}
+                {t("reviews.review_for")} {review.targetName || `${review.targetType === 'agent' ? t("reviews.agent_label") : t("reviews.agency_label")} #${review.targetId}`}
               </CardTitle>
               <CardDescription className="text-sm">
-                {review.author || "Cliente anónimo"} • {new Date(review.date).toLocaleDateString('es-ES')}
+                {review.author || t("reviews.anonymous_client")} • {new Date(review.date).toLocaleDateString()}
               </CardDescription>
             </div>
           </div>
@@ -252,7 +256,7 @@ const ReviewDetails = ({
           
           {review.agentResponse && (
             <div className="mt-3 pl-4 border-l-2 border-primary">
-              <p className="text-sm font-medium text-primary">Tu respuesta:</p>
+              <p className="text-sm font-medium text-primary">{t("reviews.your_response")}</p>
               <p className="text-gray-700 text-sm md:text-base">{review.agentResponse}</p>
               <p className="text-xs text-gray-500 mt-1">
                 {review.responseDate && new Date(review.responseDate).toLocaleDateString('es-ES')}
@@ -265,23 +269,23 @@ const ReviewDetails = ({
               <Separator className="my-2" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div>
-                  <p className="font-medium">Conocimiento del área</p>
+                  <p className="font-medium">{t("reviews.area_knowledge")}</p>
                   <StarRating rating={review.areaKnowledge} />
                 </div>
                 <div>
-                  <p className="font-medium">Negociación de precios</p>
+                  <p className="font-medium">{t("reviews.price_negotiation")}</p>
                   <StarRating rating={review.priceNegotiation} />
                 </div>
                 <div>
-                  <p className="font-medium">Trato personal</p>
+                  <p className="font-medium">{t("reviews.personal_treatment")}</p>
                   <StarRating rating={review.treatment} />
                 </div>
                 <div>
-                  <p className="font-medium">Puntualidad</p>
+                  <p className="font-medium">{t("reviews.punctuality")}</p>
                   <StarRating rating={review.punctuality} />
                 </div>
                 <div>
-                  <p className="font-medium">Conocimiento de propiedades</p>
+                  <p className="font-medium">{t("reviews.property_knowledge")}</p>
                   <StarRating rating={review.propertyKnowledge} />
                 </div>
               </div>
@@ -290,7 +294,7 @@ const ReviewDetails = ({
                 <div className="flex items-start mt-2 text-sm">
                   <Home className="h-4 w-4 mr-2 text-gray-500 shrink-0 mt-0.5" />
                   <span className="break-words">
-                    <span className="font-medium">Propiedad: </span>
+                    <span className="font-medium">{t("reviews.property")} </span>
                     {review.propertyTitle}
                     {review.propertyAddress && ` - ${review.propertyAddress}`}
                   </span>
@@ -305,11 +309,11 @@ const ReviewDetails = ({
         <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)} className="w-full md:w-auto">
           {expanded ? (
             <>
-              <ChevronUp className="h-4 w-4 mr-1" /> Menos detalles
+              <ChevronUp className="h-4 w-4 mr-1" /> {t("reviews.less_details")}
             </>
           ) : (
             <>
-              <ChevronDown className="h-4 w-4 mr-1" /> Más detalles
+              <ChevronDown className="h-4 w-4 mr-1" /> {t("reviews.more_details")}
             </>
           )}
         </Button>
@@ -335,11 +339,11 @@ const ReviewDetails = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
-                    <Pin className="h-3 w-3 mr-1" /> Destacada
+                    <Pin className="h-3 w-3 mr-1" /> {t("reviews.featured")}
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Esta reseña está destacada</p>
+                  <p>{t("reviews.featured_description")}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -355,12 +359,12 @@ const ReviewDetails = ({
                   className="text-xs md:text-sm"
                 >
                   <Pin className={`h-4 w-4 mr-1 ${review.pinned ? 'text-white' : ''}`} />
-                  <span className="hidden sm:inline">{review.pinned ? "Quitar destaque" : "Destacar"}</span>
-                  <span className="sm:hidden">{review.pinned ? "Quitar" : "Destacar"}</span>
+                  <span className="hidden sm:inline">{review.pinned ? t("reviews.unfeature") : t("reviews.feature")}</span>
+                  <span className="sm:hidden">{review.pinned ? t("reviews.unfeature") : t("reviews.feature")}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{review.pinned ? "Quitar reseña destacada" : "Mostrar esta reseña como pública en el perfil del agente"}</p>
+                <p>{review.pinned ? t("reviews.unfeature_description") : t("reviews.feature_description")}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -372,8 +376,8 @@ const ReviewDetails = ({
             className="text-xs md:text-sm"
           >
             <MessageSquare className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">{review.agentResponse ? "Editar respuesta" : "Responder"}</span>
-            <span className="sm:hidden">{review.agentResponse ? "Editar" : "Responder"}</span>
+            <span className="hidden sm:inline">{review.agentResponse ? t("reviews.edit_response") : t("reviews.respond")}</span>
+            <span className="sm:hidden">{review.agentResponse ? t("reviews.edit") : t("reviews.respond")}</span>
           </Button>
         </div>
       </CardFooter>
@@ -383,6 +387,7 @@ const ReviewDetails = ({
 
 export function ReviewManagement({ userId, userType }: { userId: number, userType: string }) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'reviews' | 'request'>('reviews');
   const [reviewFilterTab, setReviewFilterTab] = useState<'all' | 'agent' | 'agency'>('all');
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
@@ -539,11 +544,11 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   // Traducir el source a español
   const getSourceLabel = (source?: string) => {
     switch (source) {
-      case "property_inquiry": return "Consulta de propiedad";
-      case "agent_contact": return "Contacto directo";
-      case "agency_contact": return "Contacto con agencia";
-      case "manual": return "Añadido manualmente";
-      default: return "Origen desconocido";
+      case "property_inquiry": return t("reviews.property_inquiry");
+      case "agent_contact": return t("reviews.direct_contact");
+      case "agency_contact": return t("reviews.agency_contact");
+      case "manual": return t("reviews.added_manually");
+      default: return t("reviews.unknown_source");
     }
   };
   
@@ -619,21 +624,21 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col gap-4">
-        <h2 className="text-xl md:text-2xl font-bold">Gestión de Reseñas</h2>
+        <h2 className="text-xl md:text-2xl font-bold">{t("realista_pro.reviews")}</h2>
         
         {/* Main tabs: Received reviews vs Request reviews */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'reviews' | 'request')}>
-          <TabsList className="grid w-full grid-cols-2 md:max-w-md">
+          <TabsList className="grid w-full grid-cols-2 md:max-w-xl">
             <TabsTrigger value="reviews" data-testid="tab-reviews-received" className="text-xs sm:text-sm">
               <Star className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Reseñas recibidas</span>
-              <span className="sm:hidden">Reseñas</span>
+              <span className="hidden sm:inline">{t("reviews.received")}</span>
+              <span className="sm:hidden">{t("reviews.received_short")}</span>
               <span className="ml-1">({reviews.length})</span>
             </TabsTrigger>
             <TabsTrigger value="request" data-testid="tab-request-reviews" className="text-xs sm:text-sm">
               <Send className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Solicitar reseñas</span>
-              <span className="sm:hidden">Solicitar</span>
+              <span className="hidden sm:inline">{t("reviews.request")}</span>
+              <span className="sm:hidden">{t("reviews.request_short")}</span>
               <span className="ml-1">({eligibleClients.length})</span>
             </TabsTrigger>
           </TabsList>
@@ -644,15 +649,15 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
               <Tabs value={reviewFilterTab} onValueChange={(value) => setReviewFilterTab(value as any)}>
                 <TabsList className="grid grid-cols-3 w-full md:w-auto">
                   <TabsTrigger value="all" className="text-xs sm:text-sm">
-                    <span className="hidden sm:inline">Todas</span>
-                    <span className="sm:hidden">Todo</span>
+                    <span className="hidden sm:inline">{t("reviews.all")}</span>
+                    <span className="sm:hidden">{t("reviews.all_short")}</span>
                     <span className="ml-1">({reviews.length})</span>
                   </TabsTrigger>
                   <TabsTrigger value="agent" className="text-xs sm:text-sm">
-                    Agente ({reviews.filter((r: Review) => r.targetType === 'agent').length})
+                    {t("reviews.agent")} ({reviews.filter((r: Review) => r.targetType === 'agent').length})
                   </TabsTrigger>
                   <TabsTrigger value="agency" className="text-xs sm:text-sm">
-                    Agencia ({reviews.filter((r: Review) => r.targetType === 'agency').length})
+                    {t("reviews.agency")} ({reviews.filter((r: Review) => r.targetType === 'agency').length})
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -661,17 +666,16 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
             {filteredReviews.length === 0 ? (
               <Card>
                 <CardHeader>
-                  <CardTitle>No hay reseñas todavía</CardTitle>
+                  <CardTitle>{t("reviews.no_reviews")}</CardTitle>
                   <CardDescription>
                     {reviewFilterTab === 'all'
-                      ? 'Aún no has recibido ninguna reseña.'
-                      : `Aún no has recibido reseñas como ${reviewFilterTab === 'agent' ? 'agente' : 'agencia'}.`}
+                      ? t("reviews.no_reviews_received")
+                      : `${t("reviews.no_reviews_received")} (${reviewFilterTab === 'agent' ? t("reviews.agent") : t("reviews.agency")})`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-500">
-                    Las reseñas de clientes aparecerán aquí cuando las recibas. 
-                    Puedes solicitar reseñas a tus clientes en la pestaña "Solicitar reseñas".
+                    {t("reviews.reviews_appear")}
                   </p>
                 </CardContent>
               </Card>
@@ -694,12 +698,12 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
               <CardHeader className="pb-3 md:pb-6">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                   <Users className="h-5 w-5" />
-                  <span className="hidden sm:inline">Clientes disponibles para solicitar reseña</span>
-                  <span className="sm:hidden">Clientes disponibles</span>
+                  <span className="hidden sm:inline">{t("reviews.clients_available")}</span>
+                  <span className="sm:hidden">{t("reviews.clients_available_short")}</span>
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  <span className="hidden sm:inline">Estos son tus clientes que han contactado contigo. Puedes enviarles una solicitud de reseña por email.</span>
-                  <span className="sm:hidden">Envía solicitudes de reseña a tus clientes.</span>
+                  <span className="hidden sm:inline">{t("reviews.clients_description")}</span>
+                  <span className="sm:hidden">{t("reviews.clients_description_short")}</span>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -712,9 +716,9 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                 ) : eligibleClients.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="font-medium">No tienes clientes todavía</p>
+                    <p className="font-medium">{t("reviews.no_clients")}</p>
                     <p className="text-sm mt-1">
-                      Los clientes que te contacten o hagan consultas aparecerán aquí automáticamente.
+                      {t("reviews.no_clients_description")}
                     </p>
                   </div>
                 ) : (
@@ -766,12 +770,12 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                             {sendingRequestTo === client.id ? (
                               <>
                                 <span className="animate-spin mr-2">⏳</span>
-                                Enviando...
+                                {t("reviews.sending")}
                               </>
                             ) : (
                               <>
                                 <Send className="h-4 w-4 mr-1" />
-                                Solicitar reseña
+                                {t("reviews.request")}
                               </>
                             )}
                           </Button>
@@ -784,12 +788,12 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Cliente</TableHead>
-                            <TableHead>Contacto</TableHead>
-                            <TableHead>Origen</TableHead>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead className="text-right">Acción</TableHead>
+                            <TableHead>{t("reviews.client")}</TableHead>
+                            <TableHead>{t("reviews.contact")}</TableHead>
+                            <TableHead>{t("reviews.source")}</TableHead>
+                            <TableHead>{t("reviews.date")}</TableHead>
+                            <TableHead>{t("reviews.status")}</TableHead>
+                            <TableHead className="text-right">{t("reviews.action")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -840,12 +844,12 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                                   {sendingRequestTo === client.id ? (
                                     <>
                                       <span className="animate-spin mr-2">⏳</span>
-                                      Enviando...
+                                      {t("reviews.sending")}
                                     </>
                                   ) : (
                                     <>
                                       <Send className="h-4 w-4 mr-1" />
-                                      Solicitar reseña
+                                      {t("reviews.request")}
                                     </>
                                   )}
                                 </Button>
@@ -875,9 +879,9 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
       <Dialog open={reviewConfirmClient !== null} onOpenChange={(open) => !open && !sendReviewRequestMutation.isPending && setReviewConfirmClient(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar solicitud de reseña</DialogTitle>
+            <DialogTitle>{t("reviews.confirm_request")}</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que quieres solicitar una reseña a {reviewConfirmClient?.name}?
+              {t("reviews.confirm_request_description", { name: reviewConfirmClient?.name || "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -886,13 +890,13 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
               onClick={() => setReviewConfirmClient(null)}
               disabled={sendReviewRequestMutation.isPending}
             >
-              Cancelar
+              {t("reviews.cancel")}
             </Button>
             <Button 
               onClick={handleConfirmReviewRequest}
               disabled={sendReviewRequestMutation.isPending}
             >
-              {sendReviewRequestMutation.isPending ? 'Enviando...' : 'Enviar solicitud'}
+              {sendReviewRequestMutation.isPending ? t("reviews.sending") : t("reviews.send_request")}
             </Button>
           </DialogFooter>
         </DialogContent>

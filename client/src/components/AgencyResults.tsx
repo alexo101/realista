@@ -2,6 +2,7 @@ import { Building, MapPin, ExternalLink, Star, Heart, Share2, Copy, Mail } from 
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -36,6 +37,7 @@ interface AgencyResultsProps {
 
 function AgencyCard({ agency }: { agency: Agency }) {
   const { user } = useUser();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -228,7 +230,7 @@ function AgencyCard({ agency }: { agency: Agency }) {
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold truncate">{agency.agencyName}</h3>
           <p className="text-gray-600 text-sm truncate">
-            {agency.agencyAddress || "Sin dirección"}
+            {agency.agencyAddress || t("results.no_address")}
           </p>
 
           {(agency.reviewCount !== undefined && (agency.reviewAverage !== undefined || agency.rating !== undefined)) && (
@@ -238,12 +240,12 @@ function AgencyCard({ agency }: { agency: Agency }) {
                 <span className="text-sm font-medium">
                   {(agency.reviewAverage ?? agency.rating ?? 0) > 0 
                     ? (agency.reviewAverage ?? agency.rating ?? 0).toFixed(1) 
-                    : "Sin valoración"}
+                    : t("results.no_rating")}
                 </span>
               </div>
               {agency.reviewCount > 0 && (
                 <span className="text-sm text-gray-500">
-                  ({agency.reviewCount} {agency.reviewCount === 1 ? "reseña" : "reseñas"})
+                  ({agency.reviewCount} {agency.reviewCount === 1 ? t("results.review") : t("results.reviews")})
                 </span>
               )}
             </div>
@@ -251,7 +253,7 @@ function AgencyCard({ agency }: { agency: Agency }) {
 
           {neighborhoods.length > 0 && (
             <div className="mt-2">
-              <p className="text-xs text-gray-500">Barrios de influencia:</p>
+              <p className="text-xs text-gray-500">{t("results.influence_neighborhoods")}</p>
               <div className="flex flex-wrap gap-1 mt-1">
                 {neighborhoods.slice(0, 3).map((neighborhood) => (
                   <span
@@ -282,7 +284,7 @@ function AgencyCard({ agency }: { agency: Agency }) {
       <div className="mt-auto pt-4">
         <Button variant="outline" className="w-full" asChild>
           <Link href={`/agencias/${agency.slug || agency.id}`}>
-            Ver agencia <ExternalLink className="w-4 h-4 ml-2" />
+            {t("results.view_agency")} <ExternalLink className="w-4 h-4 ml-2" />
           </Link>
         </Button>
       </div>

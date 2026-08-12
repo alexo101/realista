@@ -4,6 +4,7 @@ import { Building2, ChevronLeft, ChevronRight, Heart, Share2 } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -38,6 +39,7 @@ interface PropertyResultsProps {
 export function PropertyResults({ results, showSkeleton }: PropertyResultsProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState<{ [key: string]: number }>({});
   const { user } = useUser();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
@@ -273,7 +275,7 @@ export function PropertyResults({ results, showSkeleton }: PropertyResultsProps)
               )}
 
               <div className="absolute top-2 right-2 bg-primary text-white text-xs font-medium px-2 py-1 rounded-md">
-                {property.operationType === 'Alquiler' || property.operationType === 'alquiler' ? 'Alquiler' : 'Venta'}
+                {property.operationType === 'Alquiler' || property.operationType === 'alquiler' ? t("home.tab_rent") : t("home.tab_sale")}
               </div>
             </div>
 

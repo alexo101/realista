@@ -1,2 +1,3 @@
 - [Presentation generation](presentation-generation.md) — editable decks are generated with the project’s ES-module Node setup and validated as PowerPoint archives before delivery.
 - [Public SPA crawlability](seo-crawlability.md) — public acquisition routes serve crawlable Express HTML while preserving the existing React mount.
+- [Google Maps drawing compatibility](google-maps-drawing.md) — DrawingManager is removed from the current Maps API; use native Polygon/Circle events instead.

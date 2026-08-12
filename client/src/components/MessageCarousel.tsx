@@ -1,26 +1,28 @@
 import { useState, useEffect } from 'react';
+import { useLanguage } from "@/contexts/language-context";
 
 interface Message {
   id: number;
-  text: string;
+  key: string;
 }
 
 const messages: Message[] = [
   {
     id: 1,
-    text: "Propiedades, barrios y reseñas confiables. Todo lo que necesitas para encontrar el hogar ideal, en un solo lugar."
+    key: "home.carousel_1"
   },
   {
     id: 2,
-    text: "Como inversor, encuentra los mejores agentes de cada barrio para invertir en las propiedades más rentables."
+    key: "home.carousel_2"
   },
   {
     id: 3,
-    text: "La única plataforma \"todo en uno\" de España. Portal inmobiliario, CRM, gestor de agenda, gestor de reseñas: todo en un solo sitio y a un precio cómodo."
+    key: "home.carousel_3"
   }
 ];
 
 export function MessageCarousel() {
+  const { t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -49,7 +51,7 @@ export function MessageCarousel() {
       {/* Main message display */}
       <div className="relative min-h-[60px] md:min-h-[60px] flex items-center justify-center px-4">
         <p className="text-sm md:text-lg text-center text-gray-600 transition-all duration-500 ease-in-out leading-relaxed">
-          {messages[currentIndex].text}
+          {t(messages[currentIndex].key)}
         </p>
       </div>
 
@@ -64,7 +66,7 @@ export function MessageCarousel() {
                 ? 'bg-primary scale-110' 
                 : 'bg-gray-300 hover:bg-gray-400'
             }`}
-            aria-label={`Ir al mensaje ${index + 1}`}
+            aria-label={t("home.carousel_go_to", { number: index + 1 })}
           />
         ))}
       </div>

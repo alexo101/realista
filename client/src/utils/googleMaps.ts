@@ -51,7 +51,7 @@ export async function loadGoogleMaps(): Promise<void> {
 
       // Create script element with Places library (v=beta required for PlaceAutocompleteElement)
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&libraries=places,geometry,drawing&v=beta&callback=initGoogleMaps`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${config.apiKey}&libraries=places,geometry&v=beta&callback=initGoogleMaps`;
       script.async = true;
       script.defer = true;
       script.onerror = () => {

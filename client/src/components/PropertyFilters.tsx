@@ -14,6 +14,7 @@ import { Euro, Bath, BedDouble, Building, List, Map, ShieldOff, ArrowUpDown } fr
 import { cn } from "@/lib/utils";
 import debounce from "lodash.debounce";
 import { PROPERTY_FEATURES } from "@/utils/property-features";
+import { useLanguage } from "@/contexts/language-context";
 
 const PROPERTY_TYPES = [
   "Vivienda",
@@ -104,6 +105,30 @@ export function PropertyFilters({
   sortBy,
   onSortChange,
 }: PropertyFiltersProps) {
+  const { t } = useLanguage();
+  const propertyTypeLabels: Record<PropertyType, string> = {
+    Vivienda: t("filters.housing"),
+    Oficinas: t("filters.offices"),
+    Locales: t("filters.commercial"),
+    Parking: t("filters.parking"),
+    Terrenos: t("filters.land"),
+    Trasteros: t("filters.storage"),
+    Edificios: t("filters.buildings"),
+  };
+  const sortLabels: Record<PropertySortOption, string> = {
+    newest: t("results.newest_reviews"),
+    "price-asc": t("filters.price_asc"),
+    "price-m2": t("filters.price_m2"),
+    "price-drop": t("filters.price_drop"),
+    "most-viewed": t("filters.most_viewed"),
+  };
+  const exclusionLabels: Record<ExclusionToggleConfig["key"], string> = {
+    excludeSinglePhoto: t("filters.hide_single_photo"),
+    requireExactAddress: t("filters.exact_address"),
+    requireCedulaHabitabilidad: t("filters.habitability"),
+    excludeOcupados: t("filters.occupied"),
+    excludeAlquilados: t("filters.rented"),
+  };
   const [operationType, setOperationType] = useState<"Venta" | "Alquiler">(defaultOperationType);
   const [propertyType, setPropertyType] = useState<PropertyType>(defaultPropertyType);
   const [priceMin, setPriceMin] = useState<number | null>(null);
@@ -287,7 +312,7 @@ export function PropertyFilters({
                   });
                 }}
               >
-                Comprar
+                {t("filters.buy")}
               </Button>
               <Button
                 variant="ghost"
@@ -314,7 +339,7 @@ export function PropertyFilters({
                   });
                 }}
               >
-                Alquilar
+                {t("filters.rent")}
               </Button>
             </div>
 
@@ -336,12 +361,12 @@ export function PropertyFilters({
               }}
             >
               <SelectTrigger className="w-[140px] h-9 text-sm border-gray-200 rounded-lg" data-testid="select-property-type">
-                <SelectValue placeholder="Tipo de inmueble" />
+                <SelectValue placeholder={t("filters.property_type")} />
               </SelectTrigger>
               <SelectContent>
                 {PROPERTY_TYPES.map((type) => (
                   <SelectItem key={type} value={type} data-testid={`option-property-type-${type.toLowerCase()}`}>
-                    {type}
+                    {propertyTypeLabels[type]}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -366,7 +391,7 @@ export function PropertyFilters({
                 onClick={() => onViewModeChange('list')}
               >
                 <List className="h-4 w-4 mr-2" />
-                Lista
+                {t("results.list")}
               </Button>
               <Button
                 variant="ghost"
@@ -380,7 +405,7 @@ export function PropertyFilters({
                 onClick={() => onViewModeChange('map')}
               >
                 <Map className="h-4 w-4 mr-2" />
-                Mapa
+                {t("results.map")}
               </Button>
             </div>
           )}
@@ -392,17 +417,17 @@ export function PropertyFilters({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
               <Euro className="w-4 h-4 mr-1" />
-              Min.
+              {t("filters.min")}
             </Label>
             <Select
               value={priceMin?.toString() || "any"}
               onValueChange={(value) => setPriceMin(value === "any" ? null : parseInt(value))}
             >
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Cualquiera" />
+                <SelectValue placeholder={t("filters.any")} />
               </SelectTrigger>
               <SelectContent side="bottom">
-                <SelectItem value="any">Cualquiera</SelectItem>
+                <SelectItem value="any">{t("filters.any")}</SelectItem>
                 {priceOptions[operationType].map((option) => (
                   <SelectItem key={`min-${option.value}`} value={option.value}>
                     {option.label}
@@ -416,17 +441,17 @@ export function PropertyFilters({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
               <Euro className="w-4 h-4 mr-1" />
-              Máx.
+              {t("filters.max")}
             </Label>
             <Select
               value={priceMax?.toString() || "any"}
               onValueChange={(value) => setPriceMax(value === "any" ? null : parseInt(value))}
             >
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Cualquiera" />
+                <SelectValue placeholder={t("filters.any")} />
               </SelectTrigger>
               <SelectContent side="bottom">
-                <SelectItem value="any">Cualquiera</SelectItem>
+                <SelectItem value="any">{t("filters.any")}</SelectItem>
                 {priceOptions[operationType].map((option) => (
                   <SelectItem key={`max-${option.value}`} value={option.value}>
                     {option.label}
@@ -440,11 +465,11 @@ export function PropertyFilters({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
               <BedDouble className="w-4 h-4 mr-1" />
-              Habitaciones
+              {t("filters.bedrooms")}
             </Label>
             <Select>
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Cualquiera" />
+                <SelectValue placeholder={t("filters.any")} />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
@@ -465,7 +490,7 @@ export function PropertyFilters({
                       checked={roomsFilter.includes(0)}
                       onChange={() => {}} // Controlado por el onClick del label
                     />
-                    <span>0 habitaciones (estudios)</span>
+                    <span>0 {t("filters.bedrooms")} ({t("filters.studios")})</span>
                   </label>
                   <label 
                     className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
@@ -565,7 +590,7 @@ export function PropertyFilters({
                       checked={roomsFilter.includes(4)}
                       onChange={() => {}} // Controlado por el onClick del label
                     />
-                    <span>4 habitaciones o más</span>
+                    <span>4 {t("filters.bedrooms")} {t("filters.or_more")}</span>
                   </label>
                 </div>
               </SelectContent>
@@ -576,11 +601,11 @@ export function PropertyFilters({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
               <Bath className="w-4 h-4 mr-1" />
-              Baños
+              {t("filters.bathrooms")}
             </Label>
             <Select>
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Baños" />
+                <SelectValue placeholder={t("filters.bathrooms")} />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[200px]">
                 <div className="space-y-2 px-1 py-2">
@@ -601,7 +626,7 @@ export function PropertyFilters({
                       checked={bathroomsFilter.includes(1)}
                       onChange={() => {}}
                     />
-                    <span>1+ baños</span>
+                    <span>1+ {t("filters.bathrooms").toLowerCase()}</span>
                   </label>
                   <label 
                     className="flex items-center space-x-2 px-2 py-1 hover:bg-primary/10 rounded cursor-pointer"
@@ -620,7 +645,7 @@ export function PropertyFilters({
                       checked={bathroomsFilter.includes(2)}
                       onChange={() => {}}
                     />
-                    <span>2+ baños</span>
+                    <span>2+ {t("filters.bathrooms").toLowerCase()}</span>
                   </label>
                 </div>
               </SelectContent>
@@ -631,11 +656,11 @@ export function PropertyFilters({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
               <Building className="w-4 h-4 mr-1" />
-              Características
+              {t("filters.features")}
             </Label>
             <Select>
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md">
-                <SelectValue placeholder="Seleccionar" />
+                <SelectValue placeholder={t("filters.select")} />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[240px]">
                 <div className="space-y-2 px-1 py-2">
@@ -666,7 +691,7 @@ export function PropertyFilters({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
               <ShieldOff className="w-4 h-4 mr-1" />
-              Excluir
+              {t("filters.exclude")}
               {Object.values(exclusionFlags).some(Boolean) && (
                 <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-xs">
                   {Object.values(exclusionFlags).filter(Boolean).length}
@@ -675,7 +700,7 @@ export function PropertyFilters({
             </Label>
             <Select>
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md" data-testid="toggle-exclusion-section">
-                <SelectValue placeholder="Ninguno" />
+                <SelectValue placeholder={t("filters.none")} />
               </SelectTrigger>
               <SelectContent side="bottom" className="w-[260px]">
                 <div className="space-y-2 px-1 py-2">
@@ -696,7 +721,7 @@ export function PropertyFilters({
                         onChange={() => {}}
                         data-testid={`checkbox-exclusion-${toggle.key}`}
                       />
-                      <span>{toggle.label}</span>
+                      <span>{exclusionLabels[toggle.key]}</span>
                     </label>
                   ))}
                 </div>
@@ -708,14 +733,14 @@ export function PropertyFilters({
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-600 flex items-center">
               <ArrowUpDown className="w-4 h-4 mr-1" />
-              Ordenar por
+              {t("filters.sort")}
             </Label>
             <Select
               value={sortBy}
               onValueChange={(value: PropertySortOption) => onSortChange(value)}
             >
               <SelectTrigger className="h-10 text-sm border-gray-300 rounded-md" data-testid="select-property-sort">
-                <SelectValue placeholder="Más recientes" />
+                <SelectValue placeholder={t("results.newest_reviews")} />
               </SelectTrigger>
               <SelectContent side="bottom">
                 {PROPERTY_SORT_OPTIONS.map((option) => (
@@ -724,7 +749,7 @@ export function PropertyFilters({
                     value={option.value}
                     data-testid={`option-property-sort-${option.value}`}
                   >
-                    {option.label}
+                    {sortLabels[option.value]}
                   </SelectItem>
                 ))}
               </SelectContent>
