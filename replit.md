@@ -28,7 +28,7 @@ Preferred communication style: Simple, everyday language.
 - **Draw-on-Map Area Search**: Enables users to draw polygons or circles on maps for property/agency search filtering, preserving the drawn shape across list/map views.
 - **Cédula de Habitabilidad Bulk Edit**: Allows agents and agency admins to bulk update the `has_cedula_habitabilidad` flag for properties.
 - **Email Service**: Nodemailer (Ethereal for development).
-- **AI Integration**: Replit AI Integrations with OpenAI GPT-4o-mini for automated property description generation.
+- **AI Integration**: Replit AI Integrations with gpt-5.6-luna for automated property description generation.
 - **Payment Processing**: Stripe integration for subscription billing, managing products, prices, subscriptions, and customer portals. Includes webhook handling and secure upgrade flows.
 
 ### Feature Specifications
@@ -59,7 +59,7 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: `express-session`, `connect-pg-simple`.
 - **Email**: Nodemailer, Ethereal.
 - **Development Tools**: TypeScript, Vite, ESLint, Drizzle Kit.
-- **AI**: OpenAI GPT-4o-mini (via Replit AI Integrations).
+- **AI**: gpt-5.6-luna (via Replit AI Integrations).
 - **Payments**: Stripe.
 - **Mapping/Geocoding**: Google Maps Platform.
 - **Image Processing**: `browser-image-compression` (client-side), Sharp (server-side).

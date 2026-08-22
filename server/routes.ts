@@ -5452,13 +5452,12 @@ Gracias!
         features
       } = req.body;
 
-      // Improved prompt for GPT-4o-mini
       const prompt = `Escribe una descripción de máximo 400 caracteres para: ${propertyType} en ${operationType} en ${neighborhood}, ${bedrooms || 0} habitaciones, ${bathrooms || 0} baños, ${size || 0}m², ${price}€. Características: ${features && features.length > 0 ? features.join(', ') : 'ninguna'}. Usa español profesional y atractivo.`;
 
       console.log("Generating description with prompt:", prompt);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-5.6-luna",
         messages: [
           {
             role: "system",
