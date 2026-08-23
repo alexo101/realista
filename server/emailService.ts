@@ -161,6 +161,54 @@ function getFrontendUrl(): string {
   return 'https://realista.homes';
 }
 
+export async function sendPasswordResetEmail(to: string, name: string | null | undefined, token: string): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    const resetUrl = `${getFrontendUrl()}/restablecer-contrasena/${encodeURIComponent(token)}`;
+    const greeting = name ? `Hola ${name},` : "Hola,";
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Restablece tu contraseña</h1>
+        <p>${greeting}</p>
+        <p>Hemos recibido una solicitud para crear una nueva contraseña para tu cuenta de Realista.</p>
+        <div style="margin: 30px 0;">
+          <a href="${resetUrl}"
+             style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Restablecer contraseña
+          </a>
+        </div>
+        <p style="color: #666; font-size: 14px;">Este enlace será válido durante 60 minutos y solo puede utilizarse una vez.</p>
+        <p style="margin-top: 30px;">El equipo de Realista</p>
+      </body>
+      </html>
+    `;
+
+    const { data, error } = await client.emails.send({
+      from: `Realista <${fromEmail}>`,
+      to: [to],
+      subject: "Restablece tu contraseña de Realista",
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error("Error de Resend al enviar email de restablecimiento:", error);
+      return false;
+    }
+
+    console.log("Email de restablecimiento enviado:", data?.id);
+    return true;
+  } catch (error) {
+    console.error("Error al enviar email de restablecimiento:", error);
+    return false;
+  }
+}
+
 // Función para enviar invitación a agente
 export async function sendAgentInvitation(
   to: string, 

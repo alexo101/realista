@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ interface ClientAuthModalProps {
 export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalProps) {
   const { toast } = useToast();
   const { setUser } = useUser();
+  const [, navigate] = useLocation();
   const [isLoginMode, setIsLoginMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -246,6 +248,17 @@ export function ClientAuthModal({ isOpen, onClose, onSuccess }: ClientAuthModalP
                 <p className="text-sm text-red-500">{errors.password}</p>
               )}
             </div>
+
+            <button
+              type="button"
+              className="w-full text-right text-sm text-[#00A8E8] hover:underline"
+              onClick={() => {
+                onClose();
+                navigate("/recuperar-contrasena");
+              }}
+            >
+              ¿Has olvidado tu contraseña?
+            </button>
 
             <Button 
               type="submit" 

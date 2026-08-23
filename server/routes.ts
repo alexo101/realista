@@ -97,9 +97,11 @@ const updateAgencyProfileSchema = insertAgencySchema.pick({
   agencyInfluenceNeighborhoods: true,
   agencyActiveSince: true,
 }).partial();
-import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail } from "./emailService";
+import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail, sendPasswordResetEmail } from "./emailService";
 import { randomUUID } from 'crypto';
-import { comparePassword, hashPassword } from "./security/password";
+import { comparePassword, hashPassword, isPasswordHashed } from "./security/password";
+import { createPasswordResetToken, hashPasswordResetToken } from "./security/password-reset";
+import { getPasswordRequirementErrors } from "@shared/password-policy";
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName, resolvePropertyLocation } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
@@ -250,6 +252,45 @@ function recordLoginFailure(key: string): void {
 
 function clearLoginFailures(key: string): void {
   loginAttempts.delete(key);
+}
+
+const FORGOT_PASSWORD_WINDOW_MS = 15 * 60 * 1000;
+const FORGOT_PASSWORD_BLOCK_MS = 15 * 60 * 1000;
+const FORGOT_PASSWORD_MAX_ATTEMPTS = 5;
+const forgotPasswordAttempts = new Map<string, LoginAttemptState>();
+
+function getForgotPasswordAttemptKey(email: string, req: Request): string {
+  const rawIp =
+    req.ip ||
+    req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+    "unknown-ip";
+  return `${email.trim().toLowerCase()}::${rawIp}`;
+}
+
+function getForgotPasswordBlockTimeRemainingMs(key: string): number {
+  const state = forgotPasswordAttempts.get(key);
+  if (!state?.blockedUntil) return 0;
+  const remaining = Math.max(0, state.blockedUntil - Date.now());
+  if (remaining === 0) forgotPasswordAttempts.delete(key);
+  return remaining;
+}
+
+function recordForgotPasswordAttempt(key: string): void {
+  const now = Date.now();
+  const current = forgotPasswordAttempts.get(key);
+  if (!current || now - current.firstAttemptAt > FORGOT_PASSWORD_WINDOW_MS) {
+    forgotPasswordAttempts.set(key, { attempts: 1, firstAttemptAt: now });
+    return;
+  }
+
+  const nextState: LoginAttemptState = {
+    ...current,
+    attempts: current.attempts + 1,
+  };
+  if (nextState.attempts >= FORGOT_PASSWORD_MAX_ATTEMPTS) {
+    nextState.blockedUntil = now + FORGOT_PASSWORD_BLOCK_MS;
+  }
+  forgotPasswordAttempts.set(key, nextState);
 }
 
 function ensureCsrfToken(req: Request): string {
@@ -1407,6 +1448,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         message: "Error procesando la invitación del agente" 
       });
+    }
+  });
+
+  const passwordResetInvalidMessage =
+    "Este enlace de restablecimiento ha caducado o ya no es válido.";
+  const passwordResetConfirmationMessage =
+    "Si existe una cuenta con este correo, te hemos enviado un enlace para restablecer la contraseña.";
+
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    const parsed = z.object({
+      email: z.string().trim().email(),
+    }).safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Introduce un correo electrónico válido." });
+    }
+
+    const email = parsed.data.email.toLowerCase();
+    const attemptKey = getForgotPasswordAttemptKey(email, req);
+    const blockedForMs = getForgotPasswordBlockTimeRemainingMs(attemptKey);
+    if (blockedForMs > 0) {
+      return res.status(429).json({
+        message: "Demasiadas solicitudes. Inténtalo de nuevo más tarde.",
+        retryAfterSeconds: Math.ceil(blockedForMs / 1000),
+      });
+    }
+    recordForgotPasswordAttempt(attemptKey);
+
+    // Return the same response before doing account lookup or email delivery.
+    // This prevents both account enumeration and response-time enumeration.
+    res.json({ message: passwordResetConfirmationMessage });
+
+    void (async () => {
+      try {
+        const agent = await storage.getUserByEmail(email);
+        if (agent) {
+          if (agent.isActive === false || !isPasswordHashed(agent.password)) return;
+          const reset = createPasswordResetToken();
+          await storage.createPasswordResetToken({
+            tokenHash: reset.tokenHash,
+            userType: "agent",
+            userId: agent.id,
+            expiresAt: reset.expiresAt,
+          });
+          await sendPasswordResetEmail(agent.email, agent.name, reset.token);
+          return;
+        }
+
+        const client = await storage.getClientWithPasswordByEmail(email);
+        if (!client || client.isActive === false || !isPasswordHashed(client.password)) return;
+        const reset = createPasswordResetToken();
+        await storage.createPasswordResetToken({
+          tokenHash: reset.tokenHash,
+          userType: "client",
+          userId: client.id,
+          expiresAt: reset.expiresAt,
+        });
+        await sendPasswordResetEmail(client.email, client.name, reset.token);
+      } catch (error) {
+        console.error("Error processing password reset request:", error);
+      }
+    })();
+  });
+
+  app.get("/api/auth/reset-password/:token", async (req, res) => {
+    const token = String(req.params.token || "");
+    const isValid = token.length > 0 &&
+      Boolean(await storage.getValidPasswordResetToken(hashPasswordResetToken(token)));
+
+    if (!isValid) {
+      return res.status(400).json({ message: passwordResetInvalidMessage });
+    }
+    res.json({ valid: true });
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    const parsed = z.object({
+      token: z.string().min(1),
+      password: z.string().min(1),
+      confirmPassword: z.string().min(1),
+    }).refine((data) => data.password === data.confirmPassword, {
+      message: "Las contraseñas no coinciden.",
+      path: ["confirmPassword"],
+    }).safeParse(req.body);
+
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      return res.status(400).json({
+        message: firstIssue?.message || "Los datos no son válidos.",
+      });
+    }
+
+    const passwordErrors = getPasswordRequirementErrors(parsed.data.password);
+    if (passwordErrors.length > 0) {
+      return res.status(400).json({
+        message: `La contraseña debe incluir ${passwordErrors.join(", ")}.`,
+        requirements: passwordErrors,
+      });
+    }
+
+    try {
+      const tokenHash = hashPasswordResetToken(parsed.data.token);
+      const passwordHash = await hashPassword(parsed.data.password);
+      const resetToken = await storage.resetPasswordWithToken(tokenHash, passwordHash);
+
+      if (!resetToken) {
+        return res.status(400).json({ message: passwordResetInvalidMessage });
+      }
+
+      await storage.invalidateSessionsForUser(
+        resetToken.userType as "agent" | "client",
+        resetToken.userId,
+      );
+
+      return res.json({ message: "Contraseña actualizada." });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      return res.status(500).json({ message: "No se pudo actualizar la contraseña." });
     }
   });
 

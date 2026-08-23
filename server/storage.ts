@@ -8,6 +8,7 @@ import {
   or,
   gte,
   lte,
+  gt,
   arrayOverlaps,
   not,
   ne,
@@ -35,6 +36,7 @@ import {
   conversationMessages,
   pinnedConversations,
   subscriptionEvents,
+  passwordResetTokens,
   type User,
   type UserWithReviews,
   type Agent,
@@ -63,6 +65,8 @@ import {
   type InsertConversationMessage,
   type InsertPinnedConversation,
   type InsertSubscriptionEvent,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
   clientFavoriteAgents,
   clientFavoriteAgencies,
   clientFavoriteProperties,
@@ -202,11 +206,16 @@ export interface IStorage {
   getClients(options?: { limit?: number; offset?: number }): Promise<Client[]>;
   getClient(id: number): Promise<Client | undefined>;
   getClientByEmail(email: string): Promise<Client | undefined>;
+  getClientWithPasswordByEmail(email: string): Promise<Client | undefined>;
   getClientsByAgent(agentId: number): Promise<Client[]>;
   getClientsByAgency(agencyId: number): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, client: InsertClient): Promise<Client>;
   updateClientProfile(id: number, profileData: Partial<Client>): Promise<Client | undefined>;
+  createPasswordResetToken(data: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  getValidPasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined>;
+  resetPasswordWithToken(tokenHash: string, passwordHash: string): Promise<PasswordResetToken | undefined>;
+  invalidateSessionsForUser(userType: "agent" | "client", userId: number): Promise<void>;
   deleteClient(id: number): Promise<void>;
   getClientPropertyStatuses(clientId: number): Promise<ClientPropertyStatusRecord[]>;
   getClientPropertyStatusesForProperty(
@@ -2644,6 +2653,16 @@ export class DatabaseStorage implements IStorage {
     return client;
   }
 
+  async getClientWithPasswordByEmail(email: string): Promise<Client | undefined> {
+    const [client] = await db
+      .select()
+      .from(clients)
+      .where(and(eq(clients.email, email), isNotNull(clients.password)))
+      .orderBy(desc(clients.id))
+      .limit(1);
+    return client;
+  }
+
   async getClientsByAgent(agentId: number): Promise<Client[]> {
     return await db
       .select()
@@ -2805,6 +2824,106 @@ export class DatabaseStorage implements IStorage {
       console.error('Error updating client profile:', error);
       return undefined;
     }
+  }
+
+  async createPasswordResetToken(data: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    return await db.transaction(async (tx) => {
+      await tx
+        .delete(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.userType, data.userType),
+            eq(passwordResetTokens.userId, data.userId),
+            isNull(passwordResetTokens.usedAt),
+          ),
+        );
+
+      const [token] = await tx.insert(passwordResetTokens).values(data).returning();
+      return token;
+    });
+  }
+
+  async getValidPasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.tokenHash, tokenHash),
+          isNull(passwordResetTokens.usedAt),
+          gt(passwordResetTokens.expiresAt, new Date()),
+        ),
+      )
+      .limit(1);
+    return token;
+  }
+
+  async resetPasswordWithToken(tokenHash: string, passwordHash: string): Promise<PasswordResetToken | undefined> {
+    return await db.transaction(async (tx) => {
+      const [token] = await tx
+        .select()
+        .from(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.tokenHash, tokenHash),
+            isNull(passwordResetTokens.usedAt),
+            gt(passwordResetTokens.expiresAt, new Date()),
+          ),
+        )
+        .limit(1);
+
+      if (!token) return undefined;
+
+      const [claimedToken] = await tx
+        .update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(
+          and(
+            eq(passwordResetTokens.id, token.id),
+            isNull(passwordResetTokens.usedAt),
+            gt(passwordResetTokens.expiresAt, new Date()),
+          ),
+        )
+        .returning();
+
+      if (!claimedToken) return undefined;
+
+      if (token.userType === "agent") {
+        const [updatedAgent] = await tx
+          .update(agents)
+          .set({ password: passwordHash })
+          .where(eq(agents.id, token.userId))
+          .returning({ id: agents.id });
+        if (!updatedAgent) throw new Error("Password reset agent not found");
+      } else {
+        const [updatedClient] = await tx
+          .update(clients)
+          .set({ password: passwordHash })
+          .where(eq(clients.id, token.userId))
+          .returning({ id: clients.id });
+        if (!updatedClient) throw new Error("Password reset client not found");
+      }
+
+      await tx
+        .delete(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.userType, token.userType),
+            eq(passwordResetTokens.userId, token.userId),
+            ne(passwordResetTokens.id, token.id),
+          ),
+        );
+
+      return token;
+    });
+  }
+
+  async invalidateSessionsForUser(userType: "agent" | "client", userId: number): Promise<void> {
+    await db.execute(sql`
+      DELETE FROM "session"
+      WHERE sess->'user'->>'id' = ${String(userId)}
+        AND sess->'user'->>'isClient' = ${userType === "client" ? "true" : "false"}
+    `);
   }
 
   async deleteClient(id: number): Promise<void> {

@@ -810,6 +810,32 @@ export const insertSubscriptionEventSchema = createInsertSchema(subscriptionEven
 export type SubscriptionEvent = typeof subscriptionEvents.$inferSelect;
 export type InsertSubscriptionEvent = z.infer<typeof insertSubscriptionEventSchema>;
 
+// Short-lived, single-use password reset tokens. The raw token is only
+// included in the reset email; the database stores its SHA-256 hash.
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  tokenHash: text("token_hash").notNull().unique(),
+  userType: text("user_type").notNull(),
+  userId: integer("user_id").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  tokenHashIdx: index("password_reset_tokens_token_hash_idx").on(table.tokenHash),
+  userIdx: index("password_reset_tokens_user_idx").on(table.userType, table.userId),
+  userTypeCheck: check(
+    "password_reset_tokens_user_type_check",
+    sql`${table.userType} IN ('agent', 'client')`,
+  ),
+}));
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true,
+});
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+
 // Session storage table managed by connect-pg-simple. Declared here so
 // drizzle-kit recognises it as an existing table and does not propose
 // renaming it whenever a new table is added to the schema.
