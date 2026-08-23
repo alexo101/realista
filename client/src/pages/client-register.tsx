@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,31 +16,37 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/language-context";
 import { Home, User, Mail, Lock, Phone, Eye, EyeOff } from "lucide-react";
 
-const formSchema = z.object({
-  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  email: z.string()
-    .min(1, "El correo electrónico es requerido")
-    .regex(
-      /^[a-zA-Z0-9._%+-ñÑáéíóúÁÉÍÓÚüÜ]+@[a-zA-Z0-9.-ñÑáéíóúÁÉÍÓÚüÜ]+\.[a-zA-Z]{2,}$/,
-      "Por favor introduce un correo electrónico válido"
-    ),
-  phone: z.string()
-    .min(9, "El teléfono debe tener 9 dígitos")
-    .max(9, "El teléfono debe tener 9 dígitos")
-    .regex(/^[6-9]\d{8}$/, "Introduce un teléfono español válido (9 dígitos, empezando por 6, 7, 8 o 9)"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-});
+type Translate = (key: string, options?: Record<string, string | number>) => string;
 
-type FormData = z.infer<typeof formSchema>;
+const createFormSchema = (t: Translate) =>
+  z.object({
+    name: z.string().min(2, t("auth.validation.name")),
+    email: z.string()
+      .min(1, t("auth.validation.emailRequired"))
+      .regex(
+        /^[a-zA-Z0-9._%+-ñÑáéíóúÁÉÍÓÚüÜ]+@[a-zA-Z0-9.-ñÑáéíóúÁÉÍÓÚüÜ]+\.[a-zA-Z]{2,}$/,
+        t("auth.validation.emailInvalid"),
+      ),
+    phone: z.string()
+      .min(9, t("auth.validation.phoneLength"))
+      .max(9, t("auth.validation.phoneLength"))
+      .regex(/^[6-9]\d{8}$/, t("auth.validation.phoneInvalid")),
+    password: z.string().min(6, t("auth.validation.passwordMin")),
+  });
+
+type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 
 export default function ClientRegisterPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const formSchema = useMemo(() => createFormSchema(t), [t]);
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -71,8 +77,8 @@ export default function ClientRegisterPage() {
 
       if (response.ok) {
         toast({
-          title: "¡Registro exitoso!",
-          description: "Tu cuenta ha sido creada. Ya puedes iniciar sesión.",
+          title: t("auth.register.successTitle"),
+          description: t("auth.register.successDescription"),
           duration: 5000,
         });
 
@@ -81,15 +87,15 @@ export default function ClientRegisterPage() {
       } else {
         const error = await response.json();
         toast({
-          title: "Error en el registro",
-          description: error.message || "No se pudo crear la cuenta",
+          title: t("auth.register.errorTitle"),
+          description: t("auth.register.errorDescription"),
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Error",
-        description: "Ha ocurrido un error. Por favor, inténtalo de nuevo.",
+        title: t("auth.login.errorTitle"),
+        description: t("auth.register.genericError"),
         variant: "destructive",
         });
     } finally {
@@ -102,21 +108,21 @@ export default function ClientRegisterPage() {
       <div className="max-w-4xl w-full space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-extrabold text-gray-900">
-            Crea tu cuenta
+            {t("auth.register.title")}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Regístrate para buscar propiedades y contactar con agentes
+            {t("auth.register.subtitle")}
           </p>
         </div>
 
         <div className="flex gap-8">
-          {/* Formulario de registro */}
+          {/* Registration form */}
           <div className="w-full lg:w-1/2">
             <Card>
               <CardHeader>
-                <CardTitle>Información personal</CardTitle>
+                <CardTitle>{t("auth.register.personalInfo")}</CardTitle>
                 <CardDescription>
-                  Completa tus datos para crear tu cuenta
+                  {t("auth.register.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -127,12 +133,12 @@ export default function ClientRegisterPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nombre</FormLabel>
+                          <FormLabel>{t("auth.register.name")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                               <Input
-                                placeholder="Tu nombre"
+                                placeholder={t("auth.register.namePlaceholder")}
                                 className="pl-10"
                                 {...field}
                               />
@@ -148,12 +154,12 @@ export default function ClientRegisterPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Correo electrónico</FormLabel>
+                          <FormLabel>{t("auth.register.email")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                               <Input
-                                placeholder="tu@email.com"
+                                placeholder={t("auth.register.emailPlaceholder")}
                                 type="email"
                                 className="pl-10"
                                 {...field}
@@ -170,7 +176,7 @@ export default function ClientRegisterPage() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Teléfono</FormLabel>
+                          <FormLabel>{t("auth.register.phone")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -195,12 +201,12 @@ export default function ClientRegisterPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Contraseña</FormLabel>
+                          <FormLabel>{t("auth.register.password")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                               <Input
-                                placeholder="Tu contraseña"
+                                placeholder={t("auth.register.passwordPlaceholder")}
                                 type={showPassword ? "text" : "password"}
                                 className="pl-10 pr-10"
                                 {...field}
@@ -227,14 +233,14 @@ export default function ClientRegisterPage() {
                       type="submit"
                       className="w-full"
                       isLoading={isSubmitting}
-                      loadingText="Creando cuenta..."
+                      loadingText={t("auth.register.creating")}
                       data-testid="button-submit-register"
                     >
-                      Crear cuenta
+                      {t("auth.register.submit")}
                     </LoadingButton>
 
                     <p className="text-center text-sm text-gray-500 mt-4">
-                      ¿Ya tienes una cuenta?{" "}
+                      {t("auth.register.existingAccount")}{" "}
                       <a
                         href="#"
                         onClick={(e) => {
@@ -243,7 +249,7 @@ export default function ClientRegisterPage() {
                         }}
                         className="text-primary hover:underline"
                       >
-                        Inicia sesión
+                        {t("auth.register.signIn")}
                       </a>
                     </p>
                   </form>
@@ -256,30 +262,30 @@ export default function ClientRegisterPage() {
           <div className="hidden lg:block lg:w-1/2">
             <Card className="h-full bg-primary/5">
               <CardContent className="p-8 h-full flex flex-col justify-center">
-                <h2 className="text-2xl font-bold mb-4">Encuentra tu hogar ideal</h2>
+                <h2 className="text-2xl font-bold mb-4">{t("auth.register.promoTitle")}</h2>
                 <div className="space-y-4 text-gray-700">
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
                     <p>
-                      Accede a miles de propiedades en venta y alquiler en toda España
+                      {t("auth.register.featureProperties")}
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
                     <p>
-                      Contacta directamente con agentes inmobiliarios profesionales
+                      {t("auth.register.featureProfessionals")}
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
                     <p>
-                      Recibe notificaciones de nuevas propiedades que coincidan con tus criterios
+                      {t("auth.register.featureNotifications")}
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
                     <p>
-                      Programa visitas y gestiona todo el proceso desde un solo lugar
+                      {t("auth.register.featureVisits")}
                     </p>
                   </div>
                 </div>

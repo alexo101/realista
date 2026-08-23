@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,27 +16,33 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUser } from "@/contexts/user-context";
+import { useLanguage } from "@/contexts/language-context";
 import { Building, Home, Lock, Mail, Eye, EyeOff } from "lucide-react";
 
-const formSchema = z.object({
-  email: z.string()
-    .min(1, "El correo electrónico es requerido")
-    .regex(
-      /^[a-zA-Z0-9._%+-ñÑáéíóúÁÉÍÓÚüÜ]+@[a-zA-Z0-9.-ñÑáéíóúÁÉÍÓÚüÜ]+\.[a-zA-Z]{2,}$/,
-      "Por favor introduce un correo electrónico válido"
-    ),
-  password: z.string().min(1, "La contraseña es obligatoria"),
-});
+type Translate = (key: string, options?: Record<string, string | number>) => string;
 
-type FormData = z.infer<typeof formSchema>;
+const createFormSchema = (t: Translate) =>
+  z.object({
+    email: z.string()
+      .min(1, t("auth.validation.emailRequired"))
+      .regex(
+        /^[a-zA-Z0-9._%+-ñÑáéíóúÁÉÍÓÚüÜ]+@[a-zA-Z0-9.-ñÑáéíóúÁÉÍÓÚüÜ]+\.[a-zA-Z]{2,}$/,
+        t("auth.validation.emailInvalid"),
+      ),
+    password: z.string().min(1, t("auth.validation.passwordRequired")),
+  });
+
+type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 
 export default function LoginPage() {
   const { toast } = useToast();
   const { setUser } = useUser();
+  const { t } = useLanguage();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const formSchema = useMemo(() => createFormSchema(t), [t]);
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,7 +69,7 @@ export default function LoginPage() {
         if (userData.agentType === "super_admin") {
           navigate("/super-admin");
           toast({
-            title: "Acceso de SuperAdmin",
+            title: t("auth.login.superAdminAccess"),
             duration: 3000,
           });
           return;
@@ -86,14 +92,14 @@ export default function LoginPage() {
         
         // Show toast after navigation
         toast({
-          title: "¡Bienvenido de nuevo!",
+          title: t("auth.login.welcomeBack"),
           duration: 3000,
         });
       }, 0);
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "El nombre de usuario o la contraseña que has introducido no son correctos. Comprueba tus datos e inténtalo de nuevo",
+        title: t("auth.login.errorTitle"),
+        description: t("auth.login.errorDescription"),
         variant: "destructive",
       });
     } finally {
@@ -105,7 +111,7 @@ export default function LoginPage() {
     <div className="container mx-auto pt-24 pb-12">
       <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto">
         <div className="lg:w-1/2 bg-white p-8 rounded-lg shadow">
-          <h1 className="text-3xl font-bold mb-6">Iniciar sesión</h1>
+          <h1 className="text-3xl font-bold mb-6">{t("auth.login.title")}</h1>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -113,12 +119,12 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("auth.login.email")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
-                          placeholder="tu@correo.com"
+                          placeholder={t("auth.login.emailPlaceholder")}
                           type="email"
                           className="pl-10"
                           {...field}
@@ -135,12 +141,12 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contraseña</FormLabel>
+                    <FormLabel>{t("auth.login.password")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
-                          placeholder="Tu contraseña"
+                          placeholder={t("auth.login.passwordPlaceholder")}
                           type={showPassword ? "text" : "password"}
                           className="pl-10 pr-10"
                           {...field}
@@ -168,7 +174,7 @@ export default function LoginPage() {
                   href="/recuperar-contrasena"
                   className="text-sm text-primary hover:underline"
                 >
-                  ¿Has olvidado tu contraseña?
+                  {t("auth.login.forgotPassword")}
                 </Link>
               </div>
 
@@ -176,29 +182,29 @@ export default function LoginPage() {
                 type="submit"
                 className="w-full"
                 isLoading={isSubmitting}
-                loadingText="Procesando..."
+                loadingText={t("auth.login.processing")}
                 data-testid="button-submit-login"
               >
-                Iniciar sesión
+                {t("auth.login.submit")}
               </LoadingButton>
 
               <div className="space-y-2 mt-4">
                 <p className="text-center text-sm text-gray-500">
-                  ¿Eres agente inmobiliario?{" "}
+                  {t("auth.login.professionalPrompt")}{" "}
                   <a
                     href="/realista-pro"
                     className="text-primary hover:underline"
                   >
-                    Regístrate como profesional.
+                    {t("auth.login.professionalLink")}
                   </a>
                 </p>
                 <p className="text-center text-sm text-gray-500">
-                  ¿Buscas propiedades?{" "}
+                  {t("auth.login.clientPrompt")}{" "}
                   <a
                     href="/client-register"
                     className="text-primary hover:underline"
                   >
-                    Crea tu cuenta aquí.
+                    {t("auth.login.clientLink")}
                   </a>
                 </p>
               </div>
@@ -207,9 +213,9 @@ export default function LoginPage() {
         </div>
 
         <div className="lg:w-1/2 bg-primary/5 p-8 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4">Descubre todas las posibilidades de Realista</h2>
+          <h2 className="text-2xl font-bold mb-4">{t("auth.login.promoTitle")}</h2>
           <p className="mb-6 text-gray-700">
-            Realista te ofrece las mejores herramientas para encontrar tu hogar ideal o potenciar tu negocio inmobiliario en España.
+            {t("auth.login.promoDescription")}
           </p>
 
           <div className="space-y-4">
@@ -218,9 +224,9 @@ export default function LoginPage() {
                 <Home className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium">Encuentra tu propiedad ideal</h3>
+                <h3 className="font-medium">{t("auth.login.propertyFeatureTitle")}</h3>
                 <p className="text-sm text-gray-600">
-                  Miles de propiedades en venta y alquiler en toda España, con información detallada sobre cada barrio.
+                  {t("auth.login.propertyFeatureDescription")}
                 </p>
               </div>
             </div>
@@ -230,9 +236,9 @@ export default function LoginPage() {
                 <Building className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium">Conecta con profesionales</h3>
+                <h3 className="font-medium">{t("auth.login.professionalFeatureTitle")}</h3>
                 <p className="text-sm text-gray-600">
-                  Accede a la red de agentes y agencias inmobiliarias más completa del país, con valoraciones de clientes reales.
+                  {t("auth.login.professionalFeatureDescription")}
                 </p>
               </div>
             </div>
