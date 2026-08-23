@@ -117,9 +117,6 @@ import {
   propertyHistory,
   type PropertyHistoryEntry,
   type InsertPropertyHistory,
-  appSettings,
-  type AppSetting,
-  type InsertAppSetting,
   adminAuditLogs,
   type AdminAuditLog,
   type InsertAdminAuditLog,
@@ -453,12 +450,6 @@ export interface IStorage {
     agencyId: number;
     plan: "basica" | "pequeña" | "mediana" | "lider";
   }): Promise<Agency>;
-  getAppSettings(): Promise<AppSetting[]>;
-  upsertAppSetting(params: {
-    key: string;
-    value: any;
-    updatedBy: number | null;
-  }): Promise<AppSetting>;
   createAdminAuditLog(logData: InsertAdminAuditLog): Promise<AdminAuditLog>;
 
   // Work sessions (Control de jornada)
@@ -5052,34 +5043,6 @@ export class DatabaseStorage implements IStorage {
     plan: "basica" | "pequeña" | "mediana" | "lider";
   }): Promise<Agency> {
     return this.updateAgencyPlan(params.agencyId, params.plan);
-  }
-
-  async getAppSettings(): Promise<AppSetting[]> {
-    return db.select().from(appSettings).orderBy(appSettings.key);
-  }
-
-  async upsertAppSetting(params: {
-    key: string;
-    value: any;
-    updatedBy: number | null;
-  }): Promise<AppSetting> {
-    const [saved] = await db
-      .insert(appSettings)
-      .values({
-        key: params.key,
-        value: params.value,
-        updatedBy: params.updatedBy,
-      })
-      .onConflictDoUpdate({
-        target: appSettings.key,
-        set: {
-          value: params.value,
-          updatedBy: params.updatedBy,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return saved;
   }
 
   async createAdminAuditLog(logData: InsertAdminAuditLog): Promise<AdminAuditLog> {

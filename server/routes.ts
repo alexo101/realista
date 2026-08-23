@@ -496,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth
 
   const SUPER_ADMIN_PERMISSION_MATRIX = {
-    super_admin: ["users", "roles", "listings", "moderation", "settings", "search", "audit"],
+    super_admin: ["users", "roles", "listings", "moderation", "search", "audit"],
     network_admin: ["network_overview", "agencies", "billing"],
     agency_admin: ["team", "agency_profile", "billing", "properties", "clients"],
     agent: ["profile", "properties", "clients", "messages"],
@@ -6540,52 +6540,6 @@ Gracias!
       } catch (error) {
         console.error("Error moderating listing:", error);
         res.status(500).json({ message: "Error al actualizar moderación" });
-      }
-    },
-  );
-
-  app.get("/api/super-admin/settings", requireAuth, requireSuperAdmin, async (_req, res) => {
-    try {
-      const settings = await storage.getAppSettings();
-      res.json(settings);
-    } catch (error) {
-      console.error("Error fetching app settings:", error);
-      res.status(500).json({ message: "Error al obtener configuración" });
-    }
-  });
-
-  app.patch(
-    "/api/super-admin/settings/:key",
-    requireAuth,
-    requireSuperAdmin,
-    requireCsrfForStateChange,
-    async (req, res) => {
-      try {
-        const key = String(req.params.key || "").trim();
-        if (!key) {
-          return res.status(400).json({ message: "Clave inválida" });
-        }
-
-        const saved = await storage.upsertAppSetting({
-          key,
-          value: req.body?.value ?? null,
-          updatedBy: req.user!.id,
-        });
-
-        await storage.createAdminAuditLog({
-          actorId: req.user!.id,
-          actorEmail: req.user!.email,
-          action: "setting_upsert",
-          targetType: "app_setting",
-          targetId: key,
-          afterState: { value: req.body?.value ?? null },
-          metadata: { source: "super_admin" },
-        });
-
-        res.json(saved);
-      } catch (error) {
-        console.error("Error updating app settings:", error);
-        res.status(500).json({ message: "Error al actualizar configuración" });
       }
     },
   );

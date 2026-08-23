@@ -12,9 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ShieldCheck, Users, Home, Search, Settings } from "lucide-react";
+import { Loader2, ShieldCheck, Users, Home, Search } from "lucide-react";
 
 type DashboardStats = {
   totalUsers: number;
@@ -62,13 +60,6 @@ type ListingsResponse = {
 type ModerationQueueResponse = {
   pending: Listing[];
   flagged: Listing[];
-};
-
-type AppSetting = {
-  id: number;
-  key: string;
-  value: any;
-  updatedAt: string;
 };
 
 type SearchResponse = {
@@ -138,7 +129,6 @@ const MODULE_TRANSLATION_KEYS: Record<string, string> = {
   listings: "superAdmin.modules.listings",
   moderation: "superAdmin.modules.moderation",
   agencies: "superAdmin.modules.agencies",
-  settings: "superAdmin.modules.settings",
   permissions: "superAdmin.modules.permissions",
   roles: "superAdmin.modules.roles",
   search: "superAdmin.modules.search",
@@ -209,8 +199,6 @@ export default function SuperAdminPage() {
   const [agenciesQuery, setAgenciesQuery] = useState("");
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const [globalSearchEntity, setGlobalSearchEntity] = useState("all");
-  const [settingKey, setSettingKey] = useState("");
-  const [settingJsonValue, setSettingJsonValue] = useState("{}");
 
   useEffect(() => {
     if (!user) {
@@ -286,12 +274,6 @@ export default function SuperAdminPage() {
     enabled: user?.agentType === "super_admin",
   });
 
-  const settingsQuery = useQuery<AppSetting[]>({
-    queryKey: ["/api/super-admin/settings"],
-    queryFn: () => fetchJson("/api/super-admin/settings"),
-    enabled: user?.agentType === "super_admin",
-  });
-
   const permissionsMatrixQuery = useQuery<Record<string, string[]>>({
     queryKey: ["/api/super-admin/permissions/matrix"],
     queryFn: () => fetchJson("/api/super-admin/permissions/matrix"),
@@ -361,24 +343,6 @@ export default function SuperAdminPage() {
       toast({
         title: t("superAdmin.toasts.error"),
         description: t("superAdmin.toasts.moderationUpdateFailed"),
-        variant: "destructive",
-      });
-    },
-  });
-
-  const settingsMutation = useMutation({
-    mutationFn: async (payload: { key: string; value: any }) =>
-      apiRequest("PATCH", `/api/super-admin/settings/${encodeURIComponent(payload.key)}`, {
-        value: payload.value,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/settings"] });
-      toast({ title: t("superAdmin.toasts.settingsSaved") });
-    },
-    onError: () => {
-      toast({
-        title: t("superAdmin.toasts.error"),
-        description: t("superAdmin.toasts.settingsSaveFailed"),
         variant: "destructive",
       });
     },
@@ -526,13 +490,12 @@ export default function SuperAdminPage() {
         </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">{t("superAdmin.tabs.overview")}</TabsTrigger>
             <TabsTrigger value="users">{t("superAdmin.tabs.users")}</TabsTrigger>
             <TabsTrigger value="roles">{t("superAdmin.tabs.roles")}</TabsTrigger>
             <TabsTrigger value="listings">{t("superAdmin.tabs.listings")}</TabsTrigger>
             <TabsTrigger value="moderation">{t("superAdmin.tabs.moderation")}</TabsTrigger>
-            <TabsTrigger value="settings">{t("superAdmin.tabs.settings")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -1018,89 +981,6 @@ export default function SuperAdminPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  {t("superAdmin.settings.title")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <QueryState
-                  isLoading={settingsQuery.isLoading}
-                  isError={settingsQuery.isError}
-                  t={t}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("superAdmin.settings.key")}</Label>
-                    <Input
-                      value={settingKey}
-                      onChange={(e) => setSettingKey(e.target.value)}
-                      placeholder="default_listing_duration_days"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{t("superAdmin.settings.valueJson")}</Label>
-                    <Textarea
-                      value={settingJsonValue}
-                      onChange={(e) => setSettingJsonValue(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-                </div>
-                <Button
-                  onClick={() => {
-                    try {
-                      const parsed = JSON.parse(settingJsonValue);
-                      settingsMutation.mutate({ key: settingKey, value: parsed });
-                    } catch {
-                      toast({
-                        title: t("superAdmin.settings.invalidJson"),
-                        description: t("superAdmin.settings.invalidJsonDescription"),
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  disabled={!settingKey.trim() || settingsMutation.isPending}
-                >
-                  {t("superAdmin.settings.save")}
-                </Button>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("superAdmin.settings.key")}</TableHead>
-                      <TableHead>{t("superAdmin.settings.valueJson")}</TableHead>
-                      <TableHead>{t("superAdmin.settings.updated")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(settingsQuery.data || []).length === 0 &&
-                    !settingsQuery.isLoading &&
-                    !settingsQuery.isError ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">
-                          {t("superAdmin.empty")}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      (settingsQuery.data || []).map((setting) => (
-                        <TableRow key={setting.id}>
-                          <TableCell>{setting.key}</TableCell>
-                          <TableCell>
-                            <code className="text-xs">{JSON.stringify(setting.value)}</code>
-                          </TableCell>
-                          <TableCell>{new Date(setting.updatedAt).toLocaleString(language)}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>
