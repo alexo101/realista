@@ -17,6 +17,8 @@ import AgentProfile from "@/pages/agent-profile";
 import AgencyProfile from "@/pages/agency-profile";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/login";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
 import ClientProfile from "@/pages/client-profile";
@@ -41,6 +43,8 @@ function Router() {
       {/* Spanish routes with slug */}
       <Route path="/realista-pro" component={RealistaPro} />
       <Route path="/iniciar-sesion" component={LoginPage} />
+      <Route path="/recuperar-contrasena" component={ForgotPasswordPage} />
+      <Route path="/restablecer-contrasena/:token" component={ResetPasswordPage} />
       <Route path="/registrarse" component={RegisterPage} />
       <Route path="/registro-plan-agencia" component={AgencyPlanRegister} />
       <Route path="/registro-plan-agente" component={AgentPlanRegister} />
@@ -74,6 +78,8 @@ function Router() {
       
       {/* Backwards compatibility routes - redirect to Spanish */}
       <Route path="/login" component={LoginPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password/:token" component={ResetPasswordPage} />
       <Route path="/register" component={RegisterPage} />
       {/* Path-based registration routes must come BEFORE parameterless routes for wouter matching */}
       <Route path="/agency-plan-register/:plan/:billing" component={AgencyPlanRegister} />

@@ -1,6 +1,7 @@
 import { manageTranslations } from "./manage-translations";
 import { calendarTranslations } from "./calendar-translations";
 import { clientProfileTranslations } from "./client-profile-translations";
+import { superAdminTranslations } from "./super-admin-translations";
 
 export type TranslationMap = Record<string, string>;
 
@@ -552,6 +553,7 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     ...manageTranslations.es,
     ...clientProfileTranslations.es,
     ...calendarTranslations.es,
+    ...superAdminTranslations.es,
   },
   en: {
     // Navbar
@@ -1102,6 +1104,7 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     ...manageTranslations.en,
     ...clientProfileTranslations.en,
     ...calendarTranslations.en,
+    ...superAdminTranslations.en,
   },
   fr: {
     // Navbar
@@ -1652,6 +1655,7 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     ...manageTranslations.fr,
     ...clientProfileTranslations.fr,
     ...calendarTranslations.fr,
+    ...superAdminTranslations.fr,
   },
   it: {
     // Navbar
@@ -2202,5 +2206,6 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     ...manageTranslations.it,
     ...clientProfileTranslations.it,
     ...calendarTranslations.it,
+    ...superAdminTranslations.it,
   },
 };

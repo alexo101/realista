@@ -6,7 +6,7 @@ export const PASSWORD_REQUIREMENTS = [
   {
     key: "special",
     label: "un carácter especial",
-    test: (password: string) => /[^A-Za-z0-9\s]/.test(password),
+    test: (password: string) => /[!@#$%^&*(),.?":{}|<>]/.test(password),
   },
 ] as const;
 

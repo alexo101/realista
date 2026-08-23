@@ -275,8 +275,19 @@ function getForgotPasswordBlockTimeRemainingMs(key: string): number {
   return remaining;
 }
 
+function evictExpiredForgotPasswordAttempts(now: number = Date.now()): void {
+  for (const [key, state] of Array.from(forgotPasswordAttempts.entries())) {
+    if (isLoginAttemptExpired(state, now)) {
+      forgotPasswordAttempts.delete(key);
+    }
+  }
+}
+
 function recordForgotPasswordAttempt(key: string): void {
   const now = Date.now();
+  if (forgotPasswordAttempts.size > 1000) {
+    evictExpiredForgotPasswordAttempts(now);
+  }
   const current = forgotPasswordAttempts.get(key);
   if (!current || now - current.firstAttemptAt > FORGOT_PASSWORD_WINDOW_MS) {
     forgotPasswordAttempts.set(key, { attempts: 1, firstAttemptAt: now });
@@ -292,6 +303,10 @@ function recordForgotPasswordAttempt(key: string): void {
   }
   forgotPasswordAttempts.set(key, nextState);
 }
+
+setInterval(() => {
+  evictExpiredForgotPasswordAttempts();
+}, 5 * 60 * 1000).unref?.();
 
 function ensureCsrfToken(req: Request): string {
   const session = (req as any).session;
@@ -1513,17 +1528,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/auth/reset-password/:token", async (req, res) => {
-    const token = String(req.params.token || "");
-    const isValid = token.length > 0 &&
-      Boolean(await storage.getValidPasswordResetToken(hashPasswordResetToken(token)));
+    try {
+      const token = String(req.params.token || "");
+      const isValid = token.length > 0 &&
+        Boolean(await storage.getValidPasswordResetToken(hashPasswordResetToken(token)));
 
-    if (!isValid) {
+      if (!isValid) {
+        return res.status(400).json({ message: passwordResetInvalidMessage });
+      }
+      return res.json({ valid: true });
+    } catch (error) {
+      console.error("Error validating password reset token:", error);
       return res.status(400).json({ message: passwordResetInvalidMessage });
     }
-    res.json({ valid: true });
   });
 
   app.post("/api/auth/reset-password", async (req, res) => {
+    const rawToken = typeof req.body?.token === "string" ? req.body.token : "";
+    if (!rawToken) {
+      return res.status(400).json({ message: passwordResetInvalidMessage });
+    }
+
     const parsed = z.object({
       token: z.string().min(1),
       password: z.string().min(1),
