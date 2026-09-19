@@ -199,6 +199,19 @@ export default function SuperAdminPage() {
   const [agenciesQuery, setAgenciesQuery] = useState("");
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const [globalSearchEntity, setGlobalSearchEntity] = useState("all");
+  const [provisionKind, setProvisionKind] = useState<"agency" | "agent" | "network">("agency");
+  const [provisionForm, setProvisionForm] = useState({
+    email: "",
+    name: "",
+    surname: "",
+    agencyName: "",
+    networkName: "",
+    city: "Barcelona",
+    plan: "basica",
+    isYearlyBilling: false,
+    language: "es",
+  });
+  const [lastProvisionedAgentId, setLastProvisionedAgentId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -367,6 +380,47 @@ export default function SuperAdminPage() {
     },
   });
 
+  const provisionMutation = useMutation({
+    mutationFn: async () => apiRequest("POST", "/api/super-admin/provision", {
+      kind: provisionKind,
+      ...provisionForm,
+      billingMode: "network",
+      plan: provisionKind === "network" ? "red_agencias" : provisionForm.plan,
+      isYearlyBilling: provisionKind === "network" ? false : provisionForm.isYearlyBilling,
+    }),
+    onSuccess: (result) => {
+      setLastProvisionedAgentId(result.agentId);
+      queryClient.invalidateQueries({ queryKey: [usersApiUrl] });
+      queryClient.invalidateQueries({ queryKey: [agenciesApiUrl] });
+      toast({ title: t("superAdmin.toasts.provisioned") });
+    },
+    onError: (error: any) => toast({
+      title: t("superAdmin.toasts.error"),
+      description: error.message || t("superAdmin.toasts.provisionFailed"),
+      variant: "destructive",
+    }),
+  });
+
+  const resendWelcomeMutation = useMutation({
+    mutationFn: async () => {
+      if (!lastProvisionedAgentId) throw new Error("No provisioned user selected");
+      return apiRequest("POST", `/api/super-admin/provision/${lastProvisionedAgentId}/resend-welcome`, {
+        language: provisionForm.language,
+      });
+    },
+    onSuccess: (result) => toast({
+      title: result.welcomeEmailSent
+        ? t("superAdmin.toasts.welcomeResent")
+        : t("superAdmin.toasts.welcomeFailed"),
+      variant: result.welcomeEmailSent ? "default" : "destructive",
+    }),
+    onError: (error: any) => toast({
+      title: t("superAdmin.toasts.error"),
+      description: error.message,
+      variant: "destructive",
+    }),
+  });
+
   if (!user || user.agentType !== "super_admin") {
     return null;
   }
@@ -490,13 +544,109 @@ export default function SuperAdminPage() {
         </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">{t("superAdmin.tabs.overview")}</TabsTrigger>
+            <TabsTrigger value="provisioning">{t("superAdmin.tabs.provisioning")}</TabsTrigger>
             <TabsTrigger value="users">{t("superAdmin.tabs.users")}</TabsTrigger>
             <TabsTrigger value="roles">{t("superAdmin.tabs.roles")}</TabsTrigger>
             <TabsTrigger value="listings">{t("superAdmin.tabs.listings")}</TabsTrigger>
             <TabsTrigger value="moderation">{t("superAdmin.tabs.moderation")}</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="provisioning" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("superAdmin.provisioning.title")}</CardTitle>
+                <p className="text-sm text-muted-foreground">{t("superAdmin.provisioning.description")}</p>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    provisionMutation.mutate();
+                  }}
+                >
+                  <Select value={provisionKind} onValueChange={(value) => {
+                    const kind = value as typeof provisionKind;
+                    setProvisionKind(kind);
+                    setProvisionForm((current) => ({
+                      ...current,
+                      plan: kind === "agent" ? "basico" : kind === "network" ? "red_agencias" : "basica",
+                    }));
+                  }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="agency">{t("superAdmin.provisioning.agency")}</SelectItem>
+                      <SelectItem value="agent">{t("superAdmin.provisioning.agent")}</SelectItem>
+                      <SelectItem value="network">{t("superAdmin.provisioning.network")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input placeholder={t("superAdmin.provisioning.email")} type="email" required value={provisionForm.email} onChange={(e) => setProvisionForm({ ...provisionForm, email: e.target.value })} />
+                  <Input placeholder={t("superAdmin.provisioning.name")} required value={provisionForm.name} onChange={(e) => setProvisionForm({ ...provisionForm, name: e.target.value })} />
+                  <Input placeholder={t("superAdmin.provisioning.surname")} required value={provisionForm.surname} onChange={(e) => setProvisionForm({ ...provisionForm, surname: e.target.value })} />
+                  {provisionKind === "agency" && (
+                    <>
+                      <Input placeholder={t("superAdmin.provisioning.agencyName")} required value={provisionForm.agencyName} onChange={(e) => setProvisionForm({ ...provisionForm, agencyName: e.target.value })} />
+                      <Input placeholder={t("superAdmin.provisioning.city")} required value={provisionForm.city} onChange={(e) => setProvisionForm({ ...provisionForm, city: e.target.value })} />
+                    </>
+                  )}
+                  {provisionKind === "network" && (
+                    <Input placeholder={t("superAdmin.provisioning.networkName")} required value={provisionForm.networkName} onChange={(e) => setProvisionForm({ ...provisionForm, networkName: e.target.value })} />
+                  )}
+                  {provisionKind !== "network" && (
+                    <Select value={provisionForm.plan} onValueChange={(plan) => setProvisionForm({ ...provisionForm, plan })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {provisionKind === "agency" ? (
+                          <>
+                            <SelectItem value="basica">{t("superAdmin.plans.basic")}</SelectItem>
+                            <SelectItem value="pequeña">{t("superAdmin.plans.small")}</SelectItem>
+                            <SelectItem value="mediana">{t("superAdmin.plans.medium")}</SelectItem>
+                            <SelectItem value="lider">{t("superAdmin.plans.leader")}</SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="basico">{t("superAdmin.provisioning.agentBasic")}</SelectItem>
+                            <SelectItem value="lider">{t("superAdmin.plans.leader")}</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {provisionKind !== "network" && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={provisionForm.isYearlyBilling}
+                        onChange={(e) => setProvisionForm({ ...provisionForm, isYearlyBilling: e.target.checked })}
+                      />
+                      {t("superAdmin.provisioning.yearly")}
+                    </label>
+                  )}
+                  <Select value={provisionForm.language} onValueChange={(language) => setProvisionForm({ ...provisionForm, language })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit" disabled={provisionMutation.isPending} className="md:col-span-2">
+                    {provisionMutation.isPending ? t("superAdmin.loading") : t("superAdmin.provisioning.submit")}
+                  </Button>
+                </form>
+                {lastProvisionedAgentId && (
+                  <div className="mt-4 flex items-center justify-between rounded border p-3 text-sm">
+                    <span>{t("superAdmin.provisioning.lastCreated")} #{lastProvisionedAgentId}</span>
+                    <Button type="button" variant="outline" size="sm" onClick={() => resendWelcomeMutation.mutate()} disabled={resendWelcomeMutation.isPending}>
+                      {t("superAdmin.provisioning.resend")}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="overview" className="space-y-4">
             <QueryState

@@ -817,6 +817,7 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   tokenHash: text("token_hash").notNull().unique(),
   userType: text("user_type").notNull(),
   userId: integer("user_id").notNull(),
+  purpose: text("purpose").notNull().default("reset"),
   expiresAt: timestamp("expires_at").notNull(),
   usedAt: timestamp("used_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -826,6 +827,10 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   userTypeCheck: check(
     "password_reset_tokens_user_type_check",
     sql`${table.userType} IN ('agent', 'client')`,
+  ),
+  purposeCheck: check(
+    "password_reset_tokens_purpose_check",
+    sql`${table.purpose} IN ('reset', 'welcome')`,
   ),
 }));
 

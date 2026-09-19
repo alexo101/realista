@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Home, Mail, Phone, MapPin } from "lucide-react";
 import { BARCELONA_DISTRICTS } from "@/utils/neighborhoods";
 import { useLanguage } from "@/contexts/language-context";
+import { SALES_EMAIL, SALES_PHONE } from "@shared/salesContact";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -38,11 +39,23 @@ export function Footer() {
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
-                <span>contacto@realista.homes</span>
+                <a
+                  href={`mailto:${SALES_EMAIL}`}
+                  className="hover:text-primary transition-colors"
+                  data-testid="link-footer-email"
+                >
+                  {SALES_EMAIL}
+                </a>
               </div>
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
-                <span>+34 632925738</span>
+                <a
+                  href={`tel:${SALES_PHONE.replace(/\s/g, "")}`}
+                  className="hover:text-primary transition-colors"
+                  data-testid="link-footer-phone"
+                >
+                  {SALES_PHONE}
+                </a>
               </div>
             </div>
           </div>

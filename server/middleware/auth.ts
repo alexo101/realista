@@ -28,10 +28,10 @@ declare global {
 export type UserRole = 'agent' | 'admin' | 'client' | 'super_admin';
 
 export interface AuthorizeOptions {
-  allowSelf?: (user: SessionUser, req: Request) => boolean;
+  allowSelf?: (user: SessionUser, req: Request) => boolean | Promise<boolean>;
   allowAdmin?: boolean;
   allowRoles?: UserRole[];
-  custom?: (user: SessionUser, req: Request) => boolean;
+  custom?: (user: SessionUser, req: Request) => boolean | Promise<boolean>;
 }
 
 export const requireAuth = (

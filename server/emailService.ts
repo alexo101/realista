@@ -209,6 +209,75 @@ export async function sendPasswordResetEmail(to: string, name: string | null | u
   }
 }
 
+export async function sendProvisionWelcomeEmail(
+  to: string,
+  name: string,
+  token: string,
+  language: "es" | "en" | "fr",
+  profile: "agency" | "agent" | "network",
+  plan: string,
+): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    const setupUrl = `${getFrontendUrl()}/activar-cuenta/${encodeURIComponent(token)}`;
+    const copy = {
+      es: {
+        subject: "Tu acceso profesional a Realista está listo",
+        title: "Bienvenido a Realista",
+        greeting: `Hola ${name},`,
+        intro: `Ventas ha preparado tu acceso profesional (${profile}) con el plan ${plan}.`,
+        action: "Activar mi cuenta",
+        expiry: "Este enlace será válido durante 7 días y solo puede utilizarse una vez.",
+      },
+      en: {
+        subject: "Your Realista professional access is ready",
+        title: "Welcome to Realista",
+        greeting: `Hello ${name},`,
+        intro: `Sales has prepared your professional access (${profile}) with the ${plan} tier.`,
+        action: "Activate my account",
+        expiry: "This link is valid for 7 days and can only be used once.",
+      },
+      fr: {
+        subject: "Votre accès professionnel Realista est prêt",
+        title: "Bienvenue sur Realista",
+        greeting: `Bonjour ${name},`,
+        intro: `Notre équipe commerciale a préparé votre accès professionnel (${profile}) avec l'offre ${plan}.`,
+        action: "Activer mon compte",
+        expiry: "Ce lien est valable pendant 7 jours et ne peut être utilisé qu'une seule fois.",
+      },
+    }[language];
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">${copy.title}</h1>
+        <p>${copy.greeting}</p>
+        <p>${copy.intro}</p>
+        <div style="margin: 30px 0;">
+          <a href="${setupUrl}" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">${copy.action}</a>
+        </div>
+        <p style="color: #666; font-size: 14px;">${copy.expiry}</p>
+        <p style="margin-top: 30px;">Realista</p>
+      </body></html>
+    `;
+    const { data, error } = await client.emails.send({
+      from: `Realista <${fromEmail}>`,
+      to: [to],
+      subject: copy.subject,
+      html: htmlContent,
+    });
+    if (error) {
+      console.error("Error sending professional welcome email:", error);
+      return false;
+    }
+    console.log("Professional welcome email sent:", data?.id);
+    return true;
+  } catch (error) {
+    console.error("Error sending professional welcome email:", error);
+    return false;
+  }
+}
+
 // Función para enviar invitación a agente
 export async function sendAgentInvitation(
   to: string, 

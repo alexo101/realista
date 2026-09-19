@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Check, Star, Users, Building, MessageSquare, Sparkles, User, Loader2, CreditCard, ArrowRight, ExternalLink, Network } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/language-context";
 import { useUser } from "@/contexts/user-context";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -12,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Footer } from "@/components/Footer";
+import { buildSalesMailto } from "@shared/salesContact";
 
 const agencyPlanDefs = [
   {
@@ -171,7 +171,6 @@ interface StripeProduct {
 export default function RealistaPro() {
   const [isYearly, setIsYearly] = useState(false);
   const [profileType, setProfileType] = useState<"agencies" | "agents" | "networks">("agencies");
-  const [, navigate] = useLocation();
   const { t } = useLanguage();
   const { user, isLoading: authLoading } = useUser();
   const { toast } = useToast();
@@ -200,7 +199,7 @@ export default function RealistaPro() {
 
   const entityType = user?.isAdmin ? 'agency' : 
                      (user?.isAgent ? 'agent' : null);
-  const entityId = user?.id || null;
+  const entityId = entityType === "agency" ? user?.agencyId || null : user?.id || null;
 
   const { data: billingData, isLoading: billingLoading, refetch: refetchBilling } = useQuery<BillingInfo>({
     queryKey: ['/api/stripe/billing', entityType, entityId],
@@ -319,14 +318,13 @@ export default function RealistaPro() {
   const handlePlanSelection = (plan: any) => {
     if (!user) {
       const billing = isYearly ? "yearly" : "monthly";
-      
-      const registrationPath = profileType === "agencies" 
-        ? `/agency-plan-register/${plan.id}/${billing}`
-        : profileType === "agents"
-        ? `/agent-plan-register/${plan.id}/${billing}`
-        : `/network-plan-register/${plan.id}/${billing}`;
-      
-      navigate(registrationPath);
+      const profile = profileType === "agencies" ? "agency" : profileType === "agents" ? "agent" : "network";
+      window.location.href = buildSalesMailto({
+        profile,
+        plan: plan.id,
+        billing,
+        language: document.documentElement.lang || "es",
+      });
       return;
     }
 
@@ -453,6 +451,28 @@ export default function RealistaPro() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             {t('realista_pro.flexible_plans')}
           </p>
+          {!user && (
+            <div className="mt-8 mx-auto max-w-3xl rounded-xl border-2 border-primary bg-primary/5 p-6 text-left shadow-sm">
+              <p className="text-xl font-bold text-primary">{t("realista_pro.sales_title")}</p>
+              <p className="mt-2 text-muted-foreground">{t("realista_pro.sales_description")}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                <a
+                  href={`mailto:contacto@realista.homes`}
+                  className="font-semibold text-primary underline underline-offset-4"
+                  data-testid="link-pricing-sales-email"
+                >
+                  contacto@realista.homes
+                </a>
+                <a
+                  href="tel:+34632925738"
+                  className="font-semibold text-primary underline underline-offset-4"
+                  data-testid="link-pricing-sales-phone"
+                >
+                  +34 632925738
+                </a>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Profile Type Toggle */}
@@ -590,15 +610,16 @@ export default function RealistaPro() {
                   </ul>
                 </CardContent>
 
+                {(profileType !== "agencies" || user) && (
                 <CardFooter className="mt-auto">
                   {'isUsageBased' in plan && plan.isUsageBased ? (
                     <Button 
                       className="w-full text-lg py-6 bg-orange-600 hover:bg-orange-700"
                       size="lg"
-                      onClick={() => navigate('/registro-plan-red')}
+                      onClick={() => handlePlanSelection(plan)}
                       data-testid={`button-select-plan-${plan.id}`}
                     >
-                      {t("realista_pro.network_register")}
+                      {user ? t("realista_pro.network_register") : t("realista_pro.contact_sales")}
                       <ArrowRight className="h-5 w-5 ml-2" />
                     </Button>
                   ) : (
@@ -613,6 +634,11 @@ export default function RealistaPro() {
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : isCurrentPlan ? (
                         t("realista_pro.current_plan")
+                      ) : !user ? (
+                        <>
+                          {t("realista_pro.contact_sales")}
+                          <ArrowRight className="h-5 w-5 ml-2" />
+                        </>
                       ) : plan.monthlyPrice === 0 ? (
                         t('realista_pro.start_free')
                       ) : (
@@ -624,6 +650,7 @@ export default function RealistaPro() {
                     </Button>
                   )}
                 </CardFooter>
+                )}
               </Card>
             );
           })}

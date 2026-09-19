@@ -23,9 +23,6 @@ import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
 import ClientProfile from "@/pages/client-profile";
 import RealistaPro from "@/pages/RealistaPro";
-import AgencyPlanRegister from "@/pages/agency-plan-register";
-import AgentPlanRegister from "@/pages/agent-plan-register";
-import NetworkPlanRegister from "@/pages/network-plan-register";
 import NetworkAdmin from "@/pages/network-admin";
 import UpgradePlan from "@/pages/upgrade-plan";
 import ConfirmReview from "@/pages/confirm-review";
@@ -45,10 +42,11 @@ function Router() {
       <Route path="/iniciar-sesion" component={LoginPage} />
       <Route path="/recuperar-contrasena" component={ForgotPasswordPage} />
       <Route path="/restablecer-contrasena/:token" component={ResetPasswordPage} />
+      <Route path="/activar-cuenta/:token" component={ResetPasswordPage} />
       <Route path="/registrarse" component={RegisterPage} />
-      <Route path="/registro-plan-agencia" component={AgencyPlanRegister} />
-      <Route path="/registro-plan-agente" component={AgentPlanRegister} />
-      <Route path="/registro-plan-red" component={NetworkPlanRegister} />
+      <Route path="/registro-plan-agencia" component={RealistaPro} />
+      <Route path="/registro-plan-agente" component={RealistaPro} />
+      <Route path="/registro-plan-red" component={RealistaPro} />
       <Route path="/admin-red" component={NetworkAdmin} />
       <Route path="/super-admin" component={SuperAdminPage} />
       <Route path="/registro-cliente" component={ClientRegisterPage} />
@@ -80,15 +78,16 @@ function Router() {
       <Route path="/login" component={LoginPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password/:token" component={ResetPasswordPage} />
+      <Route path="/activate-account/:token" component={ResetPasswordPage} />
       <Route path="/register" component={RegisterPage} />
       {/* Path-based registration routes must come BEFORE parameterless routes for wouter matching */}
-      <Route path="/agency-plan-register/:plan/:billing" component={AgencyPlanRegister} />
-      <Route path="/agent-plan-register/:plan/:billing" component={AgentPlanRegister} />
-      <Route path="/network-plan-register/:plan/:billing" component={NetworkPlanRegister} />
+      <Route path="/agency-plan-register/:plan/:billing" component={RealistaPro} />
+      <Route path="/agent-plan-register/:plan/:billing" component={RealistaPro} />
+      <Route path="/network-plan-register/:plan/:billing" component={RealistaPro} />
       {/* Fallback routes for query param URLs */}
-      <Route path="/agency-plan-register" component={AgencyPlanRegister} />
-      <Route path="/agent-plan-register" component={AgentPlanRegister} />
-      <Route path="/network-plan-register" component={NetworkPlanRegister} />
+      <Route path="/agency-plan-register" component={RealistaPro} />
+      <Route path="/agent-plan-register" component={RealistaPro} />
+      <Route path="/network-plan-register" component={RealistaPro} />
       <Route path="/client-register" component={ClientRegisterPage} />
       <Route path="/client-profile" component={ClientProfile} />
       <Route path="/search/buy" component={Search} />

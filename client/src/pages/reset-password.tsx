@@ -19,6 +19,7 @@ export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [isActivation, setIsActivation] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -29,8 +30,11 @@ export default function ResetPasswordPage() {
       }
 
       try {
-        await apiRequest("GET", `/api/auth/reset-password/${encodeURIComponent(token)}`);
-        if (isMounted) setStatus("valid");
+        const result = await apiRequest("GET", `/api/auth/reset-password/${encodeURIComponent(token)}`);
+        if (isMounted) {
+          setIsActivation(result.purpose === "welcome");
+          setStatus("valid");
+        }
       } catch {
         if (isMounted) setStatus("invalid");
       }
@@ -85,7 +89,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="items-center text-center">
             <AlertCircle className="h-12 w-12 text-destructive" />
-            <CardTitle>Enlace no válido</CardTitle>
+            <CardTitle>{isActivation ? "Enlace de activación no válido" : "Enlace no válido"}</CardTitle>
             <CardDescription>
               Este enlace de restablecimiento ha caducado o ya no es válido.
             </CardDescription>
@@ -106,9 +110,11 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="items-center text-center">
             <CheckCircle2 className="h-12 w-12 text-green-600" />
-            <CardTitle>Contraseña actualizada</CardTitle>
+            <CardTitle>{isActivation ? "Cuenta activada" : "Contraseña actualizada"}</CardTitle>
             <CardDescription>
-              Ya puedes iniciar sesión con tu nueva contraseña.
+              {isActivation
+                ? "Tu cuenta profesional está lista. Ya puedes iniciar sesión."
+                : "Ya puedes iniciar sesión con tu nueva contraseña."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -128,9 +134,11 @@ export default function ResetPasswordPage() {
     <div className="container mx-auto flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Crea una nueva contraseña</CardTitle>
+          <CardTitle>{isActivation ? "Activa tu cuenta profesional" : "Crea una nueva contraseña"}</CardTitle>
           <CardDescription>
-            Elige una contraseña segura para proteger tu cuenta de Realista.
+            {isActivation
+              ? "Elige una contraseña segura para completar tu acceso a Realista."
+              : "Elige una contraseña segura para proteger tu cuenta de Realista."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -191,7 +199,7 @@ export default function ResetPasswordPage() {
               disabled={isSubmitting}
               data-testid="button-reset-password"
             >
-              {isSubmitting ? "Actualizando..." : "Restablecer contraseña"}
+              {isSubmitting ? "Actualizando..." : isActivation ? "Activar cuenta" : "Restablecer contraseña"}
             </Button>
           </form>
         </CardContent>

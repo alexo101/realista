@@ -138,6 +138,18 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertAgent): Promise<User>;
+  provisionProfessional(input: {
+    kind: "agency" | "agent" | "network";
+    email: string;
+    name: string;
+    surname: string;
+    plan: string;
+    isYearlyBilling: boolean;
+    agencyName?: string;
+    city?: string;
+    networkName?: string;
+    billingMode?: "network" | "agency";
+  }): Promise<{ agent: User; agency?: Agency; network?: Network }>;
   updateUser(
     id: number,
     userData: Partial<InsertAgent>,
@@ -151,6 +163,7 @@ export interface IStorage {
   getAgentByUuid(uuid: string): Promise<User | undefined>;
   getAgentBySlug(slug: string): Promise<User | undefined>;
   getAgencyById(id: number): Promise<Agency | undefined>;
+  getAgency(agencyId: number): Promise<(Agency & { adminAgentId: number }) | null>;
   getAgencyByUuid(uuid: string): Promise<Agency | undefined>;
   getAgencyBySlug(slug: string): Promise<Agency | undefined>;
   createAgentReview(review: InsertReview): Promise<Review>;
@@ -549,6 +562,119 @@ export class DatabaseStorage implements IStorage {
       }
 
       return newUser;
+    });
+  }
+
+  async provisionProfessional(input: {
+    kind: "agency" | "agent" | "network";
+    email: string;
+    name: string;
+    surname: string;
+    plan: string;
+    isYearlyBilling: boolean;
+    agencyName?: string;
+    city?: string;
+    networkName?: string;
+    billingMode?: "network" | "agency";
+  }): Promise<{ agent: User; agency?: Agency; network?: Network }> {
+    const { ALL_ZONES } = await import("../shared/schema.js");
+
+    return db.transaction(async (tx) => {
+      if (input.kind === "agency") {
+        const planLimits: Record<string, { seatsLimit: number; activePropertiesLimit: number }> = {
+          basica: { seatsLimit: 1, activePropertiesLimit: 2 },
+          pequeña: { seatsLimit: 2, activePropertiesLimit: 10 },
+          mediana: { seatsLimit: 6, activePropertiesLimit: 30 },
+          lider: { seatsLimit: 9999, activePropertiesLimit: 9999 },
+        };
+        const limits = planLimits[input.plan];
+        if (!limits || !input.agencyName || !input.city) throw new Error("Invalid agency provisioning data");
+
+        const [agency] = await tx.insert(agencies).values({
+          agencyName: input.agencyName.trim(),
+          slug: generateAgencySlug(input.agencyName.trim()),
+          city: input.city,
+          agencyInfluenceNeighborhoods: [ALL_ZONES],
+          agencySupportedLanguages: [],
+          subscriptionPlan: input.plan,
+          isYearlyBilling: input.isYearlyBilling,
+          seatsLimit: limits.seatsLimit,
+          activePropertiesLimit: limits.activePropertiesLimit,
+        }).returning();
+
+        const [agent] = await tx.insert(agents).values({
+          email: input.email.toLowerCase(),
+          password: null,
+          name: input.name.trim(),
+          surname: input.surname.trim(),
+          agentType: "agency_member",
+          city: input.city,
+          isActive: true,
+        }).returning();
+
+        const agentSlug = generateAgentSlug(input.name.trim(), input.surname.trim(), agent.id);
+        const [updatedAgent] = await tx.update(agents)
+          .set({ slug: agentSlug })
+          .where(eq(agents.id, agent.id))
+          .returning();
+
+        await tx.insert(agencyAgents).values({
+          agencyId: agency.id,
+          agentId: agent.id,
+          agencyUuid: agency.uuid,
+          agentUuid: updatedAgent.uuid,
+          role: "admin",
+        });
+
+        return { agency, agent: updatedAgent };
+      }
+
+      if (input.kind === "network") {
+        if (!input.networkName) throw new Error("Invalid network provisioning data");
+        const baseSlug = input.networkName.trim().toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        const [network] = await tx.insert(networks).values({
+          name: input.networkName.trim(),
+          slug: `${baseSlug}-${Date.now()}`,
+          billingMode: input.billingMode || "network",
+          subscriptionPlan: input.plan,
+          isYearlyBilling: input.isYearlyBilling,
+        }).returning();
+        const [agent] = await tx.insert(agents).values({
+          email: input.email.toLowerCase(),
+          password: null,
+          name: input.name.trim(),
+          surname: input.surname.trim(),
+          agentType: "network_admin",
+          networkId: network.id,
+          isActive: true,
+        }).returning();
+        const agentSlug = generateAgentSlug(input.name.trim(), input.surname.trim(), agent.id);
+        const [updatedAgent] = await tx.update(agents)
+          .set({ slug: agentSlug })
+          .where(eq(agents.id, agent.id))
+          .returning();
+        return { network, agent: updatedAgent };
+      }
+
+      const plan = input.plan === "lider" ? "lider" : "basico";
+      const [agent] = await tx.insert(agents).values({
+        email: input.email.toLowerCase(),
+        password: null,
+        name: input.name.trim(),
+        surname: input.surname.trim(),
+        agentType: "independent",
+        subscriptionPlan: plan,
+        isYearlyBilling: input.isYearlyBilling,
+        isActive: true,
+      }).returning();
+      const agentSlug = generateAgentSlug(input.name.trim(), input.surname.trim(), agent.id);
+      const [updatedAgent] = await tx.update(agents)
+        .set({ slug: agentSlug })
+        .where(eq(agents.id, agent.id))
+        .returning();
+      return { agent: updatedAgent };
     });
   }
 

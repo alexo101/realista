@@ -156,6 +156,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "reviews.your_response": "Tu respuesta:",
     "reviews.property": "Propiedad:",
     "realista_pro.choose_plan": "Elige tu plan perfecto",
+    "realista_pro.sales_title": "Habla con Ventas para activar tu plan",
+    "realista_pro.sales_description": "Consulta los precios y tiers, y contacta con nuestro equipo para configurar tu acceso. El registro profesional se realiza directamente con Ventas.",
+    "realista_pro.contact_sales": "Contactar con Ventas",
     "realista_pro.flexible_plans":
       "Planes flexibles para agencias y agentes individuales",
     "realista_pro.agencies": "Agencias",
@@ -706,6 +709,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "reviews.your_response": "Your response:",
     "reviews.property": "Property:",
     "realista_pro.choose_plan": "Choose your perfect plan",
+    "realista_pro.sales_title": "Talk to Sales to activate your plan",
+    "realista_pro.sales_description": "Review the prices and tiers, then contact our team to set up your access. Professional registration is handled directly by Sales.",
+    "realista_pro.contact_sales": "Contact Sales",
     "realista_pro.flexible_plans":
       "Flexible plans for agencies and individual agents",
     "realista_pro.agencies": "Agencies",
@@ -1259,6 +1265,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "reviews.your_response": "Votre réponse :",
     "reviews.property": "Bien :",
     "realista_pro.choose_plan": "Choisissez votre plan parfait",
+    "realista_pro.sales_title": "Contactez les ventes pour activer votre plan",
+    "realista_pro.sales_description": "Consultez les prix et les offres, puis contactez notre équipe pour configurer votre accès. L'inscription professionnelle est gérée directement par les ventes.",
+    "realista_pro.contact_sales": "Contacter les ventes",
     "realista_pro.flexible_plans":
       "Plans flexibles pour les agences et agents individuels",
     "realista_pro.agencies": "Agences",
@@ -1811,6 +1820,9 @@ export const translations: Record<"es" | "en" | "fr" | "it", TranslationMap> = {
     "reviews.your_response": "La tua risposta:",
     "reviews.property": "Immobile:",
     "realista_pro.choose_plan": "Scegli il tuo piano perfetto",
+    "realista_pro.sales_title": "Contatta le vendite per attivare il tuo piano",
+    "realista_pro.sales_description": "Consulta prezzi e livelli, quindi contatta il nostro team per configurare l'accesso. La registrazione professionale viene gestita direttamente dalle vendite.",
+    "realista_pro.contact_sales": "Contatta le vendite",
     "realista_pro.flexible_plans":
       "Piani flessibili per agenzie e agenti individuali",
     "realista_pro.agencies": "Agenzie",

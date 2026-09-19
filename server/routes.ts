@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { debugLog } from "./debugLog";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { 
@@ -14,6 +15,7 @@ import {
   insertPropertyVisitRequestSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { requireAuth, requireRole, authorize, isAgencyAdmin, isResourceOwner, requireSuperAdmin } from "./middleware/auth";
 
 function getPublicBaseUrl(req?: Request): string {
@@ -97,16 +99,18 @@ const updateAgencyProfileSchema = insertAgencySchema.pick({
   agencyInfluenceNeighborhoods: true,
   agencyActiveSince: true,
 }).partial();
-import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail, sendPasswordResetEmail } from "./emailService";
+import { sendWelcomeEmail, sendReviewRequest, sendAgentInvitation, sendAgentContactEmail, sendAgencyContactEmail, sendReviewConfirmationEmail, sendPasswordResetEmail, sendProvisionWelcomeEmail } from "./emailService";
 import { randomUUID } from 'crypto';
 import { comparePassword, hashPassword, isPasswordHashed } from "./security/password";
-import { createPasswordResetToken, hashPasswordResetToken } from "./security/password-reset";
+import { createPasswordResetToken, createPasswordSetupToken, hashPasswordResetToken } from "./security/password-reset";
+import { provisionProfessional } from "./services/professionalProvisioningService";
 import { getPasswordRequirementErrors } from "@shared/password-policy";
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName, resolvePropertyLocation } from "./utils/neighborhoods";
 import { cache } from "./cache";
 import { fixPropertyGeocodingData } from "./utils/fix-property-geocoding";
 import multer from 'multer';
 import sharp from 'sharp';
+import { SALES_EMAIL, SALES_PHONE } from "@shared/salesContact";
 
 const ALLOWED_IMAGE_MIMES = new Set([
   "image/jpeg",
@@ -114,6 +118,15 @@ const ALLOWED_IMAGE_MIMES = new Set([
   "image/gif",
   "image/webp",
 ]);
+
+function professionalRegistrationDisabled(res: Response): void {
+  res.status(403).json({
+    code: "PRO_REGISTRATION_DISABLED",
+    message: "Professional registration is handled directly by Sales.",
+    salesEmail: SALES_EMAIL,
+    salesPhone: SALES_PHONE,
+  });
+}
 
 function detectImageMime(buffer: Buffer): string | null {
   if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
@@ -686,6 +699,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Registro - Datos recibidos:', req.body);
 
+      if (req.body?.isAgent === true) {
+        professionalRegistrationDisabled(res);
+        return;
+      }
+
       // Asegurar que isAgent sea un booleano
       const userData = {
         ...req.body,
@@ -760,6 +778,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agency registration with subscription plan
   app.post("/api/auth/register-agency", async (req, res) => {
     try {
+      professionalRegistrationDisabled(res);
+      return;
+
       console.log('Agency Registration - Datos recibidos:', req.body);
       const { agencyName, city, email, password, name, surname, subscriptionPlan, isYearlyBilling } = req.body;
 
@@ -946,6 +967,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Network (Franchise) registration
   app.post("/api/auth/register-network", async (req, res) => {
     try {
+      professionalRegistrationDisabled(res);
+      return;
+
       console.log('Network Registration - Datos recibidos:', req.body);
       const { networkName, email, password, name, surname, billingMode, subscriptionPlan } = req.body;
 
@@ -1268,6 +1292,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agent registration with subscription plan
   app.post("/api/auth/register-agent", async (req, res) => {
     try {
+      professionalRegistrationDisabled(res);
+      return;
+
       console.log('Agent Registration - Datos recibidos:', req.body);
       const { email, password, subscriptionPlan, isYearlyBilling } = req.body;
 
@@ -1505,6 +1532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tokenHash: reset.tokenHash,
             userType: "agent",
             userId: agent.id,
+            purpose: "reset",
             expiresAt: reset.expiresAt,
           });
           await sendPasswordResetEmail(agent.email, agent.name, reset.token);
@@ -1518,6 +1546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tokenHash: reset.tokenHash,
           userType: "client",
           userId: client.id,
+          purpose: "reset",
           expiresAt: reset.expiresAt,
         });
         await sendPasswordResetEmail(client.email, client.name, reset.token);
@@ -1530,13 +1559,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/reset-password/:token", async (req, res) => {
     try {
       const token = String(req.params.token || "");
-      const isValid = token.length > 0 &&
-        Boolean(await storage.getValidPasswordResetToken(hashPasswordResetToken(token)));
+      const resetToken = token.length > 0
+        ? await storage.getValidPasswordResetToken(hashPasswordResetToken(token))
+        : undefined;
+      const isValid = Boolean(resetToken);
 
       if (!isValid) {
         return res.status(400).json({ message: passwordResetInvalidMessage });
       }
-      return res.json({ valid: true });
+      return res.json({ valid: true, purpose: resetToken?.purpose || "reset" });
     } catch (error) {
       console.error("Error validating password reset token:", error);
       return res.status(400).json({ message: passwordResetInvalidMessage });
@@ -4825,6 +4856,9 @@ Gracias!
 
   app.post("/api/admin/agencies", async (req, res) => {
     try {
+      professionalRegistrationDisabled(res);
+      return;
+
       console.log('Creating agency with data:', req.body);
       const agencyData = {
         ...req.body,
@@ -4897,6 +4931,9 @@ Gracias!
 
   app.post("/api/agencies", requireAuth, authorize({ allowAdmin: true }), async (req, res) => {
     try {
+      professionalRegistrationDisabled(res);
+      return;
+
       console.log('Creating agency with data:', req.body);
 
       // Security: Force adminAgentId to be the current user
@@ -4923,7 +4960,7 @@ Gracias!
       custom: async (user, req) => {
         const agencyId = parseInt(req.params.id);
         const agency = await storage.getAgency(agencyId);
-        return agency !== undefined && isAgencyAdmin(user, agencyId);
+        return agency !== null && isAgencyAdmin(user, agencyId);
       }
     }),
     async (req, res) => {
@@ -5889,6 +5926,15 @@ Gracias!
   // STRIPE SUBSCRIPTION ROUTES
   // Reference: connection:conn_stripe_01KAYT26YTNSFF1S0A9Q4FE38R
   // ===============================
+  function canAccessBillingEntity(req: Request, entityType: string, entityId: number): boolean {
+    const user = req.user;
+    if (!user) return false;
+    if (user.agentType === "super_admin") return true;
+    if (entityType === "agency") return isAgencyAdmin(user, entityId);
+    if (entityType === "agent") return user.id === entityId && user.agentType === "independent";
+    if (entityType === "network") return user.networkId === entityId && user.agentType === "network_admin";
+    return false;
+  }
 
   // Get Stripe publishable key for frontend
   app.get("/api/stripe/publishable-key", async (req, res) => {
@@ -5939,16 +5985,15 @@ Gracias!
   });
 
   // Create checkout session for subscription
-  app.post("/api/stripe/checkout", async (req, res) => {
+  app.post("/api/stripe/checkout", requireAuth, async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const { priceId, entityType, entityId } = req.body;
       
       if (!priceId || !entityType || !entityId) {
         return res.status(400).json({ error: "priceId, entityType, and entityId are required" });
+      }
+      if (!canAccessBillingEntity(req, entityType, Number(entityId))) {
+        return res.status(403).json({ error: "You cannot access this billing entity" });
       }
 
       const { stripeService } = await import("./stripeService");
@@ -5962,7 +6007,9 @@ Gracias!
         if (!agency) {
           return res.status(404).json({ error: "Agency not found" });
         }
-        email = agency.agencyEmailToDisplay || '';
+        const agencyWithAdmin = await storage.getAgency(Number(entityId));
+        const admin = agencyWithAdmin ? await storage.getAgentById(agencyWithAdmin.adminAgentId) : undefined;
+        email = admin?.email || '';
         name = agency.agencyName;
       } else if (entityType === 'network') {
         const network = await storage.getNetworkById(entityId);
@@ -6010,16 +6057,20 @@ Gracias!
   });
 
   // Create customer portal session for managing subscription
-  app.post("/api/stripe/portal", async (req, res) => {
+  app.post("/api/stripe/portal", requireAuth, async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const { customerId } = req.body;
       
       if (!customerId) {
         return res.status(400).json({ error: "customerId is required" });
+      }
+      if (req.user?.agentType !== "super_admin") {
+        const ownedEntities = req.user?.isAdmin && req.user.agencyId
+          ? [await storage.getAgencyById(req.user.agencyId)]
+          : [await storage.getAgentById(req.user!.id)];
+        if (ownedEntities[0]?.stripeCustomerId !== customerId) {
+          return res.status(403).json({ error: "You cannot access this billing customer" });
+        }
       }
 
       const { stripeService } = await import("./stripeService");
@@ -6082,16 +6133,15 @@ Gracias!
   });
 
   // Create checkout session for plan upgrade (from billing tab dropdown)
-  app.post("/api/stripe/checkout-plan", async (req, res) => {
+  app.post("/api/stripe/checkout-plan", requireAuth, async (req, res) => {
     try {
-      if (!req.session.user) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const { entityType, entityId, planId, isYearly } = req.body;
       
       if (!entityType || !entityId || !planId) {
         return res.status(400).json({ error: "entityType, entityId, and planId are required" });
+      }
+      if (!canAccessBillingEntity(req, entityType, Number(entityId))) {
+        return res.status(403).json({ error: "You cannot access this billing entity" });
       }
 
       const { stripeService } = await import("./stripeService");
@@ -6155,16 +6205,15 @@ Gracias!
   });
 
   // Activate free tier for agency or agent (no Stripe payment needed)
-  app.post("/api/stripe/activate-free-tier", async (req, res) => {
+  app.post("/api/stripe/activate-free-tier", requireAuth, async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const { entityType, entityId } = req.body;
       
       if (!entityType || !entityId) {
         return res.status(400).json({ error: "entityType and entityId are required" });
+      }
+      if (!canAccessBillingEntity(req, entityType, Number(entityId))) {
+        return res.status(403).json({ error: "You cannot access this billing entity" });
       }
 
       const { stripeService } = await import("./stripeService");
@@ -6178,9 +6227,12 @@ Gracias!
   });
 
   // Get billing info (current plan, customer ID, subscription) for entity
-  app.get("/api/stripe/billing/:entityType/:entityId", async (req, res) => {
+  app.get("/api/stripe/billing/:entityType/:entityId", requireAuth, async (req, res) => {
     try {
       const { entityType, entityId } = req.params;
+      if (!canAccessBillingEntity(req, entityType, Number(entityId))) {
+        return res.status(403).json({ error: "You cannot access this billing entity" });
+      }
       
       let entity: any;
       if (entityType === 'agency') {
@@ -6217,9 +6269,12 @@ Gracias!
   });
 
   // Get invoices for entity from Stripe
-  app.get("/api/stripe/invoices/:entityType/:entityId", async (req, res) => {
+  app.get("/api/stripe/invoices/:entityType/:entityId", requireAuth, async (req, res) => {
     try {
       const { entityType, entityId } = req.params;
+      if (!canAccessBillingEntity(req, entityType, Number(entityId))) {
+        return res.status(403).json({ error: "You cannot access this billing entity" });
+      }
       
       let entity: any;
       if (entityType === 'agency') {
@@ -6409,6 +6464,142 @@ Gracias!
   app.get("/api/super-admin/permissions/matrix", requireAuth, requireSuperAdmin, async (_req, res) => {
     res.json(SUPER_ADMIN_PERMISSION_MATRIX);
   });
+
+  const professionalProvisioningSchema = z.object({
+    kind: z.enum(["agency", "agent", "network"]),
+    email: z.string().trim().email(),
+    name: z.string().trim().min(2),
+    surname: z.string().trim().min(2),
+    plan: z.string().trim().min(1),
+    isYearlyBilling: z.boolean().default(false),
+    agencyName: z.string().trim().min(2).optional(),
+    city: z.string().trim().min(2).optional(),
+    networkName: z.string().trim().min(2).optional(),
+    billingMode: z.enum(["network", "agency"]).default("network"),
+    language: z.enum(["es", "en", "fr"]).default("es"),
+  });
+
+  app.post(
+    "/api/super-admin/provision",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      const parsed = professionalProvisioningSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Datos de provisión inválidos", issues: parsed.error.flatten() });
+      }
+      const input = parsed.data;
+      if (input.kind === "agency" && (!input.agencyName || !input.city)) {
+        return res.status(400).json({ message: "agencyName y city son obligatorios para una agencia" });
+      }
+      if (input.kind === "network" && !input.networkName) {
+        return res.status(400).json({ message: "networkName es obligatorio para una red" });
+      }
+
+      try {
+        const result = await provisionProfessional(input);
+        const setup = createPasswordSetupToken();
+        await storage.createPasswordResetToken({
+          tokenHash: setup.tokenHash,
+          userType: "agent",
+          userId: result.agent.id,
+          purpose: "welcome",
+          expiresAt: setup.expiresAt,
+        });
+        const profile = input.kind;
+        const emailSent = await sendProvisionWelcomeEmail(
+          result.agent.email,
+          `${result.agent.name || ""} ${result.agent.surname || ""}`.trim(),
+          setup.token,
+          input.language,
+          profile,
+          input.plan,
+        );
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "professional_provision",
+          targetType: input.kind,
+          targetId: String(result.agent.id),
+          afterState: {
+            plan: input.plan,
+            isYearlyBilling: input.isYearlyBilling,
+            emailSent,
+            agencyId: result.agency?.id,
+            networkId: result.network?.id,
+          },
+          metadata: { source: "super_admin", language: input.language },
+        });
+        return res.status(201).json({
+          agentId: result.agent.id,
+          agentUuid: result.agent.uuid,
+          agencyId: result.agency?.id,
+          networkId: result.network?.id,
+          plan: input.plan,
+          welcomeEmailSent: emailSent,
+        });
+      } catch (error: any) {
+        if (error?.code === "EMAIL_EXISTS") {
+          return res.status(409).json({ code: "EMAIL_EXISTS", message: error.message });
+        }
+        console.error("Error provisioning professional:", error);
+        return res.status(500).json({ message: "No se pudo crear la cuenta profesional" });
+      }
+    },
+  );
+
+  app.post(
+    "/api/super-admin/provision/:agentId/resend-welcome",
+    requireAuth,
+    requireSuperAdmin,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const agentId = Number(req.params.agentId);
+        const agent = await storage.getAgentById(agentId);
+        if (!agent) return res.status(404).json({ message: "Usuario no encontrado" });
+        if (isPasswordHashed(agent.password)) {
+          return res.status(400).json({ message: "La cuenta ya tiene una contraseña configurada" });
+        }
+        const setup = createPasswordSetupToken();
+        await storage.createPasswordResetToken({
+          tokenHash: setup.tokenHash,
+          userType: "agent",
+          userId: agent.id,
+          purpose: "welcome",
+          expiresAt: setup.expiresAt,
+        });
+        const role = await storage.getAgentRole(agent.id);
+        const agency = role.agencyId ? await storage.getAgencyById(role.agencyId) : undefined;
+        const network = agent.networkId ? await storage.getNetworkById(agent.networkId) : undefined;
+        const profile = agent.agentType === "network_admin" ? "network" : agency ? "agency" : "agent";
+        const plan = agency?.subscriptionPlan || network?.subscriptionPlan || agent.subscriptionPlan || "basico";
+        const language = z.enum(["es", "en", "fr"]).catch("es").parse(req.body?.language);
+        const emailSent = await sendProvisionWelcomeEmail(
+          agent.email,
+          `${agent.name || ""} ${agent.surname || ""}`.trim(),
+          setup.token,
+          language,
+          profile,
+          plan,
+        );
+        await storage.createAdminAuditLog({
+          actorId: req.user!.id,
+          actorEmail: req.user!.email,
+          action: "professional_welcome_resent",
+          targetType: "agent",
+          targetId: String(agent.id),
+          afterState: { emailSent, language },
+          metadata: { source: "super_admin" },
+        });
+        return res.json({ welcomeEmailSent: emailSent });
+      } catch (error) {
+        console.error("Error resending professional welcome:", error);
+        return res.status(500).json({ message: "No se pudo reenviar el email de acceso" });
+      }
+    },
+  );
 
   app.get("/api/super-admin/agencies", requireAuth, requireSuperAdmin, async (req, res) => {
     try {
@@ -6743,6 +6934,9 @@ Gracias!
   // Update agency plan (network admin only)
   app.patch("/api/networks/:id/agencies/:agencyId/plan", requireAuth, async (req, res) => {
     try {
+      professionalRegistrationDisabled(res);
+      return;
+
       const networkId = parseInt(req.params.id);
       const agencyId = parseInt(req.params.agencyId);
       const { plan } = req.body;
@@ -6777,6 +6971,9 @@ Gracias!
   // Create new agency under network (network admin only)
   app.post("/api/network-admin/agencies", requireAuth, async (req, res) => {
     try {
+      professionalRegistrationDisabled(res);
+      return;
+
       const sessionUser = req.user;
       
       if (!sessionUser || sessionUser.agentType !== 'network_admin' || !sessionUser.networkId) {
