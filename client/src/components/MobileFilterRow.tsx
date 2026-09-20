@@ -88,8 +88,6 @@ export function MobileFilterRow({
           <span>Filtrar</span>
         </Button>
       )}
-      {activeTab === 'properties' && saveSearchButton}
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -165,6 +163,9 @@ export function MobileFilterRow({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+
+      {/* Save search button stays at the end of the mobile controls row */}
+      {activeTab === 'properties' && saveSearchButton}
     </div>
   );
 }

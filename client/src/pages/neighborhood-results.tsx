@@ -427,14 +427,14 @@ export default function NeighborhoodResultsPage() {
     return decodedNeighborhood || 'Explorar';
   };
 
-  const renderSaveSearchButton = () => (
+  const renderSaveSearchButton = (isMobile = false) => (
     <Button
       onClick={handleSaveSearch}
       disabled={saveSearchMutation.isPending || isSaved}
       variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
       size="sm"
       data-testid="button-save-search"
-      className="gap-2 flex-shrink-0"
+      className={isMobile ? "gap-2 flex-shrink-0 rounded-full px-3" : "gap-2 flex-shrink-0"}
     >
       {isSaved ? (
         <>
@@ -449,7 +449,7 @@ export default function NeighborhoodResultsPage() {
       ) : (
         <>
           <Bookmark className="h-4 w-4" />
-          {t("results.save_search")}
+          {t(isMobile ? "clientProfile.searches.save" : "results.save_search")}
         </>
       )}
     </Button>
@@ -852,7 +852,7 @@ export default function NeighborhoodResultsPage() {
             }
           }}
           onOpenFilters={() => setIsMobileFilterOpen(true)}
-          saveSearchButton={renderSaveSearchButton()}
+          saveSearchButton={renderSaveSearchButton(true)}
         />
       </div>
 
