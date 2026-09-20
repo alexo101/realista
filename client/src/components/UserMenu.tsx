@@ -5,6 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Link } from "wouter";
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { LogOut, User } from "lucide-react";
@@ -26,6 +27,14 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {user.isClient && user.clientUuid && (
+          <DropdownMenuItem asChild className="md:hidden">
+            <Link href={`/perfil-cliente/${user.clientUuid}/perfil`} className="cursor-pointer">
+              <User className="h-4 w-4 mr-2" />
+              <span>{t("nav.profile")}</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={logout} className="text-red-600">
           <LogOut className="h-4 w-4 mr-2" />
           <span>{t('nav.logout')}</span>
