@@ -48,7 +48,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Edit2, Trash2, Share2, Copy, Eye } from "lucide-react";
+import { Heart, MessageCircle, User, Home, Mail, Phone, Star, MapPin, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Camera, Upload, Minus, Plus, CalendarDays, CheckCircle, Building2, Bookmark, Search, Edit2, Trash2, Share2, Copy, Eye } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import {
   DropdownMenu,
@@ -1698,7 +1698,7 @@ export default function ClientProfile() {
                   className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
                   data-testid="sidebar-busquedas"
                 >
-                  <Bookmark className="h-4 w-4" />
+                  <Search className="h-4 w-4" />
                   {!sidebarCollapsed && <span>{t("clientProfile.nav.searches")}</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
