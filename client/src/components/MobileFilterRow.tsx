@@ -1,4 +1,5 @@
 import { SlidersHorizontal, ChevronDown, ArrowUpDown, HomeIcon, Building2, UserCircle, Info } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ interface MobileFilterRowProps {
   entitySortBy: EntitySortOption;
   onEntitySortChange: (sort: EntitySortOption) => void;
   onOpenFilters: () => void;
+  saveSearchButton?: ReactNode;
   className?: string;
 }
 
@@ -48,6 +50,7 @@ export function MobileFilterRow({
   entitySortBy,
   onEntitySortChange,
   onOpenFilters,
+  saveSearchButton,
   className
 }: MobileFilterRowProps) {
   const activeTabOption = TAB_OPTIONS.find(t => t.value === activeTab) || TAB_OPTIONS[0];
@@ -85,6 +88,7 @@ export function MobileFilterRow({
           <span>Filtrar</span>
         </Button>
       )}
+      {activeTab === 'properties' && saveSearchButton}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

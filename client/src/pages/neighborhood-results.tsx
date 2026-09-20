@@ -426,6 +426,34 @@ export default function NeighborhoodResultsPage() {
     }
     return decodedNeighborhood || 'Explorar';
   };
+
+  const renderSaveSearchButton = () => (
+    <Button
+      onClick={handleSaveSearch}
+      disabled={saveSearchMutation.isPending || isSaved}
+      variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
+      size="sm"
+      data-testid="button-save-search"
+      className="gap-2 flex-shrink-0"
+    >
+      {isSaved ? (
+        <>
+          <Check className="h-4 w-4" />
+          {t("results.saved")}
+        </>
+      ) : isSaveConfirming ? (
+        <>
+          <Check className="h-4 w-4" />
+          {t("results.confirm_save")}
+        </>
+      ) : (
+        <>
+          <Bookmark className="h-4 w-4" />
+          {t("results.save_search")}
+        </>
+      )}
+    </Button>
+  );
   
   // Verificar si estamos en una página de provincia
   const isProvincePage = currentProvince && !currentCity && !currentDistrict && !currentNeighborhood;
@@ -824,6 +852,7 @@ export default function NeighborhoodResultsPage() {
             }
           }}
           onOpenFilters={() => setIsMobileFilterOpen(true)}
+          saveSearchButton={renderSaveSearchButton()}
         />
       </div>
 
@@ -1051,33 +1080,7 @@ export default function NeighborhoodResultsPage() {
                   showViewToggle={true}
                   sortBy={(propertyFilters.sortBy || "newest") as PropertySortOption}
                   onSortChange={(sort) => setPropertyFilters(prev => ({ ...prev, sortBy: sort }))}
-                  saveSearchButton={
-                    <Button
-                      onClick={handleSaveSearch}
-                      disabled={saveSearchMutation.isPending || isSaved}
-                      variant={isSaveConfirming ? "default" : isSaved ? "default" : "outline"}
-                      size="sm"
-                      data-testid="button-save-search"
-                      className="gap-2"
-                    >
-                      {isSaved ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          {t("results.saved")}
-                        </>
-                      ) : isSaveConfirming ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          {t("results.confirm_save")}
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark className="h-4 w-4" />
-                          {t("results.save_search")}
-                        </>
-                      )}
-                    </Button>
-                  }
+                  saveSearchButton={renderSaveSearchButton()}
                 />
               </div>
 
