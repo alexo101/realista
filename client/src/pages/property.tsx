@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useUser } from "@/contexts/user-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
-import { Bed, Bath, MapPin, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag, ChevronDown } from "lucide-react";
+import { Bed, Bath, MapPin, Eye, Phone, Mail, Maximize, Heart, Share2, Copy, MessageCircle, Star, ExternalLink, Flag, ChevronDown } from "lucide-react";
 
 // Extended Property type with additional fields for features
 interface ExtendedProperty extends Omit<Property, 'bedrooms' | 'bathrooms' | 'features' | 'agencyId'> {
@@ -334,6 +334,20 @@ export default function PropertyPage() {
   const propertyImages = (property.imageUrls && property.imageUrls.length > 0)
     ? property.imageUrls
     : [];
+
+  const publishedLabel = property.createdAt ? (() => {
+    const createdAt = new Date(property.createdAt);
+    if (Number.isNaN(createdAt.getTime())) return null;
+
+    const daysSincePublished = Math.max(
+      0,
+      Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)),
+    );
+
+    if (daysSincePublished === 0) return "Publicado hoy";
+    if (daysSincePublished === 1) return "Publicado hace 1 día";
+    return `Publicado hace ${daysSincePublished} días`;
+  })() : null;
 
   return (
     <div className="min-h-screen pt-16">
