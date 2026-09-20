@@ -580,7 +580,7 @@ export default function GoogleMapsNeighborhoodMap({
   }, [uuidsInShape, shape, isMapReady, zoom, positionsByUuid, properties, isLoading]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-[calc(100dvh-210px)] md:h-[calc(100dvh-250px)]">
       {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center z-20">
           <div className="flex flex-col items-center gap-3">
@@ -594,7 +594,6 @@ export default function GoogleMapsNeighborhoodMap({
       <div 
         ref={mapRef} 
         className="w-full h-full rounded-lg"
-        style={{ minHeight: '400px' }}
         data-testid="google-maps-container"
       />
 
