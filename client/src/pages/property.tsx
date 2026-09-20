@@ -360,28 +360,10 @@ export default function PropertyPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-6">
             <div>
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-900">{property.title}</h1>
-                  <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    {property.previousPrice && property.previousPrice > property.price && (
-                      <span className="text-lg text-gray-400 line-through">
-                        €{property.previousPrice.toLocaleString()}
-                      </span>
-                    )}
-                    <p className="text-xl font-semibold text-primary">
-                      €{property.price.toLocaleString()}
-                    </p>
-                    {property.previousPrice && property.previousPrice > property.price && (() => {
-                      const dropPercentage = Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100);
-                      return dropPercentage >= 10 ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          -{dropPercentage}%
-                        </span>
-                      ) : null;
-                    })()}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2 text-gray-600">
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-gray-900">{property.title}</h1>
+                  <div className="flex items-start gap-2 mt-4 text-gray-600">
                     <MapPin className="h-4 w-4" />
                     <span>
                       {property.hideAddress 
@@ -389,24 +371,28 @@ export default function PropertyPage() {
                         : `${property.address} - ${property.neighborhood}`}
                     </span>
                   </div>
-                  {property.viewCount !== undefined && property.viewCount > 0 && (
-                    <div className="mt-2 text-sm text-gray-500">
-                      <span>{t("property.views")}: {property.viewCount}</span>
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-sm text-gray-500">
+                    {property.viewCount !== undefined && property.viewCount > 0 && (
+                      <span className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        {property.viewCount} {t("property.views").toLowerCase()}
+                      </span>
+                    )}
+                    {publishedLabel && <span>{publishedLabel}</span>}
+                  </div>
                 </div>
 
                 {/* Favorite and Share buttons */}
-                <div className="flex gap-2 ml-4">
+                <div className="flex items-center gap-2">
                   {/* Favorite button - only show for clients or potential clients */}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button 
-                          size="sm" 
+                          size="icon"
                           variant="outline"
                           onClick={handleFavoriteClick}
-                          className={isFavorite ? "text-red-500 border-red-500 hover:bg-red-50" : ""}
+                          className={isFavorite ? "rounded-lg text-red-500 border-red-500 hover:bg-red-50" : "rounded-lg"}
                           disabled={toggleFavoriteMutation.isPending}
                         >
                           {isFavorite ? (
@@ -425,7 +411,7 @@ export default function PropertyPage() {
                   {/* Share button */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button size="sm" variant="outline" title={t("property.share")} aria-label={t("property.share")}>
+                      <Button size="icon" variant="outline" className="rounded-lg" title={t("property.share")} aria-label={t("property.share")}>
                         <Share2 className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -450,11 +436,11 @@ export default function PropertyPage() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button 
-                          size="sm" 
+                          size="icon"
                           variant="outline"
                           onClick={handleFraudReport}
                           disabled={reportFraudMutation.isPending}
-                          className="relative"
+                          className="relative rounded-lg"
                         >
                           <Flag className="h-4 w-4" />
                           {fraudCount > 0 && (
@@ -469,6 +455,25 @@ export default function PropertyPage() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {property.previousPrice && property.previousPrice > property.price && (
+                    <span className="text-lg text-gray-400 line-through">
+                      €{property.previousPrice.toLocaleString()}
+                    </span>
+                  )}
+                  <p className="text-xl font-semibold text-primary">
+                    €{property.price.toLocaleString()}
+                  </p>
+                  {property.previousPrice && property.previousPrice > property.price && (() => {
+                    const dropPercentage = Math.round(((property.previousPrice - property.price) / property.previousPrice) * 100);
+                    return dropPercentage >= 10 ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        -{dropPercentage}%
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             </div>
