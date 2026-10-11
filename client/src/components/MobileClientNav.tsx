@@ -1,4 +1,4 @@
-import { Home, MessageCircle, Heart, Search, User } from "lucide-react";
+import { Home, MessageCircle, Heart, Search, User, Building2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useUser } from "@/contexts/user-context";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,13 @@ export function MobileClientNav({ currentSection }: MobileClientNavProps) {
       icon: Home,
       path: "/",
       requiresAuth: false,
+    },
+    {
+      id: "inmueble",
+      label: t("clientProfile.nav.property"),
+      icon: Building2,
+      path: user?.clientUuid ? `/perfil-cliente/${user.clientUuid}/inmueble` : "/iniciar-sesion",
+      requiresAuth: true,
     },
     {
       id: "chats",
@@ -62,6 +69,9 @@ export function MobileClientNav({ currentSection }: MobileClientNavProps) {
   const isActive = (itemId: string) => {
     if (itemId === "inicio") {
       return !currentSection;
+    }
+    if (itemId === "inmueble") {
+      return currentSection === "inmueble";
     }
     if (itemId === "chats") {
       return currentSection === "mensajes";

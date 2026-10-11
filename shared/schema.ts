@@ -207,7 +207,8 @@ export const properties = pgTable("properties", {
   mainImageIndex: integer("main_image_index").default(0),
   title: text("title").notNull(), // Title is required
   viewCount: integer("view_count").default(0).notNull(), // Contador de visualizaciones
-  agentId: integer("agent_id").notNull(), // ID del agente que publicó la propiedad
+  agentId: integer("agent_id"), // Agente que publicó la propiedad. Nulo si la publica un cliente.
+  clientId: integer("client_id").references(() => clients.id, { onDelete: "cascade" }), // Cliente propietario. Nulo si la publica un agente.
   agencyId: integer("agency_id"), // ID de la agencia a la que pertenece la propiedad (opcional)
   isActive: boolean("is_active").default(true).notNull(), // Para activar/desactivar la visibilidad de la propiedad
   isDraft: boolean("is_draft").default(true).notNull(), // Borrador: true hasta completar todos los pasos
@@ -236,6 +237,15 @@ export const properties = pgTable("properties", {
   expiresAtIdx: index("properties_expires_at_idx").on(table.expiresAt),
   // Index for sorting by view count (most viewed properties)
   viewCountIdx: index("properties_view_count_idx").on(table.viewCount),
+  clientIdIdx: index("properties_client_id_idx").on(table.clientId),
+  // One published listing per client. Agent listings leave client_id null.
+  oneClientProperty: uniqueIndex("properties_client_id_unique")
+    .on(table.clientId)
+    .where(sql`${table.clientId} IS NOT NULL`),
+  ownerCheck: check(
+    "properties_owner_check",
+    sql`(${table.agentId} IS NOT NULL AND ${table.clientId} IS NULL) OR (${table.agentId} IS NULL AND ${table.clientId} IS NOT NULL)`,
+  ),
 }));
 
 export type ClientPropertyPreferences = {
@@ -371,10 +381,17 @@ export const inquiries = pgTable("inquiries", {
   phone: text("phone").notNull(),
   message: text("message").notNull(),
   propertyUuid: uuid("property_uuid").notNull().references(() => properties.uuid, { onDelete: "cascade" }),
-  agentId: integer("agent_id").notNull(), // ID del agente asociado a la propiedad
+  agentId: integer("agent_id"), // Agente destinatario. Nulo en anuncios de particulares.
+  ownerClientId: integer("owner_client_id").references(() => clients.id, { onDelete: "cascade" }), // Cliente propietario que recibe la consulta
   status: text("status").notNull().default("pendiente"), // "pendiente", "contactado", "finalizado"
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  ownerClientIdIdx: index("inquiries_owner_client_id_idx").on(table.ownerClientId),
+  recipientCheck: check(
+    "inquiries_recipient_check",
+    sql`${table.agentId} IS NOT NULL OR ${table.ownerClientId} IS NOT NULL`,
+  ),
+}));
 
 export const conversationMessages = pgTable("conversation_messages", {
   id: serial("id").primaryKey(),

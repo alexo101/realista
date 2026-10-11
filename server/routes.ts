@@ -12,7 +12,8 @@ import {
   insertAppointmentSchema,
   insertAgencySchema,
   insertAgentSchema,
-  insertPropertyVisitRequestSchema
+  insertPropertyVisitRequestSchema,
+  type Inquiry,
 } from "@shared/schema";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
@@ -376,6 +377,58 @@ async function userCanManageProperty(
   }
 
   return { allowed: false, property };
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    if ("code" in current && (current as { code?: string }).code === "23505") {
+      return true;
+    }
+    current = "cause" in current ? (current as { cause?: unknown }).cause : undefined;
+  }
+  return false;
+}
+
+function clientListingPayload(body: unknown) {
+  const parsed = insertPropertySchema.parse(body);
+  const locked = new Set([
+    "agentId",
+    "agencyId",
+    "clientId",
+    "managementStatus",
+    "fraudCount",
+    "moderationStatus",
+    "moderatedBy",
+    "moderatedAt",
+    "moderationReason",
+    "viewCount",
+    "uuid",
+    "slug",
+    "createdAt",
+  ]);
+  const payload: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!locked.has(key) && value !== undefined) {
+      payload[key] = value;
+    }
+  }
+  if (payload.isDraft === true) {
+    payload.isActive = false;
+  }
+  if (payload.neighborhood) {
+    const resolved = resolvePropertyLocation({
+      neighborhood: payload.neighborhood as string,
+      city: (payload.city as string | null | undefined) ?? null,
+      district: (payload.district as string | null | undefined) ?? null,
+      locality: (payload.locality as string | null | undefined) ?? null,
+    });
+    payload.city = resolved.city;
+    payload.district = resolved.district;
+  }
+  return payload;
 }
 
 async function userCanManageClient(
@@ -2049,6 +2102,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Invalid property data" });
     }
   });
+
+  app.get(
+    "/api/client/property",
+    requireAuth,
+    requireRole("client"),
+    async (req, res) => {
+      try {
+        const property = await storage.getPropertyByClientId(req.user!.id);
+        res.json(property ?? null);
+      } catch (error) {
+        console.error("Error fetching client property:", error);
+        res.status(500).json({ message: "Error al obtener el inmueble" });
+      }
+    },
+  );
+
+  app.post(
+    "/api/client/property",
+    requireAuth,
+    requireRole("client"),
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const existing = await storage.getPropertyByClientId(req.user!.id);
+        if (existing) {
+          return res.status(403).json({
+            message: "Solo puedes publicar un inmueble.",
+            limitReached: true,
+          });
+        }
+
+        const payload = clientListingPayload(req.body);
+        const result = await storage.createProperty({
+          ...payload,
+          agentId: null,
+          agencyId: null,
+          clientId: req.user!.id,
+        } as any);
+        res.status(201).json(result);
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          return res.status(403).json({
+            message: "Solo puedes publicar un inmueble.",
+            limitReached: true,
+          });
+        }
+        console.error("Error creating client property:", error);
+        res.status(400).json({ message: "Invalid property data" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/client/property",
+    requireAuth,
+    requireRole("client"),
+    requireCsrfForStateChange,
+    async (req, res) => {
+      try {
+        const existing = await storage.getPropertyByClientId(req.user!.id);
+        if (!existing) {
+          return res.status(404).json({ message: "Propiedad no encontrada" });
+        }
+
+        const payload = clientListingPayload(req.body);
+        const result = await storage.updateProperty(existing.uuid, {
+          ...payload,
+          agentId: null,
+          agencyId: null,
+          clientId: req.user!.id,
+        } as any);
+        res.json(result);
+      } catch (error) {
+        console.error("Error updating client property:", error);
+        res.status(400).json({ message: "Invalid property data" });
+      }
+    },
+  );
 
   app.get("/api/properties", async (req, res) => {
     try {
@@ -4201,9 +4332,27 @@ Gracias!
 
   app.post("/api/inquiries", async (req, res) => {
     try {
-      // Datos de la consulta con fecha actual
+      const propertyUuid = String(req.body?.propertyUuid || "");
+      if (!propertyUuid) {
+        return res.status(400).json({ message: "La propiedad es obligatoria" });
+      }
+
+      const property = await storage.getPropertyByUuid(propertyUuid);
+      if (!property || property.isDraft || !property.isActive) {
+        return res.status(404).json({ message: "Propiedad no encontrada" });
+      }
+
+      const isOwnerListing = property.clientId != null && property.agentId == null;
+      if (!isOwnerListing && !property.agentId) {
+        return res.status(400).json({ message: "No se pudo identificar el destinatario de la consulta" });
+      }
+
+      // Datos de la consulta con fecha actual. El destinatario sale de la propiedad, no del cuerpo.
       const inquiryData = {
         ...req.body,
+        propertyUuid,
+        agentId: isOwnerListing ? null : property.agentId,
+        ownerClientId: isOwnerListing ? property.clientId : null,
         status: req.body.status || "pendiente", // Estado por defecto
         createdAt: new Date()
       };
@@ -5351,7 +5500,10 @@ Gracias!
       const agentId = parseInt(req.params.agentId);
       
       // Get inquiries and transform them into conversations
-      const inquiries = await storage.getInquiriesByAgent(agentId);
+      const inquiries = (await storage.getInquiriesByAgent(agentId)) as Array<Inquiry & {
+        property?: { title?: string | null; address?: string | null } | null;
+        propertyId?: string;
+      }>;
       
       // Transform inquiries into conversations format with actual message history
       const conversations = await Promise.all(inquiries.map(async inquiry => {
@@ -5424,12 +5576,23 @@ Gracias!
   app.get("/api/conversations/client/:clientEmail", async (req, res) => {
     try {
       const clientEmail = req.params.clientEmail;
-      
-      // Get inquiries sent by this client and transform them into conversations
-      const inquiries = await storage.getInquiriesByClient(clientEmail);
+      const owner = await storage.getClientByEmail(clientEmail);
+      type ListedInquiry = Inquiry & {
+        property?: { title?: string | null; address?: string | null } | null;
+        agent?: { name?: string | null; surname?: string | null; avatar?: string | null } | null;
+      };
+      const sentInquiries = (await storage.getInquiriesByClient(clientEmail)) as ListedInquiry[];
+      const ownedInquiries = (owner ? await storage.getInquiriesByOwnerClient(owner.id) : []) as ListedInquiry[];
+      const ownedIds = new Set(ownedInquiries.map((inquiry) => inquiry.id));
+      const inquiries = [
+        ...ownedInquiries.map((inquiry) => ({ inquiry, viewerRole: "owner" as const })),
+        ...sentInquiries
+          .filter((inquiry) => !ownedIds.has(inquiry.id))
+          .map((inquiry) => ({ inquiry, viewerRole: "applicant" as const })),
+      ];
       
       // Transform inquiries into conversations format from client perspective with actual message history
-      const conversations = await Promise.all(inquiries.map(async inquiry => {
+      const conversations = await Promise.all(inquiries.map(async ({ inquiry, viewerRole }) => {
         // Get the full message history for this conversation
         const messageHistory = await storage.getConversationMessages(inquiry.id);
         
@@ -5463,20 +5626,26 @@ Gracias!
 
         // Get the last message for display
         const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+        const agentRecord = inquiry.agent;
+        const counterpartName = viewerRole === "owner"
+          ? inquiry.name
+          : agentRecord?.name
+            ? `${agentRecord.name} ${agentRecord.surname || ""}`.trim()
+            : "Agente";
         
         return {
           id: inquiry.id,
+          viewerRole,
           agentId: inquiry.agentId,
-          agentName: inquiry.agent?.name && inquiry.agent?.surname 
-            ? `${inquiry.agent.name} ${inquiry.agent.surname}` 
-            : "Agente",
-          agentAvatar: inquiry.agent?.avatar,
-          propertyId: inquiry.propertyId,
+          agentName: counterpartName,
+          agentAvatar: viewerRole === "owner" ? undefined : agentRecord?.avatar,
+          propertyId: inquiry.propertyUuid,
           propertyTitle: inquiry.property?.title || "Sin título",
           propertyAddress: inquiry.property?.address || "Dirección no disponible",
           lastMessage: lastMessage ? lastMessage.content : inquiry.message,
           lastMessageTime: lastMessage ? lastMessage.timestamp : inquiry.createdAt,
           status: inquiry.status,
+          unreadCount: viewerRole === "owner" && inquiry.status === "pendiente" ? 1 : 0,
           messages: messages
         };
       }));
@@ -5503,9 +5672,19 @@ Gracias!
       let senderName: string;
       
       if (senderType === 'agent') {
+        if (!inquiry.agentId) {
+          return res.status(400).json({ message: "Esta consulta no tiene agente" });
+        }
         senderId = inquiry.agentId;
         const agent = await storage.getAgentById(inquiry.agentId);
         senderName = agent ? `${agent.name} ${agent.surname}`.trim() : 'Agente';
+      } else if (senderType === 'owner') {
+        if (!inquiry.ownerClientId) {
+          return res.status(400).json({ message: "Esta consulta no tiene propietario" });
+        }
+        senderId = inquiry.ownerClientId;
+        const owner = await storage.getClient(inquiry.ownerClientId);
+        senderName = owner ? `${owner.name} ${owner.surname || ''}`.trim() : 'Propietario';
       } else {
         // For client messages, we'll use the inquiry ID as a temporary client ID
         senderId = conversationId;
@@ -5525,8 +5704,8 @@ Gracias!
       
       const savedMessage = await storage.createConversationMessage(messageData);
       
-      // Update inquiry status to 'contactado' when agent sends first message
-      if (senderType === 'agent') {
+      // Update inquiry status to 'contactado' when the listing contact replies
+      if (senderType === 'agent' || senderType === 'owner') {
         try {
           await storage.updateInquiryStatus(conversationId, 'contactado');
         } catch (error) {
@@ -5556,13 +5735,13 @@ Gracias!
   app.patch("/api/conversations/:conversationId/read", async (req, res) => {
     try {
       const conversationId = parseInt(req.params.conversationId);
-      const { readerType } = req.body; // 'client' or 'agent'
+      const { readerType } = req.body; // 'client', 'agent', or 'owner'
       
       // Mark inquiry as read (update status if needed)
       await storage.updateInquiryStatus(conversationId, 'contactado');
       
       // Mark messages from the opposite sender as 'read'
-      if (readerType === 'client' || readerType === 'agent') {
+      if (readerType === 'client' || readerType === 'agent' || readerType === 'owner') {
         await storage.markMessagesAsRead(conversationId, readerType);
       }
       
@@ -5765,7 +5944,6 @@ Gracias!
   app.post(
     "/api/property-images/upload",
     requireAuth,
-    requireAgentUser,
     requireCsrfForStateChange,
     async (req, res) => {
     try {
@@ -5782,7 +5960,6 @@ Gracias!
   app.post(
     "/api/property-images/upload-direct",
     requireAuth,
-    requireAgentUser,
     requireCsrfForStateChange,
     upload.single('image'),
     async (req, res) => {
@@ -7143,7 +7320,7 @@ Gracias!
   // ===== Property Management Routes =====
 
   // 1. Property Management Status
-  app.patch("/api/properties/:uuid/management-status", requireAuth, async (req, res) => {
+  app.patch("/api/properties/:uuid/management-status", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const { status } = req.body;
@@ -7174,7 +7351,7 @@ Gracias!
   });
 
   // 2. Property Contracts CRUD
-  app.get("/api/properties/:uuid/contracts", requireAuth, async (req, res) => {
+  app.get("/api/properties/:uuid/contracts", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const contracts = await storage.getPropertyContracts(uuid);
@@ -7185,7 +7362,7 @@ Gracias!
     }
   });
 
-  app.get("/api/properties/:uuid/contracts/active", requireAuth, async (req, res) => {
+  app.get("/api/properties/:uuid/contracts/active", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const contract = await storage.getActivePropertyContract(uuid);
@@ -7196,7 +7373,7 @@ Gracias!
     }
   });
 
-  app.post("/api/properties/:uuid/contracts", requireAuth, async (req, res) => {
+  app.post("/api/properties/:uuid/contracts", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const { tenantName, tenantEmail, tenantPhone, tenantId, duration, startDate, endDate, rentPrice, guarantee } = req.body;
@@ -7234,7 +7411,7 @@ Gracias!
     }
   });
 
-  app.patch("/api/properties/:uuid/contracts/:id", requireAuth, async (req, res) => {
+  app.patch("/api/properties/:uuid/contracts/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       const updated = await storage.updatePropertyContract(parseInt(id), req.body);
@@ -7247,7 +7424,7 @@ Gracias!
   });
 
   // 3. Property Payments CRUD
-  app.get("/api/properties/:uuid/payments", requireAuth, async (req, res) => {
+  app.get("/api/properties/:uuid/payments", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const payments = await storage.getPropertyPayments(uuid);
@@ -7258,7 +7435,7 @@ Gracias!
     }
   });
 
-  app.post("/api/properties/:uuid/payments", requireAuth, async (req, res) => {
+  app.post("/api/properties/:uuid/payments", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const { concept, amount, status, addToHistory, paymentDate, contractId } = req.body;
@@ -7294,7 +7471,7 @@ Gracias!
     }
   });
 
-  app.patch("/api/properties/:uuid/payments/:id", requireAuth, async (req, res) => {
+  app.patch("/api/properties/:uuid/payments/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid, id } = req.params;
       const { addToHistory, ...updateData } = req.body;
@@ -7327,7 +7504,7 @@ Gracias!
     }
   });
 
-  app.delete("/api/properties/:uuid/payments/:id", requireAuth, async (req, res) => {
+  app.delete("/api/properties/:uuid/payments/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deletePropertyPayment(parseInt(id));
@@ -7339,7 +7516,7 @@ Gracias!
   });
 
   // 4. Property Documents CRUD
-  app.get("/api/properties/:uuid/documents", requireAuth, async (req, res) => {
+  app.get("/api/properties/:uuid/documents", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const documents = await storage.getPropertyDocuments(uuid);
@@ -7350,7 +7527,7 @@ Gracias!
     }
   });
 
-  app.post("/api/properties/:uuid/documents", requireAuth, async (req, res) => {
+  app.post("/api/properties/:uuid/documents", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const { documentType, fileName, fileUrl } = req.body;
@@ -7376,7 +7553,7 @@ Gracias!
     }
   });
 
-  app.delete("/api/properties/:uuid/documents/:id", requireAuth, async (req, res) => {
+  app.delete("/api/properties/:uuid/documents/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deletePropertyDocument(parseInt(id));
@@ -7389,7 +7566,7 @@ Gracias!
   });
 
   // 5. Property Incidents CRUD
-  app.get("/api/properties/:uuid/incidents", requireAuth, async (req, res) => {
+  app.get("/api/properties/:uuid/incidents", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const incidents = await storage.getPropertyIncidents(uuid);
@@ -7407,7 +7584,7 @@ Gracias!
     }
   });
 
-  app.post("/api/properties/:uuid/incidents", requireAuth, async (req, res) => {
+  app.post("/api/properties/:uuid/incidents", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const { title, status, priority, description } = req.body;
@@ -7438,7 +7615,7 @@ Gracias!
     }
   });
 
-  app.patch("/api/properties/:uuid/incidents/:id", requireAuth, async (req, res) => {
+  app.patch("/api/properties/:uuid/incidents/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       const updated = await storage.updatePropertyIncident(parseInt(id), req.body);
@@ -7450,7 +7627,7 @@ Gracias!
     }
   });
 
-  app.delete("/api/properties/:uuid/incidents/:id", requireAuth, async (req, res) => {
+  app.delete("/api/properties/:uuid/incidents/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.deletePropertyIncident(parseInt(id));
@@ -7461,7 +7638,7 @@ Gracias!
     }
   });
 
-  app.get("/api/incidents/:id/updates", requireAuth, async (req, res) => {
+  app.get("/api/incidents/:id/updates", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = await storage.getIncidentUpdates(parseInt(id));
@@ -7472,7 +7649,7 @@ Gracias!
     }
   });
 
-  app.post("/api/incidents/:id/updates", requireAuth, async (req, res) => {
+  app.post("/api/incidents/:id/updates", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       const { comment, newStatus, newPriority } = req.body;
@@ -7506,7 +7683,7 @@ Gracias!
   });
 
   // 6. Property Communications CRUD
-  app.get("/api/properties/:uuid/communications", requireAuth, async (req, res) => {
+  app.get("/api/properties/:uuid/communications", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const communications = await storage.getPropertyCommunications(uuid);
@@ -7517,7 +7694,7 @@ Gracias!
     }
   });
 
-  app.post("/api/properties/:uuid/communications", requireAuth, async (req, res) => {
+  app.post("/api/properties/:uuid/communications", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const { title, communicationType, relevantDate, addToHistory, addToCalendar, description, agentId } = req.body;
@@ -7548,9 +7725,10 @@ Gracias!
 
       if (addToCalendar) {
         const property = await storage.getPropertyByUuid(uuid);
-        if (property) {
+        if (property?.agentId) {
           await storage.createAgentEvent({
             agentId: property.agentId,
+            status: "scheduled",
             eventType: communicationType,
             eventDate: relevantDate,
             eventTime: "09:00",
@@ -7567,7 +7745,7 @@ Gracias!
     }
   });
 
-  app.patch("/api/properties/:uuid/communications/:id", requireAuth, async (req, res) => {
+  app.patch("/api/properties/:uuid/communications/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       const updated = await storage.updatePropertyCommunication(parseInt(id), req.body);
@@ -7579,7 +7757,7 @@ Gracias!
     }
   });
 
-  app.delete("/api/properties/:uuid/communications/:id", requireAuth, async (req, res) => {
+  app.delete("/api/properties/:uuid/communications/:id", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { id } = req.params;
       const deleted = await storage.deletePropertyCommunication(parseInt(id));
@@ -7592,7 +7770,7 @@ Gracias!
   });
 
   // 7. Property History
-  app.get("/api/properties/:uuid/history", requireAuth, async (req, res) => {
+  app.get("/api/properties/:uuid/history", requireAuth, requireAgentUser, async (req, res) => {
     try {
       const { uuid } = req.params;
       const history = await storage.getPropertyHistory(uuid);

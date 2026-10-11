@@ -178,9 +178,10 @@ interface PropertyFormMultiStepProps {
   onClose: () => void;
   initialData?: any;
   isEditing?: boolean;
+  ownerMode?: boolean;
 }
 
-export function PropertyFormMultiStep({ onClose, initialData, isEditing = false }: PropertyFormMultiStepProps) {
+export function PropertyFormMultiStep({ onClose, initialData, isEditing = false, ownerMode = false }: PropertyFormMultiStepProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user} = useUser();
@@ -267,10 +268,18 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       const payload = {
         ...data,
         price: typeof data.price === 'string' ? Number(data.price) : data.price,
-        agentId: user?.id,
-        agencyId: user?.agencyId || null,
+        ...(ownerMode
+          ? {}
+          : {
+              agentId: user?.id,
+              agencyId: user?.agencyId || null,
+            }),
       };
       
+      if (ownerMode) {
+        return await apiRequest(propertyId ? "PATCH" : "POST", "/api/client/property", payload);
+      }
+
       if (propertyId) {
         // Update existing property
         return await apiRequest("PATCH", `/api/properties/${propertyId}`, payload);
@@ -350,8 +359,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
       bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
       bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
       superficie: formData.superficie ? Number(formData.superficie) : undefined,
-      agentId: user?.id,
-      agencyId: user?.agencyId || null,
+      ...(ownerMode ? {} : { agentId: user?.id, agencyId: user?.agencyId || null }),
       isDraft: true,
       isActive: false,
       title: formData.title || "Borrador - Título pendiente",
@@ -403,8 +411,7 @@ export function PropertyFormMultiStep({ onClose, initialData, isEditing = false 
         bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
         bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
         superficie: formData.superficie ? Number(formData.superficie) : undefined,
-        agentId: user?.id,
-        agencyId: user?.agencyId || null,
+        ...(ownerMode ? {} : { agentId: user?.id, agencyId: user?.agencyId || null }),
         isDraft: true,
         isActive: false,
         title: "Borrador - Título pendiente",

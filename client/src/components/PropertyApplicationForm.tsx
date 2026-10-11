@@ -146,8 +146,9 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
     try {
       setIsSubmitting(true);
       
-      // Get agent ID if not provided
+      // Get agent ID if not provided. Owner listings have no agent.
       let targetAgentId = agentId;
+      let ownerListing = false;
       
       if (!targetAgentId) {
         const propertyResponse = await fetch(`/api/properties/${propertyUuid}`);
@@ -156,34 +157,37 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
         }
         const propertyData = await propertyResponse.json();
         targetAgentId = propertyData.agentId;
+        ownerListing = !propertyData.agentId && !!propertyData.clientId;
         
-        if (!targetAgentId) {
+        if (!targetAgentId && !ownerListing) {
           throw new Error("No se pudo identificar el agente para esta propiedad");
         }
       }
 
-      // Build the complete message, including visit info for guest users
+      // Build the complete message, including visit info for guest users and owner listings
       let fullMessage = data.message || "";
       const hasVisitRequest = data.visitDate && data.visitTimeSlots && data.visitTimeSlots.length > 0;
       
-      // For guest users (not logged in or not a client), append visit info to the message
-      if (hasVisitRequest && (!user || !user.isClient)) {
+      // Owner listings have no agent calendar. Keep the visit request inside the message.
+      if (hasVisitRequest && (ownerListing || !user || !user.isClient)) {
         const visitInfo = `\n\nSolicitud de visita:\nFecha: ${format(data.visitDate!, "PPP", { locale: es })}\nHorarios preferidos: ${data.visitTimeSlots!.map(slot => 
           TIME_INTERVALS.find(t => t.id === slot)?.label
         ).join(", ")}`;
         fullMessage += visitInfo;
       }
 
-      // Prepare inquiry data with complete message
-      const inquiryData = {
+      // Prepare inquiry data with complete message. The server binds the recipient.
+      const inquiryData: Record<string, unknown> = {
         name: data.name,
         email: data.email,
         phone: data.phone,
         message: fullMessage,
         propertyUuid,
-        agentId: targetAgentId,
         status: "pendiente"
       };
+      if (!ownerListing && targetAgentId) {
+        inquiryData.agentId = targetAgentId;
+      }
 
       // Send ONE inquiry (with visit info already included for guests)
       const inquiryResponse = await fetch("/api/inquiries", {
@@ -199,8 +203,9 @@ export function PropertyApplicationForm({ propertyUuid, agentId, onSuccess }: Pr
         throw new Error(errorData.message || "Error al enviar la consulta");
       }
 
-      // For logged-in clients with visit requests, create separate visit request entries
-      if (hasVisitRequest && user && user.isClient) {
+      // For logged-in clients with visit requests, create separate visit request entries.
+      // Owner listings keep that request in the message instead of an agent calendar.
+      if (hasVisitRequest && user && user.isClient && !ownerListing && targetAgentId) {
         for (const timeSlot of data.visitTimeSlots!) {
           const visitRequestData = {
             propertyUuid,

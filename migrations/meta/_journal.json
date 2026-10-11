@@ -92,6 +92,13 @@
       "when": 1783960800000,
       "tag": "0014_password_reset_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1783964400000,
+      "tag": "0016_client_owned_properties",
+      "breakpoints": true
     }
   ]
 }

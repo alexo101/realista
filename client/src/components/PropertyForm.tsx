@@ -222,6 +222,7 @@ interface PropertyFormProps {
   onBackToProperty?: () => void;
   initialData?: z.infer<typeof formSchema> & { id?: number; isActive?: boolean };
   isEditing?: boolean;
+  ownerMode?: boolean;
 }
 
 export function PropertyForm({
@@ -230,6 +231,7 @@ export function PropertyForm({
   onBackToProperty,
   initialData,
   isEditing = false,
+  ownerMode = false,
 }: PropertyFormProps) {
   const { toast } = useToast();
   const { t, language } = useLanguage();
@@ -1429,7 +1431,7 @@ export function PropertyForm({
             {/* Footer actions */}
             <div className="flex justify-between items-center pt-6 border-t">
               {/* Delete button - only show when editing */}
-              {isEditing && initialData?.id ? (
+              {isEditing && initialData?.id && !ownerMode ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button

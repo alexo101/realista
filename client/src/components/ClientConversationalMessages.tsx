@@ -13,7 +13,7 @@ interface Message {
   id: number;
   senderId: number;
   senderName: string;
-  senderType: 'client' | 'agent';
+  senderType: 'client' | 'agent' | 'owner';
   content: string;
   timestamp: string;
   isRead: boolean;
@@ -36,7 +36,8 @@ function MessageStatusIndicator({ status, isClientMessage }: { status: string; i
 
 interface ClientConversation {
   id: number;
-  agentId: number;
+  viewerRole?: 'applicant' | 'owner';
+  agentId: number | null;
   agentName: string;
   agentAvatar?: string;
   agencyName?: string;
@@ -215,14 +216,16 @@ export function ClientConversationalMessages() {
     }
   };
 
-  const markConversationAsRead = async (conversationId: number) => {
+  const markConversationAsRead = async (conversation: ClientConversation) => {
     try {
-      await fetch(`/api/conversations/${conversationId}/read`, {
+      await fetch(`/api/conversations/${conversation.id}/read`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ readerType: 'client' })
+        body: JSON.stringify({
+          readerType: conversation.viewerRole === "owner" ? "owner" : "client",
+        })
       });
     } catch (error) {
       console.error("Error marking conversation as read:", error);
@@ -231,7 +234,7 @@ export function ClientConversationalMessages() {
 
   const selectConversation = (conversation: ClientConversation) => {
     setSelectedConversation(conversation);
-    markConversationAsRead(conversation.id);
+    markConversationAsRead(conversation);
     
     setConversations(prev => prev.map(conv => {
       if (conv.id === conversation.id) {
@@ -240,7 +243,7 @@ export function ClientConversationalMessages() {
           unreadCount: 0,
           messages: conv.messages.map(msg => ({
             ...msg,
-            status: msg.senderType === 'agent' ? 'read' as const : msg.status
+            status: !isOwnMessage(conversation, msg.senderType) ? 'read' as const : msg.status
           }))
         };
       }
@@ -264,7 +267,7 @@ export function ClientConversationalMessages() {
         },
         body: JSON.stringify({
           content: newMessage,
-          senderType: 'client'
+          senderType: selectedConversation.viewerRole === "owner" ? "owner" : "client"
         }),
       });
 
@@ -357,6 +360,13 @@ export function ClientConversationalMessages() {
     }
   };
 
+  const isOwnMessage = (conversation: ClientConversation, senderType: Message["senderType"]) => {
+    if (conversation.viewerRole === "owner") {
+      return senderType === "owner";
+    }
+    return senderType === "client";
+  };
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
@@ -365,8 +375,9 @@ export function ClientConversationalMessages() {
     if (conversation.unreadCount !== undefined) {
       return conversation.unreadCount;
     }
+    const incomingType = conversation.viewerRole === "owner" ? "client" : "agent";
     return conversation.messages.filter(
-      m => m.senderType === 'agent' && !m.isRead
+      m => m.senderType === incomingType && !m.isRead
     ).length;
   };
 
@@ -440,7 +451,7 @@ export function ClientConversationalMessages() {
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="font-semibold text-gray-900 truncate text-sm">
                       {conversation.agencyName || conversation.agentName}
-                      {!conversation.agencyName && ` - ${t("messages.agent_suffix")}`}
+                      {!conversation.agencyName && conversation.viewerRole !== "owner" && ` - ${t("messages.agent_suffix")}`}
                     </h3>
                     <span className="text-xs text-gray-500 flex-shrink-0">
                       {formatTimeShort(conversation.lastMessageTime)}
@@ -505,7 +516,7 @@ export function ClientConversationalMessages() {
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900 truncate text-sm md:text-base">
               {selectedConversation.agencyName || selectedConversation.agentName}
-              {!selectedConversation.agencyName && ` - ${t("messages.agent_suffix")}`}
+              {!selectedConversation.agencyName && selectedConversation.viewerRole !== "owner" && ` - ${t("messages.agent_suffix")}`}
             </h3>
             <p className="text-xs text-gray-500 truncate flex items-center gap-1">
               <Home className="h-3 w-3 flex-shrink-0" />
@@ -529,23 +540,23 @@ export function ClientConversationalMessages() {
           {selectedConversation.messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.senderType === 'client' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${isOwnMessage(selectedConversation, message.senderType) ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`max-w-[80%] md:max-w-[70%] px-3 py-2 rounded-2xl ${
-                  message.senderType === 'client'
+                  isOwnMessage(selectedConversation, message.senderType)
                     ? 'bg-primary text-white rounded-br-md'
                     : 'bg-white text-gray-800 rounded-bl-md shadow-sm'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 <div className={`flex items-center justify-end gap-1 mt-1 ${
-                  message.senderType === 'client' ? 'text-white' : 'text-gray-500'
+                  isOwnMessage(selectedConversation, message.senderType) ? 'text-white' : 'text-gray-500'
                 }`}>
                   <span className="text-[10px] font-medium">{formatMessageTime(message.timestamp)}</span>
                   <MessageStatusIndicator 
                     status={message.status || 'sent'} 
-                    isClientMessage={message.senderType === 'client'} 
+                    isClientMessage={isOwnMessage(selectedConversation, message.senderType)} 
                   />
                 </div>
               </div>

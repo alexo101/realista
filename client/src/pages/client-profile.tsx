@@ -63,6 +63,7 @@ import { useLanguage } from "@/contexts/language-context";
 import { useAutosave } from "@/hooks/use-autosave";
 import { SavedIndicator } from "@/components/SavedIndicator";
 import { ClientConversationalMessages } from "@/components/ClientConversationalMessages";
+import { ClientPropertySection } from "@/components/ClientPropertySection";
 import { MobileClientNav } from "@/components/MobileClientNav";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -110,6 +111,7 @@ interface FavoriteAgency {
 // Valid dashboard sections
 const VALID_SECTIONS = [
   'perfil',
+  'inmueble',
   'busquedas',
   'favoritos',
   'mensajes'
@@ -1455,6 +1457,9 @@ export default function ClientProfile() {
           </div>
         );
 
+      case "inmueble":
+        return <ClientPropertySection />;
+
       case "mensajes":
         return (
           <div className="h-full flex flex-col">
@@ -1687,6 +1692,18 @@ export default function ClientProfile() {
                 >
                   <User className="h-4 w-4" />
                   {!sidebarCollapsed && <span>{t("clientProfile.nav.profile")}</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => navigate(`/perfil-cliente/${user?.clientUuid}/inmueble`)}
+                  isActive={currentSection === "inmueble"}
+                  className={`w-full justify-start ${sidebarCollapsed ? 'justify-center' : ''}`}
+                  data-testid="sidebar-inmueble"
+                >
+                  <Home className="h-4 w-4" />
+                  {!sidebarCollapsed && <span>{t("clientProfile.nav.property")}</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
 

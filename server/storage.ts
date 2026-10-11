@@ -199,6 +199,7 @@ export interface IStorage {
   getPropertyBySlug(slug: string): Promise<Property | undefined>;
   getMostViewedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByAgent(agentId: number): Promise<Property[]>;
+  getPropertyByClientId(clientId: number): Promise<Property | undefined>;
   getAllPropertiesByAgent(agentId: number, limit?: number, offset?: number): Promise<Property[]>;
   getPropertiesByAgency(agencyId: number): Promise<Property[]>;
   getActivePropertiesCount(agencyId: number): Promise<number>;
@@ -270,6 +271,7 @@ export interface IStorage {
   // Inquiries (Consultas de propiedad)
   getInquiriesByAgent(agentId: number): Promise<Inquiry[]>;
   getInquiriesByClient(clientEmail: string): Promise<Inquiry[]>;
+  getInquiriesByOwnerClient(clientId: number): Promise<Inquiry[]>;
   getInquiryById(id: number): Promise<Inquiry | undefined>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   updateInquiryStatus(id: number, status: string): Promise<Inquiry>;
@@ -277,7 +279,7 @@ export interface IStorage {
   // Conversation Messages
   createConversationMessage(message: InsertConversationMessage): Promise<ConversationMessage>;
   getConversationMessages(inquiryId: number): Promise<ConversationMessage[]>;
-  markMessagesAsRead(inquiryId: number, readerType: 'client' | 'agent'): Promise<void>;
+  markMessagesAsRead(inquiryId: number, readerType: 'client' | 'agent' | 'owner'): Promise<void>;
 
   // Pinned Conversations
   pinConversation(userType: string, userId: number, userEmail: string | null, inquiryId: number): Promise<PinnedConversation>;
@@ -1819,7 +1821,7 @@ export class DatabaseStorage implements IStorage {
           // Delete admin agents' inquiries
           await tx
             .delete(inquiries)
-            .where(inArray(inquiries.agentId, adminAgentIds));
+            .where(sql`${inquiries.agentId} IN (${sql.join(adminAgentIds.map((id) => sql`${id}`), sql`, `)})`);
 
           // Delete admin agents' conversation messages
           await tx
@@ -2282,6 +2284,15 @@ export class DatabaseStorage implements IStorage {
       .update(clients)
       .set({ lastLoginAt: new Date() })
       .where(eq(clients.id, id));
+  }
+
+  async getPropertyByClientId(clientId: number): Promise<Property | undefined> {
+    const [property] = await db
+      .select()
+      .from(properties)
+      .where(eq(properties.clientId, clientId))
+      .limit(1);
+    return property;
   }
 
   async getPropertiesByAgent(agentId: number): Promise<Property[]> {
@@ -3318,6 +3329,7 @@ export class DatabaseStorage implements IStorage {
         message: inquiries.message,
         propertyUuid: inquiries.propertyUuid,
         agentId: inquiries.agentId,
+        ownerClientId: inquiries.ownerClientId,
         status: inquiries.status,
         createdAt: inquiries.createdAt,
         property: {
@@ -3344,6 +3356,7 @@ export class DatabaseStorage implements IStorage {
         message: inquiries.message,
         propertyUuid: inquiries.propertyUuid,
         agentId: inquiries.agentId,
+        ownerClientId: inquiries.ownerClientId,
         status: inquiries.status,
         createdAt: inquiries.createdAt,
         property: {
@@ -3364,6 +3377,33 @@ export class DatabaseStorage implements IStorage {
       .where(eq(inquiries.email, clientEmail))
       .orderBy(sql`${inquiries.createdAt} DESC`);
     
+    return results as Inquiry[];
+  }
+
+  async getInquiriesByOwnerClient(clientId: number): Promise<Inquiry[]> {
+    const results = await db
+      .select({
+        id: inquiries.id,
+        name: inquiries.name,
+        email: inquiries.email,
+        phone: inquiries.phone,
+        message: inquiries.message,
+        propertyUuid: inquiries.propertyUuid,
+        agentId: inquiries.agentId,
+        ownerClientId: inquiries.ownerClientId,
+        status: inquiries.status,
+        createdAt: inquiries.createdAt,
+        property: {
+          title: properties.title,
+          address: properties.address,
+          reference: properties.reference,
+        },
+      })
+      .from(inquiries)
+      .leftJoin(properties, eq(inquiries.propertyUuid, properties.uuid))
+      .where(eq(inquiries.ownerClientId, clientId))
+      .orderBy(sql`${inquiries.createdAt} DESC`);
+
     return results as Inquiry[];
   }
 
@@ -3406,10 +3446,9 @@ export class DatabaseStorage implements IStorage {
       .orderBy(conversationMessages.createdAt);
   }
 
-  async markMessagesAsRead(inquiryId: number, readerType: 'client' | 'agent'): Promise<void> {
-    // Mark messages from the opposite sender as read
-    // If client is reading, mark agent's messages as read
-    // If agent is reading, mark client's messages as read
+  async markMessagesAsRead(inquiryId: number, readerType: 'client' | 'agent' | 'owner'): Promise<void> {
+    // Mark messages from the other party as read.
+    // Applicant reads agent replies. Agent or listing owner reads the applicant.
     const senderToMark = readerType === 'client' ? 'agent' : 'client';
     
     await db

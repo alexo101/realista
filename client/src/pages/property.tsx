@@ -702,7 +702,7 @@ export default function PropertyPage() {
           </DialogHeader>
           <PropertyApplicationForm 
             propertyUuid={property?.uuid || ''} 
-            agentId={property?.agentId}
+            agentId={property?.agentId ?? undefined}
             onSuccess={() => setApplicationModalOpen(false)}
           />
         </DialogContent>

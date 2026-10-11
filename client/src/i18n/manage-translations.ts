@@ -894,7 +894,7 @@ const es: TranslationMap = {
   "messages.unpin_error": "No se pudo desfijar la conversación",
   "messages.agent_suffix": "Agente",
   "messages.yesterday": "Ayer",
-  "messages.conversations_with_agents": "Conversaciones con agentes inmobiliarios",
+  "messages.conversations_with_agents": "Conversaciones sobre inmuebles",
 };
 
 const en: TranslationMap = {
@@ -1780,7 +1780,7 @@ const en: TranslationMap = {
   "messages.unpin_error": "Could not unpin the conversation",
   "messages.agent_suffix": "Agent",
   "messages.yesterday": "Yesterday",
-  "messages.conversations_with_agents": "Conversations with real estate agents",
+  "messages.conversations_with_agents": "Conversations about properties",
 };
 
 const fr: TranslationMap = {
@@ -2666,7 +2666,7 @@ const fr: TranslationMap = {
   "messages.unpin_error": "Impossible de désépingler la conversation",
   "messages.agent_suffix": "Agent",
   "messages.yesterday": "Hier",
-  "messages.conversations_with_agents": "Conversations avec des agents immobiliers",
+  "messages.conversations_with_agents": "Conversations au sujet des biens",
 };
 
 const it: TranslationMap = {
@@ -3552,7 +3552,7 @@ const it: TranslationMap = {
   "messages.unpin_error": "Impossibile sbloccare la conversazione",
   "messages.agent_suffix": "Agente",
   "messages.yesterday": "Ieri",
-  "messages.conversations_with_agents": "Conversazioni con agenti immobiliari",
+  "messages.conversations_with_agents": "Conversazioni sugli immobili",
 };
 
 export const manageTranslations = { es, en, fr, it };
