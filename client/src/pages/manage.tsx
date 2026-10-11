@@ -74,6 +74,11 @@ import {
 import { cn } from "@/lib/utils";
 import { formatAgentPropertyAddress } from "@/utils/format-property-address";
 import { PropertyPreviewCard } from "@/components/PropertyPreviewCard";
+import { TourCards } from "@/components/feature-tour/TourCards";
+import { TourSpotlight } from "@/components/feature-tour/TourSpotlight";
+import { useFeatureTour } from "@/hooks/use-feature-tour";
+import { getFeatureTourCard, type FeatureTourCard } from "@/lib/feature-tour";
+import type { FeatureTourCardId } from "@shared/feature-tour";
 
 // Valid dashboard sections
 const VALID_SECTIONS = [
@@ -206,6 +211,27 @@ export default function ManagePage() {
   const [selectedClientForHistory, setSelectedClientForHistory] = useState<Client | null>(null);
   const [reviewRequestClient, setReviewRequestClient] = useState<{ id: number; name: string } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Feature tour: one card per sidebar tab, shown to agents only.
+  const showFeatureTour = Boolean(
+    user?.agentUuid && !user.isClient && user.agentType !== "network_admin" && user.agentType !== "super_admin",
+  );
+  const featureTour = useFeatureTour({ enabled: showFeatureTour, isAdmin: Boolean(user?.isAdmin) });
+  const [activeTour, setActiveTour] = useState<{ cardId: FeatureTourCardId; stepIndex: number } | null>(null);
+  const activeTourCard: FeatureTourCard | undefined =
+    activeTour && activeTour.cardId === currentSection ? getFeatureTourCard(activeTour.cardId) : undefined;
+
+  // Leaving the tour's tab (sidebar click, browser back) ends the tour.
+  useEffect(() => {
+    setActiveTour((prev) => (prev && prev.cardId !== currentSection ? null : prev));
+  }, [currentSection]);
+
+  const startFeatureTour = (card: FeatureTourCard) => {
+    setActiveTour({ cardId: card.id, stepIndex: 0 });
+    if (currentSection !== card.id) {
+      navigate(`/gestionar/${user?.agentUuid}/${card.id}`);
+    }
+  };
 
   // Estados para los campos de perfil de agente
   const [name, setName] = useState("");
@@ -1037,6 +1063,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "calendario"}
+                      data-tour="sidebar-calendario"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/calendario`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.calendar") : ""}
@@ -1054,6 +1081,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "clientes"}
+                      data-tour="sidebar-clientes"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/clientes`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.clients") : ""}
@@ -1071,6 +1099,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "mensajes"}
+                      data-tour="sidebar-mensajes"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/mensajes`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.messages") : ""}
@@ -1088,6 +1117,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "propiedades"}
+                      data-tour="sidebar-propiedades"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/propiedades`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.manage_properties") : ""}
@@ -1105,6 +1135,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "servicios"}
+                      data-tour="sidebar-servicios"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/servicios`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.services") : ""}
@@ -1139,6 +1170,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "perfil-agente"}
+                      data-tour="sidebar-perfil-agente"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agente`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.agent_profile") : ""}
@@ -1156,6 +1188,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "resenas"}
+                      data-tour="sidebar-resenas"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/resenas`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.manage_reviews") : ""}
@@ -1176,6 +1209,7 @@ export default function ManagePage() {
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "control-jornada"}
+                      data-tour="sidebar-control-jornada"
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
                       className="relative group"
                       title={sidebarCollapsed ? t("nav.workday_control") : ""}
@@ -1194,6 +1228,7 @@ export default function ManagePage() {
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "control-ausencias"}
+                      data-tour="sidebar-control-ausencias"
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
                       className="relative group"
                       title={sidebarCollapsed ? t("nav.absence_control") : ""}
@@ -1232,6 +1267,7 @@ export default function ManagePage() {
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "perfil-agencia"}
+                      data-tour="sidebar-perfil-agencia"
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/perfil-agencia`)}
                       className="relative group"
                       title={sidebarCollapsed ? t("nav.agency_profile") : ""}
@@ -1249,6 +1285,7 @@ export default function ManagePage() {
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "equipo"}
+                      data-tour="sidebar-equipo"
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/equipo`)}
                       className="relative group"
                       title={sidebarCollapsed ? t("nav.access_control") : ""}
@@ -1267,6 +1304,7 @@ export default function ManagePage() {
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "control-jornada"}
+                      data-tour="sidebar-control-jornada"
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-jornada`)}
                       className="relative group"
                       title={sidebarCollapsed ? t("nav.workday_control") : ""}
@@ -1285,6 +1323,7 @@ export default function ManagePage() {
                   <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                     <SidebarMenuButton
                       isActive={currentSection === "control-ausencias"}
+                      data-tour="sidebar-control-ausencias"
                       onClick={() => navigate(`/gestionar/${user?.agentUuid}/control-ausencias`)}
                       className="relative group"
                       title={sidebarCollapsed ? t("nav.absence_control") : ""}
@@ -1341,6 +1380,7 @@ export default function ManagePage() {
               <SidebarMenuItem className={sidebarCollapsed ? "ml-0" : "ml-6"}>
                 <SidebarMenuButton
                   isActive={currentSection === "facturacion"}
+                      data-tour="sidebar-facturacion"
                   onClick={() => navigate(`/gestionar/${user?.agentUuid}/facturacion`)}
                   className="relative group"
                   title={sidebarCollapsed ? t("nav.subscription_billing") : ""}
@@ -1376,13 +1416,13 @@ export default function ManagePage() {
             : `p-4 md:p-6 md:right-40 ${sidebarCollapsed ? "md:left-16" : "md:left-64"}`
         }`}>
           {currentSection === "calendario" && user?.id && (
-            <div className="max-w-6xl mx-auto">
+            <div data-tour="section-calendario" className="max-w-6xl mx-auto">
               <AgentCalendar agentId={user.id} />
             </div>
           )}
 
           {currentSection === "perfil-agente" && (
-            <div className="max-w-2xl mx-auto space-y-4 md:space-y-8 pb-24 md:pb-16 px-2 md:px-0">
+            <div data-tour="section-perfil-agente" className="max-w-2xl mx-auto space-y-4 md:space-y-8 pb-24 md:pb-16 px-2 md:px-0">
               <div className="flex flex-col items-center">
                 <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
                   {user?.avatar ? (
@@ -1671,7 +1711,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "perfil-agencia" && user?.isAdmin && (
-            <div>
+            <div data-tour="section-perfil-agencia">
               <AgenciesList />
             </div>
           )}
@@ -1994,7 +2034,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "propiedades" && (
-            <div className="space-y-4">
+            <div data-tour="section-propiedades" className="space-y-4">
               {viewingProperty ? (
                 <PropertyManagement
                   property={viewingProperty}
@@ -2801,7 +2841,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "clientes" && viewingClientId == null && (
-            <div className="space-y-4">
+            <div data-tour="section-clientes" className="space-y-4">
               {/* Header - responsive */}
               <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
                 <h2 className="text-2xl font-bold">{t("manage.clients.title")}</h2>
@@ -3671,7 +3711,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "servicios" && (
-            <div className="max-w-6xl mx-auto w-full pb-16">
+            <div data-tour="section-servicios" className="max-w-6xl mx-auto w-full pb-16">
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-transparent border border-primary/10 p-8 md:p-12">
                 <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                   <Rocket className="w-64 h-64 text-primary" />
@@ -3752,7 +3792,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "resenas" && (
-            <div className="max-w-6xl mx-auto w-full">
+            <div data-tour="section-resenas" className="max-w-6xl mx-auto w-full">
               {user ? (
                 <ReviewManagement userId={user.id} userType={user.isAdmin ? "admin" : "agent"} />
               ) : (
@@ -3768,25 +3808,25 @@ export default function ManagePage() {
           )}
 
           {currentSection === "mensajes" && (
-            <div className="w-full h-full">
+            <div data-tour="section-mensajes" className="w-full h-full">
               <ConversationalMessages />
             </div>
           )}
 
           {currentSection === "equipo" && user?.isAdmin && (
-            <div className="max-w-6xl mx-auto">
+            <div data-tour="section-equipo" className="max-w-6xl mx-auto">
               <TeamManagement agencyId={user.agencyId ? parseInt(user.agencyId) : undefined} />
             </div>
           )}
 
           {currentSection === "control-jornada" && (
-            <div className="max-w-6xl mx-auto">
+            <div data-tour="section-control-jornada" className="max-w-6xl mx-auto">
               <ControlJornada />
             </div>
           )}
 
           {currentSection === "control-ausencias" && (
-            <div className="max-w-6xl mx-auto">
+            <div data-tour="section-control-ausencias" className="max-w-6xl mx-auto">
               <ControlAusencias />
             </div>
           )}
@@ -3796,14 +3836,39 @@ export default function ManagePage() {
           )}
 
           {currentSection === "facturacion" && user?.id && (
-            <BillingTab 
-              entityType={user.isAdmin ? 'agency' : 'agent'} 
-              entityId={user.isAdmin ? (user.agencyId || user.id) : user.id}
-              agentUuid={user.agentUuid || ''}
-            />
+            <div data-tour="section-facturacion">
+              <BillingTab
+                entityType={user.isAdmin ? 'agency' : 'agent'}
+                entityId={user.isAdmin ? (user.agencyId || user.id) : user.id}
+                agentUuid={user.agentUuid || ''}
+              />
+            </div>
           )}
           
         </main>
+        {showFeatureTour && featureTour.ready && !activeTour && (
+          <TourCards
+            cards={featureTour.visibleCards}
+            sidebarCollapsed={sidebarCollapsed}
+            onStart={startFeatureTour}
+            onSkipCard={(card) => featureTour.skipCard(card.id)}
+            onSkipAll={() => featureTour.skipAll()}
+          />
+        )}
+        {activeTour && activeTourCard && (
+          <TourSpotlight
+            card={activeTourCard}
+            stepIndex={activeTour.stepIndex}
+            onStepChange={(stepIndex) =>
+              setActiveTour((prev) => (prev ? { ...prev, stepIndex } : prev))
+            }
+            onFinish={() => {
+              featureTour.completeCard(activeTour.cardId);
+              setActiveTour(null);
+            }}
+            onClose={() => setActiveTour(null)}
+          />
+        )}
       </SidebarProvider>
       {/* Review Request Confirmation Dialog */}
       <Dialog open={reviewRequestClient !== null} onOpenChange={(open) => !open && setReviewRequestClient(null)}>

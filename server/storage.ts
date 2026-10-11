@@ -131,6 +131,10 @@ import {
   type AbsenceReason,
   type AbsenceStatus,
 } from "@shared/schema";
+import {
+  normalizeFeatureTourState,
+  type FeatureTourState,
+} from "@shared/feature-tour";
 import { hashPassword, isPasswordHashed } from "./security/password";
 
 export interface IStorage {
@@ -332,6 +336,11 @@ export interface IStorage {
   transferAgencyAdmin(agencyId: number, currentAdminId: number, newAdminId: number, triggeredBy: number): Promise<void>;
   recordSubscriptionEvent(eventData: InsertSubscriptionEvent): Promise<SubscriptionEvent>;
   getAgentRole(agentId: number): Promise<{ agencyId: number | null; role: string | null; agentType: string }>;
+  getAgentFeatureTour(agentId: number): Promise<FeatureTourState>;
+  updateAgentFeatureTour(
+    agentId: number,
+    update: (current: FeatureTourState) => FeatureTourState,
+  ): Promise<FeatureTourState>;
   getAgencySubscription(agencyId: number): Promise<{ subscriptionPlan: string | null; isYearlyBilling: boolean | null; seatsLimit: number | null }>;
   addAgentToAgencyAtomic(agencyId: number, agentId: number, role: 'admin' | 'member', triggeredBy: number): Promise<AgencyAgent>;
 
@@ -1970,6 +1979,7 @@ export class DatabaseStorage implements IStorage {
           deletedAt: agents.deletedAt,
           createdAt: agents.createdAt,
           invitationStatus: agents.invitationStatus, // For team table display
+          featureTourState: agents.featureTourState,
         })
         .from(agents)
         .innerJoin(
@@ -4113,6 +4123,38 @@ export class DatabaseStorage implements IStorage {
   async recordSubscriptionEvent(eventData: InsertSubscriptionEvent): Promise<SubscriptionEvent> {
     const [event] = await db.insert(subscriptionEvents).values(eventData).returning();
     return event;
+  }
+
+  async getAgentFeatureTour(agentId: number): Promise<FeatureTourState> {
+    const [row] = await db
+      .select({ featureTourState: agents.featureTourState })
+      .from(agents)
+      .where(eq(agents.id, agentId));
+    if (!row) throw new Error("Agent not found");
+    return normalizeFeatureTourState(row.featureTourState);
+  }
+
+  /**
+   * Read-modify-write inside a transaction. The row is locked with
+   * FOR UPDATE so concurrent tour actions from the same agent cannot drop
+   * each other's changes.
+   */
+  async updateAgentFeatureTour(
+    agentId: number,
+    update: (current: FeatureTourState) => FeatureTourState,
+  ): Promise<FeatureTourState> {
+    return await db.transaction(async (tx) => {
+      const [row] = await tx
+        .select({ featureTourState: agents.featureTourState })
+        .from(agents)
+        .where(eq(agents.id, agentId))
+        .for("update");
+      if (!row) throw new Error("Agent not found");
+
+      const next = normalizeFeatureTourState(update(normalizeFeatureTourState(row.featureTourState)));
+      await tx.update(agents).set({ featureTourState: next }).where(eq(agents.id, agentId));
+      return next;
+    });
   }
 
   async getAgentRole(agentId: number): Promise<{ agencyId: number | null; role: string | null; agentType: string }> {

@@ -8,6 +8,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { initEmailService } from "./emailService";
 import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
+import { applyPendingMigrations } from "./bootstrap/applyMigrations";
 import { ensureSuperAdminUser } from "./bootstrap/superAdmin";
 import { migrateLegacyPlaintextPasswords } from "./bootstrap/passwordMigration";
 import { getRobotsTxt, getSitemapXml } from "./crawlability";
@@ -187,6 +188,9 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
+    // Schema must match the application before any request or bootstrap query.
+    await applyPendingMigrations();
+
     // Inicializar el servicio de email
     await initEmailService();
 

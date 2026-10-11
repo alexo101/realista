@@ -105,6 +105,10 @@ import { randomUUID } from 'crypto';
 import { comparePassword, hashPassword, isPasswordHashed } from "./security/password";
 import { createPasswordResetToken, createPasswordSetupToken, hashPasswordResetToken } from "./security/password-reset";
 import { provisionProfessional } from "./services/professionalProvisioningService";
+import {
+  applyFeatureTourAction,
+  featureTourActionSchema,
+} from "@shared/feature-tour";
 import { getPasswordRequirementErrors } from "@shared/password-policy";
 import { expandNeighborhoodSearch, isCityWideSearch, isDistrict, getCities, getDistrictsByCity, getNeighborhoodsByDistrict, parseNeighborhoodDisplayName, resolvePropertyLocation } from "./utils/neighborhoods";
 import { cache } from "./cache";
@@ -3995,6 +3999,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get agency properties" });
     }
   });
+
+  // Agent feature tour preferences, persisted on the agent row.
+  // Agents can only read and write their own state (identity comes from the session).
+  app.get(
+    "/api/agent/feature-tour",
+    requireAuth,
+    requireAgentUser,
+    async (req, res) => {
+      try {
+        const state = await storage.getAgentFeatureTour(req.user!.id);
+        res.json(state);
+      } catch (error) {
+        console.error("Error fetching feature tour state:", error);
+        res.status(500).json({ message: "Error al obtener el tour" });
+      }
+    },
+  );
+
+  app.patch(
+    "/api/agent/feature-tour",
+    requireAuth,
+    requireAgentUser,
+    requireCsrfForStateChange,
+    async (req, res) => {
+      const parsed = featureTourActionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Acción de tour no válida" });
+      }
+
+      try {
+        const state = await storage.updateAgentFeatureTour(req.user!.id, (current) =>
+          applyFeatureTourAction(current, parsed.data),
+        );
+        res.json(state);
+      } catch (error) {
+        console.error("Error updating feature tour state:", error);
+        res.status(500).json({ message: "Error al guardar el tour" });
+      }
+    },
+  );
 
   // User profile update
   app.patch(

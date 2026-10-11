@@ -45,6 +45,13 @@
       "breakpoints": true
     },
     {
+      "idx": 6,
+      "version": "7",
+      "when": 1777800500000,
+      "tag": "0006_agency_coordinates",
+      "breakpoints": true
+    },
+    {
       "idx": 7,
       "version": "7",
       "when": 1747155600000,
@@ -75,29 +82,50 @@
     {
       "idx": 11,
       "version": "7",
+      "when": 1783951800000,
+      "tag": "0011_client_property_linked_for_transaction",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
       "when": 1783953600000,
       "tag": "0012_reviews_indexes",
       "breakpoints": true
     },
     {
-      "idx": 12,
+      "idx": 13,
       "version": "7",
       "when": 1783957200000,
       "tag": "0013_neighborhood_gin_indexes",
       "breakpoints": true
     },
     {
-      "idx": 13,
+      "idx": 14,
       "version": "7",
       "when": 1783960800000,
       "tag": "0014_password_reset_tokens",
       "breakpoints": true
     },
     {
-      "idx": 14,
+      "idx": 15,
+      "version": "7",
+      "when": 1783962600000,
+      "tag": "0015_password_reset_purpose",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
       "version": "7",
       "when": 1783964400000,
       "tag": "0016_client_owned_properties",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1783966200000,
+      "tag": "0017_agent_feature_tour",
       "breakpoints": true
     }
   ]

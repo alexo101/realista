@@ -19,6 +19,7 @@ import {
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import type { FeatureTourState } from "./feature-tour";
 
 // Sentinel value for "all zones" selection
 export const ALL_ZONES = "Todas las zonas";
@@ -153,6 +154,11 @@ export const agents = pgTable("agents", {
   invitationExpiresAt: timestamp("invitation_expires_at"), // When the invitation expires
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at"),
+  // Per-agent feature tour preferences (see FeatureTourState)
+  featureTourState: jsonb("feature_tour_state")
+    .$type<FeatureTourState>()
+    .notNull()
+    .default(sql`'{"skippedCards":[],"completedCards":[],"dismissedAll":false}'::jsonb`),
   // Soft delete support
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -417,6 +423,7 @@ export const pinnedConversations = pgTable("pinned_conversations", {
 export const insertAgentSchema = createInsertSchema(agents).omit({
   id: true,
   createdAt: true,
+  featureTourState: true,
 });
 export const insertAgencySchema = createInsertSchema(agencies).omit({
   id: true,
