@@ -269,7 +269,7 @@ export function ControlJornada() {
       </div>
 
       {/* Personal card */}
-      <Card data-testid="card-control-jornada-personal">
+      <Card data-testid="card-control-jornada-personal" data-tour="jornada-clock">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
@@ -360,7 +360,7 @@ export function ControlJornada() {
               )}
 
               {/* Action buttons */}
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-2" data-tour="jornada-actions">
                 {state === "idle" && (
                   <Button
                     size="lg"

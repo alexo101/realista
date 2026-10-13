@@ -42,7 +42,12 @@ describe("feature tour configuration", () => {
         card.steps.length <= MAX_FEATURE_TOUR_STEPS,
         `${card.id} has ${card.steps.length} steps, max is ${MAX_FEATURE_TOUR_STEPS}`,
       );
+      const targets = card.steps.map((step) => step.target);
+      assert.equal(new Set(targets).size, targets.length, `${card.id} repeats a target`);
     }
+    const longest = Math.max(...FEATURE_TOUR_CARDS.map((card) => card.steps.length));
+    assert.equal(longest, MAX_FEATURE_TOUR_STEPS);
+    assert.ok(FEATURE_TOUR_CARDS.some((card) => card.steps.length < MAX_FEATURE_TOUR_STEPS));
   });
 
   it("provides every translation key in all supported languages", () => {

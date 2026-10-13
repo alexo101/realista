@@ -628,7 +628,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
         
         {/* Main tabs: Received reviews vs Request reviews */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'reviews' | 'request')}>
-          <TabsList className="grid w-full grid-cols-2 md:max-w-xl">
+          <TabsList className="grid w-full grid-cols-2 md:max-w-xl" data-tour="resenas-tabs">
             <TabsTrigger value="reviews" data-testid="tab-reviews-received" className="text-xs sm:text-sm">
               <Star className="h-4 w-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">{t("reviews.received")}</span>
@@ -646,7 +646,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
           <TabsContent value="reviews" className="mt-4">
             {/* Filter tabs for reviews */}
             <div className="flex justify-center md:justify-end mb-4">
-              <Tabs value={reviewFilterTab} onValueChange={(value) => setReviewFilterTab(value as any)}>
+              <Tabs value={reviewFilterTab} onValueChange={(value) => setReviewFilterTab(value as any)} data-tour="resenas-filters">
                 <TabsList className="grid grid-cols-3 w-full md:w-auto">
                   <TabsTrigger value="all" className="text-xs sm:text-sm">
                     <span className="hidden sm:inline">{t("reviews.all")}</span>
@@ -664,7 +664,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
             </div>
             
             {filteredReviews.length === 0 ? (
-              <Card>
+              <Card data-tour="resenas-list">
                 <CardHeader>
                   <CardTitle>{t("reviews.no_reviews")}</CardTitle>
                   <CardDescription>
@@ -680,7 +680,7 @@ export function ReviewManagement({ userId, userType }: { userId: number, userTyp
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4" data-tour="resenas-list">
                 {filteredReviews.map((review: Review) => (
                   <ReviewDetails
                     key={review.id}

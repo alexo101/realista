@@ -430,7 +430,7 @@ export function ConversationalMessages() {
         <div className="flex flex-col md:flex-row h-full">
           {/* Conversations List - hidden on mobile when viewing chat */}
           <div className={`w-full md:w-80 lg:w-96 border-r bg-gray-50 flex flex-col h-full ${mobileShowChat ? 'hidden md:flex' : 'flex'}`}>
-            <div className="p-3 md:p-4 border-b">
+            <div className="p-3 md:p-4 border-b" data-tour="mensajes-search">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -443,7 +443,7 @@ export function ConversationalMessages() {
               </div>
             </div>
             
-            <div className="overflow-y-auto flex-1 min-h-0">
+            <div className="overflow-y-auto flex-1 min-h-0" data-tour="mensajes-list">
               {filteredConversations.length === 0 ? (
                 <div className="p-4 text-center text-gray-500 text-sm md:text-base">
                   {searchTerm ? t("messages.no_results") : t("messages.empty")}

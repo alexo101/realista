@@ -157,7 +157,7 @@ export function ControlAusencias() {
       </div>
 
       <Tabs defaultValue="calendario" className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-2"}`}>
+        <TabsList className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-2"}`} data-tour="ausencias-tabs">
           <TabsTrigger value="calendario" data-testid="tab-calendario-equipo">
             Calendario de equipo
           </TabsTrigger>
@@ -176,7 +176,7 @@ export function ControlAusencias() {
           )}
         </TabsList>
 
-        <TabsContent value="calendario" className="mt-6">
+        <TabsContent value="calendario" className="mt-6" data-tour="ausencias-calendar">
           <TeamCalendarTab />
         </TabsContent>
 

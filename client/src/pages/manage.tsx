@@ -1423,7 +1423,7 @@ export default function ManagePage() {
 
           {currentSection === "perfil-agente" && (
             <div data-tour="section-perfil-agente" className="max-w-2xl mx-auto space-y-4 md:space-y-8 pb-24 md:pb-16 px-2 md:px-0">
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center" data-tour="agente-photo">
                 <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
                   {user?.avatar ? (
                     <img
@@ -1501,7 +1501,7 @@ export default function ManagePage() {
               </div>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="agente-identity">
                   <div>
                     <Label htmlFor="name" className="inline-flex items-center">
                       {t("common.name")}
@@ -1527,7 +1527,7 @@ export default function ManagePage() {
                     />
                   </div>
                 </div>
-                <div>
+                <div data-tour="agente-description">
                   <Label htmlFor="description" className="inline-flex items-center">
                     {t("manage.profile.public_description")}
                     <SavedIndicator visible={agentSavedFields.has("description")} />
@@ -1582,7 +1582,7 @@ export default function ManagePage() {
                     />
                   </div>
                 </div>
-                <div>
+                <div data-tour="agente-languages">
                   <Label htmlFor="languagesSpoken" className="inline-flex items-center">
                     {t("manage.profile.languages")}
                     <SavedIndicator visible={agentSavedFields.has("languagesSpoken")} />
@@ -1608,7 +1608,7 @@ export default function ManagePage() {
                     ))}
                   </div>
                 </div>
-                <div>
+                <div className="space-y-4" data-tour="agente-zones">
                   <Label htmlFor="city" className="inline-flex items-center">
                     {t("manage.profile.city")}
                     <SavedIndicator visible={agentSavedFields.has("city")} />
@@ -1624,7 +1624,6 @@ export default function ManagePage() {
                     }}
                     testId="input-city-search"
                   />
-                </div>
                 <div className="w-full">
                   <Label htmlFor="influence-neighborhoods" className="inline-flex items-center">
                     {t("manage.profile.influence_neighborhoods")}
@@ -1642,8 +1641,9 @@ export default function ManagePage() {
                     Estos barrios se utilizarán para relacionar tu perfil con las búsquedas de los clientes.
                   </p>
                 </div>
+                </div>
 
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-3 md:space-y-4" data-tour="agente-social">
                   <Label className="inline-flex items-center">
                     {t("manage.profile.social_media")}
                     <SavedIndicator
@@ -2083,7 +2083,7 @@ export default function ManagePage() {
                         </Button>
                       </div>
                       {/* View Toggle Buttons */}
-                      <div className="flex border rounded-md">
+                      <div className="flex border rounded-md" data-tour="propiedades-views">
                         <Button
                           variant={propertiesView === 'grid' ? 'default' : 'ghost'}
                           size="sm"
@@ -2109,6 +2109,7 @@ export default function ManagePage() {
                           setEditingProperty(null);
                         }} 
                         size="lg"
+                        data-tour="propiedades-add"
                       >
                         {t("manage.properties.add")}
                       </Button>
@@ -2231,7 +2232,7 @@ export default function ManagePage() {
                   )}
                 </>
               ) : (
-                <>
+                <div data-tour="propiedades-list" className="space-y-4">
                   {isLoadingProperties || fetchPropertyForViewMutation.isPending ? (
                     <div className="flex items-center justify-center py-12">
                       <div className="text-center">
@@ -2471,7 +2472,7 @@ export default function ManagePage() {
                       </div>
                     </>
                   )}
-                </>
+                </div>
               )}
               </>
               )}
@@ -2876,7 +2877,7 @@ export default function ManagePage() {
                   </div>
 
                   {/* View toggle buttons */}
-                  <div className="flex items-center border rounded-md">
+                  <div className="flex items-center border rounded-md" data-tour="clientes-views">
                     <Button 
                       variant={clientsView === 'list' ? 'default' : 'ghost'}
                       size="sm"
@@ -2905,6 +2906,7 @@ export default function ManagePage() {
                       setEditingClient(null);
                     }}
                     data-testid="button-add-client"
+                    data-tour="clientes-add"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     {t("manage.clients.add")}
@@ -3004,11 +3006,11 @@ export default function ManagePage() {
 
               {/* Conditional rendering based on view mode */}
               {isLoadingClients ? (
-                <div className="text-center py-8">
+                <div className="text-center py-8" data-tour="clientes-list">
                   <p>{t("manage.clients.loading")}</p>
                 </div>
               ) : !clients?.length ? (
-                <div className="text-center py-16 bg-gray-50 rounded-lg">
+                <div className="text-center py-16 bg-gray-50 rounded-lg" data-tour="clientes-list">
                   <Users className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-lg font-medium text-gray-900">{t("manage.clients.empty_title")}</h3>
                   <p className="mt-1 text-gray-500">
@@ -3016,6 +3018,7 @@ export default function ManagePage() {
                   </p>
                 </div>
               ) : clientsView === 'kanban' ? (
+                <div data-tour="clientes-list">
                 <ClientsKanban
                   clients={clients}
                   onViewClient={(client) => navigate(`/gestionar/${user?.agentUuid}/clientes/${client.id}`)}
@@ -3029,8 +3032,9 @@ export default function ManagePage() {
                     }
                   }}
                 />
+                </div>
               ) : (
-                <>
+                <div data-tour="clientes-list">
                   {/* Mobile Card View */}
                   <div className="md:hidden space-y-4">
                     {clients.map((client) => {
@@ -3261,7 +3265,7 @@ export default function ManagePage() {
                       </TableBody>
                     </Table>
                   </div>
-                </>
+                </div>
               )}
 
               <Dialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
@@ -3736,7 +3740,7 @@ export default function ManagePage() {
                     {t("manage.services.description")}
                   </p>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10" data-tour="servicios-catalog">
                     {/* Feature 1 - Electricity */}
                     <Card className="bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-md transition-all">
                       <CardContent className="p-6">
@@ -3782,7 +3786,7 @@ export default function ManagePage() {
                     </Card>
                   </div>
                   
-                  <Button size="lg" className="rounded-full px-8 shadow-lg transition-all opacity-80" disabled>
+                  <Button size="lg" className="rounded-full px-8 shadow-lg transition-all opacity-80" disabled data-tour="servicios-notify">
                     <Clock className="w-4 h-4 mr-2" />
                     {t("manage.services.notify_me")}
                   </Button>

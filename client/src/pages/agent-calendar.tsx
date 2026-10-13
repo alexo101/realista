@@ -334,6 +334,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
       variant="outline"
       size="sm"
       className="justify-start"
+      data-tour="calendario-view"
     >
       <ToggleGroupItem
         value="list"
@@ -371,6 +372,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
           <Button
             onClick={() => openNewEvent()}
             className="flex items-center gap-2"
+            data-tour="calendario-new"
           >
             <Plus className="h-4 w-4" />
             {t("calendar.new_event")}
@@ -397,7 +399,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
           {/* List view controls */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             {viewMode !== "all" ? (
-              <div className="flex items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-2 md:gap-4" data-tour="calendario-nav">
                 <div className="flex items-center gap-1 md:gap-2">
                   <Button variant="outline" size="sm" onClick={() => navigateDate("prev")}>
                     <ChevronLeft className="h-4 w-4" />
@@ -424,7 +426,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
               </div>
             )}
 
-            <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as "today" | "week" | "all")}>
+            <Tabs value={viewMode} onValueChange={(value) => handleViewModeChange(value as "today" | "week" | "all")} data-tour="calendario-period">
               <TabsList className="w-full md:w-auto">
             <TabsTrigger value="today" className="flex-1 md:flex-none text-xs md:text-sm">{t("calendar.today")}</TabsTrigger>
             <TabsTrigger value="week" className="flex-1 md:flex-none text-xs md:text-sm">{t("calendar.week")}</TabsTrigger>
@@ -434,7 +436,7 @@ export function AgentCalendar({ agentId }: AgentCalendarProps) {
           </div>
 
           {/* Events Display */}
-          <div className="space-y-4">
+          <div className="space-y-4" data-tour="calendario-events">
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
               {events.length === 0 ? (

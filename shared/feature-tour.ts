@@ -22,7 +22,7 @@ export const FEATURE_TOUR_CARD_IDS = [
 export type FeatureTourCardId = (typeof FEATURE_TOUR_CARD_IDS)[number];
 
 /** Upper bound for the number of steps a single card's tour may contain. */
-export const MAX_FEATURE_TOUR_STEPS = 3;
+export const MAX_FEATURE_TOUR_STEPS = 7;
 
 export type FeatureTourState = {
   /** Cards removed via "Skip this". */

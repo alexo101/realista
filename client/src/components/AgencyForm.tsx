@@ -243,7 +243,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
     <Card className="mb-6">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex flex-col items-center mb-6 px-4 sm:px-0">
+          <div className="flex flex-col items-center mb-6 px-4 sm:px-0" data-tour="agencia-logo">
             <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
               {logoPreview ? (
                 <img
@@ -269,6 +269,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
           </div>
 
           <div className="space-y-4">
+            <div className="space-y-4" data-tour="agencia-identity">
             <div>
               {labelWithSaved("agencyName", t("manage.agency.name"), "required")}
               <Input
@@ -310,8 +311,9 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 placeholder={t("agencyForm.address_placeholder")}
               />
             </div>
+            </div>
 
-            <div>
+            <div data-tour="agencia-description">
               {labelWithSaved("agencyDescription", t("manage.agency.description"))}
               <Textarea
                 id="agencyDescription"
@@ -406,6 +408,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               </div>
             </div>
 
+            <div className="space-y-4" data-tour="agencia-zones">
             <div>
               {labelWithSaved("city", t("agencyForm.operating_city"))}
               <CitySearchSelect
@@ -438,8 +441,9 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
                 {t("agencyForm.neighborhoods_help")}
               </p>
             </div>
+            </div>
 
-            <div>
+            <div data-tour="agencia-social">
               <Label className="inline-flex items-center">
                 {t("manage.agency.social_links")}
                 <SavedIndicator

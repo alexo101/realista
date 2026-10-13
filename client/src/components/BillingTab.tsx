@@ -336,7 +336,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       </div>
 
       {/* Current Plan Card */}
-      <Card className={`${currentPlan.color} border-2`}>
+      <Card className={`${currentPlan.color} border-2`} data-tour="facturacion-plan">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -395,7 +395,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
           </div>
 
           {/* Change Plan and Billing Period Selectors */}
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-4" data-tour="facturacion-change">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Plan Selector */}
               <div>
@@ -660,7 +660,7 @@ export function BillingTab({ entityType, entityId, agentUuid }: Props) {
       </Card>
 
       {/* Invoice History */}
-      <Card>
+      <Card data-tour="facturacion-invoices">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />

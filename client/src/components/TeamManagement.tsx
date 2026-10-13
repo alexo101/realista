@@ -263,6 +263,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
           onClick={() => setShowAddAgentForm(true)} 
           className="w-full md:w-auto flex items-center justify-center gap-2"
           data-testid="button-add-agent"
+          data-tour="equipo-invite"
         >
           <Plus className="h-4 w-4" />
           {t("manage.team.add_agent")}
@@ -270,7 +271,7 @@ export function TeamManagement({ agencyId }: TeamManagementProps) {
       </div>
 
       {/* Agent List */}
-      <Card>
+      <Card data-tour="equipo-list">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
