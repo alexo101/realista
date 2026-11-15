@@ -1422,7 +1422,7 @@ export default function ManagePage() {
           )}
 
           {currentSection === "perfil-agente" && (
-            <div data-tour="section-perfil-agente" className="max-w-2xl mx-auto space-y-4 md:space-y-8 pb-24 md:pb-16 px-2 md:px-0">
+            <div data-tour="section-perfil-agente" className="w-full space-y-4 md:space-y-8 pb-24 md:pb-16">
               <div className="flex flex-col items-center" data-tour="agente-photo">
                 <div className="w-32 h-32 rounded-full bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
                   {user?.avatar ? (
