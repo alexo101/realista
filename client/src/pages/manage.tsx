@@ -1041,7 +1041,7 @@ export default function ManagePage() {
   return (
     <div className="min-h-screen flex">
       <SidebarProvider>
-        <Sidebar className={`${currentSection === "perfil-agencia" ? "group-data-[side=left]:border-r-0" : ""} hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'} pt-16`}>
+        <Sidebar className={`border-r hidden md:block transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'} pt-16`}>
           <SidebarContent className="pt-4">
             <SidebarMenu>
               {/* CRM Section */}

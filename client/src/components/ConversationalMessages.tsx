@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { useUser } from "@/contexts/user-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -407,7 +407,7 @@ export function ConversationalMessages() {
 
   if (loading) {
     return (
-      <Card className="h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
+      <div className="h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
         <CardContent className="p-4 md:p-6 flex-1">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -415,12 +415,12 @@ export function ConversationalMessages() {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
       <CardHeader className="px-3 py-3 md:px-6 md:py-4 shrink-0">
         <CardTitle className="flex items-center gap-2 text-base md:text-lg">
           {t("messages.title")}
@@ -623,6 +623,6 @@ export function ConversationalMessages() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 }

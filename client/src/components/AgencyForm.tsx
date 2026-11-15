@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -240,9 +239,7 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
   );
 
   return (
-    <Card className="mb-6">
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 mb-6 pt-6">
           <div className="flex flex-col items-center mb-6 px-4 sm:px-0" data-tour="agencia-logo">
             <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-md bg-gray-100 mb-4 flex items-center justify-center overflow-hidden border-2 border-primary/20">
               {logoPreview ? (
@@ -591,8 +588,6 @@ export function AgencyForm({ agency, onSubmit, onCancel, isSubmitting }: AgencyF
               </div>
             )}
           </div>
-        </form>
-      </CardContent>
-    </Card>
+    </form>
   );
 }

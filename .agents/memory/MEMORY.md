@@ -2,3 +2,4 @@
 - [Public SPA crawlability](seo-crawlability.md) — public acquisition routes serve crawlable Express HTML while preserving the existing React mount.
 - [Google Maps drawing compatibility](google-maps-drawing.md) — DrawingManager is removed from the current Maps API; use native Polygon/Circle events instead.
 - [Client update array columns](client-update-array-columns.md) — PostgreSQL text arrays need explicit SQL handling when broad ORM updates encode them as records.
+- [Dashboard section layout](dashboard-section-layout.md) — keep the sidebar divider; avoid page-wide containers around sidebar sections.
