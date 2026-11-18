@@ -66,6 +66,13 @@ export default function LoginPage() {
       // This ensures React finishes batching the setUser() state update before navigate() runs.
       // Without this, ManagePage's auth guard would see undefined user and redirect back to login.
       setTimeout(() => {
+        // Optional same-origin return path (e.g. back to a profile-claim link).
+        const next = new URLSearchParams(window.location.search).get("next");
+        if (next && next.startsWith("/") && !next.startsWith("//") && !next.includes("\\")) {
+          navigate(next);
+          return;
+        }
+
         if (userData.agentType === "super_admin") {
           navigate("/super-admin");
           toast({

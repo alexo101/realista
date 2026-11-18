@@ -23,6 +23,7 @@ import RegisterPage from "@/pages/register";
 import ClientRegisterPage from "@/pages/client-register";
 import ClientProfile from "@/pages/client-profile";
 import RealistaPro from "@/pages/RealistaPro";
+import ClaimProfilePage from "@/pages/claim-profile";
 import NetworkAdmin from "@/pages/network-admin";
 import UpgradePlan from "@/pages/upgrade-plan";
 import ConfirmReview from "@/pages/confirm-review";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/" component={Home} />
       {/* Spanish routes with slug */}
       <Route path="/realista-pro" component={RealistaPro} />
+      <Route path="/reclamar-perfil/:token" component={ClaimProfilePage} />
       <Route path="/iniciar-sesion" component={LoginPage} />
       <Route path="/recuperar-contrasena" component={ForgotPasswordPage} />
       <Route path="/restablecer-contrasena/:token" component={ResetPasswordPage} />

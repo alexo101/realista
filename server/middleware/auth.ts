@@ -32,6 +32,8 @@ export interface AuthorizeOptions {
   allowAdmin?: boolean;
   allowRoles?: UserRole[];
   custom?: (user: SessionUser, req: Request) => boolean | Promise<boolean>;
+  /** Resolves the agency id of the request; grants access to its verified claim owner. */
+  allowAgencyClaimOwner?: (req: Request) => number | null | undefined | Promise<number | null | undefined>;
 }
 
 export const requireAuth = (
@@ -129,6 +131,16 @@ export const authorize = (options: AuthorizeOptions) => {
       }
     }
 
+    if (!isAuthorized && options.allowAgencyClaimOwner && !req.user.isClient) {
+      try {
+        const agencyId = await Promise.resolve(options.allowAgencyClaimOwner(req));
+        isAuthorized = agencyId ? await isAgencyClaimOwner(req.user, agencyId) : false;
+      } catch (error) {
+        console.error('Error in agency claim owner check:', error);
+        isAuthorized = false;
+      }
+    }
+
     if (!isAuthorized && options.custom) {
       try {
         const result = options.custom(req.user, req);
@@ -152,6 +164,13 @@ export const authorize = (options: AuthorizeOptions) => {
 
 export const isAgencyAdmin = (user: SessionUser, agencyId: number): boolean => {
   return user.isAdmin && user.agencyId === agencyId;
+};
+
+/** True when the user holds the verified ownership claim for the agency. */
+export const isAgencyClaimOwner = async (user: SessionUser, agencyId: number): Promise<boolean> => {
+  if (user.isClient) return false;
+  const { ownsAgencyClaim } = await import("../services/profileClaimStore");
+  return ownsAgencyClaim("agent", user.id, agencyId);
 };
 
 export const isResourceOwner = (user: SessionUser, resourceUserId: number): boolean => {

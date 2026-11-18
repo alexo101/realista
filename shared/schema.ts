@@ -1225,3 +1225,80 @@ export const absenceApprovalAssignments = pgTable(
 );
 
 export type AbsenceApprovalAssignment = typeof absenceApprovalAssignments.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// Profile claiming
+// ---------------------------------------------------------------------------
+
+// Ownership of a public agent/agency profile by a Realista account. Kept
+// separate from login tables so agent and agency ownership stay independent.
+export const profileClaims = pgTable("profile_claims", {
+  id: serial("id").primaryKey(),
+  profileType: text("profile_type").notNull(), // "agent" | "agency"
+  agentId: integer("agent_id").references(() => agents.id, { onDelete: "cascade" }),
+  agencyId: integer("agency_id").references(() => agencies.id, { onDelete: "cascade" }),
+  ownerUserType: text("owner_user_type").notNull(), // "agent" | "client"
+  ownerUserId: integer("owner_user_id").notNull(),
+  status: text("status").notNull().default("verified"), // "verified" | "revoked" | "transferred"
+  verifiedAt: timestamp("verified_at").notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  profileTypeCheck: check("profile_claims_profile_type_check", sql`${table.profileType} IN ('agent', 'agency')`),
+  ownerTypeCheck: check("profile_claims_owner_type_check", sql`${table.ownerUserType} IN ('agent', 'client')`),
+  statusCheck: check("profile_claims_status_check", sql`${table.status} IN ('verified', 'revoked', 'transferred')`),
+  targetCheck: check(
+    "profile_claims_target_check",
+    sql`(${table.profileType} = 'agent' AND ${table.agentId} IS NOT NULL AND ${table.agencyId} IS NULL) OR (${table.profileType} = 'agency' AND ${table.agencyId} IS NOT NULL AND ${table.agentId} IS NULL)`,
+  ),
+  uniqueVerifiedAgent: uniqueIndex("profile_claims_unique_verified_agent")
+    .on(table.agentId).where(sql`${table.status} = 'verified' AND ${table.profileType} = 'agent'`),
+  uniqueVerifiedAgency: uniqueIndex("profile_claims_unique_verified_agency")
+    .on(table.agencyId).where(sql`${table.status} = 'verified' AND ${table.profileType} = 'agency'`),
+  uniqueOwnerAgentProfile: uniqueIndex("profile_claims_unique_owner_agent_profile")
+    .on(table.ownerUserType, table.ownerUserId)
+    .where(sql`${table.status} = 'verified' AND ${table.profileType} = 'agent'`),
+  ownerIdx: index("profile_claims_owner_idx").on(table.ownerUserType, table.ownerUserId),
+}));
+
+export type ProfileClaim = typeof profileClaims.$inferSelect;
+
+// Single-use, time-limited verification links. Only the SHA-256 hash is stored.
+export const profileClaimTokens = pgTable("profile_claim_tokens", {
+  id: serial("id").primaryKey(),
+  tokenHash: text("token_hash").notNull().unique(),
+  profileType: text("profile_type").notNull(),
+  profileId: integer("profile_id").notNull(),
+  sentToEmail: text("sent_to_email").notNull(),
+  origin: text("origin").notNull().default("self"), // "self" | "agency_invite"
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  requesterIp: text("requester_ip"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  profileTypeCheck: check("profile_claim_tokens_profile_type_check", sql`${table.profileType} IN ('agent', 'agency')`),
+  originCheck: check("profile_claim_tokens_origin_check", sql`${table.origin} IN ('self', 'agency_invite')`),
+  profileIdx: index("profile_claim_tokens_profile_idx").on(table.profileType, table.profileId),
+}));
+
+export type ProfileClaimToken = typeof profileClaimTokens.$inferSelect;
+
+// Manual verification / "add my profile" requests handled by support.
+export const profileClaimSupportRequests = pgTable("profile_claim_support_requests", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").notNull(), // missing_profile | email_missing_or_outdated | delivery_failed | already_claimed
+  profileType: text("profile_type"),
+  profileId: integer("profile_id"),
+  contactName: text("contact_name").notNull(),
+  contactEmail: text("contact_email").notNull(),
+  message: text("message"),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  kindCheck: check(
+    "profile_claim_support_requests_kind_check",
+    sql`${table.kind} IN ('missing_profile', 'email_missing_or_outdated', 'delivery_failed', 'already_claimed')`,
+  ),
+}));
+
+export type ProfileClaimSupportRequest = typeof profileClaimSupportRequests.$inferSelect;

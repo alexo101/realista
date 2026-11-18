@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Footer } from "@/components/Footer";
+import { ClaimProfileSection } from "@/components/ClaimProfileSection";
 import { buildSalesMailto } from "@shared/salesContact";
 
 const agencyPlanDefs = [
@@ -443,6 +444,9 @@ export default function RealistaPro() {
           </Card>
         </div>
       )}
+
+      {/* Claim your profile (before pricing) */}
+      <ClaimProfileSection />
 
       {/* Pricing Section */}
       <div className="container mx-auto px-4 py-16">

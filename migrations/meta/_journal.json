@@ -127,6 +127,13 @@
       "when": 1783966200000,
       "tag": "0017_agent_feature_tour",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784052600000,
+      "tag": "0018_profile_claims",
+      "breakpoints": true
     }
   ]
 }

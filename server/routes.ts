@@ -17,6 +17,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
+import { registerClaimRoutes } from "./claimRoutes";
 import { requireAuth, requireRole, authorize, isAgencyAdmin, isResourceOwner, requireSuperAdmin } from "./middleware/auth";
 
 function getPublicBaseUrl(req?: Request): string {
@@ -563,6 +564,8 @@ async function compressImageToTarget(
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  registerClaimRoutes(app, { ensureCsrfToken, requireCsrfForStateChange });
+
   // Auth
 
   const SUPER_ADMIN_PERMISSION_MATRIX = {

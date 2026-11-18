@@ -782,3 +782,105 @@ export async function sendPropertiesToClients(
     };
   }
 }
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string
+  ));
+}
+
+export interface ProfileClaimEmailOptions {
+  to: string;
+  token: string;
+  profileType: "agent" | "agency";
+  profileName: string;
+  /** "agency_invite" is sent automatically to agents when their agency is claimed. */
+  origin: "self" | "agency_invite";
+  agencyName?: string | null;
+  ttlHours: number;
+}
+
+export async function sendProfileClaimEmail(options: ProfileClaimEmailOptions): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    const claimUrl = `${getFrontendUrl()}/reclamar-perfil/${encodeURIComponent(options.token)}`;
+    const name = escapeHtml(options.profileName);
+    const isAgency = options.profileType === "agency";
+    const isInvite = options.origin === "agency_invite";
+
+    const title = isInvite ? "Reclama tu perfil profesional" : "Verifica la reclamación de tu perfil";
+    const intro = isInvite
+      ? `La agencia <strong>${escapeHtml(options.agencyName || "")}</strong> ya gestiona su perfil en Realista. Ahora puedes reclamar tu perfil individual de agente (<strong>${name}</strong>).`
+      : isAgency
+        ? `Alguien ha solicitado reclamar el perfil de la agencia <strong>${name}</strong> en Realista. Este mensaje se envía al correo del administrador de la agencia.`
+        : `Alguien ha solicitado reclamar el perfil de agente <strong>${name}</strong> en Realista.`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">${title}</h1>
+        <p>Hola,</p>
+        <p>${intro}</p>
+        <div style="margin: 30px 0;">
+          <a href="${claimUrl}" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Verificar y reclamar perfil
+          </a>
+        </div>
+        <p style="color: #666; font-size: 14px;">Este enlace es personal, caduca en ${options.ttlHours} horas y solo puede utilizarse una vez. Tendrás que iniciar sesión o crear una cuenta en Realista para completar la reclamación.</p>
+        <p style="color: #666; font-size: 14px;">Si no has sido tú, ignora este mensaje: no se realizará ningún cambio.</p>
+        <p style="margin-top: 30px;">El equipo de Realista</p>
+      </body>
+      </html>
+    `;
+
+    const { data, error } = await client.emails.send({
+      from: `Realista <${fromEmail}>`,
+      to: [options.to],
+      subject: title,
+      html,
+    });
+    if (error) {
+      console.error("Error de Resend al enviar email de reclamación:", error);
+      return false;
+    }
+    console.log("Email de reclamación enviado:", data?.id);
+    return true;
+  } catch (error) {
+    console.error("Error al enviar email de reclamación:", error);
+    return false;
+  }
+}
+
+export async function sendClaimSupportNotification(details: {
+  kind: string;
+  contactName: string;
+  contactEmail: string;
+  profileLabel?: string | null;
+  message?: string | null;
+}): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getUncachableResendClient();
+    const html = `
+      <p><strong>Solicitud de soporte de reclamación de perfil</strong></p>
+      <ul>
+        <li>Tipo: ${escapeHtml(details.kind)}</li>
+        <li>Nombre: ${escapeHtml(details.contactName)}</li>
+        <li>Email: ${escapeHtml(details.contactEmail)}</li>
+        <li>Perfil: ${escapeHtml(details.profileLabel || "-")}</li>
+      </ul>
+      <p>${escapeHtml(details.message || "")}</p>`;
+    const { error } = await client.emails.send({
+      from: `Realista <${fromEmail}>`,
+      to: ["contacto@realista.homes"],
+      replyTo: details.contactEmail,
+      subject: `Soporte reclamación de perfil: ${details.kind}`,
+      html,
+    });
+    return !error;
+  } catch (error) {
+    console.error("Error al notificar solicitud de soporte:", error);
+    return false;
+  }
+}

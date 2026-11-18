@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import {
   ArrowRight,
+  BadgeCheck,
   Bot,
   Building2,
   CalendarDays,
@@ -57,6 +58,28 @@ export function HomeAgencyBenefits() {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 md:p-8 mb-10 md:mb-14 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
+              <BadgeCheck className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl md:text-2xl font-semibold mb-1">
+                {t("home.claim_title")}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {t("home.claim_description")}
+              </p>
+            </div>
+          </div>
+          <Link href="/realista-pro#reclamar-perfil">
+            <Button size="lg" className="gap-2 shrink-0" data-testid="button-home-claim-profile">
+              {t("home.claim_cta")}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 md:p-8 shadow-sm">
